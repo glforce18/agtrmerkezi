@@ -53,12 +53,12 @@
 .admin-content { padding: 20px; }
 .toolbar { margin-bottom: 25px; }
 .packages-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-.package-card { background: var(--bg-tertiary); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 25px; position: relative; transition: all 0.3s; }
-.package-card:hover { border-color: #ff6b00; transform: translateY(-4px); }
-.package-card.popular { border-color: #ff6b00; }
-.popular-badge { position: absolute; top: -10px; right: 20px; background: #ff6b00; color: #000; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.package-card { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; position: relative; transition: all 0.3s; }
+.package-card:hover { border-color: var(--primary-color); transform: translateY(-4px); }
+.package-card.popular { border-color: var(--primary-color); }
+.popular-badge { position: absolute; top: -10px; right: 20px; background: var(--primary-color); color: #000; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 .package-card h3 { font-size: 20px; margin-bottom: 10px; }
-.price { font-size: 32px; font-weight: 700; color: #ff6b00; margin-bottom: 20px; }
+.price { font-size: 32px; font-weight: 700; color: var(--primary-color); margin-bottom: 20px; }
 .price span { font-size: 14px; color: var(--text-secondary); font-weight: 400; }
 .features { list-style: none; margin-bottom: 20px; }
 .features li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }

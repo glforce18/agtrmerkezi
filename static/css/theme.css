@@ -2512,3 +2512,77 @@ body::before {
     background: var(--primary-color);
     color: #ffffff;
 }
+
+/* ==================== BUG FIX: Search Input Visibility ==================== */
+/* Dark theme search input improvements */
+.search-input,
+.filter-select,
+input[type="search"],
+input[type="text"].search,
+.toolbar input[type="text"] {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus,
+.filter-select:focus,
+input[type="search"]:focus,
+input[type="text"].search:focus,
+.toolbar input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
+    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15);
+}
+
+.search-input::placeholder,
+input[type="search"]::placeholder,
+input[type="text"].search::placeholder,
+.toolbar input[type="text"]::placeholder {
+    color: var(--text-muted);
+    opacity: 0.8;
+}
+
+/* Light theme search input */
+[data-theme="light"] .search-input,
+[data-theme="light"] .filter-select,
+[data-theme="light"] input[type="search"],
+[data-theme="light"] input[type="text"].search,
+[data-theme="light"] .toolbar input[type="text"] {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.15);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .search-input:focus,
+[data-theme="light"] .filter-select:focus,
+[data-theme="light"] input[type="search"]:focus,
+[data-theme="light"] input[type="text"].search:focus,
+[data-theme="light"] .toolbar input[type="text"]:focus {
+    border-color: var(--primary-color);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(229, 90, 0, 0.1);
+}
+
+[data-theme="light"] .search-input::placeholder,
+[data-theme="light"] input[type="search"]::placeholder {
+    color: #9ca3af;
+}
+
+/* Search modal header input enhanced visibility */
+.search-header input {
+    color: var(--text-primary) !important;
+    font-weight: 500;
+}
+
+.search-header input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="light"] .search-header input::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+}
