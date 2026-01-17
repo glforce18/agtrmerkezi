@@ -550,17 +550,17 @@ onMounted(() => {
 
 .game-badge.hldm {
   background: rgba(255, 107, 0, 0.15);
-  color: #ff6b00;
+  color: var(--primary-color, #ff6b00);
 }
 
 .game-badge.ag {
   background: rgba(139, 92, 246, 0.15);
-  color: #8b5cf6;
+  color: var(--secondary-color, #8b5cf6);
 }
 
 .game-badge.cs16 {
   background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  color: var(--info-color, #3b82f6);
 }
 
 .package-actions {
@@ -589,7 +589,7 @@ onMounted(() => {
 
 .btn-icon.danger:hover {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--error-color, #ef4444);
 }
 
 .package-name {

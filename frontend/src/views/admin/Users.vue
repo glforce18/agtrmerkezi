@@ -637,17 +637,17 @@ onMounted(() => {
 
 .role-badge.admin {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--error-color, #ef4444);
 }
 
 .role-badge.moderator {
   background: rgba(139, 92, 246, 0.15);
-  color: #8b5cf6;
+  color: var(--secondary-color, #8b5cf6);
 }
 
 .role-badge.user {
   background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  color: var(--info-color, #3b82f6);
 }
 
 .status-badge {
@@ -660,17 +660,17 @@ onMounted(() => {
 
 .status-badge.online {
   background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  color: var(--success-color, #10b981);
 }
 
 .status-badge.offline {
   background: rgba(107, 114, 128, 0.15);
-  color: #6b7280;
+  color: var(--text-muted, #6b7280);
 }
 
 .status-badge.banned {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--error-color, #ef4444);
 }
 
 .action-buttons {

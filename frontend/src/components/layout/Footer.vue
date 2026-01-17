@@ -159,8 +159,8 @@ const legalLinks = [
 }
 
 .social-btn:hover {
-  background-color: #f97316;
-  border-color: #f97316;
+  background-color: var(--primary-color, #f97316);
+  border-color: var(--primary-color, #f97316);
 }
 
 /* System Status Box */
@@ -170,7 +170,7 @@ const legalLinks = [
 }
 
 .status-online {
-  background-color: #10b981;
+  background-color: var(--success-color, #10b981);
   border-radius: 50%;
   animation: pulse 2s infinite;
 }

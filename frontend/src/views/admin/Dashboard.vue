@@ -268,10 +268,10 @@ onMounted(() => {
   justify-content: center;
 }
 
-.stat-icon.blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-.stat-icon.green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-.stat-icon.purple { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
-.stat-icon.orange { background: rgba(255, 107, 0, 0.15); color: #ff6b00; }
+.stat-icon.blue { background: rgba(59, 130, 246, 0.15); color: var(--info-color, #3b82f6); }
+.stat-icon.green { background: rgba(16, 185, 129, 0.15); color: var(--success-color, #10b981); }
+.stat-icon.purple { background: rgba(139, 92, 246, 0.15); color: var(--secondary-color, #8b5cf6); }
+.stat-icon.orange { background: rgba(255, 107, 0, 0.15); color: var(--primary-color, #ff6b00); }
 
 .stat-info {
   flex: 1;

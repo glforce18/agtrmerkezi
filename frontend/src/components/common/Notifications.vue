@@ -64,19 +64,19 @@ const uiStore = useUIStore()
 }
 
 .notification-success {
-  border-left-color: #10b981;
+  border-left-color: var(--success-color, #10b981);
 }
 
 .notification-error {
-  border-left-color: #ef4444;
+  border-left-color: var(--error-color, #ef4444);
 }
 
 .notification-warning {
-  border-left-color: #f59e0b;
+  border-left-color: var(--warning-color, #f59e0b);
 }
 
 .notification-info {
-  border-left-color: #3b82f6;
+  border-left-color: var(--info-color, #3b82f6);
 }
 
 .notification-icon {

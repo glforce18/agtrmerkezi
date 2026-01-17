@@ -603,12 +603,12 @@ onMounted(() => {
 }
 
 .status-dot.online {
-  background: #10b981;
+  background: var(--success-color, #10b981);
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
 }
 
 .status-dot.offline {
-  background: #6b7280;
+  background: var(--text-muted, #6b7280);
 }
 
 .server-cell {
