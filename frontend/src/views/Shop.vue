@@ -2,22 +2,22 @@
   <div class="min-h-screen">
     <div class="container-custom py-8">
       <!-- Header -->
-      <div class="mb-12 text-center animate-slide-down">
-        <h1 class="text-5xl font-display font-bold mb-4">
-          <span class="neon-text">Sunucu Paketleri</span>
+      <div class="mb-8 text-center">
+        <h1 class="text-4xl font-display font-bold mb-4 text-gradient-primary">
+          Oyun Sunucusu Paketleri
         </h1>
-        <p class="text-xl opacity-60 max-w-2xl mx-auto">
-          Sunucu yonetiminizi bir ust seviyeye tasiyin. TL veya Armor ile odeme yapin.
+        <p class="opacity-60 max-w-2xl mx-auto">
+          Adrenaline Gamer, Counter-Strike 1.6 ve Half-Life Deathmatch sunuculari
         </p>
 
-        <!-- User Balance Display -->
+        <!-- User Balance -->
         <div v-if="user" class="flex justify-center gap-4 mt-6">
           <div class="balance-badge tl">
             <Banknote :size="18" />
             <span>{{ formatCurrency(user.balance || 0) }} TL</span>
           </div>
           <div class="balance-badge armor">
-            <ShieldCheck :size="18" />
+            <Shield :size="18" />
             <span>{{ formatNumber(user.balance_coin || 0) }} Armor</span>
           </div>
           <router-link to="/wallet" class="balance-badge add">
@@ -28,7 +28,7 @@
       </div>
 
       <!-- Payment Method Toggle -->
-      <div class="flex justify-center mb-8 animate-slide-up">
+      <div class="flex justify-center mb-6">
         <div class="payment-toggle">
           <button
             class="toggle-btn"
@@ -39,408 +39,236 @@
             TL ile Ode
           </button>
           <button
-            class="toggle-btn armor"
+            class="toggle-btn"
             :class="{ active: paymentMethod === 'armor' }"
             @click="paymentMethod = 'armor'"
           >
-            <ShieldCheck :size="18" />
+            <Shield :size="18" />
             Armor ile Ode
           </button>
         </div>
       </div>
 
-      <!-- Billing Period Toggle -->
-      <div class="flex justify-center mb-12 animate-slide-up">
-        <div class="tabs tabs-boxed bg-base-200/50 backdrop-blur-sm">
-          <a
-            class="tab"
-            :class="{ 'tab-active': billingPeriod === 'monthly' }"
-            @click="billingPeriod = 'monthly'"
-          >
-            Aylik
-          </a>
-          <a
-            class="tab"
-            :class="{ 'tab-active': billingPeriod === 'yearly' }"
-            @click="billingPeriod = 'yearly'"
-          >
-            Yillik
-            <span class="badge badge-success badge-sm ml-2">20% Indirim</span>
-          </a>
+      <!-- Game Type Filter -->
+      <div class="flex justify-center gap-4 mb-8">
+        <button
+          v-for="game in gameTypes"
+          :key="game.value"
+          class="game-filter-btn"
+          :class="{ active: selectedGame === game.value }"
+          @click="selectedGame = game.value"
+        >
+          <component :is="game.icon" :size="20" />
+          {{ game.label }}
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="loading" class="flex justify-center py-12">
+        <Loader2 :size="40" class="animate-spin opacity-50" />
+      </div>
+
+      <!-- Error -->
+      <div v-else-if="error" class="text-center py-12">
+        <AlertTriangle :size="48" class="mx-auto mb-4 text-error" />
+        <p class="text-error">{{ error }}</p>
+        <button @click="fetchPackages" class="btn-retry mt-4">Tekrar Dene</button>
+      </div>
+
+      <!-- Packages Grid -->
+      <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div
+          v-for="pkg in filteredPackages"
+          :key="pkg.id"
+          class="package-card"
+          :class="{ featured: pkg.slug.includes('pro') }"
+        >
+          <!-- Badge -->
+          <div v-if="pkg.slug.includes('ultimate')" class="package-badge enterprise">
+            En Gucluu
+          </div>
+          <div v-else-if="pkg.slug.includes('pro')" class="package-badge popular">
+            Populer
+          </div>
+
+          <!-- Header -->
+          <div class="package-header">
+            <div class="game-icon" :class="pkg.game_type">
+              <Gamepad2 :size="28" />
+            </div>
+            <div>
+              <h3 class="package-name">{{ pkg.name }}</h3>
+              <span class="game-type-label">{{ getGameLabel(pkg.game_type) }}</span>
+            </div>
+          </div>
+
+          <!-- Price -->
+          <div class="package-price">
+            <div v-if="paymentMethod === 'tl'" class="price tl">
+              <span class="amount">{{ formatCurrency(pkg.price_monthly) }}</span>
+              <span class="currency">TL</span>
+              <span class="period">/ay</span>
+            </div>
+            <div v-else class="price armor">
+              <Shield :size="20" />
+              <span class="amount">{{ formatNumber(Math.floor(pkg.price_monthly * ARMOR_RATE)) }}</span>
+              <span class="currency">Armor</span>
+              <span class="period">/ay</span>
+            </div>
+            <div class="alt-price">
+              <span v-if="paymentMethod === 'tl'">
+                veya {{ formatNumber(Math.floor(pkg.price_monthly * ARMOR_RATE)) }} Armor
+              </span>
+              <span v-else>
+                veya {{ formatCurrency(pkg.price_monthly) }} TL
+              </span>
+            </div>
+          </div>
+
+          <!-- Specs -->
+          <div class="package-specs">
+            <div class="spec-item">
+              <Users :size="16" />
+              <span>{{ pkg.slots }} Slot</span>
+            </div>
+            <div class="spec-item">
+              <Server :size="16" />
+              <span>{{ getGameLabel(pkg.game_type) }}</span>
+            </div>
+          </div>
+
+          <!-- Features -->
+          <div class="package-features">
+            <div
+              v-for="feature in pkg.features"
+              :key="feature"
+              class="feature-item"
+            >
+              <Check :size="14" />
+              <span>{{ getFeatureLabel(feature) }}</span>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <p class="package-desc">{{ pkg.description }}</p>
+
+          <!-- Action -->
+          <button class="purchase-btn" @click="selectPackage(pkg)">
+            <ShoppingCart :size="18" />
+            Satin Al
+          </button>
         </div>
       </div>
 
-      <!-- Pricing Cards -->
-      <div class="grid md:grid-cols-3 gap-8 mb-16 animate-slide-up" style="animation-delay: 0.1s">
-        <!-- Starter Plan -->
-        <BaseCard variant="glass" class="card-hover relative pricing-card">
-          <div class="p-8">
-            <div class="text-center mb-6">
-              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-base-200 flex items-center justify-center">
-                <RocketIcon class="w-8 h-8 opacity-60" />
-              </div>
-              <h3 class="text-2xl font-bold mb-2">Baslangic</h3>
-              <p class="opacity-60 text-sm mb-4">Kucuk topluluklar icin</p>
-
-              <!-- Price Display -->
-              <div class="price-display">
-                <div v-if="paymentMethod === 'tl'" class="price tl">
-                  <span class="amount">{{ getPrice('starter', 'tl') }}</span>
-                  <span class="currency">TL</span>
-                  <span class="period">/{{ billingPeriod === 'monthly' ? 'ay' : 'yil' }}</span>
-                </div>
-                <div v-else class="price armor">
-                  <ShieldCheck :size="24" />
-                  <span class="amount">{{ formatNumber(getPrice('starter', 'armor')) }}</span>
-                  <span class="currency">Armor</span>
-                  <span class="period">/{{ billingPeriod === 'monthly' ? 'ay' : 'yil' }}</span>
-                </div>
-              </div>
-
-              <!-- Alternative Price -->
-              <div class="alt-price">
-                <span v-if="paymentMethod === 'tl'">
-                  veya {{ formatNumber(getPrice('starter', 'armor')) }} Armor
-                </span>
-                <span v-else>
-                  veya {{ getPrice('starter', 'tl') }} TL
-                </span>
-              </div>
-            </div>
-
-            <ul class="space-y-3 mb-8">
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">1 Sunucu</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Maksimum 16 slot</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Temel panel erisimi</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Gunluk yedekleme</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <XIcon class="w-5 h-5 text-error flex-shrink-0" />
-                <span class="text-sm opacity-50">DDoS korumasi</span>
-              </li>
-            </ul>
-
-            <button class="purchase-btn" @click="purchasePlan('starter')">
-              <ShoppingCartIcon class="w-4 h-4" />
-              Satin Al
-            </button>
-          </div>
-        </BaseCard>
-
-        <!-- Pro Plan -->
-        <BaseCard variant="glass" class="card-hover relative pricing-card featured">
-          <div class="absolute -top-4 left-1/2 -translate-x-1/2">
-            <span class="badge badge-primary badge-lg">En Populer</span>
-          </div>
-          <div class="p-8">
-            <div class="text-center mb-6">
-              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <ZapIcon class="w-8 h-8 text-white" />
-              </div>
-              <h3 class="text-2xl font-bold mb-2">Pro</h3>
-              <p class="opacity-60 text-sm mb-4">Profesyoneller icin</p>
-
-              <!-- Price Display -->
-              <div class="price-display">
-                <div v-if="paymentMethod === 'tl'" class="price tl">
-                  <span class="amount">{{ getPrice('pro', 'tl') }}</span>
-                  <span class="currency">TL</span>
-                  <span class="period">/{{ billingPeriod === 'monthly' ? 'ay' : 'yil' }}</span>
-                </div>
-                <div v-else class="price armor">
-                  <ShieldCheck :size="24" />
-                  <span class="amount">{{ formatNumber(getPrice('pro', 'armor')) }}</span>
-                  <span class="currency">Armor</span>
-                  <span class="period">/{{ billingPeriod === 'monthly' ? 'ay' : 'yil' }}</span>
-                </div>
-              </div>
-
-              <div class="alt-price">
-                <span v-if="paymentMethod === 'tl'">
-                  veya {{ formatNumber(getPrice('pro', 'armor')) }} Armor
-                </span>
-                <span v-else>
-                  veya {{ getPrice('pro', 'tl') }} TL
-                </span>
-              </div>
-            </div>
-
-            <ul class="space-y-3 mb-8">
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">3 Sunucu</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Maksimum 32 slot</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Gelismis panel ozellikleri</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">DDoS korumasi</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Oncelikli destek</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Saatlik yedekleme</span>
-              </li>
-            </ul>
-
-            <button class="purchase-btn primary" @click="purchasePlan('pro')">
-              <ShoppingCartIcon class="w-4 h-4" />
-              Satin Al
-            </button>
-          </div>
-        </BaseCard>
-
-        <!-- Enterprise Plan -->
-        <BaseCard variant="glass" class="card-hover relative pricing-card">
-          <div class="p-8">
-            <div class="text-center mb-6">
-              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-accent to-error flex items-center justify-center">
-                <CrownIcon class="w-8 h-8 text-white" />
-              </div>
-              <h3 class="text-2xl font-bold mb-2">Enterprise</h3>
-              <p class="opacity-60 text-sm mb-4">Buyuk topluluklar icin</p>
-
-              <!-- Price Display -->
-              <div class="price-display">
-                <div v-if="paymentMethod === 'tl'" class="price tl">
-                  <span class="amount">{{ getPrice('enterprise', 'tl') }}</span>
-                  <span class="currency">TL</span>
-                  <span class="period">/{{ billingPeriod === 'monthly' ? 'ay' : 'yil' }}</span>
-                </div>
-                <div v-else class="price armor">
-                  <ShieldCheck :size="24" />
-                  <span class="amount">{{ formatNumber(getPrice('enterprise', 'armor')) }}</span>
-                  <span class="currency">Armor</span>
-                  <span class="period">/{{ billingPeriod === 'monthly' ? 'ay' : 'yil' }}</span>
-                </div>
-              </div>
-
-              <div class="alt-price">
-                <span v-if="paymentMethod === 'tl'">
-                  veya {{ formatNumber(getPrice('enterprise', 'armor')) }} Armor
-                </span>
-                <span v-else>
-                  veya {{ getPrice('enterprise', 'tl') }} TL
-                </span>
-              </div>
-            </div>
-
-            <ul class="space-y-3 mb-8">
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">10 Sunucu</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Sinirsiz slot</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Tum ozellikler</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Gelismis DDoS korumasi</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">7/24 Ozel destek</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">Ozel entegrasyonlar</span>
-              </li>
-              <li class="flex items-center gap-2">
-                <CheckIcon class="w-5 h-5 text-success flex-shrink-0" />
-                <span class="text-sm">SLA garantisi</span>
-              </li>
-            </ul>
-
-            <button class="purchase-btn" @click="purchasePlan('enterprise')">
-              <ShoppingCartIcon class="w-4 h-4" />
-              Satin Al
-            </button>
-          </div>
-        </BaseCard>
+      <!-- No packages -->
+      <div v-if="!loading && !error && filteredPackages.length === 0" class="text-center py-12">
+        <Package :size="48" class="mx-auto mb-4 opacity-30" />
+        <p class="opacity-60">Bu kategoride paket bulunamadi</p>
       </div>
 
-      <!-- Armor Rate Info -->
-      <div class="rate-info-banner animate-slide-up" style="animation-delay: 0.2s">
-        <div class="rate-content">
-          <ShieldCheck :size="24" />
-          <div>
-            <strong>1 TL = {{ ARMOR_RATE }} Armor</strong>
-            <span>Armor ile odeme yaptiginizda ek indirimler kazanabilirsiniz!</span>
-          </div>
-          <router-link to="/wallet" class="rate-link">
-            Armor Yukle
-            <ArrowRight :size="16" />
-          </router-link>
-        </div>
-      </div>
-
-      <!-- Features Comparison -->
-      <div class="mb-16 animate-slide-up" style="animation-delay: 0.3s">
-        <h2 class="text-3xl font-display font-bold text-center mb-8">
-          <span class="text-gradient-primary">Ozellik Karsilastirmasi</span>
-        </h2>
-
-        <BaseCard variant="glass">
-          <div class="overflow-x-auto">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Ozellik</th>
-                  <th class="text-center">Baslangic</th>
-                  <th class="text-center">Pro</th>
-                  <th class="text-center">Enterprise</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Sunucu Sayisi</td>
-                  <td class="text-center">1</td>
-                  <td class="text-center">3</td>
-                  <td class="text-center">10</td>
-                </tr>
-                <tr>
-                  <td>Maksimum Slot</td>
-                  <td class="text-center">16</td>
-                  <td class="text-center">32</td>
-                  <td class="text-center">Sinirsiz</td>
-                </tr>
-                <tr>
-                  <td>DDoS Korumasi</td>
-                  <td class="text-center"><XIcon class="w-5 h-5 text-error inline" /></td>
-                  <td class="text-center"><CheckIcon class="w-5 h-5 text-success inline" /></td>
-                  <td class="text-center"><CheckIcon class="w-5 h-5 text-success inline" /></td>
-                </tr>
-                <tr>
-                  <td>Yedekleme</td>
-                  <td class="text-center">Gunluk</td>
-                  <td class="text-center">Saatlik</td>
-                  <td class="text-center">Anlik</td>
-                </tr>
-                <tr>
-                  <td>Oncelikli Destek</td>
-                  <td class="text-center"><XIcon class="w-5 h-5 text-error inline" /></td>
-                  <td class="text-center"><CheckIcon class="w-5 h-5 text-success inline" /></td>
-                  <td class="text-center"><CheckIcon class="w-5 h-5 text-success inline" /></td>
-                </tr>
-                <tr>
-                  <td>Ozel Entegrasyonlar</td>
-                  <td class="text-center"><XIcon class="w-5 h-5 text-error inline" /></td>
-                  <td class="text-center"><XIcon class="w-5 h-5 text-error inline" /></td>
-                  <td class="text-center"><CheckIcon class="w-5 h-5 text-success inline" /></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </BaseCard>
-      </div>
-
-      <!-- CTA Section -->
-      <div class="text-center animate-slide-up" style="animation-delay: 0.4s">
-        <BaseCard variant="glass" class="max-w-3xl mx-auto">
-          <div class="p-12">
-            <h2 class="text-3xl font-display font-bold mb-4">
-              <span class="neon-text">Hala Kararisiz misiniz?</span>
-            </h2>
-            <p class="text-xl opacity-60 mb-8">
-              Ekibimiz size en uygun plani secmenizde yardimci olmaktan mutluluk duyar.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-              <BaseButton variant="gaming" size="lg">
-                <MessageCircleIcon class="w-5 h-5 mr-2" />
-                Canli Destek
-              </BaseButton>
-              <BaseButton variant="outline" size="lg">
-                <MailIcon class="w-5 h-5 mr-2" />
-                Iletisime Gec
-              </BaseButton>
-            </div>
-          </div>
-        </BaseCard>
+      <!-- Rate Info -->
+      <div class="rate-info">
+        <Shield :size="20" />
+        <span><strong>1 TL = {{ ARMOR_RATE }} Armor</strong> - Armor ile odeme yapabilirsiniz</span>
+        <router-link to="/wallet">Armor Yukle</router-link>
       </div>
     </div>
 
-    <!-- Purchase Confirmation Modal -->
+    <!-- Purchase Modal -->
     <Teleport to="body">
-      <div v-if="showPurchaseModal" class="modal-overlay" @click.self="showPurchaseModal = false">
+      <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
         <div class="modal-content">
           <div class="modal-header">
-            <h3>Satin Alma Onayi</h3>
-            <button class="close-btn" @click="showPurchaseModal = false">
+            <h3>Sunucu Satin Al</h3>
+            <button @click="showModal = false" class="close-btn">
               <X :size="20" />
             </button>
           </div>
+
           <div class="modal-body">
-            <div class="purchase-summary">
-              <div class="summary-plan">
-                <component :is="getPlanIcon(selectedPlan)" :size="32" />
-                <div>
-                  <h4>{{ getPlanName(selectedPlan) }}</h4>
-                  <p>{{ billingPeriod === 'monthly' ? 'Aylik' : 'Yillik' }} plan</p>
-                </div>
+            <!-- Selected Package Info -->
+            <div class="selected-package" v-if="selectedPkg">
+              <div class="game-icon" :class="selectedPkg.game_type">
+                <Gamepad2 :size="24" />
               </div>
-
-              <div class="summary-price">
-                <div class="price-row">
-                  <span>Paket Ucreti</span>
-                  <span v-if="paymentMethod === 'tl'">{{ getPrice(selectedPlan, 'tl') }} TL</span>
-                  <span v-else>{{ formatNumber(getPrice(selectedPlan, 'armor')) }} Armor</span>
-                </div>
-                <div class="price-row total">
-                  <span>Toplam</span>
-                  <span v-if="paymentMethod === 'tl'" class="tl">{{ getPrice(selectedPlan, 'tl') }} TL</span>
-                  <span v-else class="armor">{{ formatNumber(getPrice(selectedPlan, 'armor')) }} Armor</span>
-                </div>
-              </div>
-
-              <div class="balance-check" :class="{ insufficient: !hasEnoughBalance }">
-                <span>Mevcut Bakiyeniz:</span>
-                <span v-if="paymentMethod === 'tl'">{{ formatCurrency(user?.balance || 0) }} TL</span>
-                <span v-else>{{ formatNumber(user?.balance_coin || 0) }} Armor</span>
-              </div>
-
-              <div v-if="!hasEnoughBalance" class="insufficient-warning">
-                <AlertTriangle :size="18" />
-                <span>Yetersiz bakiye!</span>
-                <router-link to="/wallet" @click="showPurchaseModal = false">
-                  Bakiye Yukle
-                </router-link>
+              <div>
+                <h4>{{ selectedPkg.name }}</h4>
+                <p>{{ selectedPkg.slots }} Slot - {{ getGameLabel(selectedPkg.game_type) }}</p>
               </div>
             </div>
+
+            <!-- Server Name -->
+            <div class="form-group">
+              <label>Sunucu Adi</label>
+              <input
+                v-model="serverName"
+                type="text"
+                placeholder="Ornek: My AG Server"
+                class="form-input"
+              />
+            </div>
+
+            <!-- Duration -->
+            <div class="form-group">
+              <label>Sure</label>
+              <div class="duration-options">
+                <button
+                  v-for="opt in durationOptions"
+                  :key="opt.months"
+                  class="duration-btn"
+                  :class="{ active: duration === opt.months }"
+                  @click="duration = opt.months"
+                >
+                  <span class="duration-label">{{ opt.label }}</span>
+                  <span v-if="opt.discount" class="duration-discount">%{{ opt.discount }} indirim</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Price Summary -->
+            <div class="price-summary" v-if="selectedPkg">
+              <div class="summary-row">
+                <span>Aylik Ucret</span>
+                <span>{{ formatCurrency(selectedPkg.price_monthly) }} TL</span>
+              </div>
+              <div class="summary-row">
+                <span>Sure</span>
+                <span>{{ duration }} Ay</span>
+              </div>
+              <div v-if="getDiscount() > 0" class="summary-row discount">
+                <span>Indirim (%{{ getDiscount() }})</span>
+                <span>-{{ formatCurrency(getDiscountAmount()) }} TL</span>
+              </div>
+              <div class="summary-row total">
+                <span>Toplam</span>
+                <span v-if="paymentMethod === 'tl'" class="tl">{{ formatCurrency(getTotalPrice()) }} TL</span>
+                <span v-else class="armor">{{ formatNumber(getTotalArmor()) }} Armor</span>
+              </div>
+            </div>
+
+            <!-- Balance Check -->
+            <div class="balance-check" :class="{ insufficient: !hasEnoughBalance }">
+              <span>Bakiyeniz:</span>
+              <span v-if="paymentMethod === 'tl'">{{ formatCurrency(user?.balance || 0) }} TL</span>
+              <span v-else>{{ formatNumber(user?.balance_coin || 0) }} Armor</span>
+            </div>
+
+            <div v-if="!hasEnoughBalance" class="warning-box">
+              <AlertTriangle :size="18" />
+              <span>Yetersiz bakiye!</span>
+              <router-link to="/wallet" @click="showModal = false">Bakiye Yukle</router-link>
+            </div>
           </div>
+
           <div class="modal-footer">
-            <button class="btn-secondary" @click="showPurchaseModal = false">Iptal</button>
+            <button @click="showModal = false" class="btn-cancel">Iptal</button>
             <button
-              class="btn-primary"
               @click="confirmPurchase"
-              :disabled="!hasEnoughBalance || purchasing"
+              class="btn-confirm"
+              :disabled="!canPurchase || purchasing"
             >
-              <Loader2 v-if="purchasing" :size="18" class="spin" />
-              <span v-else>Onayla ve Ode</span>
+              <Loader2 v-if="purchasing" :size="18" class="animate-spin" />
+              <span v-else>Satin Al</span>
             </button>
           </div>
         </div>
@@ -450,170 +278,219 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
 import {
-  RocketIcon,
-  ZapIcon,
-  CrownIcon,
-  CheckIcon,
-  XIcon,
-  ShoppingCartIcon,
-  MessageCircleIcon,
-  MailIcon,
   Banknote,
-  ShieldCheck,
+  Shield,
   Plus,
-  ArrowRight,
-  X,
+  Gamepad2,
+  Users,
+  Server,
+  Check,
+  ShoppingCart,
+  Package,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 // Constants
-const ARMOR_RATE = 100 // 1 TL = 100 Armor
+const ARMOR_RATE = 100
 
 // State
-const billingPeriod = ref('monthly')
+const packages = ref([])
+const loading = ref(true)
+const error = ref(null)
+const selectedGame = ref('all')
 const paymentMethod = ref('tl')
-const showPurchaseModal = ref(false)
-const selectedPlan = ref(null)
+const showModal = ref(false)
+const selectedPkg = ref(null)
+const serverName = ref('')
+const duration = ref(1)
 const purchasing = ref(false)
+
+// Game types
+const gameTypes = [
+  { value: 'all', label: 'Tumu', icon: Package },
+  { value: 'ag', label: 'Adrenaline Gamer', icon: Gamepad2 },
+  { value: 'cs16', label: 'CS 1.6', icon: Gamepad2 },
+  { value: 'hldm', label: 'HLDM', icon: Gamepad2 }
+]
+
+// Duration options
+const durationOptions = [
+  { months: 1, label: '1 Ay', discount: 0 },
+  { months: 3, label: '3 Ay', discount: 10 },
+  { months: 6, label: '6 Ay', discount: 15 },
+  { months: 12, label: '12 Ay', discount: 20 }
+]
 
 // Computed
 const user = computed(() => authStore.user)
 
-// Plans with TL prices
-const plans = {
-  starter: {
-    monthly: { tl: 49.99 },
-    yearly: { tl: 479.90 } // 20% discount
-  },
-  pro: {
-    monthly: { tl: 99.99 },
-    yearly: { tl: 959.90 }
-  },
-  enterprise: {
-    monthly: { tl: 199.99 },
-    yearly: { tl: 1919.90 }
+const filteredPackages = computed(() => {
+  if (selectedGame.value === 'all') {
+    return packages.value
   }
-}
-
-// Methods
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat('tr-TR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value || 0)
-}
-
-const formatNumber = (value) => {
-  return new Intl.NumberFormat('tr-TR').format(value || 0)
-}
-
-const getPrice = (planType, currency) => {
-  const period = billingPeriod.value
-  const tlPrice = plans[planType][period].tl
-
-  if (currency === 'tl') {
-    return formatCurrency(tlPrice)
-  } else {
-    // Convert TL to Armor
-    return Math.floor(tlPrice * ARMOR_RATE)
-  }
-}
-
-const getPlanName = (planType) => {
-  const names = {
-    starter: 'Baslangic',
-    pro: 'Pro',
-    enterprise: 'Enterprise'
-  }
-  return names[planType] || planType
-}
-
-const getPlanIcon = (planType) => {
-  const icons = {
-    starter: RocketIcon,
-    pro: ZapIcon,
-    enterprise: CrownIcon
-  }
-  return icons[planType] || RocketIcon
-}
+  return packages.value.filter(p => p.game_type === selectedGame.value)
+})
 
 const hasEnoughBalance = computed(() => {
-  if (!user.value || !selectedPlan.value) return false
-
-  const period = billingPeriod.value
-  const tlPrice = plans[selectedPlan.value][period].tl
+  if (!user.value || !selectedPkg.value) return false
 
   if (paymentMethod.value === 'tl') {
-    return user.value.balance >= tlPrice
+    return (user.value.balance || 0) >= getTotalPrice()
   } else {
-    const armorPrice = Math.floor(tlPrice * ARMOR_RATE)
-    return user.value.balance_coin >= armorPrice
+    return (user.value.balance_coin || 0) >= getTotalArmor()
   }
 })
 
-const purchasePlan = (planType) => {
+const canPurchase = computed(() => {
+  return selectedPkg.value && serverName.value.trim().length >= 3 && hasEnoughBalance.value
+})
+
+// Methods
+const formatCurrency = (val) => {
+  return new Intl.NumberFormat('tr-TR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(val || 0)
+}
+
+const formatNumber = (val) => {
+  return new Intl.NumberFormat('tr-TR').format(val || 0)
+}
+
+const getGameLabel = (type) => {
+  const labels = {
+    ag: 'Adrenaline Gamer',
+    cs16: 'Counter-Strike 1.6',
+    hldm: 'Half-Life Deathmatch'
+  }
+  return labels[type] || type
+}
+
+const getFeatureLabel = (feature) => {
+  const labels = {
+    basic_plugins: 'Temel Pluginler',
+    fun_plugins: 'Fun Pluginler',
+    zombie_mod: 'Zombie Mod',
+    rcon_access: 'RCON Erisimi',
+    anticheat: 'Anti-Cheat',
+    amvp: 'AMVP Sistemi',
+    statsme: 'StatsMe',
+    custom_domain: 'Ozel Domain',
+    priority_support: 'Oncelikli Destek',
+    ddos_protection: 'DDoS Koruma',
+    '247_support': '7/24 Destek',
+    auto_backup: 'Otomatik Yedekleme'
+  }
+  return labels[feature] || feature
+}
+
+const getDiscount = () => {
+  const opt = durationOptions.find(o => o.months === duration.value)
+  return opt?.discount || 0
+}
+
+const getDiscountAmount = () => {
+  if (!selectedPkg.value) return 0
+  const base = selectedPkg.value.price_monthly * duration.value
+  return base * (getDiscount() / 100)
+}
+
+const getTotalPrice = () => {
+  if (!selectedPkg.value) return 0
+  const base = selectedPkg.value.price_monthly * duration.value
+  return base - getDiscountAmount()
+}
+
+const getTotalArmor = () => {
+  return Math.floor(getTotalPrice() * ARMOR_RATE)
+}
+
+const selectPackage = (pkg) => {
   if (!user.value) {
     router.push('/login')
     return
   }
+  selectedPkg.value = pkg
+  serverName.value = ''
+  duration.value = 1
+  showModal.value = true
+}
 
-  selectedPlan.value = planType
-  showPurchaseModal.value = true
+const fetchPackages = async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    const res = await fetch('/api/servers/packages')
+    if (!res.ok) throw new Error('Paketler yuklenemedi')
+
+    const data = await res.json()
+    packages.value = data.packages || []
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
 }
 
 const confirmPurchase = async () => {
-  if (!hasEnoughBalance.value) return
+  if (!canPurchase.value || purchasing.value) return
 
   purchasing.value = true
-  try {
-    const period = billingPeriod.value
-    const tlPrice = plans[selectedPlan.value][period].tl
 
-    const response = await fetch('/api/packages/purchase', {
+  try {
+    const res = await fetch('/api/servers/order/package-wallet', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      },
       body: JSON.stringify({
-        plan: selectedPlan.value,
-        period: period,
-        payment_method: paymentMethod.value,
-        amount: paymentMethod.value === 'tl' ? tlPrice : Math.floor(tlPrice * ARMOR_RATE)
+        package_id: selectedPkg.value.id,
+        months: duration.value,
+        server_name: serverName.value.trim(),
+        auto_renew: false,
+        payment_type: paymentMethod.value
       })
     })
 
-    if (response.ok) {
-      alert('Paket basariyla satin alindi!')
-      showPurchaseModal.value = false
-      authStore.fetchUser()
+    const data = await res.json()
+
+    if (res.ok) {
+      alert(`Sunucu basariyla olusturuldu!\n\nSunucu: ${data.order.server_info.name}\nIP: ${data.order.server_info.ip}`)
+      showModal.value = false
+      await authStore.fetchUser()
       router.push('/dashboard')
     } else {
-      const error = await response.json()
-      alert(error.detail || 'Satin alma basarisiz')
+      alert(data.detail || 'Satin alma basarisiz')
     }
   } catch (e) {
-    alert('Bir hata olustu')
+    alert('Bir hata olustu: ' + e.message)
   } finally {
     purchasing.value = false
   }
 }
+
+onMounted(() => {
+  fetchPackages()
+})
 </script>
 
 <style scoped>
-.neon-text {
-  @apply text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-accent;
-}
-
 .text-gradient-primary {
-  @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Balance Badges */
@@ -629,20 +506,13 @@ const confirmPurchase = async () => {
   font-weight: 500;
 }
 
-.balance-badge.tl {
-  color: #10b981;
-}
-
-.balance-badge.armor {
-  color: #f97316;
-}
-
+.balance-badge.tl { color: #10b981; }
+.balance-badge.armor { color: #f97316; }
 .balance-badge.add {
   color: var(--primary-color);
   cursor: pointer;
   text-decoration: none;
 }
-
 .balance-badge.add:hover {
   background: rgba(249, 115, 22, 0.1);
 }
@@ -660,7 +530,7 @@ const confirmPurchase = async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 10px 20px;
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -671,28 +541,117 @@ const confirmPurchase = async () => {
 }
 
 .toggle-btn.active {
-  background: var(--bg-tertiary);
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Game Filter */
+.game-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.game-filter-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.game-filter-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+/* Package Card */
+.package-card {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s;
+}
+
+.package-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-4px);
+}
+
+.package-card.featured {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 30px rgba(249, 115, 22, 0.1);
+}
+
+.package-badge {
+  position: absolute;
+  top: -12px;
+  right: 16px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.package-badge.popular {
+  background: var(--primary-color);
+  color: white;
+}
+
+.package-badge.enterprise {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: white;
+}
+
+.package-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.game-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.game-icon.ag { background: linear-gradient(135deg, #f97316, #ea580c); }
+.game-icon.cs16 { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.game-icon.hldm { background: linear-gradient(135deg, #10b981, #059669); }
+
+.package-name {
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
-.toggle-btn.active.armor {
-  background: rgba(249, 115, 22, 0.1);
-  color: #f97316;
+.game-type-label {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
-/* Pricing Cards */
-.pricing-card.featured {
-  border: 2px solid var(--primary-color);
-}
-
-.price-display {
-  margin-bottom: 8px;
+/* Price */
+.package-price {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .price {
   display: flex;
   align-items: baseline;
-  justify-content: center;
   gap: 4px;
 }
 
@@ -702,23 +661,73 @@ const confirmPurchase = async () => {
 }
 
 .price .amount {
-  font-size: 40px;
+  font-size: 28px;
   font-weight: 700;
+  color: var(--text-primary);
+}
+
+.price.armor .amount {
+  color: #f97316;
 }
 
 .price .currency {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .price .period {
   font-size: 14px;
-  opacity: 0.6;
+  color: var(--text-secondary);
 }
 
 .alt-price {
   font-size: 12px;
   color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Specs */
+.package-specs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.spec-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Features */
+.package-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.feature-item svg {
+  color: #10b981;
+}
+
+.package-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
 }
 
 /* Purchase Button */
@@ -728,73 +737,47 @@ const confirmPurchase = async () => {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 14px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  padding: 12px;
+  background: var(--gradient-primary);
+  border: none;
   border-radius: 10px;
-  color: var(--text-primary);
+  color: white;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .purchase-btn:hover {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: var(--bg-primary);
-}
-
-.purchase-btn.primary {
-  background: var(--gradient-primary);
-  border: none;
-  color: var(--bg-primary);
-}
-
-.purchase-btn.primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
 }
 
-/* Rate Info Banner */
-.rate-info-banner {
-  background: var(--bg-secondary);
-  border: 1px solid rgba(249, 115, 22, 0.3);
-  border-radius: 12px;
-  padding: 16px 24px;
-  margin-bottom: 40px;
+.btn-retry {
+  padding: 10px 20px;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
 }
 
-.rate-content {
+/* Rate Info */
+.rate-info {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 12px;
   color: var(--primary-color);
 }
 
-.rate-content div {
-  flex: 1;
-}
-
-.rate-content strong {
-  display: block;
-  font-size: 16px;
-}
-
-.rate-content span {
-  font-size: 13px;
-  opacity: 0.8;
-}
-
-.rate-link {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
-  background: var(--primary-color);
-  color: var(--bg-primary);
-  border-radius: 8px;
-  font-weight: 500;
-  text-decoration: none;
+.rate-info a {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 /* Modal */
@@ -813,7 +796,9 @@ const confirmPurchase = async () => {
   background: var(--bg-secondary);
   border-radius: 16px;
   width: 100%;
-  max-width: 450px;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
   border: 1px solid var(--border-color);
 }
 
@@ -840,6 +825,9 @@ const confirmPurchase = async () => {
 
 .modal-body {
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .modal-footer {
@@ -850,88 +838,129 @@ const confirmPurchase = async () => {
   border-top: 1px solid var(--border-color);
 }
 
-.btn-primary {
+/* Selected Package */
+.selected-package {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: var(--gradient-primary);
-  border: none;
-  border-radius: 10px;
-  color: var(--bg-primary);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  padding: 12px 24px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-/* Purchase Summary */
-.purchase-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.summary-plan {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  gap: 12px;
   padding: 16px;
   background: var(--bg-tertiary);
   border-radius: 12px;
 }
 
-.summary-plan h4 {
+.selected-package h4 {
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.summary-plan p {
+.selected-package p {
   font-size: 13px;
   color: var(--text-secondary);
 }
 
-.summary-price {
+/* Form */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-input {
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* Duration Options */
+.duration-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.duration-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.duration-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.duration-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.duration-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.duration-discount {
+  font-size: 10px;
+  color: #10b981;
+  margin-top: 2px;
+}
+
+.duration-btn.active .duration-discount {
+  color: rgba(255,255,255,0.9);
+}
+
+/* Price Summary */
+.price-summary {
   padding: 16px;
   background: var(--bg-tertiary);
   border-radius: 12px;
 }
 
-.price-row {
+.summary-row {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
-.price-row.total {
-  border-top: 1px solid var(--border-color);
-  margin-top: 8px;
-  padding-top: 16px;
-  font-weight: 600;
-  font-size: 18px;
-}
-
-.price-row.total .tl {
+.summary-row.discount {
   color: #10b981;
 }
 
-.price-row.total .armor {
-  color: #f97316;
+.summary-row.total {
+  border-top: 1px solid var(--border-color);
+  margin-top: 8px;
+  padding-top: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
+.summary-row.total .tl { color: #10b981; }
+.summary-row.total .armor { color: #f97316; }
+
+/* Balance Check */
 .balance-check {
   display: flex;
   justify-content: space-between;
@@ -949,7 +978,7 @@ const confirmPurchase = async () => {
   color: #ef4444;
 }
 
-.insufficient-warning {
+.warning-box {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -961,36 +990,37 @@ const confirmPurchase = async () => {
   font-size: 14px;
 }
 
-.insufficient-warning a {
+.warning-box a {
   margin-left: auto;
   color: var(--primary-color);
   font-weight: 500;
 }
 
-.spin {
-  animation: spin 1s linear infinite;
+/* Buttons */
+.btn-cancel {
+  padding: 12px 24px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  cursor: pointer;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.btn-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-slide-down {
-  animation: slideDown 0.6s ease-out;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.6s ease-out 0.2s backwards;
+.btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
