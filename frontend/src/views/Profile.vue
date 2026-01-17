@@ -135,8 +135,8 @@
 
       <div v-else-if="activeTab === 'security'">
         <div class="space-y-6">
-          <!-- Change Password -->
-          <BaseCard variant="glass">
+          <!-- Change Password - Only show for non-OAuth users -->
+          <BaseCard v-if="!isOAuthUser" variant="glass">
             <template #title>Şifre Değiştir</template>
 
             <form @submit.prevent="changePassword" class="space-y-4">
@@ -170,6 +170,18 @@
                 </BaseButton>
               </div>
             </form>
+          </BaseCard>
+
+          <!-- OAuth User Notice -->
+          <BaseCard v-else variant="glass">
+            <template #title>Şifre Yönetimi</template>
+            <div class="alert alert-info">
+              <InfoIcon class="w-5 h-5" />
+              <span>
+                Steam veya Discord ile giriş yaptığınız için şifre belirlemeniz gerekmemektedir.
+                Hesabınız OAuth sağlayıcısı üzerinden güvence altındadır.
+              </span>
+            </div>
           </BaseCard>
 
           <!-- Two-Factor Authentication -->
@@ -259,18 +271,35 @@
             <!-- Notifications -->
             <div>
               <h3 class="font-semibold mb-4">Bildirimler</h3>
+
+              <!-- Email warning for users without email -->
+              <div v-if="!hasEmail" class="alert alert-warning mb-4">
+                <AlertCircleIcon class="w-5 h-5" />
+                <span>E-posta bildirimleri için önce profil sayfanızdan e-posta adresinizi eklemeniz gerekmektedir.</span>
+              </div>
+
               <div class="space-y-3">
-                <label class="flex items-center justify-between cursor-pointer">
+                <label class="flex items-center justify-between cursor-pointer" :class="{ 'opacity-50': !hasEmail }">
                   <span class="text-sm">E-posta bildirimleri</span>
-                  <input type="checkbox" v-model="settings.email_notifications" class="toggle toggle-primary" />
+                  <input
+                    type="checkbox"
+                    v-model="settings.email_notifications"
+                    class="toggle toggle-primary"
+                    :disabled="!hasEmail"
+                  />
                 </label>
                 <label class="flex items-center justify-between cursor-pointer">
                   <span class="text-sm">Sunucu uyarıları</span>
                   <input type="checkbox" v-model="settings.server_alerts" class="toggle toggle-primary" />
                 </label>
-                <label class="flex items-center justify-between cursor-pointer">
-                  <span class="text-sm">Güvenlik bildirimleri</span>
-                  <input type="checkbox" v-model="settings.security_alerts" class="toggle toggle-primary" />
+                <label class="flex items-center justify-between cursor-pointer" :class="{ 'opacity-50': !hasEmail }">
+                  <span class="text-sm">Güvenlik bildirimleri (E-posta)</span>
+                  <input
+                    type="checkbox"
+                    v-model="settings.security_alerts"
+                    class="toggle toggle-primary"
+                    :disabled="!hasEmail"
+                  />
                 </label>
               </div>
             </div>
@@ -376,6 +405,15 @@ import { tr } from 'date-fns/locale'
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
 
+// Check if user logged in via OAuth (Steam, Discord, etc.) - they don't have a password
+const isOAuthUser = computed(() => {
+  const provider = user.value?.auth_provider || user.value?.oauth_provider
+  return provider && provider !== 'local' && provider !== 'email'
+})
+
+// Check if user has email set for email-related features
+const hasEmail = computed(() => !!user.value?.email)
+
 const activeTab = ref('profile')
 const saving = ref(false)
 const savingPassword = ref(false)
@@ -443,6 +481,7 @@ const backupCodes = ref([
 ])
 
 const formatTime = (timestamp) => {
+  if (!timestamp) return ''
   return formatDistanceToNow(new Date(timestamp), {
     addSuffix: true,
     locale: tr
@@ -450,6 +489,7 @@ const formatTime = (timestamp) => {
 }
 
 const formatDate = (timestamp) => {
+  if (!timestamp) return ''
   return format(new Date(timestamp), 'dd MMMM yyyy', { locale: tr })
 }
 

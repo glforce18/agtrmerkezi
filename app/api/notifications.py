@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.security import get_current_user
 from app.models.connection import get_db
 from app.models.database import User, UserRole
+from app.services.email import email_service
 
 router = APIRouter()
 
@@ -201,7 +202,7 @@ async def create_notification(
 ):
     """Bildirim oluştur"""
     ensure_notification_tables(db)
-    
+
     # Icon belirle
     if not icon:
         icon_map = {
@@ -209,7 +210,7 @@ async def create_notification(
             "payment": "💰", "server": "🖥️", "forum": "💬", "system": "🔧"
         }
         icon = icon_map.get(notification_type, "📢")
-    
+
     # Veritabanına kaydet
     db.execute(text("""
         INSERT INTO notifications (user_id, title, message, notification_type, action_url, action_text, icon)
@@ -219,10 +220,27 @@ async def create_notification(
         "type": notification_type, "url": action_url, "text": action_text, "icon": icon
     })
     db.commit()
-    
+
     # Push bildirimi
     if send_push:
         await send_push_notification(db, user_id, title, message, action_url)
+
+    # Email bildirimi - sadece kullanıcının emaili varsa gönder
+    if send_email:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user and user.email:
+            try:
+                await email_service.send_notification_email(
+                    to=user.email,
+                    username=user.username,
+                    title=title,
+                    message=message or "",
+                    action_url=action_url,
+                    action_text=action_text
+                )
+            except Exception:
+                # Email gönderimi başarısız olsa bile bildirim oluşturulmuş durumda
+                pass
 
 
 async def create_notification_for_users(

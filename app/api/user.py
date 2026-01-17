@@ -257,12 +257,21 @@ async def update_profile(data: ProfileUpdateRequest, request: Request, db: Sessi
 @router.post("/change-password")
 async def change_password(data: PasswordChangeRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
     """Sifre degistir"""
+    # OAuth kullanıcıları (Steam, Discord) şifre değiştiremez
+    auth_provider = getattr(current_user, 'auth_provider', None) or getattr(current_user, 'oauth_provider', None)
+    if auth_provider and auth_provider not in ('local', 'email', None):
+        raise HTTPException(status_code=400, detail="OAuth ile giris yaptiginiz icin sifre degistiremezsiniz")
+
+    # OAuth kullanıcılarının password_hash'i olmayabilir
+    if not current_user.password_hash:
+        raise HTTPException(status_code=400, detail="Hesabinizda sifre tanimli degil")
+
     if not verify_password(data.current_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="Mevcut sifre hatali")
-    
+
     if data.new_password != data.confirm_password:
         raise HTTPException(status_code=400, detail="Yeni sifreler eslesmiyor")
-    
+
     if data.current_password == data.new_password:
         raise HTTPException(status_code=400, detail="Yeni sifre eskisiyle ayni olamaz")
     

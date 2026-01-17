@@ -185,6 +185,7 @@ const getActivityIcon = (type) => {
 }
 
 const formatTime = (date) => {
+  if (!date) return ''
   return formatDistanceToNow(new Date(date), { addSuffix: true, locale: tr })
 }
 

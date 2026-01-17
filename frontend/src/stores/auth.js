@@ -72,7 +72,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await authAPI.logout()
     } catch (err) {
-      console.error('Logout error:', err)
+      // Logout error - continue with local cleanup
     } finally {
       token.value = null
       user.value = null
@@ -89,7 +89,6 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response
       return true
     } catch (err) {
-      console.error('Fetch user error:', err)
       // Token invalid, clear auth
       token.value = null
       user.value = null
@@ -107,7 +106,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('access_token', response.access_token)
       return true
     } catch (err) {
-      console.error('Token refresh error:', err)
+      // Token refresh failed
       return false
     }
   }
