@@ -253,7 +253,7 @@ const userMenuItems = computed(() => {
     { path: '/servers', label: 'Sunucularim', icon: Server }
   ]
 
-  if (user.value?.role === 'admin') {
+  if (['admin', 'superadmin'].includes(user.value?.role)) {
     items.push({ path: '/admin', label: 'Admin Panel', icon: Shield })
   }
 

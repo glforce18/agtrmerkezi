@@ -9,7 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref(null)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
-  const isAdmin = computed(() => user.value?.role === 'admin')
+  const isAdmin = computed(() => ['admin', 'superadmin'].includes(user.value?.role))
   const balanceReal = computed(() => user.value?.balance || 0)
   const balanceCoin = computed(() => user.value?.balance_coin || 0)
 

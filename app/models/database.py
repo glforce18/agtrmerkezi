@@ -294,10 +294,115 @@ def get_database_stats() -> dict:
 # ==================== ENUMS ====================
 
 class UserRole(enum.Enum):
+    """Legacy role enum - use Role table for new system"""
     USER = "user"
     MODERATOR = "moderator"
     ADMIN = "admin"
     SUPERADMIN = "superadmin"
+
+
+# ==================== ROLE & PERMISSION SYSTEM ====================
+
+class Role(Base):
+    """Discord-like role system"""
+    __tablename__ = "roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, nullable=False)  # "sunucu_sahibi", "bas_admin", etc.
+    display_name = Column(String(100), nullable=False)  # "Sunucu Sahibi", "Baş Admin"
+    color = Column(String(7), default="#ffffff")  # Hex color for display
+    icon = Column(String(50))  # Icon name or emoji
+    priority = Column(Integer, default=0)  # Higher = more important (for display order)
+
+    # Permissions (JSON for flexibility)
+    permissions = Column(JSON, default=dict)
+
+    # System flags
+    is_default = Column(Boolean, default=False)  # Given to all new users
+    is_system = Column(Boolean, default=False)  # Cannot be deleted (admin, user)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user_roles = relationship("UserRoleAssignment", back_populates="role", cascade="all, delete-orphan")
+
+
+class UserRoleAssignment(Base):
+    """User to Role mapping - can assign by user_id, steam_id, or username"""
+    __tablename__ = "user_role_assignments"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # Can assign by any of these
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    steam_id = Column(String(50), nullable=True, index=True)  # Assign by Steam ID
+    username_pattern = Column(String(100), nullable=True)  # Assign by username (supports wildcards)
+
+    role_id = Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
+
+    assigned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    assigned_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)  # Optional expiration
+    reason = Column(String(255))  # Why this role was assigned
+
+    # Relationships
+    role = relationship("Role", back_populates="user_roles")
+    user = relationship("User", foreign_keys=[user_id], backref="role_assignments")
+    assigner = relationship("User", foreign_keys=[assigned_by])
+
+    __table_args__ = (
+        Index('ix_user_role_steam', 'steam_id'),
+        Index('ix_user_role_user', 'user_id'),
+    )
+
+
+# Default permissions structure
+DEFAULT_PERMISSIONS = {
+    # Admin Panel
+    "admin.access": False,
+    "admin.users.view": False,
+    "admin.users.edit": False,
+    "admin.users.ban": False,
+    "admin.users.delete": False,
+    "admin.roles.manage": False,
+    "admin.servers.view": False,
+    "admin.servers.edit": False,
+    "admin.servers.delete": False,
+    "admin.payments.view": False,
+    "admin.payments.manage": False,
+    "admin.settings.view": False,
+    "admin.settings.edit": False,
+    "admin.announcements.manage": False,
+
+    # Forum
+    "forum.post": True,
+    "forum.edit_own": True,
+    "forum.delete_own": True,
+    "forum.edit_any": False,
+    "forum.delete_any": False,
+    "forum.pin": False,
+    "forum.lock": False,
+    "forum.moderate": False,
+
+    # Servers
+    "servers.create": False,
+    "servers.manage_own": True,
+    "servers.manage_any": False,
+
+    # Shop
+    "shop.purchase": True,
+    "shop.discount": False,  # Gets discounts
+
+    # Jackpot
+    "jackpot.play": True,
+    "jackpot.high_limit": False,  # Can bet higher amounts
+
+    # Special
+    "bypass_cooldowns": False,
+    "see_hidden": False,
+    "impersonate": False,
+}
 
 
 class UserStatus(enum.Enum):

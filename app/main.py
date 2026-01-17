@@ -59,11 +59,13 @@ from app.models.database import (
     ForumTopic,
     GameServer,
     GameType,
+    Role,
     ServerPackage,
     ServerStatus,
     SiteSettings,
     User,
     UserRole,
+    UserRoleAssignment,
     UserStatus,
 )
 
@@ -198,6 +200,11 @@ def create_default_data():
             db.add(site_settings)
             print("  -> Site ayarlari olusturuldu")
 
+        # Varsayilan roller
+        from app.api.roles import initialize_default_roles
+        initialize_default_roles(db)
+        print("  -> Varsayilan roller olusturuldu")
+
         db.commit()
 
     except Exception as e:
@@ -268,6 +275,10 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(user.router, prefix="/api/user", tags=["User"])
 app.include_router(wallet.router, prefix="/api/wallet", tags=["Wallet"])
 app.include_router(games.router, prefix="/api/games", tags=["Games"])
+
+# Role Management
+from app.api import roles
+app.include_router(roles.router, prefix="/api/roles", tags=["Roles"])
 app.include_router(servers.router, prefix="/api/servers", tags=["Game Servers"])
 app.include_router(forum.router, prefix="/api/forum", tags=["Forum"])
 app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
