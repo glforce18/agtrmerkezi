@@ -111,7 +111,7 @@ def ensure_discord_tables(db: Session):
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""))
         
         db.commit()
-    except:
+    except Exception:
         db.rollback()
 
 

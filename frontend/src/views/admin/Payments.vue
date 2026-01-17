@@ -377,7 +377,7 @@ const fetchPayments = async () => {
       totalPages.value = Math.ceil(totalPayments.value / perPage)
     }
   } catch (error) {
-    console.error('Fetch payments error:', error)
+    // Fetch error - will show empty state
   }
   loading.value = false
 }
@@ -392,7 +392,7 @@ const fetchStats = async () => {
       pendingCount.value = data.pending_payments || 0
     }
   } catch (error) {
-    console.error('Fetch stats error:', error)
+    // Stats fetch error - will show zero values
   }
 }
 
@@ -485,7 +485,6 @@ const approvePayment = async (payment) => {
       alert(data.detail || 'Onaylama başarısız')
     }
   } catch (error) {
-    console.error('Approve error:', error)
     alert('Bir hata oluştu')
   }
 }
@@ -521,7 +520,6 @@ const confirmReject = async () => {
       alert(data.detail || 'Reddetme başarısız')
     }
   } catch (error) {
-    console.error('Reject error:', error)
     alert('Bir hata oluştu')
   }
 }

@@ -258,7 +258,7 @@ const fetchPackages = async () => {
       packages.value = data.packages || []
     }
   } catch (error) {
-    console.error('Fetch packages error:', error)
+    // Fetch error - will show empty state
   }
   loading.value = false
 }
@@ -340,7 +340,6 @@ const savePackage = async () => {
       alert(data.detail || 'Kaydetme başarısız')
     }
   } catch (error) {
-    console.error('Save package error:', error)
     alert('Bir hata oluştu')
   }
   saving.value = false
@@ -355,7 +354,7 @@ const deletePackage = async (pkg) => {
       packages.value = packages.value.filter(p => p.id !== pkg.id)
     }
   } catch (error) {
-    console.error('Delete package error:', error)
+    // Delete error - package remains in list
   }
 }
 
@@ -371,7 +370,7 @@ const togglePackage = async (pkg) => {
       pkg.is_active = !pkg.is_active
     }
   } catch (error) {
-    console.error('Toggle package error:', error)
+    // Toggle error - state unchanged
   }
 }
 

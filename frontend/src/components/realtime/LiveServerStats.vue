@@ -96,13 +96,13 @@ function formatUptime(seconds) {
 }
 
 .status-badge.running {
-  background: #10b98144;
-  color: #10b981;
+  background: rgba(16, 185, 129, 0.25);
+  color: var(--success-color, #10b981);
 }
 
 .status-badge.offline {
-  background: #ef444444;
-  color: #ef4444;
+  background: rgba(239, 68, 68, 0.25);
+  color: var(--error-color, #ef4444);
 }
 
 .loading, .no-data {

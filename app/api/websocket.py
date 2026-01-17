@@ -222,7 +222,7 @@ async def notifications_ws(websocket: WebSocket):
                         
                         # Okunmamış bildirimleri gönder
                         await send_unread_notifications(websocket, int(user_id))
-        except:
+        except Exception:
             pass
         
         # Bağlantıyı açık tut

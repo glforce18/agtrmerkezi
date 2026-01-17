@@ -154,7 +154,7 @@ const fetchDashboardData = async () => {
       stats.value[3].value = data.pending_payments?.toString() || '0'
     }
   } catch (error) {
-    console.error('Dashboard data fetch error:', error)
+    // Dashboard fetch error - will show zero values
   }
 
   try {
@@ -164,7 +164,7 @@ const fetchDashboardData = async () => {
       pendingPayments.value = data.payments || []
     }
   } catch (error) {
-    console.error('Pending payments fetch error:', error)
+    // Pending payments fetch error - will show empty list
   }
 
   loading.value = false
@@ -202,7 +202,7 @@ const approvePayment = async (id) => {
       stats.value[3].value = (parseInt(stats.value[3].value) - 1).toString()
     }
   } catch (error) {
-    console.error('Approve error:', error)
+    // Approve error - payment remains in list
   }
 }
 
@@ -221,7 +221,7 @@ const rejectPayment = async (id) => {
       stats.value[3].value = (parseInt(stats.value[3].value) - 1).toString()
     }
   } catch (error) {
-    console.error('Reject error:', error)
+    // Reject error - payment remains in list
   }
 }
 

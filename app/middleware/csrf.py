@@ -63,7 +63,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 try:
                     form = await request.form()
                     header_token = form.get(self.CSRF_FORM_FIELD)
-                except:
+                except Exception:
                     pass
         
         # Token kontrolü

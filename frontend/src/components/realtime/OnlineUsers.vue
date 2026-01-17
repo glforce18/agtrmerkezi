@@ -180,7 +180,7 @@ onUnmounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #10b981;
+  background: var(--success-color, #10b981);
   animation: pulse 2s infinite;
 }
 

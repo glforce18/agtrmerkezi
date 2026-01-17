@@ -182,16 +182,16 @@ async def get_live_servers(db: Session = Depends(get_db)):
             if s.current_players != info.player_count or s.current_map != info.map_name:
                 s.current_players = info.player_count
                 s.current_map = info.map_name
-        except:
+        except Exception:
             pass
         
         result.append(server_data)
     
     try:
         db.commit()
-    except:
+    except Exception:
         db.rollback()
-    
+
     return {"servers": result, "total": len(result)}
 
 
@@ -386,7 +386,7 @@ async def get_server_status(server_id: int, db: Session = Depends(get_db), curre
             shell=True, capture_output=True
         )
         status["screen_running"] = result.returncode == 0
-    except:
+    except Exception:
         pass
     
     # A2S sorgusu (oyuncu sayisi, map, hostname)
@@ -397,7 +397,7 @@ async def get_server_status(server_id: int, db: Session = Depends(get_db), curre
         status["players"] = info.player_count
         status["map"] = info.map_name
         status["hostname"] = info.server_name
-    except:
+    except Exception:
         pass
     
     # Gercek durumu belirle
@@ -703,7 +703,7 @@ async def update_config(server_id: int, data: ConfigUpdateRequest, request: Requ
     try:
         if config_path.exists():
             old_content = config_path.read_text(encoding='utf-8', errors='ignore')
-    except:
+    except Exception:
         pass
     
     # Korumali ayarlari kontrol et - yeni icerikte degistirilmeye calisilmis mi?
@@ -799,7 +799,9 @@ async def list_files(server_id: int, path: str = "", db: Session = Depends(get_d
         target_path = target_path.resolve()
         if not str(target_path).startswith(str(base_path.resolve())):
             raise HTTPException(status_code=403, detail="Erisim izni yok")
-    except:
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(status_code=403, detail="Gecersiz yol")
     
     if not target_path.exists():
@@ -863,7 +865,9 @@ async def view_file(server_id: int, path: str, db: Session = Depends(get_db), cu
         file_path = file_path.resolve()
         if not str(file_path).startswith(str(base_path.resolve())):
             raise HTTPException(status_code=403, detail="Erisim izni yok")
-    except:
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(status_code=403, detail="Gecersiz yol")
     
     if not file_path.exists() or not file_path.is_file():
@@ -1044,7 +1048,7 @@ async def delete_plugin(server_id: int, plugin_id: int, request: Request, db: Se
     if server_plugin.custom_plugin_file:
         try:
             Path(server_plugin.custom_plugin_file).unlink(missing_ok=True)
-        except:
+        except Exception:
             pass
     
     plugin_name = server_plugin.custom_plugin_name

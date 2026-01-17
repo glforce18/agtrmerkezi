@@ -23,7 +23,6 @@ onMounted(async () => {
   const token = route.query.token
   const provider = route.query.provider
 
-  console.log('OAuth callback received, token:', token ? 'present' : 'missing')
 
   if (!token) {
     error.value = 'Token bulunamadı'
@@ -34,11 +33,9 @@ onMounted(async () => {
   try {
     // Token'ı localStorage'a kaydet
     localStorage.setItem('access_token', token)
-    console.log('Token saved to localStorage')
 
     // Kullanıcı bilgilerini doğrudan API'den al
     const userData = await authAPI.me()
-    console.log('User data fetched:', userData)
 
     if (userData && userData.id) {
       // Auth store'u güncelle (Pinia $patch kullan)
@@ -47,7 +44,6 @@ onMounted(async () => {
         user: userData
       })
 
-      console.log('Auth store updated, redirecting to dashboard')
       // Başarılı giriş - dashboard'a yönlendir
       router.push('/dashboard')
     } else {

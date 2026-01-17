@@ -245,7 +245,6 @@ const registerWithOAuth = async (provider) => {
   try {
     window.location.href = `/api/auth/oauth/${provider}`
   } catch (error) {
-    console.error('OAuth error:', error)
     loading.value = false
   }
 }

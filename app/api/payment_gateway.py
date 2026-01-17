@@ -172,8 +172,9 @@ def ensure_payment_tables(db: Session):
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""))
         
         db.commit()
-    except:
+    except Exception as e:
         db.rollback()
+        logger.warning(f"Table creation error (may already exist): {e}")
 
 
 # ============================================================================
@@ -335,7 +336,7 @@ async def create_coupon(
         })
         db.commit()
         return {"success": True, "code": code, "message": "Kupon oluşturuldu"}
-    except:
+    except Exception:
         db.rollback()
         return JSONResponse(status_code=400, content={"success": False, "detail": "Bu kod zaten var"})
 

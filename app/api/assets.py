@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 try:
     from PIL import Image
     PIL_OK = True
-except:
+except ImportError:
     PIL_OK = False
 
 from app.core.security import get_current_user
@@ -73,7 +73,7 @@ def ensure_table(db):
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""))
         db.commit()
-    except:
+    except Exception:
         db.rollback()
 
 
@@ -327,7 +327,7 @@ async def delete_asset(
         if p and os.path.exists(p):
             try:
                 os.remove(p)
-            except:
+            except Exception:
                 pass
     
     # DB'den sil

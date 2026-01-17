@@ -279,7 +279,7 @@ const fetchUsers = async () => {
       totalPages.value = Math.ceil(totalUsers.value / perPage)
     }
   } catch (error) {
-    console.error('Fetch users error:', error)
+    // Fetch error - will show empty state
   }
   loading.value = false
 }
@@ -368,7 +368,7 @@ const saveUser = async () => {
       closeModal()
     }
   } catch (error) {
-    console.error('Save user error:', error)
+    // Save error - modal stays open for retry
   }
 }
 
@@ -381,7 +381,7 @@ const banUser = async (user) => {
       user.is_banned = true
     }
   } catch (error) {
-    console.error('Ban user error:', error)
+    // Ban error - silent fail
   }
 }
 
@@ -392,7 +392,7 @@ const unbanUser = async (user) => {
       user.is_banned = false
     }
   } catch (error) {
-    console.error('Unban user error:', error)
+    // Unban error - silent fail
   }
 }
 

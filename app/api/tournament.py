@@ -155,7 +155,7 @@ def ensure_tournament_tables(db: Session):
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""))
         
         db.commit()
-    except:
+    except Exception:
         db.rollback()
 
 
@@ -396,7 +396,7 @@ async def add_team_member(
         """), {"tid": team_id, "uid": user_id, "role": role})
         db.commit()
         return {"success": True, "message": "Üye eklendi"}
-    except:
+    except Exception:
         return JSONResponse(status_code=400, content={"success": False, "detail": "Bu üye zaten takımda"})
 
 

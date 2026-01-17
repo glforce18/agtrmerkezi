@@ -1035,7 +1035,7 @@ onMounted(async () => {
     const data = await serversAPI.getOne(serverId)
     server.value = data
   } catch (err) {
-    console.error('Failed to load server:', err)
+    // Failed to load server - will show empty state
   }
 })
 
@@ -1044,7 +1044,7 @@ const startServer = async () => {
     await serversAPI.start(serverId)
     if (server.value) server.value.status = 'active'
   } catch (err) {
-    console.error('Failed to start server:', err)
+    // Failed to start server - status unchanged
   }
 }
 
@@ -1053,7 +1053,7 @@ const stopServer = async () => {
     await serversAPI.stop(serverId)
     if (server.value) server.value.status = 'inactive'
   } catch (err) {
-    console.error('Failed to stop server:', err)
+    // Failed to stop server - status unchanged
   }
 }
 
@@ -1061,7 +1061,7 @@ const restartServer = async () => {
   try {
     await serversAPI.restart(serverId)
   } catch (err) {
-    console.error('Failed to restart server:', err)
+    // Failed to restart server - status unchanged
   }
 }
 

@@ -108,7 +108,7 @@ def ensure_management_tables(db: Session):
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""))
         
         db.commit()
-    except:
+    except Exception:
         db.rollback()
 
 
@@ -249,7 +249,7 @@ async def cleanup_old_backups(db: Session, backup_id: int):
             if os.path.exists(ob[1]):
                 os.remove(ob[1])
             db.execute(text("DELETE FROM server_backups WHERE id = :id"), {"id": ob[0]})
-        except:
+        except Exception:
             pass
     
     db.commit()
@@ -392,7 +392,7 @@ async def get_live_resources(
                 if str(port) in cmdline and ('hlds' in cmdline.lower() or 'srcds' in cmdline.lower()):
                     process = proc
                     break
-            except:
+            except Exception:
                 continue
         
         if process:

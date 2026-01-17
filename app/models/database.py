@@ -281,7 +281,7 @@ def get_database_stats() -> dict:
                     count = result.scalar()
                     stats["tables"][table_name] = count
                     stats["total_rows"] += count
-            except:
+            except Exception:
                 stats["tables"][table_name] = -1
         
         stats["total_tables"] = len(stats["tables"])

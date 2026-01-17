@@ -150,7 +150,7 @@ async def my_payments(
         try:
             status_enum = PaymentStatus(status)
             query = query.filter(Payment.status == status_enum)
-        except:
+        except ValueError:
             pass
     
     total = query.count()

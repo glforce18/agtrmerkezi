@@ -231,7 +231,6 @@ const loginWithOAuth = async (provider) => {
     // Redirect to OAuth endpoint
     window.location.href = `/api/auth/oauth/${provider}`
   } catch (error) {
-    console.error('OAuth error:', error)
     loading.value = false
   }
 }

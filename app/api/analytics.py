@@ -71,7 +71,7 @@ def ensure_analytics_tables(db: Session):
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""))
         
         db.commit()
-    except:
+    except Exception:
         db.rollback()
 
 
@@ -122,7 +122,7 @@ async def get_dashboard(
             SELECT COALESCE(SUM(amount), 0) FROM payment_transactions 
             WHERE status = 'success' AND completed_at > :month
         """), {"month": month_ago}).fetchone()[0])
-    except:
+    except Exception:
         dashboard["revenue_today"] = 0
         dashboard["revenue_month"] = 0
     
@@ -135,7 +135,7 @@ async def get_dashboard(
         dashboard["forum_posts_today"] = db.execute(text(
             "SELECT COUNT(*) FROM forum_replies WHERE created_at > :today"
         ), {"today": today}).fetchone()[0]
-    except:
+    except Exception:
         dashboard["forum_topics_today"] = 0
         dashboard["forum_posts_today"] = 0
     
@@ -144,7 +144,7 @@ async def get_dashboard(
         dashboard["active_players"] = db.execute(text(
             "SELECT COALESCE(SUM(current_players), 0) FROM game_servers WHERE status = 'online'"
         )).fetchone()[0]
-    except:
+    except Exception:
         dashboard["active_players"] = 0
     
     return {"success": True, "dashboard": dashboard}
@@ -182,7 +182,7 @@ async def get_dashboard_charts(
             GROUP BY DATE(completed_at) ORDER BY day
         """), {"since": since}).fetchall()
         charts["revenue_by_day"] = [{"date": str(r[0]), "amount": float(r[1])} for r in rows]
-    except:
+    except Exception:
         charts["revenue_by_day"] = []
     
     # Sunucu durumu dağılımı
@@ -448,7 +448,7 @@ async def export_revenue(
             WHERE pt.status = 'success' AND pt.completed_at BETWEEN :start AND :end
             ORDER BY pt.completed_at DESC
         """), {"start": start, "end": end}).fetchall()
-    except:
+    except Exception:
         rows = []
     
     if format == "csv":

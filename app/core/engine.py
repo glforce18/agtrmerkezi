@@ -84,7 +84,7 @@ class SelfHealer:
             if p.exists():
                 try:
                     os.chmod(p, 0o755)
-                except:
+                except Exception:
                     pass
     
     def run_all(self) -> List[str]:
@@ -118,7 +118,7 @@ class HealthChecker:
             r = redis.Redis(host="127.0.0.1", port=6379, socket_timeout=2)
             r.ping()
             return {"status": "healthy"}
-        except:
+        except Exception:
             return {"status": "degraded", "message": "Redis kullanılamıyor"}
     
     async def check_disk(self):
@@ -129,7 +129,7 @@ class HealthChecker:
             percent = (used / total) * 100
             status = "healthy" if percent < 80 else "warning" if percent < 90 else "critical"
             return {"status": status, "percent": round(percent, 2), "free_gb": round(free/(1024**3), 2)}
-        except:
+        except Exception:
             return {"status": "unknown"}
     
     async def full_check(self, db=None):

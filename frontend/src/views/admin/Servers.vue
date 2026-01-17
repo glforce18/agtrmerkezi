@@ -299,7 +299,7 @@ const fetchServers = async () => {
       totalPages.value = Math.ceil(totalServers.value / perPage)
     }
   } catch (error) {
-    console.error('Fetch servers error:', error)
+    // Fetch error - will show empty state
   }
   loading.value = false
 }
@@ -360,7 +360,7 @@ const restartServer = async (server) => {
       alert('Sunucu yeniden başlatılıyor...')
     }
   } catch (error) {
-    console.error('Restart server error:', error)
+    // Restart error - silent fail
   }
 }
 
@@ -374,7 +374,7 @@ const deleteServer = async (server) => {
       totalServers.value--
     }
   } catch (error) {
-    console.error('Delete server error:', error)
+    // Delete error - server remains in list
   }
 }
 

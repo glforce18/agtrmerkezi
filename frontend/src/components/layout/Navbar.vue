@@ -359,8 +359,8 @@ onUnmounted(() => {
 }
 
 .nav-link-active {
-  color: #f97316 !important;
-  background-color: rgba(249, 115, 22, 0.1) !important;
+  color: var(--primary-color, #f97316);
+  background-color: rgba(249, 115, 22, 0.1);
 }
 
 /* Search Button Styles */

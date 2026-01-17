@@ -449,7 +449,7 @@ async def upload_avatar(request: Request, file: UploadFile = File(...), db: Sess
         if old_upload_path.exists():
             try:
                 old_upload_path.unlink()
-            except:
+            except Exception:
                 pass
 
         # Yeni format (/static/images/avatars/...)
@@ -458,7 +458,7 @@ async def upload_avatar(request: Request, file: UploadFile = File(...), db: Sess
             if old_static_path.exists():
                 try:
                     old_static_path.unlink()
-                except:
+                except Exception:
                     pass
 
     # DB'ye kaydet (static/images'e gore relative path)
@@ -491,7 +491,7 @@ async def delete_avatar(request: Request, db: Session = Depends(get_db), current
     if old_upload_path.exists():
         try:
             old_upload_path.unlink()
-        except:
+        except Exception:
             pass
 
     # Yeni format: /static/images/avatars/...
@@ -504,7 +504,7 @@ async def delete_avatar(request: Request, db: Session = Depends(get_db), current
                 webp_path = static_path.with_suffix('.webp')
                 if webp_path.exists():
                     webp_path.unlink()
-            except:
+            except Exception:
                 pass
 
     old_avatar = current_user.avatar

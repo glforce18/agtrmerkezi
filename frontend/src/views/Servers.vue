@@ -322,7 +322,7 @@ onMounted(async () => {
     const data = await serversAPI.getAll()
     servers.value = data.items || []
   } catch (err) {
-    console.error('Failed to load servers:', err)
+    // Failed to load servers - will show empty state
   } finally {
     loading.value = false
   }
@@ -336,7 +336,7 @@ const startServer = async (serverId) => {
     const server = servers.value.find(s => s.id === serverId)
     if (server) server.status = 'active'
   } catch (err) {
-    console.error('Failed to start server:', err)
+    // Failed to start server - status unchanged
   }
 }
 
@@ -347,7 +347,7 @@ const stopServer = async (serverId) => {
     const server = servers.value.find(s => s.id === serverId)
     if (server) server.status = 'inactive'
   } catch (err) {
-    console.error('Failed to stop server:', err)
+    // Failed to stop server - status unchanged
   }
 }
 
@@ -355,7 +355,7 @@ const restartServer = async (serverId) => {
   try {
     await serversAPI.restart(serverId)
   } catch (err) {
-    console.error('Failed to restart server:', err)
+    // Failed to restart server - status unchanged
   }
 }
 </script>

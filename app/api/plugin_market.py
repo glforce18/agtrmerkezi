@@ -160,7 +160,7 @@ def ensure_plugin_tables(db: Session):
         """))
         
         db.commit()
-    except:
+    except Exception:
         db.rollback()
 
 
@@ -534,7 +534,7 @@ async def add_review(
         
         db.commit()
         return {"success": True, "message": "Değerlendirme eklendi"}
-    except:
+    except Exception:
         return JSONResponse(status_code=400, content={"success": False, "detail": "Zaten değerlendirme yapmışsınız"})
 
 

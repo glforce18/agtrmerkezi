@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 try:
     from app.core.engine import healer, health_checker, logger
-except:
+except ImportError:
     logger = healer = health_checker = None
 
 from app.models.connection import get_db

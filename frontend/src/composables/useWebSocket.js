@@ -23,6 +23,7 @@ export function useWebSocket(endpoint, options = {}) {
   const reconnectAttempts = ref(0)
   const messageQueue = ref([])
   const lastHeartbeat = ref(null)
+  const shouldReconnect = ref(reconnect) // Track reconnect state separately
 
   let heartbeatTimer = null
   let reconnectTimer = null
@@ -43,13 +44,13 @@ export function useWebSocket(endpoint, options = {}) {
     }
 
     const url = `${WS_BASE_URL}${endpoint}`
-    console.log('Connecting to WebSocket:', url)
+    // Debug: WebSocket connecting
 
     try {
       ws.value = new WebSocket(url)
 
       ws.value.onopen = () => {
-        console.log('WebSocket connected:', endpoint)
+        // Debug: WebSocket connected
         isConnected.value = true
         reconnectAttempts.value = 0
 
@@ -90,16 +91,16 @@ export function useWebSocket(endpoint, options = {}) {
       }
 
       ws.value.onclose = (event) => {
-        console.log('WebSocket closed:', endpoint, event.code, event.reason)
+        // Debug: WebSocket closed
         isConnected.value = false
         stopHeartbeat()
 
         if (onClose) onClose(event)
 
         // Attempt reconnect
-        if (reconnect && reconnectAttempts.value < maxReconnectAttempts) {
+        if (shouldReconnect.value && reconnectAttempts.value < maxReconnectAttempts) {
           reconnectAttempts.value++
-          console.log(`Reconnecting... (attempt ${reconnectAttempts.value}/${maxReconnectAttempts})`)
+          // Debug: Reconnecting... (attempt ${reconnectAttempts.value}/${maxReconnectAttempts})`)
 
           reconnectTimer = setTimeout(() => {
             connect()
@@ -120,7 +121,7 @@ export function useWebSocket(endpoint, options = {}) {
 
   // Disconnect from WebSocket
   function disconnect() {
-    reconnect = false // Prevent auto-reconnect
+    shouldReconnect.value = false // Prevent auto-reconnect
     stopHeartbeat()
 
     if (reconnectTimer) {

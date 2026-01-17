@@ -150,7 +150,7 @@ onMounted(() => {
   position: absolute;
   top: 4px;
   right: 4px;
-  background: #ef4444;
+  background: var(--error-color, #ef4444);
   color: white;
   border-radius: 10px;
   padding: 2px 6px;

@@ -364,7 +364,7 @@ const fetchSettings = async () => {
       Object.assign(settings, data)
     }
   } catch (error) {
-    console.error('Fetch settings error:', error)
+    // Fetch error - will use default values
   }
 }
 
@@ -384,7 +384,6 @@ const saveSettings = async () => {
       alert(data.detail || 'Kaydetme başarısız')
     }
   } catch (error) {
-    console.error('Save settings error:', error)
     alert('Bir hata oluştu')
   }
   saving.value = false
@@ -402,7 +401,6 @@ const testEmail = async () => {
       alert('E-posta gönderilemedi')
     }
   } catch (error) {
-    console.error('Test email error:', error)
     alert('Bir hata oluştu')
   }
 }

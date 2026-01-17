@@ -158,7 +158,7 @@ def ensure_social_tables(db: Session):
         """))
         
         db.commit()
-    except:
+    except Exception:
         db.rollback()
 
 
@@ -501,7 +501,7 @@ async def create_clan(
         await grant_achievement(db, current_user.id, "clan_founder")
         
         return {"success": True, "clan_id": clan_id, "message": "Klan oluşturuldu"}
-    except:
+    except Exception:
         db.rollback()
         return JSONResponse(status_code=400, content={"success": False, "detail": "Bu isim veya etiket zaten kullanılıyor"})
 

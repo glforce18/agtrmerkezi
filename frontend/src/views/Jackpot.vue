@@ -296,7 +296,7 @@ const fetchCurrentRound = async () => {
       }
     }
   } catch (e) {
-    console.error('Round fetch error:', e)
+    // Error fetching round data - silently fail
   }
 }
 
@@ -307,7 +307,7 @@ const fetchHistory = async () => {
       recentRounds.value = await res.json()
     }
   } catch (e) {
-    console.error('History fetch error:', e)
+    // Error fetching history - silently fail
   }
 }
 
@@ -333,7 +333,6 @@ const placeBet = async () => {
       alert(error.detail || 'Bahis yapılamadı')
     }
   } catch (e) {
-    console.error('Bet error:', e)
     alert('Bahis yapılırken hata oluştu')
   } finally {
     betting.value = false

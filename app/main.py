@@ -134,7 +134,7 @@ async def lifespan(app: FastAPI):
         from app.tasks.scheduler import task_scheduler
         task_scheduler.stop()
         print("[OK] Scheduler durduruldu")
-    except:
+    except Exception:
         pass
 
     print("AGTR Merkezi kapatiliyor...")
