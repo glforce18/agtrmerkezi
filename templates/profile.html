@@ -224,7 +224,7 @@
 
 .profile-cover {
     height: 150px;
-    background: linear-gradient(135deg, #ff6b00, #ff8c00, #ffcc00);
+    background: var(--gradient-primary, linear-gradient(135deg, #ff6b00, #ff8c00, #ffcc00));
     position: relative;
 }
 
@@ -260,7 +260,7 @@
 }
 
 .profile-status.online {
-    background: #00ff88;
+    background: var(--success-color, #10b981);
 }
 
 .profile-status.offline {
@@ -293,7 +293,7 @@
 }
 
 .badge-admin {
-    background: linear-gradient(135deg, #ff6b00, #ff8c00);
+    background: var(--gradient-primary, linear-gradient(135deg, #ff6b00, #ff8c00));
     color: #fff;
 }
 
@@ -341,7 +341,7 @@
 
 .stat-card:hover {
     transform: translateY(-4px);
-    border-color: #ff6b00;
+    border-color: var(--primary-color);
 }
 
 .stat-icon {
@@ -352,7 +352,7 @@
 .stat-value {
     font-size: 28px;
     font-weight: 700;
-    color: #ff6b00;
+    color: var(--primary-color);
     font-family: var(--font-display);
 }
 
@@ -392,7 +392,7 @@
 }
 
 .tab-btn.active {
-    background: #ff6b00;
+    background: var(--primary-color);
     color: #fff;
 }
 
@@ -502,11 +502,11 @@
 }
 
 .server-status.running {
-    background: #00ff88;
+    background: var(--success-color, #10b981);
 }
 
 .server-status.stopped {
-    background: #ff3366;
+    background: var(--danger-color, #ef4444);
 }
 
 .server-info {
@@ -550,7 +550,7 @@
 }
 
 .achievement-card.unlocked {
-    border-color: #ff6b00;
+    border-color: var(--primary-color);
 }
 
 .achievement-icon {
@@ -574,7 +574,7 @@
 }
 
 .achievement-date {
-    color: #ff6b00;
+    color: var(--primary-color);
     font-size: 12px;
 }
 
