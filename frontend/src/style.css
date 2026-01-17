@@ -118,6 +118,94 @@
   [data-theme="agtr_light"] ::-webkit-scrollbar-thumb:hover {
     background: var(--gaming-orange);
   }
+
+  /* ===== DARK THEME INPUT OVERRIDES ===== */
+  [data-theme="agtr_dark"] .input,
+  [data-theme="agtr_dark"] .input-bordered,
+  [data-theme="agtr_dark"] input[type="text"],
+  [data-theme="agtr_dark"] input[type="password"],
+  [data-theme="agtr_dark"] input[type="email"],
+  [data-theme="agtr_dark"] input[type="number"],
+  [data-theme="agtr_dark"] input[type="search"],
+  [data-theme="agtr_dark"] textarea,
+  [data-theme="agtr_dark"] select {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+  }
+
+  [data-theme="agtr_dark"] .input::placeholder,
+  [data-theme="agtr_dark"] input::placeholder,
+  [data-theme="agtr_dark"] textarea::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.7;
+  }
+
+  [data-theme="agtr_dark"] .input:focus,
+  [data-theme="agtr_dark"] .input-bordered:focus,
+  [data-theme="agtr_dark"] input:focus,
+  [data-theme="agtr_dark"] textarea:focus,
+  [data-theme="agtr_dark"] select:focus {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--gaming-orange) !important;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+  }
+
+  /* ===== LIGHT THEME INPUT OVERRIDES ===== */
+  [data-theme="agtr_light"] .input,
+  [data-theme="agtr_light"] .input-bordered,
+  [data-theme="agtr_light"] input[type="text"],
+  [data-theme="agtr_light"] input[type="password"],
+  [data-theme="agtr_light"] input[type="email"],
+  [data-theme="agtr_light"] input[type="number"],
+  [data-theme="agtr_light"] input[type="search"],
+  [data-theme="agtr_light"] textarea,
+  [data-theme="agtr_light"] select {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+  }
+
+  [data-theme="agtr_light"] .input::placeholder,
+  [data-theme="agtr_light"] input::placeholder,
+  [data-theme="agtr_light"] textarea::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.7;
+  }
+
+  [data-theme="agtr_light"] .input:focus,
+  [data-theme="agtr_light"] .input-bordered:focus,
+  [data-theme="agtr_light"] input:focus,
+  [data-theme="agtr_light"] textarea:focus,
+  [data-theme="agtr_light"] select:focus {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--gaming-orange) !important;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+  }
+
+  /* ===== LABEL TEXT COLORS ===== */
+  [data-theme="agtr_dark"] .label-text,
+  [data-theme="agtr_dark"] .label-text-alt {
+    color: var(--text-secondary) !important;
+  }
+
+  [data-theme="agtr_light"] .label-text,
+  [data-theme="agtr_light"] .label-text-alt {
+    color: var(--text-secondary) !important;
+  }
+
+  /* ===== CHECKBOX AND RADIO ===== */
+  [data-theme="agtr_dark"] .checkbox {
+    border-color: var(--border-color);
+    background-color: var(--bg-secondary);
+  }
+
+  [data-theme="agtr_dark"] .checkbox:checked {
+    background-color: var(--gaming-orange);
+    border-color: var(--gaming-orange);
+  }
 }
 
 /* Component Layer */
