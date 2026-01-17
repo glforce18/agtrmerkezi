@@ -86,8 +86,17 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       const response = await authAPI.me()
-      user.value = response
-      return true
+      // /auth/check returns { authenticated: true, user: {...} }
+      if (response.authenticated && response.user) {
+        user.value = response.user
+        return true
+      }
+      // Fallback for direct user object
+      if (response.id && response.username) {
+        user.value = response
+        return true
+      }
+      throw new Error('Invalid response')
     } catch (err) {
       // Token invalid, clear auth
       token.value = null
@@ -111,12 +120,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function verify2FA({ token: tempToken, code }) {
+  async function verify2FA({ user_id, code }) {
     loading.value = true
     error.value = null
 
     try {
-      const response = await authAPI.verify2FA({ token: tempToken, code })
+      // Use the 2FA login endpoint
+      const response = await authAPI.login2FA({ user_id, totp_code: code })
 
       const accessToken = response.token || response.access_token
       if (!accessToken) {

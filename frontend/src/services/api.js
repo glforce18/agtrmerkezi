@@ -15,7 +15,7 @@ class ApiError extends Error {
 }
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('access_token')
   return token ? { 'Authorization': `Bearer ${token}` } : {}
 }
 
@@ -142,11 +142,21 @@ export const userApi = {
   disable2FA: (code) => api.post('/auth/2fa/disable', { code }),
 
   // Servers
-  getMyServers: () => api.get('/servers/my'),
-  getServer: (id) => api.get(`/servers/${id}`),
-  createServer: (data) => api.post('/servers', data),
-  updateServer: (id, data) => api.put(`/servers/${id}`, data),
-  controlServer: (id, action) => api.post(`/servers/${id}/${action}`),
+  getMyServers: () => api.get('/my-servers'),
+  getServer: (id) => api.get(`/my-servers/${id}/status`),
+  createServer: (data) => api.post('/servers/create', data),
+  updateServer: (id, data) => api.put(`/my-servers/${id}`, data),
+  controlServer: (id, action) => api.post(`/my-servers/${id}/action`, { action }),
+  getServerPlayers: (id) => api.get(`/my-servers/${id}/players`),
+  getServerResources: (id) => api.get(`/my-servers/${id}/resources`),
+  executeRcon: (id, command) => api.post(`/my-servers/${id}/rcon`, { command }),
+  changeMap: (id, map) => api.post(`/my-servers/${id}/change-map`, { map_name: map }),
+  getServerConfig: (id, configType = 'server.cfg') => api.get(`/my-servers/${id}/config?config_type=${configType}`),
+  saveServerConfig: (id, configType, content) => api.post(`/my-servers/${id}/config`, { config_type: configType, content }),
+  getServerLogs: (id, lines = 100) => api.get(`/my-servers/${id}/logs?lines=${lines}`),
+  getServerPlugins: (id) => api.get(`/my-servers/${id}/plugins`),
+  getServerFiles: (id, path = '') => api.get(`/my-servers/${id}/files?path=${encodeURIComponent(path)}`),
+  getMaps: (id) => api.get(`/my-servers/${id}/maps`),
 
   // Payments
   getMyPayments: () => api.get('/payments/my'),

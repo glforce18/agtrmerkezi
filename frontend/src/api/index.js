@@ -4,37 +4,73 @@ export const authAPI = {
   login: (credentials) => apiClient.post('/auth/login', credentials),
   register: (userData) => apiClient.post('/auth/register', userData),
   logout: () => apiClient.post('/auth/logout'),
-  me: () => apiClient.get('/auth/me'),
+  me: () => apiClient.get('/auth/check'),
   refresh: () => apiClient.post('/auth/refresh'),
   verify2FA: (data) => apiClient.post('/auth/2fa/verify', data),
-  enable2FA: () => apiClient.post('/auth/2fa/enable'),
+  login2FA: (data) => apiClient.post('/auth/2fa/login', data),
+  enable2FA: () => apiClient.post('/auth/2fa/setup'),
+  confirmEnable2FA: (code) => apiClient.post('/auth/2fa/enable', { code }),
   disable2FA: (code) => apiClient.post('/auth/2fa/disable', { code }),
   forgotPassword: (email) => apiClient.post('/auth/forgot-password', { email }),
-  resetPassword: (data) => apiClient.post('/auth/reset-password', data)
+  resetPassword: (data) => apiClient.post('/auth/reset-password', data),
+  changePassword: (data) => apiClient.post('/auth/change-password', data)
 }
 
 export const serversAPI = {
+  // Public servers list
   getAll: (params) => apiClient.get('/servers', { params }),
-  getOne: (id) => apiClient.get(`/servers/${id}`),
-  create: (data) => apiClient.post('/servers', data),
-  update: (id, data) => apiClient.put(`/servers/${id}`, data),
-  delete: (id) => apiClient.delete(`/servers/${id}`),
-  stats: (id) => apiClient.get(`/servers/${id}/stats`),
-  start: (id) => apiClient.post(`/servers/${id}/start`),
-  stop: (id) => apiClient.post(`/servers/${id}/stop`),
-  restart: (id) => apiClient.post(`/servers/${id}/restart`),
-  console: (id, command) => apiClient.post(`/servers/${id}/console`, { command }),
-  files: (id, path) => apiClient.get(`/servers/${id}/files`, { params: { path } }),
-  backup: (id) => apiClient.post(`/servers/${id}/backup`),
-  restore: (id, backupId) => apiClient.post(`/servers/${id}/restore/${backupId}`)
+  getPublic: (id) => apiClient.get(`/servers/${id}`),
+
+  // My servers (requires auth)
+  getMy: () => apiClient.get('/my-servers'),
+  getOne: (id) => apiClient.get(`/my-servers/${id}/status`),
+  create: (data) => apiClient.post('/servers/create', data),
+
+  // Server actions
+  start: (id) => apiClient.post(`/my-servers/${id}/action`, { action: 'start' }),
+  stop: (id) => apiClient.post(`/my-servers/${id}/action`, { action: 'stop' }),
+  restart: (id) => apiClient.post(`/my-servers/${id}/action`, { action: 'restart' }),
+
+  // Server info
+  status: (id) => apiClient.get(`/my-servers/${id}/status`),
+  players: (id) => apiClient.get(`/my-servers/${id}/players`),
+  resources: (id) => apiClient.get(`/my-servers/${id}/resources`),
+  logs: (id, lines = 100) => apiClient.get(`/my-servers/${id}/logs`, { params: { lines } }),
+
+  // RCON
+  rcon: (id, command) => apiClient.post(`/my-servers/${id}/rcon`, { command }),
+  rconHistory: (id, limit = 50) => apiClient.get(`/my-servers/${id}/rcon-history`, { params: { limit } }),
+
+  // Maps
+  maps: (id) => apiClient.get(`/my-servers/${id}/maps`),
+  changeMap: (id, mapName) => apiClient.post(`/my-servers/${id}/change-map`, { map_name: mapName }),
+
+  // Config
+  getConfig: (id, configType = 'server.cfg') => apiClient.get(`/my-servers/${id}/config`, { params: { config_type: configType } }),
+  saveConfig: (id, configType, content) => apiClient.post(`/my-servers/${id}/config`, { config_type: configType, content }),
+
+  // Files & Plugins
+  files: (id, path = '') => apiClient.get(`/my-servers/${id}/files`, { params: { path } }),
+  plugins: (id) => apiClient.get(`/my-servers/${id}/plugins`)
 }
 
 export const forumAPI = {
+  // Categories
   getCategories: () => apiClient.get('/forum/categories'),
-  getTopics: (categoryId, params) => apiClient.get(`/forum/categories/${categoryId}/topics`, { params }),
-  getTopic: (topicId) => apiClient.get(`/forum/topics/${topicId}`),
-  createTopic: (categoryId, data) => apiClient.post(`/forum/categories/${categoryId}/topics`, data),
-  createReply: (topicId, data) => apiClient.post(`/forum/topics/${topicId}/replies`, data)
+  getCategory: (slug) => apiClient.get(`/forum/categories/${slug}`),
+
+  // Topics
+  getTopics: (categorySlug, params) => apiClient.get(`/forum/categories/${categorySlug}/topics`, { params }),
+  getAllTopics: (params) => apiClient.get('/forum/topics', { params }),
+  getTopic: (slug) => apiClient.get(`/forum/topics/${slug}`),
+  createTopic: (data) => apiClient.post('/forum/topics', data),
+
+  // Replies
+  getReplies: (topicSlug, params) => apiClient.get(`/forum/topics/${topicSlug}/replies`, { params }),
+  createReply: (topicSlug, data) => apiClient.post(`/forum/topics/${topicSlug}/replies`, data),
+
+  // Stats
+  getStats: () => apiClient.get('/forum/stats')
 }
 
 export const userAPI = {
