@@ -69,7 +69,7 @@
 
               <button
                 @click="loginWithOAuth('google')"
-                class="btn btn-block bg-white hover:bg-gray-100 text-gray-800 border border-gray-300"
+                class="btn btn-block bg-base-100 hover:bg-base-200 text-base-content border border-base-300"
                 :disabled="loading"
               >
                 <svg class="w-5 h-5" viewBox="0 0 24 24">

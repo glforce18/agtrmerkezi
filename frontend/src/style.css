@@ -206,6 +206,146 @@
     background-color: var(--gaming-orange);
     border-color: var(--gaming-orange);
   }
+
+  /* ===== DARK THEME CARD & MODAL OVERRIDES ===== */
+  [data-theme="agtr_dark"] .card {
+    background-color: #1e293b !important;
+    border-color: #475569;
+  }
+
+  [data-theme="agtr_dark"] .card-body {
+    background-color: transparent !important;
+  }
+
+  [data-theme="agtr_dark"] .modal-box {
+    background-color: #1e293b !important;
+    border: 1px solid #475569;
+  }
+
+  /* ===== DARK THEME DROPDOWN OVERRIDES ===== */
+  [data-theme="agtr_dark"] .dropdown-content,
+  [data-theme="agtr_dark"] .menu {
+    background-color: #1e293b !important;
+    border-color: #475569;
+  }
+
+  /* ===== DARK THEME TABS OVERRIDES ===== */
+  [data-theme="agtr_dark"] .tabs-boxed {
+    background-color: rgba(30, 41, 59, 0.5) !important;
+  }
+
+  [data-theme="agtr_dark"] .tab-active {
+    background-color: #334155 !important;
+  }
+
+  /* ===== COMMAND PALETTE DARK THEME (Teleported) ===== */
+  [data-theme="agtr_dark"] .command-palette-container {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+    color: #f8fafc;
+  }
+
+  [data-theme="agtr_dark"] .command-palette-container .command-item {
+    color: #f8fafc;
+  }
+
+  [data-theme="agtr_dark"] .command-palette-container .command-item:hover {
+    background-color: #334155 !important;
+  }
+
+  [data-theme="agtr_dark"] .command-palette-container input {
+    color: #f8fafc !important;
+  }
+
+  [data-theme="agtr_dark"] .command-palette-container input::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  /* ===== NOTIFICATION DROPDOWN DARK THEME (Teleported) ===== */
+  [data-theme="agtr_dark"] .notifications-dropdown {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+  }
+
+  [data-theme="agtr_dark"] .notifications-dropdown .dropdown-header {
+    border-color: #475569 !important;
+  }
+
+  [data-theme="agtr_dark"] .notifications-dropdown .dropdown-header h4 {
+    color: #f8fafc !important;
+  }
+
+  [data-theme="agtr_dark"] .notifications-dropdown .notification-item {
+    border-color: #475569 !important;
+    color: #f8fafc;
+  }
+
+  [data-theme="agtr_dark"] .notifications-dropdown .notification-item:hover {
+    background-color: #334155 !important;
+  }
+
+  [data-theme="agtr_dark"] .notifications-dropdown .notification-title {
+    color: #f8fafc !important;
+  }
+
+  [data-theme="agtr_dark"] .notifications-dropdown .notification-message,
+  [data-theme="agtr_dark"] .notifications-dropdown .notification-time {
+    color: #cbd5e1 !important;
+  }
+
+  [data-theme="agtr_dark"] .notifications-dropdown .no-notifications {
+    color: #cbd5e1 !important;
+  }
+
+  /* ===== LIGHT THEME CARD & MODAL OVERRIDES ===== */
+  [data-theme="agtr_light"] .card {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0;
+  }
+
+  [data-theme="agtr_light"] .modal-box {
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0;
+  }
+
+  [data-theme="agtr_light"] .tabs-boxed {
+    background-color: rgba(241, 245, 249, 0.5) !important;
+  }
+
+  [data-theme="agtr_light"] .command-palette-container {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a;
+  }
+
+  [data-theme="agtr_light"] .notifications-dropdown {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  /* ===== KBD STYLING ===== */
+  [data-theme="agtr_dark"] .kbd {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #f8fafc !important;
+  }
+
+  [data-theme="agtr_light"] .kbd {
+    background-color: #e2e8f0 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+  }
+
+  /* ===== SELECT/DROPDOWN DARK THEME ===== */
+  [data-theme="agtr_dark"] .select {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+    color: #f8fafc !important;
+  }
+
+  [data-theme="agtr_dark"] .select:focus {
+    border-color: #f97316 !important;
+  }
 }
 
 /* Component Layer */
