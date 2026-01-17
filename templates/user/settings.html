@@ -217,10 +217,23 @@
 </style>
 
 <script>
+// Helper function for toast messages
+function showToast(type, message) {
+    if (typeof AGTR !== 'undefined' && AGTR.Toast && AGTR.Toast[type]) {
+        AGTR.Toast[type](message);
+    } else {
+        alert(message);
+    }
+}
+
 // Profile form
 document.getElementById('profileForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = 'Kaydediliyor...';
+
     try {
         const response = await fetch('/api/user/profile', {
             method: 'PUT',
@@ -228,13 +241,16 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
             body: JSON.stringify(Object.fromEntries(formData))
         });
         if (response.ok) {
-            AGTR.Toast.success('Profil güncellendi!');
+            showToast('success', 'Profil güncellendi!');
         } else {
             const data = await response.json();
-            AGTR.Toast.error(data.detail || 'Bir hata oluştu');
+            showToast('error', data.detail || 'Bir hata oluştu');
         }
     } catch (error) {
-        AGTR.Toast.error('Bir hata oluştu');
+        showToast('error', 'Bağlantı hatası');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Kaydet';
     }
 });
 
@@ -243,9 +259,17 @@ document.getElementById('passwordForm').addEventListener('submit', async (e) => 
     e.preventDefault();
     const formData = new FormData(e.target);
     if (formData.get('new_password') !== formData.get('confirm_password')) {
-        AGTR.Toast.error('Şifreler eşleşmiyor!');
+        showToast('error', 'Şifreler eşleşmiyor!');
         return;
     }
+    if (formData.get('new_password').length < 6) {
+        showToast('error', 'Şifre en az 6 karakter olmalı!');
+        return;
+    }
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = 'Değiştiriliyor...';
+
     try {
         const response = await fetch('/api/user/change-password', {
             method: 'POST',
@@ -257,14 +281,17 @@ document.getElementById('passwordForm').addEventListener('submit', async (e) => 
             })
         });
         if (response.ok) {
-            AGTR.Toast.success('Şifre değiştirildi!');
+            showToast('success', 'Şifre değiştirildi!');
             e.target.reset();
         } else {
             const data = await response.json();
-            AGTR.Toast.error(data.detail || 'Bir hata oluştu');
+            showToast('error', data.detail || 'Bir hata oluştu');
         }
     } catch (error) {
-        AGTR.Toast.error('Bir hata oluştu');
+        showToast('error', 'Bağlantı hatası');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Şifreyi Değiştir';
     }
 });
 

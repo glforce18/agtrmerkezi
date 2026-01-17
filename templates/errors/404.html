@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sayfa Bulunamadı - AGTR Merkezi</title>
+    <script>
+        (function() {
+            var theme = localStorage.getItem('agtr-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <link rel="stylesheet" href="/static/css/theme.css">
     <style>
         .error-page {
@@ -18,9 +24,10 @@
             font-family: var(--font-display);
             font-size: 120px;
             font-weight: 700;
-            background: linear-gradient(135deg, #ff6b35, #ffdd00);
+            background: var(--gradient-primary, linear-gradient(135deg, #ff6b00, #ff8c00));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
             line-height: 1;
             margin-bottom: 20px;
         }

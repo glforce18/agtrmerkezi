@@ -212,12 +212,12 @@
     padding: 40px 20px;
 }
 .success-message svg {
-    color: #22c55e;
+    color: var(--success-color, #10b981);
     margin-bottom: 20px;
 }
 .success-message h3 {
     margin-bottom: 10px;
-    color: #22c55e;
+    color: var(--success-color, #10b981);
 }
 .success-message p {
     color: var(--text-secondary);
@@ -333,10 +333,18 @@ document.getElementById('contactForm').addEventListener('submit', async function
             form.style.display = 'none';
             successMessage.style.display = 'block';
         } else {
-            showToast(data.detail || 'Bir hata oluştu', 'error');
+            if (typeof AGTR !== 'undefined' && AGTR.Toast) {
+                AGTR.Toast.error(data.detail || 'Bir hata oluştu');
+            } else {
+                alert(data.detail || 'Bir hata oluştu');
+            }
         }
     } catch (error) {
-        showToast('Bağlantı hatası', 'error');
+        if (typeof AGTR !== 'undefined' && AGTR.Toast) {
+            AGTR.Toast.error('Bağlantı hatası');
+        } else {
+            alert('Bağlantı hatası');
+        }
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<svg width="20" height="20"><use href="/static/images/icons.svg#icon-send"></use></svg> Gönder';

@@ -80,10 +80,10 @@
 .data-table tr:hover { background: rgba(255,255,255,0.02); }
 code { background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 13px; }
 .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-.status-running { background: rgba(0,200,0,0.2); color: #00c800; }
-.status-stopped { background: rgba(255,51,51,0.2); color: #ff3333; }
-.status-pending { background: rgba(255,200,0,0.2); color: #ffc800; }
-.status-suspended { background: rgba(255,100,0,0.2); color: #ff6400; }
-.status-expired { background: rgba(150,150,150,0.2); color: #999; }
+.status-running, .status-online { background: rgba(16, 185, 129, 0.2); color: var(--success-color, #10b981); }
+.status-stopped, .status-offline { background: rgba(239, 68, 68, 0.2); color: var(--danger-color, #ef4444); }
+.status-pending { background: rgba(245, 158, 11, 0.2); color: var(--warning-color, #f59e0b); }
+.status-suspended { background: rgba(255, 107, 0, 0.2); color: var(--primary-color); }
+.status-expired { background: rgba(107, 114, 128, 0.2); color: var(--text-muted, #6b7280); }
 </style>
 {% endblock %}
