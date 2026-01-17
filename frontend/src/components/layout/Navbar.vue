@@ -15,13 +15,11 @@
 
             <!-- Logo -->
             <router-link to="/" class="flex items-center gap-2 group">
-              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:shadow-orange-500/30 transition-all">
-                <span class="text-white font-bold text-xl">λ</span>
-              </div>
-              <div class="hidden sm:block">
-                <span class="font-display font-bold text-lg">AGTR</span>
-                <span class="text-orange-500 font-display font-bold text-lg">Merkezi</span>
-              </div>
+              <img
+                src="/logo-navbar.png"
+                alt="AGTR Merkezi"
+                class="h-10 w-auto group-hover:scale-105 transition-transform"
+              />
             </router-link>
           </div>
 
@@ -41,6 +39,22 @@
 
           <!-- Right: Actions -->
           <div class="flex items-center gap-2">
+            <!-- Wallet Display (when logged in) -->
+            <div v-if="user" class="hidden md:flex items-center gap-3 mr-2">
+              <!-- TL Balance -->
+              <div class="wallet-item flex items-center gap-1.5 px-3 py-1.5 rounded-lg">
+                <span class="text-green-500 font-bold text-sm">TL</span>
+                <span class="font-mono font-semibold text-sm">{{ formatCurrency(user.balance || 0) }}</span>
+              </div>
+
+              <!-- Armor Balance -->
+              <div class="wallet-item wallet-armor flex items-center gap-1.5 px-3 py-1.5 rounded-lg">
+                <ShieldCheck class="w-4 h-4 text-orange-500" />
+                <span class="font-mono font-semibold text-sm text-orange-500">{{ formatNumber(user.balance_coin || 0) }}</span>
+                <span class="text-xs opacity-60">Armor</span>
+              </div>
+            </div>
+
             <!-- Search Button (Desktop) -->
             <button
               @click="openCommandPalette"
@@ -48,7 +62,7 @@
             >
               <Search class="w-4 h-4 opacity-60" />
               <span class="opacity-60">Ara...</span>
-              <kbd class="search-kbd hidden xl:inline px-1.5 py-0.5 text-xs rounded opacity-60">⌘K</kbd>
+              <kbd class="search-kbd hidden xl:inline px-1.5 py-0.5 text-xs rounded opacity-60">Ctrl+K</kbd>
             </button>
 
             <!-- Theme Toggle -->
@@ -82,7 +96,7 @@
                 >
                   <div class="flex items-center justify-between mb-3">
                     <h3 class="font-bold">Bildirimler</h3>
-                    <button class="text-xs text-primary hover:underline">Tümünü Okundu</button>
+                    <button class="text-xs text-primary hover:underline">Tumunu Okundu</button>
                   </div>
                   <div class="space-y-2 max-h-64 overflow-y-auto">
                     <div
@@ -108,7 +122,7 @@
                 @click="userMenuOpen = !userMenuOpen"
                 class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-base-200 transition-colors"
               >
-                <!-- Avatar - Steam veya varsayılan -->
+                <!-- Avatar - Steam veya varsayilan -->
                 <div class="w-8 h-8 rounded-lg overflow-hidden">
                   <img
                     v-if="user.avatar"
@@ -130,7 +144,7 @@
               <Transition name="dropdown">
                 <div
                   v-if="userMenuOpen"
-                  class="absolute right-0 mt-2 w-64 dropdown-glass p-2"
+                  class="absolute right-0 mt-2 w-72 dropdown-glass p-2"
                 >
                   <!-- User Info -->
                   <div class="flex items-center gap-3 px-3 py-3 border-b border-base-300 mb-2">
@@ -148,23 +162,46 @@
                         <span class="text-white font-bold">{{ getInitials(user.username) }}</span>
                       </div>
                     </div>
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                       <p class="font-bold truncate">{{ user.display_name || user.username }}</p>
                       <p class="text-xs opacity-60 truncate">@{{ user.username }}</p>
                     </div>
                   </div>
 
-                  <!-- Menu Items -->
-                  <router-link
-                    v-for="item in userMenuItems"
-                    :key="item.path"
-                    :to="item.path"
-                    class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors"
-                    @click="userMenuOpen = false"
-                  >
-                    <component :is="item.icon" class="w-4 h-4" />
-                    <span class="text-sm">{{ item.label }}</span>
-                  </router-link>
+                  <!-- Wallet Summary in Dropdown -->
+                  <div class="px-3 py-2 mb-2 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm opacity-60">TL Bakiye</span>
+                      <span class="font-mono font-bold text-green-500">{{ formatCurrency(user.balance || 0) }} TL</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm opacity-60 flex items-center gap-1">
+                        <ShieldCheck class="w-4 h-4 text-orange-500" /> Armor
+                      </span>
+                      <span class="font-mono font-bold text-orange-500">{{ formatNumber(user.balance_coin || 0) }}</span>
+                    </div>
+                    <router-link
+                      to="/shop"
+                      class="block w-full mt-2 text-center py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold hover:from-orange-600 hover:to-orange-700 transition-all"
+                      @click="userMenuOpen = false"
+                    >
+                      Armor Yukle
+                    </router-link>
+                  </div>
+
+                  <div class="border-t border-base-300 pt-2">
+                    <!-- Menu Items -->
+                    <router-link
+                      v-for="item in userMenuItems"
+                      :key="item.path"
+                      :to="item.path"
+                      class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors"
+                      @click="userMenuOpen = false"
+                    >
+                      <component :is="item.icon" class="w-4 h-4" />
+                      <span class="text-sm">{{ item.label }}</span>
+                    </router-link>
+                  </div>
 
                   <div class="border-t border-base-300 mt-2 pt-2">
                     <button
@@ -194,6 +231,19 @@
       <Transition name="slide-down">
         <div v-if="mobileMenuOpen" class="lg:hidden border-t border-base-300">
           <div class="container-custom py-4">
+            <!-- Mobile Wallet -->
+            <div v-if="user" class="flex items-center gap-3 mb-4 pb-4 border-b border-base-300">
+              <div class="wallet-item flex items-center gap-1.5 px-3 py-2 rounded-lg flex-1 justify-center">
+                <span class="text-green-500 font-bold">TL</span>
+                <span class="font-mono font-semibold">{{ formatCurrency(user.balance || 0) }}</span>
+              </div>
+              <div class="wallet-item wallet-armor flex items-center gap-1.5 px-3 py-2 rounded-lg flex-1 justify-center">
+                <ShieldCheck class="w-4 h-4 text-orange-500" />
+                <span class="font-mono font-semibold text-orange-500">{{ formatNumber(user.balance_coin || 0) }}</span>
+                <span class="text-xs opacity-60">Armor</span>
+              </div>
+            </div>
+
             <div class="flex flex-col gap-1">
               <router-link
                 v-for="item in navItems"
@@ -236,6 +286,7 @@ import {
   Settings,
   CreditCard,
   Shield,
+  ShieldCheck,
   LogOut,
   LogIn,
   LayoutDashboard,
@@ -245,7 +296,8 @@ import {
   Home,
   ShoppingBag,
   ChevronDown,
-  Dice5
+  Dice5,
+  Wallet
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -291,7 +343,7 @@ const userMenuItems = computed(() => {
 // Notifications (mock data)
 const notifications = ref([
   { id: 1, title: 'Sunucu Basladi', message: 'AGTR Public #1 basariyla basladi.', read: false },
-  { id: 2, title: 'Yeni Guncelleme', message: 'v7.0 yayinlandi!', read: false }
+  { id: 2, title: 'Yeni Guncelleme', message: 'v8.0 yayinlandi!', read: false }
 ])
 
 // Methods
@@ -303,6 +355,17 @@ const isActive = (path) => {
 const getInitials = (name) => {
   if (!name) return 'U'
   return name.substring(0, 2).toUpperCase()
+}
+
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('tr-TR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value)
+}
+
+const formatNumber = (value) => {
+  return new Intl.NumberFormat('tr-TR').format(value)
 }
 
 const toggleTheme = () => {
@@ -378,6 +441,17 @@ onUnmounted(() => {
 .search-kbd {
   background-color: var(--bg-tertiary, #334155);
   color: var(--text-muted, #64748b);
+}
+
+/* Wallet Styles */
+.wallet-item {
+  background-color: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-color, #475569);
+}
+
+.wallet-armor {
+  border-color: rgba(249, 115, 22, 0.3);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 88, 12, 0.05) 100%);
 }
 
 /* Dropdown Transitions */

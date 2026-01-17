@@ -78,7 +78,11 @@ import {
   Home,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Image,
+  FileText,
+  Megaphone,
+  Palette
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -106,11 +110,15 @@ fetchPendingCount()
 
 const menuItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/admin/users', label: 'Kullanıcılar', icon: Users },
+  { path: '/admin/users', label: 'Kullanicilar', icon: Users },
   { path: '/admin/servers', label: 'Sunucular', icon: Server },
-  { path: '/admin/payments', label: 'Ödemeler', icon: CreditCard },
+  { path: '/admin/payments', label: 'Odemeler', icon: CreditCard },
   { path: '/admin/packages', label: 'Paketler', icon: Package },
-  { path: '/admin/settings', label: 'Ayarlar', icon: Settings }
+  { path: '/admin/media', label: 'Gorsel Yonetimi', icon: Image },
+  { path: '/admin/pages', label: 'Sayfa Icerikleri', icon: FileText },
+  { path: '/admin/banners', label: 'Banner Yonetimi', icon: Megaphone },
+  { path: '/admin/theme', label: 'Tema Ayarlari', icon: Palette },
+  { path: '/admin/settings', label: 'Genel Ayarlar', icon: Settings }
 ]
 
 const pageTitle = computed(() => {

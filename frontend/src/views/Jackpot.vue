@@ -16,11 +16,11 @@
       </div>
       <div class="header-stats">
         <div class="stat">
-          <span class="stat-value">{{ formatCoin(balance) }}</span>
+          <span class="stat-value">{{ formatArmor(balance) }}</span>
           <span class="stat-label">Bakiyen</span>
         </div>
         <div class="stat highlight">
-          <span class="stat-value">{{ formatCoin(currentRound?.total_pot || 0) }}</span>
+          <span class="stat-value">{{ formatArmor(currentRound?.total_pot || 0) }}</span>
           <span class="stat-label">Toplam Havuz</span>
         </div>
       </div>
@@ -52,7 +52,7 @@
               <div class="winner-info">
                 <span class="winner-label">KAZANAN!</span>
                 <span class="winner-name">{{ winner.username }}</span>
-                <span class="winner-amount">{{ formatCoin(winner.amount) }} Coin</span>
+                <span class="winner-amount">{{ formatArmor(winner.amount) }} Armor</span>
               </div>
             </div>
           </div>
@@ -76,7 +76,7 @@
             <img :src="player.avatar || getDefaultAvatar(player.username)" class="player-avatar" />
             <div class="player-info">
               <span class="player-name">{{ player.username }}</span>
-              <span class="player-bet">{{ formatCoin(player.total_bet) }} Coin</span>
+              <span class="player-bet">{{ formatArmor(player.total_bet) }} Armor</span>
             </div>
             <div class="player-chance">
               <span class="chance-value">{{ player.win_chance.toFixed(1) }}%</span>
@@ -105,7 +105,7 @@
             placeholder="Bahis miktarı"
             class="bet-input"
           />
-          <span class="input-suffix">Coin</span>
+          <span class="input-suffix">Armor</span>
         </div>
 
         <div class="quick-bets">
@@ -127,8 +127,8 @@
       </div>
 
       <div class="bet-info">
-        <span>Min: {{ minBet }} Coin</span>
-        <span>Max: {{ maxBet }} Coin</span>
+        <span>Min: {{ minBet }} Armor</span>
+        <span>Max: {{ maxBet }} Armor</span>
         <span>Komisyon: {{ houseCut }}%</span>
       </div>
     </div>
@@ -143,9 +143,9 @@
           class="history-item"
         >
           <span class="history-round">#{{ round.round_number }}</span>
-          <span class="history-pot">{{ formatCoin(round.total_pot) }}</span>
+          <span class="history-pot">{{ formatArmor(round.total_pot) }}</span>
           <span class="history-winner">{{ round.winner_username }}</span>
-          <span class="history-amount text-success">+{{ formatCoin(round.winner_amount) }}</span>
+          <span class="history-amount text-success">+{{ formatArmor(round.winner_amount) }}</span>
         </div>
       </div>
     </div>
@@ -250,7 +250,7 @@ const wheelStyle = computed(() => ({
 }))
 
 // Methods
-const formatCoin = (amount) => {
+const formatArmor = (amount) => {
   if (!amount) return '0'
   return amount.toLocaleString('tr-TR')
 }

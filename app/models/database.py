@@ -1439,3 +1439,201 @@ class UserActivity(Base):
 
     # Relationship
     user = relationship("User", back_populates="user_activities")
+
+
+# ==================== CMS MODELS ====================
+
+class SiteImage(Base):
+    """Site görselleri yönetimi - admin panelden yüklenen tüm görseller"""
+    __tablename__ = "site_images"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)  # Görsel adı
+    slug = Column(String(100), unique=True, nullable=False, index=True)  # Benzersiz slug
+    category = Column(String(50), default="general")  # logo, icon, banner, mascot, upload
+
+    # Dosya bilgileri
+    file_path = Column(String(500), nullable=False)  # static/images/...
+    file_name = Column(String(255), nullable=False)  # Orijinal dosya adı
+    file_size = Column(Integer)  # Bytes
+    file_type = Column(String(50))  # image/png, image/jpeg
+    width = Column(Integer)  # Piksel
+    height = Column(Integer)  # Piksel
+
+    # Açıklama
+    alt_text = Column(String(200))  # SEO için alt text
+    description = Column(Text)
+
+    # Kullanım yerleri
+    usage_locations = Column(JSON, default=list)  # ["navbar", "footer", "hero"]
+
+    # Meta
+    is_active = Column(Boolean, default=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationship
+    uploader = relationship("User", foreign_keys=[uploaded_by])
+
+
+class PageContent(Base):
+    """Sayfa içerik yönetimi - CMS benzeri"""
+    __tablename__ = "page_contents"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    page_slug = Column(String(100), nullable=False, index=True)  # home, about, contact
+    section_slug = Column(String(100), nullable=False)  # hero, features, footer
+
+    # İçerik
+    title = Column(String(200))
+    subtitle = Column(String(300))
+    content = Column(Text)  # HTML/Markdown içerik
+
+    # Görseller
+    image_url = Column(String(500))
+    background_image_url = Column(String(500))
+
+    # Link/CTA
+    cta_text = Column(String(100))  # Call to action butonu metni
+    cta_link = Column(String(500))  # CTA linki
+
+    # Ayarlar
+    settings = Column(JSON, default=dict)  # Ek ayarlar (renk, animasyon vb.)
+    display_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+
+    # Meta
+    updated_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('page_slug', 'section_slug', name='uq_page_section'),
+    )
+
+
+# ==================== JACKPOT SYSTEM MODELS ====================
+
+class JackpotStatus(enum.Enum):
+    """Jackpot durumları"""
+    WAITING = "waiting"  # Oyuncu bekleniyor
+    ACTIVE = "active"  # Oyun aktif, bahisler alınıyor
+    ROLLING = "rolling"  # Çekiliş yapılıyor
+    COMPLETED = "completed"  # Tamamlandı
+    CANCELLED = "cancelled"  # İptal edildi
+
+
+class JackpotGame(Base):
+    """Jackpot oyun turları"""
+    __tablename__ = "jackpot_games"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    round_number = Column(Integer, nullable=False, unique=True)  # Tur numarası
+    status = Column(Enum(JackpotStatus), default=JackpotStatus.WAITING)
+
+    # Havuz bilgileri
+    total_pot = Column(Float, default=0)  # Toplam havuz (Armor cinsinden)
+    participant_count = Column(Integer, default=0)  # Katılımcı sayısı
+
+    # Kazanan bilgileri
+    winner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    winner_ticket = Column(Float)  # Kazanan bilet numarası
+    win_chance = Column(Float)  # Kazanma şansı (%)
+
+    # Çekiliş bilgileri
+    roll_value = Column(Float)  # Random roll değeri
+    roll_animation_seed = Column(String(100))  # Animasyon için seed
+
+    # Komisyon
+    house_cut_percent = Column(Float, default=5.0)  # Komisyon yüzdesi
+    house_cut_amount = Column(Float, default=0)  # Komisyon miktarı
+
+    # Zamanlar
+    started_at = Column(DateTime)  # Oyun başlangıcı
+    betting_ends_at = Column(DateTime)  # Bahis bitiş zamanı
+    rolled_at = Column(DateTime)  # Çekiliş zamanı
+    completed_at = Column(DateTime)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    winner = relationship("User", foreign_keys=[winner_id])
+    bets = relationship("JackpotBet", back_populates="game", cascade="all, delete-orphan")
+
+
+class JackpotBet(Base):
+    """Jackpot bahisleri"""
+    __tablename__ = "jackpot_bets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    game_id = Column(Integer, ForeignKey("jackpot_games.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    # Bahis bilgileri
+    amount = Column(Float, nullable=False)  # Armor miktarı
+    ticket_start = Column(Float, nullable=False)  # Bilet aralığı başlangıcı
+    ticket_end = Column(Float, nullable=False)  # Bilet aralığı bitişi
+    chance_percent = Column(Float)  # Kazanma şansı (%)
+
+    # Sonuç
+    is_winner = Column(Boolean, default=False)
+
+    # Meta
+    ip_address = Column(String(45))
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (
+        Index('idx_jackpot_bet_game', 'game_id'),
+        Index('idx_jackpot_bet_user', 'user_id'),
+    )
+
+    # Relationships
+    game = relationship("JackpotGame", back_populates="bets")
+    user = relationship("User")
+
+
+class JackpotHistory(Base):
+    """Jackpot geçmişi (istatistikler için)"""
+    __tablename__ = "jackpot_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    # İstatistikler
+    total_games_played = Column(Integer, default=0)
+    total_wagered = Column(Float, default=0)  # Toplam bahis (Armor)
+    total_won = Column(Float, default=0)  # Toplam kazanç (Armor)
+    total_lost = Column(Float, default=0)  # Toplam kayıp (Armor)
+    biggest_win = Column(Float, default=0)  # En büyük kazanç
+    win_count = Column(Integer, default=0)  # Kazanma sayısı
+
+    # Son güncelleme
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationship
+    user = relationship("User")
+
+
+# ==================== ARMOR (COIN) EXCHANGE ====================
+
+class ArmorExchangeRate(Base):
+    """TL -> Armor dönüşüm oranları"""
+    __tablename__ = "armor_exchange_rates"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tl_amount = Column(Float, nullable=False)  # TL miktarı
+    armor_amount = Column(Float, nullable=False)  # Karşılık gelen Armor
+    bonus_percent = Column(Float, default=0)  # Bonus yüzdesi
+
+    # Paket bilgileri
+    name = Column(String(100))  # "Başlangıç Paketi", "Mega Paket"
+    description = Column(String(500))
+    is_featured = Column(Boolean, default=False)  # Öne çıkan
+
+    # Geçerlilik
+    is_active = Column(Boolean, default=True)
+    valid_from = Column(DateTime)
+    valid_until = Column(DateTime)
+
+    display_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=func.now())
