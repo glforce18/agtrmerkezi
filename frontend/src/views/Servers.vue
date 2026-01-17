@@ -143,7 +143,7 @@
               <div
                 :class="[
                   'w-3 h-3 rounded-full flex-shrink-0',
-                  server.status === 'active' ? 'status-online' : 'status-offline'
+                  server.status === 'running' ? 'status-online' : 'status-offline'
                 ]"
               ></div>
             </div>
@@ -187,7 +187,7 @@
               </router-link>
 
               <button
-                v-if="server.status === 'active'"
+                v-if="server.status === 'running'"
                 @click="stopServer(server.id)"
                 class="btn btn-sm btn-error"
                 title="Durdur"
@@ -218,10 +218,10 @@
                 <span
                   :class="[
                     'badge badge-sm',
-                    server.status === 'active' ? 'badge-success' : 'badge-error'
+                    server.status === 'running' ? 'badge-success' : 'badge-error'
                   ]"
                 >
-                  {{ server.status === 'active' ? 'Aktif' : 'Pasif' }}
+                  {{ server.status === 'running' ? 'Çalışıyor' : 'Durduruldu' }}
                 </span>
                 <span class="text-xs opacity-50">
                   ID: #{{ server.id }}
@@ -283,7 +283,7 @@ const filterStatus = ref('all')
 
 // Computed Stats
 const activeServersCount = computed(() => {
-  return servers.value.filter(s => s.status === 'active').length
+  return servers.value.filter(s => s.status === 'running').length
 })
 
 const totalPlayersCount = computed(() => {
@@ -334,7 +334,7 @@ const startServer = async (serverId) => {
     await serversAPI.start(serverId)
     // Refresh server status
     const server = servers.value.find(s => s.id === serverId)
-    if (server) server.status = 'active'
+    if (server) server.status = 'running'
   } catch (err) {
     // Failed to start server - status unchanged
   }
@@ -345,7 +345,7 @@ const stopServer = async (serverId) => {
     await serversAPI.stop(serverId)
     // Refresh server status
     const server = servers.value.find(s => s.id === serverId)
-    if (server) server.status = 'inactive'
+    if (server) server.status = 'stopped'
   } catch (err) {
     // Failed to stop server - status unchanged
   }

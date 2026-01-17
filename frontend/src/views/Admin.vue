@@ -440,7 +440,7 @@
                         <div>RAM: {{ server.ram }}%</div>
                       </td>
                       <td>
-                        <span :class="['badge badge-sm', server.status === 'active' ? 'badge-success' : 'badge-error']">
+                        <span :class="['badge badge-sm', server.status === 'running' ? 'badge-success' : 'badge-error']">
                           {{ server.status }}
                         </span>
                       </td>
@@ -450,8 +450,8 @@
                           <button class="btn btn-xs btn-ghost" title="View">
                             <EyeIcon class="w-3 h-3" />
                           </button>
-                          <button class="btn btn-xs btn-ghost" :title="server.status === 'active' ? 'Stop' : 'Start'">
-                            <component :is="server.status === 'active' ? StopCircleIcon : PlayCircleIcon" class="w-3 h-3" />
+                          <button class="btn btn-xs btn-ghost" :title="server.status === 'running' ? 'Stop' : 'Start'">
+                            <component :is="server.status === 'running' ? StopCircleIcon : PlayCircleIcon" class="w-3 h-3" />
                           </button>
                           <button class="btn btn-xs btn-ghost" title="Restart">
                             <RefreshCwIcon class="w-3 h-3" />

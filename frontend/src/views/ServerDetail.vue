@@ -27,16 +27,16 @@
             <div
               :class="[
                 'w-3 h-3 rounded-full',
-                server?.status === 'active' ? 'status-online' : 'status-offline'
+                server?.status === 'running' ? 'status-online' : 'status-offline'
               ]"
             ></div>
             <span
               :class="[
                 'badge',
-                server?.status === 'active' ? 'badge-success' : 'badge-error'
+                server?.status === 'running' ? 'badge-success' : 'badge-error'
               ]"
             >
-              {{ server?.status === 'active' ? 'Aktif' : 'Pasif' }}
+              {{ server?.status === 'running' ? 'Çalışıyor' : 'Durduruldu' }}
             </span>
           </div>
         </div>
@@ -48,7 +48,7 @@
           variant="success"
           size="sm"
           block
-          :disabled="server?.status === 'active'"
+          :disabled="server?.status === 'running'"
           @click="startServer"
         >
           <PlayCircleIcon class="w-4 h-4 mr-1" />
@@ -59,7 +59,7 @@
           variant="error"
           size="sm"
           block
-          :disabled="server?.status !== 'active'"
+          :disabled="server?.status !== 'running'"
           @click="stopServer"
         >
           <StopCircleIcon class="w-4 h-4 mr-1" />
@@ -1042,7 +1042,7 @@ onMounted(async () => {
 const startServer = async () => {
   try {
     await serversAPI.start(serverId)
-    if (server.value) server.value.status = 'active'
+    if (server.value) server.value.status = 'running'
   } catch (err) {
     // Failed to start server - status unchanged
   }
@@ -1051,7 +1051,7 @@ const startServer = async () => {
 const stopServer = async () => {
   try {
     await serversAPI.stop(serverId)
-    if (server.value) server.value.status = 'inactive'
+    if (server.value) server.value.status = 'stopped'
   } catch (err) {
     // Failed to stop server - status unchanged
   }

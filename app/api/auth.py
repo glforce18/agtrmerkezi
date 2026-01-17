@@ -261,14 +261,22 @@ async def register(request: Request, data: RegisterRequest, db: Session = Depend
     logger.info(f"Yeni kullanici kaydi: {user.username} - IP: {client_ip}")
     
     return AuthResponse(
-        success=True, 
-        message="Kayit basarili!", 
+        success=True,
+        message="Kayit basarili!",
         user={
-            "id": user.id, 
-            "username": user.username, 
-            "email": user.email, 
-            "role": user.role.value
-        }, 
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "display_name": user.display_name,
+            "avatar": user.avatar,
+            "role": user.role.value,
+            "status": user.status.value,
+            "balance": float(user.balance or 0),
+            "balance_coin": float(user.balance_coin or 0),
+            "steam_id": user.steam_id,
+            "two_factor_enabled": user.two_factor_enabled,
+            "email_verified": user.email_verified
+        },
         token=token
     )
 
@@ -393,17 +401,22 @@ async def login(request: Request, response: Response, data: LoginRequest, db: Se
         redirect_url = "/panel"
     
     return AuthResponse(
-        success=True, 
-        message="Giris basarili!", 
+        success=True,
+        message="Giris basarili!",
         user={
-            "id": user.id, 
-            "username": user.username, 
-            "email": user.email, 
-            "display_name": user.display_name, 
-            "role": user.role.value, 
-            "balance": user.balance,
-            "two_factor_enabled": user.two_factor_enabled
-        }, 
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "display_name": user.display_name,
+            "avatar": user.avatar,
+            "role": user.role.value,
+            "status": user.status.value,
+            "balance": float(user.balance or 0),
+            "balance_coin": float(user.balance_coin or 0),
+            "steam_id": user.steam_id,
+            "two_factor_enabled": user.two_factor_enabled,
+            "email_verified": user.email_verified
+        },
         token=token,
         redirect=redirect_url
     )
@@ -747,17 +760,22 @@ async def login_with_2fa(request: Request, response: Response, data: TwoFactorLo
         redirect_url = "/panel"
     
     return AuthResponse(
-        success=True, 
-        message="Giris basarili!", 
+        success=True,
+        message="Giris basarili!",
         user={
-            "id": user.id, 
-            "username": user.username, 
-            "email": user.email, 
-            "display_name": user.display_name, 
-            "role": user.role.value, 
-            "balance": user.balance,
-            "two_factor_enabled": user.two_factor_enabled
-        }, 
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "display_name": user.display_name,
+            "avatar": user.avatar,
+            "role": user.role.value,
+            "status": user.status.value,
+            "balance": float(user.balance or 0),
+            "balance_coin": float(user.balance_coin or 0),
+            "steam_id": user.steam_id,
+            "two_factor_enabled": user.two_factor_enabled,
+            "email_verified": user.email_verified
+        },
         token=token,
         redirect=redirect_url
     )
