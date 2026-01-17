@@ -368,22 +368,35 @@
 </style>
 
 <script>
+// Helper function for showing toast messages
+function showToast(type, message) {
+    if (typeof AGTR !== 'undefined' && AGTR.Toast && AGTR.Toast[type]) {
+        AGTR.Toast[type](message);
+    } else {
+        alert(message);
+    }
+}
+
 async function restartServer(serverId) {
     if (!confirm('Sunucuyu yeniden başlatmak istediğinize emin misiniz?')) return;
-    
+
     try {
         const response = await fetch(`/api/servers/${serverId}/restart`, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
-        
+
         if (response.ok) {
-            AGTR.Toast.success('Sunucu yeniden başlatılıyor...');
+            showToast('success', 'Sunucu yeniden başlatılıyor...');
         } else {
             const data = await response.json();
-            AGTR.Toast.error(data.detail || 'Bir hata oluştu');
+            showToast('error', data.detail || 'Bir hata oluştu');
         }
     } catch (error) {
-        AGTR.Toast.error('Bir hata oluştu');
+        console.error('Restart error:', error);
+        showToast('error', 'Bağlantı hatası. Lütfen tekrar deneyin.');
     }
 }
 </script>

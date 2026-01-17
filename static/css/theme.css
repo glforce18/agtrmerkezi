@@ -15,8 +15,10 @@
     --text-primary: #e4e6e8;
     --text-secondary: #9ca3af;
     --text-muted: #6b7280;
+    --text-tertiary: #4b5563;
     
     /* Forum Colors */
+    --primary: #ff6b00;
     --primary-color: #ff6b00;
     --primary-hover: #ff8c00;
     --primary-rgb: 255, 107, 0;
@@ -71,6 +73,49 @@
     --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     --font-display: 'Inter', sans-serif;
+
+    /* Font Sizes */
+    --text-xs: 12px;
+    --text-sm: 14px;
+    --text-base: 16px;
+    --text-lg: 18px;
+    --text-xl: 20px;
+    --text-2xl: 24px;
+    --text-3xl: 30px;
+
+    /* Font Weights */
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+
+    /* Z-Index */
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-fixed: 300;
+    --z-modal-backdrop: 400;
+    --z-modal: 500;
+    --z-popover: 600;
+    --z-tooltip: 700;
+    --z-toast: 800;
+
+    /* Additional Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.35);
+    --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.4);
 }
 
 /* Light Theme */
@@ -80,14 +125,27 @@
     --bg-tertiary: #e9ecef;
     --bg-card: rgba(255, 255, 255, 0.98);
     --bg-glass: rgba(0, 0, 0, 0.02);
-    
+
     --text-primary: #1f2937;
     --text-secondary: #4b5563;
-    --text-muted: #9ca3af;
-    
-    --border-color: rgba(0, 0, 0, 0.08);
+    --text-muted: #6b7280;
+    --text-tertiary: #9ca3af;
+
+    --border-color: rgba(0, 0, 0, 0.12);
     --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --shadow-neon: 0 0 10px rgba(255, 107, 0, 0.1);
+    --shadow-neon: 0 0 10px rgba(255, 107, 0, 0.15);
+    --shadow-glow: 0 0 15px rgba(255, 107, 0, 0.1);
+
+    /* Light mode adjusted colors for better contrast */
+    --primary: #e55a00;
+    --primary-color: #e55a00;
+    --primary-hover: #cc5000;
+    --primary-rgb: 229, 90, 0;
+    --neon-green: #e55a00;
+    --neon-orange: #d97706;
+
+    --gradient-primary: linear-gradient(135deg, #e55a00, #f97316);
+    --gradient-bg: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
 }
 
 /* ==================== BASE STYLES ==================== */
@@ -2255,4 +2313,202 @@ body::before {
                 box-shadow 0.3s ease,
                 fill 0.3s ease,
                 stroke 0.3s ease !important;
+}
+
+/* ==================== ICON COLOR CLASSES ==================== */
+/* Bug Fix: Replace hardcoded SVG colors with CSS classes */
+.icon-primary { color: var(--primary-color); }
+.icon-secondary { color: var(--text-secondary); }
+.icon-success { color: var(--success-color); }
+.icon-warning { color: var(--warning-color); }
+.icon-danger { color: var(--danger-color); }
+.icon-info { color: var(--accent-color); }
+.icon-muted { color: var(--text-muted); }
+
+/* ==================== LIGHT THEME SPECIFIC FIXES ==================== */
+/* Bug Fix #1-5: Light theme text contrast improvements */
+[data-theme="light"] .checkbox-label {
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .checkbox-label span {
+    color: var(--text-secondary);
+}
+
+[data-theme="light"] .form-label {
+    color: var(--text-primary);
+}
+
+/* Bug Fix #6-8: Light theme button improvements */
+[data-theme="light"] .btn-secondary {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .btn-secondary:hover {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: var(--primary-color);
+}
+
+[data-theme="light"] .btn-outline {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Bug Fix #9-11: Light theme link and navigation */
+[data-theme="light"] .nav-link.active {
+    color: var(--primary-color);
+    background: rgba(229, 90, 0, 0.1);
+}
+
+[data-theme="light"] .forgot-link,
+[data-theme="light"] .auth-footer a,
+[data-theme="light"] .backup-code-info a {
+    color: var(--primary-color);
+}
+
+/* Bug Fix #12-14: Light theme form elements */
+[data-theme="light"] .form-control {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(229, 90, 0, 0.1);
+}
+
+[data-theme="light"] .form-control::placeholder {
+    color: #9ca3af;
+}
+
+/* Bug Fix #15-17: Light theme card and glass */
+[data-theme="light"] .card-footer {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .glass-card:hover {
+    border-color: rgba(229, 90, 0, 0.3);
+}
+
+/* Bug Fix #18-20: Light theme status badges */
+[data-theme="light"] .server-status.online,
+[data-theme="light"] .server-status.running {
+    background: rgba(16, 185, 129, 0.12);
+}
+
+[data-theme="light"] .server-status.offline,
+[data-theme="light"] .server-status.stopped {
+    background: rgba(239, 68, 68, 0.12);
+}
+
+/* Bug Fix #21-23: Light theme toast notifications */
+[data-theme="light"] .toast {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Bug Fix #24-26: Light theme modal */
+[data-theme="light"] .modal {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .modal-header,
+[data-theme="light"] .modal-footer {
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Bug Fix #27-29: Light theme dropdown and menu */
+[data-theme="light"] .dropdown-menu {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .dropdown-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Bug Fix #30-32: Light theme stat widgets */
+[data-theme="light"] .stat-widget {
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .stat-change.positive {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+[data-theme="light"] .stat-change.negative {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+/* Bug Fix #33-35: Light theme progress bars */
+[data-theme="light"] .progress {
+    background: #e5e7eb;
+}
+
+/* Bug Fix #36-38: Light theme alerts */
+[data-theme="light"] .alert-error {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+[data-theme="light"] .alert-success {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+/* Bug Fix #39-41: Light theme social buttons */
+[data-theme="light"] .social-btn {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .social-btn:hover {
+    background: #e5e7eb;
+}
+
+/* Bug Fix #42-44: Light theme dividers */
+[data-theme="light"] .auth-divider::before,
+[data-theme="light"] .auth-divider::after {
+    background: #e5e7eb;
+}
+
+[data-theme="light"] .auth-divider {
+    color: #9ca3af;
+}
+
+/* Bug Fix #45-47: Light theme FAB */
+[data-theme="light"] .fab-item button {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .fab-item span {
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Bug Fix #48-50: Light theme misc fixes */
+[data-theme="light"] .timeline-item {
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .tab-btn {
+    color: var(--text-secondary);
+}
+
+[data-theme="light"] .tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .tab-btn.active {
+    background: var(--primary-color);
+    color: #ffffff;
 }

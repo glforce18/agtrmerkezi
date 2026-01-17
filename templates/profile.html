@@ -626,7 +626,11 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 function sendMessage(username) {
     // Open message modal or redirect to messages
-    AGTR.Toast.info('Mesajlaşma özelliği yakında!');
+    if (typeof AGTR !== 'undefined' && AGTR.Toast) {
+        AGTR.Toast.info('Mesajlaşma özelliği yakında aktif olacak!');
+    } else {
+        alert('Mesajlaşma özelliği yakında aktif olacak!');
+    }
 }
 </script>
 {% endblock %}

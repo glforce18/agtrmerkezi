@@ -17,31 +17,32 @@
             </div>
             {% endif %}
             
-            <form class="auth-form" method="post" action="/api/auth/register" id="registerForm">
+            <form class="auth-form" id="registerForm" novalidate>
                 <div class="form-group">
-                    <label class="form-label">Kullanıcı Adı</label>
-                    <input type="text" name="username" class="form-control" placeholder="Kullanıcı adınız" required minlength="3" maxlength="32">
+                    <label class="form-label" for="reg-username">Kullanıcı Adı</label>
+                    <input type="text" name="username" id="reg-username" class="form-control" placeholder="Kullanıcı adınız" required minlength="3" maxlength="32" autocomplete="username">
                 </div>
-                
+
                 <div class="form-group">
-                    <label class="form-label">E-posta</label>
-                    <input type="email" name="email" class="form-control" placeholder="ornek@email.com" required>
+                    <label class="form-label" for="reg-email">E-posta</label>
+                    <input type="email" name="email" id="reg-email" class="form-control" placeholder="ornek@email.com" required autocomplete="email">
                 </div>
-                
+
                 <div class="form-group">
-                    <label class="form-label">Şifre</label>
-                    <input type="password" name="password" class="form-control" placeholder="En az 6 karakter" required minlength="6">
+                    <label class="form-label" for="reg-password">Şifre</label>
+                    <input type="password" name="password" id="reg-password" class="form-control" placeholder="En az 6 karakter" required minlength="6" autocomplete="new-password">
                 </div>
-                
+
                 <div class="form-group">
-                    <label class="form-label">Şifre Tekrar</label>
-                    <input type="password" name="password_confirm" class="form-control" placeholder="Şifrenizi tekrar girin" required>
+                    <label class="form-label" for="reg-password-confirm">Şifre Tekrar</label>
+                    <input type="password" name="password_confirm" id="reg-password-confirm" class="form-control" placeholder="Şifrenizi tekrar girin" required autocomplete="new-password">
                 </div>
-                
+
                 <div class="form-options">
                     <label class="checkbox-label">
-                        <input type="checkbox" name="terms" required>
-                        <span><a href="/terms" target="_blank">Kullanım şartlarını</a> kabul ediyorum</span>
+                        <input type="checkbox" name="terms" id="reg-terms" required aria-describedby="terms-desc">
+                        <span class="checkbox-custom"></span>
+                        <span id="terms-desc"><a href="/terms" target="_blank" class="terms-link">Kullanım şartlarını</a> kabul ediyorum</span>
                     </label>
                 </div>
                 
@@ -108,14 +109,41 @@
 }
 
 .checkbox-label input {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--neon-green);
-    margin-top: 2px;
+    display: none;
 }
 
-.checkbox-label a {
-    color: var(--neon-green);
+.checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.checkbox-label input:checked + .checkbox-custom {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.checkbox-label input:checked + .checkbox-custom::after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+}
+
+.checkbox-label a,
+.checkbox-label .terms-link {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.checkbox-label a:hover,
+.checkbox-label .terms-link:hover {
+    text-decoration: underline;
 }
 
 .auth-footer {
@@ -150,22 +178,37 @@
 </style>
 
 <script>
+// Helper function for showing toast messages
+function showToast(type, message) {
+    if (typeof AGTR !== 'undefined' && AGTR.Toast && AGTR.Toast[type]) {
+        AGTR.Toast[type](message);
+    } else {
+        alert(message);
+    }
+}
+
 document.getElementById('registerForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
+
     const formData = new FormData(this);
-    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
     if (formData.get('password') !== formData.get('password_confirm')) {
-        AGTR.Toast.error('Şifreler eşleşmiyor');
+        showToast('error', 'Şifreler eşleşmiyor');
         return;
     }
-    
+
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span> Kayıt yapılıyor...';
+
     const data = {
         username: formData.get('username'),
         email: formData.get('email'),
         password: formData.get('password')
     };
-    
+
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
@@ -174,19 +217,23 @@ document.getElementById('registerForm').addEventListener('submit', async functio
             },
             body: JSON.stringify(data)
         });
-        
+
         const result = await response.json();
-        
+
         if (response.ok) {
-            AGTR.Toast.success('Kayıt başarılı! Yönlendiriliyorsunuz...');
+            showToast('success', 'Kayıt başarılı! Yönlendiriliyorsunuz...');
             setTimeout(() => {
                 window.location.href = '/login';
             }, 1500);
         } else {
-            AGTR.Toast.error(result.detail || 'Kayıt başarısız');
+            showToast('error', result.detail || 'Kayıt başarısız');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
         }
     } catch (error) {
-        AGTR.Toast.error('Bir hata oluştu');
+        showToast('error', 'Bir hata oluştu. Lütfen tekrar deneyin.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
     }
 });
 </script>
