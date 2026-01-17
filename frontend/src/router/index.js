@@ -64,6 +64,12 @@ const routes = [
     meta: { title: 'Jackpot', requiresAuth: true }
   },
   {
+    path: '/wallet',
+    name: 'wallet',
+    component: () => import('@/views/Wallet.vue'),
+    meta: { title: 'Cuzdan', requiresAuth: true }
+  },
+  {
     path: '/profile/:id?',
     name: 'profile',
     component: () => import('@/views/Profile.vue'),

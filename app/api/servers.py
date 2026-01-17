@@ -36,7 +36,10 @@ from app.models.database import (
     ServerPlugin,
     ServerStatus,
     User,
+    WalletType,
+    TransactionType,
 )
+from app.services.wallet import get_wallet_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -62,6 +65,18 @@ class PackageOrderRequest(BaseModel):
     months: int = 1
     server_name: str
     auto_renew: bool = False
+
+
+class WalletPackageOrderRequest(BaseModel):
+    package_id: int
+    months: int = 1
+    server_name: str
+    auto_renew: bool = False
+    payment_type: str = "tl"  # "tl" or "armor"
+
+
+# Exchange rate: 1 TL = 100 Armor
+ARMOR_RATE = 100
 
 
 class ServerActionRequest(BaseModel):
@@ -259,6 +274,138 @@ async def order_package(data: PackageOrderRequest, db: Session = Depends(get_db)
     db.commit()
     
     return {"success": True, "order": {"server_id": server.id, "payment_id": payment.id, "reference_code": payment.reference_code, "amount": total_price, "server_info": {"name": server.name, "ip": f"{ip}:{port}", "slots": server.slots}}}
+
+
+@router.post("/order/package-wallet")
+async def order_package_with_wallet(
+    data: WalletPackageOrderRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """
+    Sunucu paketini cuzdan bakiyesiyle satin al (TL veya Armor)
+    1 TL = 100 Armor
+    """
+    package = db.query(ServerPackage).filter(
+        ServerPackage.id == data.package_id,
+        ServerPackage.is_active == True
+    ).first()
+    if not package:
+        raise HTTPException(status_code=404, detail="Paket bulunamadi")
+
+    # Indirim hesapla
+    discount = 0.0
+    if data.months >= 12:
+        discount = settings.DISCOUNT_12_MONTH
+    elif data.months >= 6:
+        discount = settings.DISCOUNT_6_MONTH
+    elif data.months >= 3:
+        discount = settings.DISCOUNT_3_MONTH
+
+    total_price_tl = package.price_monthly * data.months * (1 - discount)
+    total_price_armor = int(total_price_tl * ARMOR_RATE)
+
+    # Wallet service
+    wallet = get_wallet_service(db)
+    balances = wallet.get_all_balances(current_user.id)
+
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent", "")[:500]
+
+    # Odeme tipine gore bakiye kontrolu
+    if data.payment_type == "armor":
+        if balances["balance_coin"] < total_price_armor:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Yetersiz Armor bakiye. Mevcut: {int(balances['balance_coin'])}, Gerekli: {total_price_armor}"
+            )
+        wallet_type = WalletType.COIN
+        amount_to_deduct = total_price_armor
+        currency_name = "Armor"
+    else:
+        if balances["balance_real"] < total_price_tl:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Yetersiz TL bakiye. Mevcut: {balances['balance_real']:.2f} TL, Gerekli: {total_price_tl:.2f} TL"
+            )
+        wallet_type = WalletType.REAL
+        amount_to_deduct = total_price_tl
+        currency_name = "TL"
+
+    # Musait slot bul
+    ip, port = find_available_slot(db)
+    if not ip:
+        raise HTTPException(status_code=503, detail="Su anda musait sunucu slotu yok")
+
+    # Bakiye dus
+    tx = wallet.deduct_balance(
+        user_id=current_user.id,
+        amount=amount_to_deduct,
+        wallet_type=wallet_type,
+        transaction_type=TransactionType.PAYMENT.value,
+        description=f"Sunucu paketi: {package.name} - {data.months} Ay",
+        ip_address=client_ip,
+        user_agent=user_agent,
+        extra_data={
+            "package_id": package.id,
+            "months": data.months,
+            "payment_type": data.payment_type
+        }
+    )
+
+    # Sunucu olustur
+    from datetime import timedelta
+    server = GameServer(
+        owner_id=current_user.id,
+        name=data.server_name,
+        game_type=package.game_type,
+        ip_address=ip,
+        port=port,
+        slots=package.slots,
+        rcon_password=generate_rcon_password(),
+        package_id=package.id,
+        is_custom_package=False,
+        features=package.features,
+        status=ServerStatus.RUNNING,  # Direkt aktif
+        monthly_price=package.price_monthly,
+        auto_renew=data.auto_renew,
+        expires_at=datetime.utcnow() + timedelta(days=30 * data.months)
+    )
+    db.add(server)
+    db.flush()
+
+    # Payment kaydı (tamamlanmış olarak)
+    payment = Payment(
+        user_id=current_user.id,
+        amount=total_price_tl,
+        status=PaymentStatus.COMPLETED,
+        reference_code=generate_reference_code("WLT"),
+        description=f"{package.name} - {data.months} Aylik ({currency_name} ile)",
+        server_id=server.id,
+        months=data.months
+    )
+    db.add(payment)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Sunucu basariyla satin alindi! {amount_to_deduct} {currency_name} odendi.",
+        "order": {
+            "server_id": server.id,
+            "payment_id": payment.id,
+            "reference_code": payment.reference_code,
+            "amount_paid": amount_to_deduct,
+            "currency": data.payment_type,
+            "server_info": {
+                "name": server.name,
+                "ip": f"{ip}:{port}",
+                "slots": server.slots,
+                "expires_at": server.expires_at.isoformat() if server.expires_at else None
+            }
+        },
+        "new_balance": tx.balance_after
+    }
 
 
 @router.get("/my-servers")

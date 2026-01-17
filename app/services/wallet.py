@@ -1,6 +1,7 @@
 """
 AGTR Merkezi - Wallet Service
-Çift cüzdan sistemi: TL (real) + Coin (sanal para)
+Çift cüzdan sistemi: TL (real) + Armor (sanal para)
+1 TL = 100 Armor
 Transaction ledger ile tam izlenebilirlik
 """
 
@@ -268,11 +269,11 @@ class WalletService:
         self,
         user_id: int,
         tl_amount: float,
-        exchange_rate: float = 10.0,  # 1 TL = 10 Coin
+        exchange_rate: float = 100.0,  # 1 TL = 100 Armor
         ip_address: str = None,
         user_agent: str = None
     ) -> tuple[Transaction, Transaction]:
-        """TL bakiyeyi Coin'e dönüştür"""
+        """TL bakiyeyi Armor'a dönüştür"""
         if tl_amount <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -290,13 +291,13 @@ class WalletService:
                 detail=f"Yetersiz TL bakiye. Mevcut: {user.balance}"
             )
 
-        coin_amount = tl_amount * exchange_rate
+        armor_amount = tl_amount * exchange_rate
 
         # TL düş
         tl_before, tl_after = self._update_balance(user, WalletType.REAL, -tl_amount)
 
-        # Coin ekle
-        coin_before, coin_after = self._update_balance(user, WalletType.COIN, coin_amount)
+        # Armor ekle
+        armor_before, armor_after = self._update_balance(user, WalletType.COIN, armor_amount)
 
         # Transaction kayıtları
         tl_tx = Transaction(
@@ -304,36 +305,36 @@ class WalletService:
             wallet_type=WalletType.REAL,
             type=TransactionType.EXCHANGE.value,
             amount=-tl_amount,
-            description=f"{tl_amount} TL -> {coin_amount} Coin dönüştürüldü",
+            description=f"{tl_amount} TL -> {int(armor_amount)} Armor dönüştürüldü",
             balance_before=tl_before,
             balance_after=tl_after,
             ip_address=ip_address,
             user_agent=user_agent,
-            extra_data={"exchange_rate": exchange_rate, "coin_amount": coin_amount}
+            extra_data={"exchange_rate": exchange_rate, "armor_amount": armor_amount}
         )
 
-        coin_tx = Transaction(
+        armor_tx = Transaction(
             user_id=user_id,
             wallet_type=WalletType.COIN,
             type=TransactionType.EXCHANGE.value,
-            amount=coin_amount,
+            amount=armor_amount,
             description=f"{tl_amount} TL'den dönüştürüldü",
-            balance_before=coin_before,
-            balance_after=coin_after,
+            balance_before=armor_before,
+            balance_after=armor_after,
             ip_address=ip_address,
             user_agent=user_agent,
             extra_data={"exchange_rate": exchange_rate, "tl_amount": tl_amount}
         )
 
         self.db.add(tl_tx)
-        self.db.add(coin_tx)
+        self.db.add(armor_tx)
         self.db.commit()
 
         logger.info(
-            f"Exchange: user={user_id}, {tl_amount} TL -> {coin_amount} Coin"
+            f"Exchange: user={user_id}, {tl_amount} TL -> {armor_amount} Armor"
         )
 
-        return tl_tx, coin_tx
+        return tl_tx, armor_tx
 
     def get_transactions(
         self,
