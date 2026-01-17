@@ -44,11 +44,11 @@
             <!-- Search Button (Desktop) -->
             <button
               @click="openCommandPalette"
-              class="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200 hover:bg-base-300 border border-base-300 transition-all text-sm"
+              class="search-btn hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm"
             >
               <Search class="w-4 h-4 opacity-60" />
               <span class="opacity-60">Ara...</span>
-              <kbd class="hidden xl:inline px-1.5 py-0.5 text-xs rounded bg-base-300 opacity-60">⌘K</kbd>
+              <kbd class="search-kbd hidden xl:inline px-1.5 py-0.5 text-xs rounded opacity-60">⌘K</kbd>
             </button>
 
             <!-- Theme Toggle -->
@@ -333,6 +333,23 @@ onUnmounted(() => {
 .nav-link-active {
   color: #f97316 !important;
   background-color: rgba(249, 115, 22, 0.1) !important;
+}
+
+/* Search Button Styles */
+.search-btn {
+  background-color: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-color, #475569);
+  color: var(--text-secondary, #94a3b8);
+}
+
+.search-btn:hover {
+  background-color: var(--bg-tertiary, #334155);
+  border-color: var(--text-muted, #64748b);
+}
+
+.search-kbd {
+  background-color: var(--bg-tertiary, #334155);
+  color: var(--text-muted, #64748b);
 }
 
 /* Dropdown Transitions */
