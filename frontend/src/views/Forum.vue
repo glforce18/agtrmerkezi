@@ -376,13 +376,47 @@ const newTopic = reactive({
   content: ''
 })
 
-const createTopic = () => {
-  // TODO: API call to create topic
-  showNewTopicModal.value = false
-  // Reset form
-  newTopic.categoryId = null
-  newTopic.title = ''
-  newTopic.content = ''
+const createTopic = async () => {
+  // Validate form before submission
+  if (!newTopic.categoryId) {
+    alert('Lütfen bir kategori seçin')
+    return
+  }
+  if (!newTopic.title || newTopic.title.trim().length < 5) {
+    alert('Başlık en az 5 karakter olmalıdır')
+    return
+  }
+  if (!newTopic.content || newTopic.content.trim().length < 20) {
+    alert('İçerik en az 20 karakter olmalıdır')
+    return
+  }
+
+  try {
+    const response = await fetch('/api/forum/topics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category_id: newTopic.categoryId,
+        title: newTopic.title.trim(),
+        content: newTopic.content.trim()
+      })
+    })
+
+    if (response.ok) {
+      showNewTopicModal.value = false
+      // Reset form
+      newTopic.categoryId = null
+      newTopic.title = ''
+      newTopic.content = ''
+      // Refresh topics list
+      // TODO: Implement refresh logic
+    } else {
+      const error = await response.json()
+      alert(error.detail || 'Konu oluşturulamadı')
+    }
+  } catch (error) {
+    alert('Bir hata oluştu, lütfen tekrar deneyin')
+  }
 }
 </script>
 
