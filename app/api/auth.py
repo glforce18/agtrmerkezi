@@ -431,15 +431,36 @@ async def check_auth(current_user: Optional[User] = Depends(get_current_user)):
     """Oturum kontrolu"""
     if current_user:
         return {
-            "authenticated": True, 
+            "authenticated": True,
             "user": {
-                "id": current_user.id, 
-                "username": current_user.username, 
+                "id": current_user.id,
+                "username": current_user.username,
                 "role": current_user.role.value,
                 "two_factor_enabled": current_user.two_factor_enabled
             }
         }
     return {"authenticated": False}
+
+
+@router.get("/me")
+async def get_current_user_info(current_user: User = Depends(get_current_user_required)):
+    """Mevcut kullanici bilgilerini getir"""
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "display_name": current_user.display_name,
+        "avatar": current_user.avatar,
+        "role": current_user.role.value,
+        "status": current_user.status.value,
+        "balance": float(current_user.balance or 0),
+        "balance_coin": float(current_user.balance_coin or 0),
+        "steam_id": current_user.steam_id,
+        "two_factor_enabled": current_user.two_factor_enabled,
+        "email_verified": current_user.email_verified,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+        "last_login": current_user.last_login.isoformat() if current_user.last_login else None
+    }
 
 
 # ==================== 2FA ENDPOINTS ====================
@@ -816,6 +837,9 @@ async def oauth_callback(
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent", "")[:500]
 
+    logger.info(f"OAuth callback started for {provider}")
+    logger.info(f"Callback params: {list(params.keys())}")
+
     try:
         if provider == "steam":
             # Steam OpenID verification
@@ -862,6 +886,8 @@ async def oauth_callback(
         else:
             # Yeni kullanici olustur veya mevcut kullaniciya bagla
             username_base = normalized.get("username", f"{provider}_user")
+            # Remove quotes if present (Steam sometimes returns quoted names)
+            username_base = username_base.strip('"\'')
             username = username_base.lower().replace(" ", "_")[:20]
 
             # Benzersiz kullanici adi
@@ -869,11 +895,22 @@ async def oauth_callback(
             if existing:
                 username = f"{username}_{secrets.token_hex(4)}"
 
+            # Steam email'i vermez, placeholder olustur
+            email = normalized.get("email")
+            if not email and provider == "steam":
+                steam_id = normalized["provider_id"]
+                email = f"steam_{steam_id}@steam.local"
+
+            # Display name'den de quotes temizle
+            display_name = normalized.get("display_name", username)
+            if isinstance(display_name, str):
+                display_name = display_name.strip('"\'')
+
             # Yeni kullanici
             user = User(
                 username=username,
-                email=normalized.get("email"),
-                display_name=normalized.get("display_name", username),
+                email=email,
+                display_name=display_name,
                 avatar=normalized.get("avatar"),
                 password_hash=hash_password(secrets.token_urlsafe(32)),  # Random password
                 role=UserRole.USER,
@@ -912,8 +949,14 @@ async def oauth_callback(
         token = create_access_token({"sub": str(user.id)})
         create_session(db, user.id, token, request)
 
-        # Cookie set et
-        redirect_response = RedirectResponse(url="/dashboard", status_code=302)
+        # Frontend'e token'i iletmek icin ozel URL ile redirect
+        # Frontend bu token'i localStorage'a kaydedecek
+        redirect_response = RedirectResponse(
+            url=f"/oauth-callback?token={token}&provider={provider}",
+            status_code=302
+        )
+
+        # Cookie da set et (opsiyonel, API istekleri icin)
         redirect_response.set_cookie(
             key="access_token",
             value=token,
@@ -932,6 +975,11 @@ async def oauth_callback(
 
         return redirect_response
 
+    except HTTPException as e:
+        logger.error(f"OAuth callback HTTPException ({provider}): {e.detail}")
+        return RedirectResponse(url=f"/login?error={provider}_failed")
     except Exception as e:
-        logger.error(f"OAuth callback hatasi ({provider}): {str(e)}")
+        import traceback
+        logger.error(f"OAuth callback hatasi ({provider}): {type(e).__name__}: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return RedirectResponse(url=f"/login?error={provider}_failed")

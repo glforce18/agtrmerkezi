@@ -108,8 +108,20 @@
                 @click="userMenuOpen = !userMenuOpen"
                 class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-base-200 transition-colors"
               >
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-                  <span class="text-white font-bold text-sm">{{ getInitials(user.username) }}</span>
+                <!-- Avatar - Steam veya varsayılan -->
+                <div class="w-8 h-8 rounded-lg overflow-hidden">
+                  <img
+                    v-if="user.avatar"
+                    :src="user.avatar"
+                    :alt="user.username"
+                    class="w-full h-full object-cover"
+                  />
+                  <div
+                    v-else
+                    class="w-full h-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center"
+                  >
+                    <span class="text-white font-bold text-sm">{{ getInitials(user.username) }}</span>
+                  </div>
                 </div>
                 <ChevronDown class="w-4 h-4 hidden sm:block" />
               </button>
@@ -121,9 +133,25 @@
                   class="absolute right-0 mt-2 w-64 dropdown-glass p-2"
                 >
                   <!-- User Info -->
-                  <div class="px-3 py-2 border-b border-base-300 mb-2">
-                    <p class="font-bold">{{ user.username }}</p>
-                    <p class="text-xs opacity-60">{{ user.email }}</p>
+                  <div class="flex items-center gap-3 px-3 py-3 border-b border-base-300 mb-2">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                      <img
+                        v-if="user.avatar"
+                        :src="user.avatar"
+                        :alt="user.username"
+                        class="w-full h-full object-cover"
+                      />
+                      <div
+                        v-else
+                        class="w-full h-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center"
+                      >
+                        <span class="text-white font-bold">{{ getInitials(user.username) }}</span>
+                      </div>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-bold truncate">{{ user.display_name || user.username }}</p>
+                      <p class="text-xs opacity-60 truncate">@{{ user.username }}</p>
+                    </div>
                   </div>
 
                   <!-- Menu Items -->

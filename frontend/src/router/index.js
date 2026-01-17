@@ -118,6 +118,12 @@ const routes = [
     meta: { title: 'Kayıt Ol', guestOnly: true }
   },
   {
+    path: '/oauth-callback',
+    name: 'oauth-callback',
+    component: () => import('@/views/OAuthCallback.vue'),
+    meta: { title: 'Giriş Yapılıyor...' }
+  },
+  {
     path: '/forgot-password',
     name: 'forgot-password',
     component: () => import('@/views/ForgotPassword.vue'),

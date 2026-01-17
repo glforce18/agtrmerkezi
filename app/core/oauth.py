@@ -100,7 +100,11 @@ class SteamOAuth2Provider(OAuth2Provider):
             token_url="",
             userinfo_url="https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
         )
-        self.api_key = getattr(settings, 'STEAM_API_KEY', '')
+
+    @property
+    def api_key(self) -> str:
+        """Get Steam API key at runtime"""
+        return getattr(settings, 'STEAM_API_KEY', '')
 
     def get_authorization_url(self, redirect_uri: str, state: str) -> str:
         """Steam OpenID authorization URL"""
@@ -116,58 +120,86 @@ class SteamOAuth2Provider(OAuth2Provider):
 
     async def verify_openid_response(self, params: Dict[str, str]) -> Optional[str]:
         """Verify Steam OpenID response and extract Steam ID"""
-        if params.get("openid.mode") != "id_res":
+        logger.info(f"Steam OpenID params: {list(params.keys())}")
+
+        openid_mode = params.get("openid.mode")
+        if openid_mode != "id_res":
+            logger.error(f"Steam OpenID mode invalid: {openid_mode}")
             return None
 
         # Verify signature
         verify_params = {**params}
         verify_params["openid.mode"] = "check_authentication"
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                self.authorize_url,
-                data=verify_params
-            )
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    self.authorize_url,
+                    data=verify_params
+                )
+                logger.info(f"Steam verification response: {response.status_code} - {response.text[:200]}")
 
-            if "is_valid:true" not in response.text:
-                logger.error("Steam OpenID verification failed")
-                return None
+                if "is_valid:true" not in response.text:
+                    logger.error(f"Steam OpenID verification failed: {response.text}")
+                    return None
+        except Exception as e:
+            logger.error(f"Steam OpenID verification error: {type(e).__name__}: {str(e)}")
+            return None
 
         # Extract Steam ID from claimed_id
         claimed_id = params.get("openid.claimed_id", "")
+        logger.info(f"Steam claimed_id: {claimed_id}")
+
         if claimed_id:
             steam_id = claimed_id.split("/")[-1]
+            logger.info(f"Extracted Steam ID: {steam_id}")
             return steam_id
 
+        logger.error("No claimed_id in Steam OpenID response")
         return None
 
     async def get_user_info(self, steam_id: str) -> Dict[str, Any]:
         """Get Steam user info"""
+        logger.info(f"Getting Steam user info for: {steam_id}")
+
         if not self.api_key:
+            logger.error("Steam API key not configured")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Steam API key not configured"
             )
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                self.userinfo_url,
-                params={
-                    "key": self.api_key,
-                    "steamids": steam_id
-                }
-            )
-
-            data = response.json()
-            players = data.get("response", {}).get("players", [])
-
-            if not players:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Steam user not found"
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(
+                    self.userinfo_url,
+                    params={
+                        "key": self.api_key,
+                        "steamids": steam_id
+                    }
                 )
+                logger.info(f"Steam API response: {response.status_code}")
 
-            return players[0]
+                data = response.json()
+                players = data.get("response", {}).get("players", [])
+
+                if not players:
+                    logger.error(f"Steam user not found: {steam_id}, response: {data}")
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Steam user not found"
+                    )
+
+                logger.info(f"Steam user found: {players[0].get('personaname')}")
+                return players[0]
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Steam API error: {type(e).__name__}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Steam API error: {str(e)}"
+            )
 
     def normalize_user_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize Steam user data"""
