@@ -310,6 +310,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import { useAuthStore } from '@/stores/auth'
 import {
   Search,
   Download,
@@ -331,6 +332,7 @@ import {
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
+const authStore = useAuthStore()
 const loading = ref(false)
 const payments = ref([])
 const totalPayments = ref(0)
@@ -355,12 +357,17 @@ const paymentToReject = ref(null)
 
 let searchTimeout = null
 
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${authStore.token}`
+})
+
 const fetchPayments = async () => {
   loading.value = true
   try {
     const params = new URLSearchParams({
       page: currentPage.value,
-      limit: perPage
+      per_page: perPage
     })
 
     if (activeTab.value !== 'all') params.append('status', activeTab.value)
@@ -369,30 +376,34 @@ const fetchPayments = async () => {
     if (filterDateFrom.value) params.append('from', filterDateFrom.value)
     if (filterDateTo.value) params.append('to', filterDateTo.value)
 
-    const response = await fetch(`/api/admin/payments?${params}`)
+    const response = await fetch(`/api/admin/payments?${params}`, {
+      headers: getHeaders()
+    })
     if (response.ok) {
       const data = await response.json()
       payments.value = data.payments || []
-      totalPayments.value = data.total || 0
-      totalPages.value = Math.ceil(totalPayments.value / perPage)
+      totalPayments.value = data.pagination?.total || 0
+      totalPages.value = data.pagination?.pages || 1
     }
   } catch (error) {
-    // Fetch error - will show empty state
+    console.error('Fetch payments error:', error)
   }
   loading.value = false
 }
 
 const fetchStats = async () => {
   try {
-    const response = await fetch('/api/admin/dashboard')
+    const response = await fetch('/api/admin/dashboard', {
+      headers: getHeaders()
+    })
     if (response.ok) {
       const data = await response.json()
-      totalRevenue.value = data.total_revenue || 0
-      monthlyRevenue.value = data.monthly_revenue || 0
-      pendingCount.value = data.pending_payments || 0
+      totalRevenue.value = data.payments?.total_revenue || 0
+      monthlyRevenue.value = data.payments?.month_revenue || 0
+      pendingCount.value = data.payments?.pending || 0
     }
   } catch (error) {
-    // Stats fetch error - will show zero values
+    console.error('Stats fetch error:', error)
   }
 }
 
@@ -471,7 +482,8 @@ const approvePayment = async (payment) => {
 
   try {
     const response = await fetch(`/api/admin/payments/${payment.id}/approve`, {
-      method: 'POST'
+      method: 'POST',
+      headers: getHeaders()
     })
 
     if (response.ok) {
@@ -485,6 +497,7 @@ const approvePayment = async (payment) => {
       alert(data.detail || 'Onaylama başarısız')
     }
   } catch (error) {
+    console.error('Approve payment error:', error)
     alert('Bir hata oluştu')
   }
 }
@@ -504,7 +517,7 @@ const confirmReject = async () => {
   try {
     const response = await fetch(`/api/admin/payments/${paymentToReject.value.id}/reject`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({ reason: rejectReason.value })
     })
 
@@ -520,6 +533,7 @@ const confirmReject = async () => {
       alert(data.detail || 'Reddetme başarısız')
     }
   } catch (error) {
+    console.error('Reject payment error:', error)
     alert('Bir hata oluştu')
   }
 }
@@ -530,6 +544,7 @@ const exportPayments = () => {
   if (filterDateFrom.value) params.append('from', filterDateFrom.value)
   if (filterDateTo.value) params.append('to', filterDateTo.value)
   params.append('format', 'csv')
+  params.append('token', authStore.token)
 
   window.open(`/api/admin/payments/export?${params}`, '_blank')
 }

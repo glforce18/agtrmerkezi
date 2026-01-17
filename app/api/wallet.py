@@ -24,12 +24,12 @@ ARMOR_RATE = 100
 
 # Armor packages with bonus percentages
 ARMOR_PACKAGES = [
-    {"id": 1, "armor": 1000, "price": 10, "bonus": 0},
-    {"id": 2, "armor": 2500, "price": 25, "bonus": 5},
-    {"id": 3, "armor": 5000, "price": 50, "bonus": 10},
-    {"id": 4, "armor": 10000, "price": 100, "bonus": 15},
-    {"id": 5, "armor": 25000, "price": 250, "bonus": 20},
-    {"id": 6, "armor": 50000, "price": 500, "bonus": 25},
+    {"id": 1, "name": "Baslangic", "armor_amount": 1000, "tl_amount": 10, "bonus_percent": 0, "is_featured": False},
+    {"id": 2, "name": "Standart", "armor_amount": 2500, "tl_amount": 25, "bonus_percent": 5, "is_featured": False},
+    {"id": 3, "name": "Populer", "armor_amount": 5000, "tl_amount": 50, "bonus_percent": 10, "is_featured": True},
+    {"id": 4, "name": "Premium", "armor_amount": 10000, "tl_amount": 100, "bonus_percent": 15, "is_featured": False},
+    {"id": 5, "name": "Elite", "armor_amount": 25000, "tl_amount": 250, "bonus_percent": 20, "is_featured": False},
+    {"id": 6, "name": "Legend", "armor_amount": 50000, "tl_amount": 500, "bonus_percent": 25, "is_featured": False},
 ]
 
 
@@ -290,21 +290,21 @@ async def buy_armor_package(
 
     # TL bakiyesini kontrol et
     balances = wallet.get_all_balances(current_user.id)
-    if balances["balance_real"] < package["price"]:
+    if balances["balance_real"] < package["tl_amount"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Yetersiz TL bakiye. Mevcut: {balances['balance_real']} TL, Gerekli: {package['price']} TL"
+            detail=f"Yetersiz TL bakiye. Mevcut: {balances['balance_real']} TL, Gerekli: {package['tl_amount']} TL"
         )
 
     # Bonus dahil toplam Armor hesapla
-    base_armor = package["armor"]
-    bonus_armor = int(base_armor * package["bonus"] / 100)
+    base_armor = package["armor_amount"]
+    bonus_armor = int(base_armor * package["bonus_percent"] / 100)
     total_armor = base_armor + bonus_armor
 
     # TL düş
     tl_tx = wallet.deduct_balance(
         user_id=current_user.id,
-        amount=package["price"],
+        amount=package["tl_amount"],
         wallet_type=WalletType.REAL,
         transaction_type=TransactionType.PAYMENT.value,
         description=f"Armor paketi satın alımı ({total_armor} Armor)",

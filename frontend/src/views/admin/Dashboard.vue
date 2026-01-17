@@ -110,6 +110,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import { useAuthStore } from '@/stores/auth'
 import {
   Users,
   Server,
@@ -130,41 +131,52 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
+const authStore = useAuthStore()
 const loading = ref(false)
 
 const stats = ref([
-  { label: 'Toplam Kullanıcı', value: '0', icon: Users, color: 'blue', change: 12 },
-  { label: 'Aktif Sunucu', value: '0', icon: Server, color: 'green', change: 5 },
-  { label: 'Bu Ay Gelir', value: '0 ₺', icon: DollarSign, color: 'purple', change: -3 },
+  { label: 'Toplam Kullanıcı', value: '0', icon: Users, color: 'blue', change: 0 },
+  { label: 'Aktif Sunucu', value: '0', icon: Server, color: 'green', change: 0 },
+  { label: 'Bu Ay Gelir', value: '0 ₺', icon: DollarSign, color: 'purple', change: 0 },
   { label: 'Bekleyen Ödeme', value: '0', icon: CreditCard, color: 'orange' }
 ])
 
 const activities = ref([])
 const pendingPayments = ref([])
 
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${authStore.token}`
+})
+
 const fetchDashboardData = async () => {
   loading.value = true
   try {
-    const response = await fetch('/api/admin/dashboard')
+    const response = await fetch('/api/admin/dashboard', {
+      headers: getHeaders()
+    })
     if (response.ok) {
       const data = await response.json()
-      stats.value[0].value = data.total_users?.toString() || '0'
-      stats.value[1].value = data.active_servers?.toString() || '0'
-      stats.value[2].value = `${data.monthly_revenue || 0} ₺`
-      stats.value[3].value = data.pending_payments?.toString() || '0'
+      // API returns: users.total, servers.total, servers.running, payments.pending, payments.month_revenue
+      stats.value[0].value = data.users?.total?.toString() || '0'
+      stats.value[1].value = data.servers?.running?.toString() || '0'
+      stats.value[2].value = `${data.payments?.month_revenue || 0} ₺`
+      stats.value[3].value = data.payments?.pending?.toString() || '0'
     }
   } catch (error) {
-    // Dashboard fetch error - will show zero values
+    console.error('Dashboard fetch error:', error)
   }
 
   try {
-    const paymentsRes = await fetch('/api/admin/payments/pending')
+    const paymentsRes = await fetch('/api/admin/payments?status=pending&limit=10', {
+      headers: getHeaders()
+    })
     if (paymentsRes.ok) {
       const data = await paymentsRes.json()
       pendingPayments.value = data.payments || []
     }
   } catch (error) {
-    // Pending payments fetch error - will show empty list
+    console.error('Pending payments fetch error:', error)
   }
 
   loading.value = false
@@ -197,13 +209,16 @@ const approvePayment = async (id) => {
   if (!confirm('Bu ödemeyi onaylamak istediğinize emin misiniz?')) return
 
   try {
-    const response = await fetch(`/api/admin/payments/${id}/approve`, { method: 'POST' })
+    const response = await fetch(`/api/admin/payments/${id}/approve`, {
+      method: 'POST',
+      headers: getHeaders()
+    })
     if (response.ok) {
       pendingPayments.value = pendingPayments.value.filter(p => p.id !== id)
       stats.value[3].value = (parseInt(stats.value[3].value) - 1).toString()
     }
   } catch (error) {
-    // Approve error - payment remains in list
+    console.error('Approve error:', error)
   }
 }
 
@@ -214,7 +229,7 @@ const rejectPayment = async (id) => {
   try {
     const response = await fetch(`/api/admin/payments/${id}/reject`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({ reason })
     })
     if (response.ok) {
@@ -222,7 +237,7 @@ const rejectPayment = async (id) => {
       stats.value[3].value = (parseInt(stats.value[3].value) - 1).toString()
     }
   } catch (error) {
-    // Reject error - payment remains in list
+    console.error('Reject error:', error)
   }
 }
 

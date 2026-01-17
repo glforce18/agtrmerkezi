@@ -291,6 +291,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import { useAuthStore } from '@/stores/auth'
 import {
   Settings,
   CreditCard,
@@ -301,8 +302,14 @@ import {
   Loader2
 } from 'lucide-vue-next'
 
+const authStore = useAuthStore()
 const activeTab = ref('general')
 const saving = ref(false)
+
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${authStore.token}`
+})
 
 const tabs = [
   { id: 'general', label: 'Genel', icon: Settings },
@@ -358,13 +365,15 @@ const settings = reactive({
 
 const fetchSettings = async () => {
   try {
-    const response = await fetch('/api/admin/settings')
+    const response = await fetch('/api/admin/settings', {
+      headers: getHeaders()
+    })
     if (response.ok) {
       const data = await response.json()
       Object.assign(settings, data)
     }
   } catch (error) {
-    // Fetch error - will use default values
+    console.error('Fetch settings error:', error)
   }
 }
 
@@ -373,7 +382,7 @@ const saveSettings = async () => {
   try {
     const response = await fetch('/api/admin/settings', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(settings)
     })
 
@@ -384,6 +393,7 @@ const saveSettings = async () => {
       alert(data.detail || 'Kaydetme başarısız')
     }
   } catch (error) {
+    console.error('Save settings error:', error)
     alert('Bir hata oluştu')
   }
   saving.value = false
@@ -392,7 +402,8 @@ const saveSettings = async () => {
 const testEmail = async () => {
   try {
     const response = await fetch('/api/admin/settings/test-email', {
-      method: 'POST'
+      method: 'POST',
+      headers: getHeaders()
     })
 
     if (response.ok) {
@@ -401,6 +412,7 @@ const testEmail = async () => {
       alert('E-posta gönderilemedi')
     }
   } catch (error) {
+    console.error('Test email error:', error)
     alert('Bir hata oluştu')
   }
 }

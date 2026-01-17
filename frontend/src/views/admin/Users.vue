@@ -81,8 +81,8 @@
               </td>
               <td class="email-cell">{{ user.email }}</td>
               <td>
-                <span class="role-badge" :class="user.role">
-                  {{ getRoleLabel(user.role) }}
+                <span class="role-badge" :class="getUserRole(user)">
+                  {{ getRoleLabel(getUserRole(user)) }}
                 </span>
               </td>
               <td>
@@ -147,11 +147,14 @@
         </button>
       </div>
 
-      <!-- User Detail Modal -->
+    </div>
+
+    <!-- User Detail Modal -->
+    <Teleport to="body">
       <div v-if="selectedUser" class="modal-overlay" @click.self="closeModal">
         <div class="modal">
           <div class="modal-header">
-            <h3>Kullanıcı Detayı</h3>
+            <h3>{{ editMode ? 'Kullanıcı Düzenle' : 'Kullanıcı Detayı' }}</h3>
             <button class="btn-icon" @click="closeModal">
               <X :size="20" />
             </button>
@@ -161,8 +164,8 @@
               <img :src="getUserAvatar(selectedUser.username)" class="detail-avatar" />
               <div>
                 <h4>{{ selectedUser.username }}</h4>
-                <span class="role-badge" :class="selectedUser.role">
-                  {{ getRoleLabel(selectedUser.role) }}
+                <span class="role-badge" :class="getUserRole(selectedUser)">
+                  {{ getRoleLabel(getUserRole(selectedUser)) }}
                 </span>
               </div>
             </div>
@@ -177,11 +180,15 @@
               </div>
               <div class="detail-item">
                 <span class="label">Son Giriş</span>
-                <span class="value">{{ formatDate(selectedUser.last_login) || 'Hiç' }}</span>
+                <span class="value">{{ selectedUser.last_login ? formatDate(selectedUser.last_login) : 'Hiç' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">Bakiye</span>
-                <span class="value">{{ selectedUser.balance || 0 }} ₺</span>
+                <span class="label">TL Bakiye</span>
+                <span class="value">{{ selectedUser.balance || 0 }} TL</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Armor Bakiye</span>
+                <span class="value">{{ selectedUser.balance_coin || 0 }} Armor</span>
               </div>
             </div>
             <div v-if="editMode" class="edit-form">
@@ -191,11 +198,16 @@
                   <option value="user">Kullanıcı</option>
                   <option value="moderator">Moderatör</option>
                   <option value="admin">Admin</option>
+                  <option value="superadmin">Süper Admin</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>Bakiye</label>
-                <input type="number" v-model="editForm.balance" step="0.01" />
+                <label>TL Bakiye</label>
+                <input type="number" v-model.number="editForm.balance" step="0.01" min="0" />
+              </div>
+              <div class="form-group">
+                <label>Armor Bakiye</label>
+                <input type="number" v-model.number="editForm.balance_coin" step="1" min="0" />
               </div>
             </div>
           </div>
@@ -211,13 +223,14 @@
           </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </AdminLayout>
 </template>
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import { useAuthStore } from '@/stores/auth'
 import {
   Search,
   Download,
@@ -235,6 +248,7 @@ import {
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
+const authStore = useAuthStore()
 const loading = ref(false)
 const users = ref([])
 const totalUsers = ref(0)
@@ -252,34 +266,45 @@ const selectedUser = ref(null)
 const editMode = ref(false)
 const editForm = reactive({
   role: '',
-  balance: 0
+  balance: 0,
+  balance_coin: 0
 })
 
 let searchTimeout = null
+
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${authStore.token}`
+})
 
 const fetchUsers = async () => {
   loading.value = true
   try {
     const params = new URLSearchParams({
       page: currentPage.value,
-      limit: perPage,
-      sort: sortField.value,
-      order: sortOrder.value
+      per_page: perPage
     })
 
     if (searchQuery.value) params.append('search', searchQuery.value)
     if (filterRole.value) params.append('role', filterRole.value)
     if (filterStatus.value) params.append('status', filterStatus.value)
 
-    const response = await fetch(`/api/admin/users?${params}`)
+    const response = await fetch(`/api/admin/users?${params}`, {
+      headers: getHeaders()
+    })
     if (response.ok) {
       const data = await response.json()
-      users.value = data.users || []
-      totalUsers.value = data.total || 0
-      totalPages.value = Math.ceil(totalUsers.value / perPage)
+      // Map API response to frontend expected format
+      users.value = (data.users || []).map(u => ({
+        ...u,
+        is_banned: u.status === 'banned',
+        is_online: false // Backend doesn't track online status
+      }))
+      totalUsers.value = data.pagination?.total || 0
+      totalPages.value = data.pagination?.pages || 1
     }
   } catch (error) {
-    // Fetch error - will show empty state
+    console.error('Fetch users error:', error)
   }
   loading.value = false
 }
@@ -312,8 +337,16 @@ const getUserAvatar = (username) => {
 }
 
 const getRoleLabel = (role) => {
-  const labels = { admin: 'Admin', moderator: 'Moderatör', user: 'Kullanıcı' }
+  const labels = { admin: 'Admin', moderator: 'Moderatör', user: 'Kullanıcı', superadmin: 'Süper Admin' }
   return labels[role] || role
+}
+
+// Helper to get role string from user object (handles both string and object formats)
+const getUserRole = (user) => {
+  if (!user) return 'user'
+  if (typeof user.role === 'string') return user.role
+  if (user.role?.value) return user.role.value
+  return 'user'
 }
 
 const getStatusClass = (user) => {
@@ -336,15 +369,17 @@ const formatDate = (date) => {
 const viewUser = (user) => {
   selectedUser.value = user
   editMode.value = false
-  editForm.role = user.role
+  editForm.role = getUserRole(user)
   editForm.balance = user.balance || 0
+  editForm.balance_coin = user.balance_coin || 0
 }
 
 const editUser = (user) => {
   selectedUser.value = user
   editMode.value = true
-  editForm.role = user.role
+  editForm.role = getUserRole(user)
   editForm.balance = user.balance || 0
+  editForm.balance_coin = user.balance_coin || 0
 }
 
 const closeModal = () => {
@@ -356,19 +391,33 @@ const saveUser = async () => {
   try {
     const response = await fetch(`/api/admin/users/${selectedUser.value.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editForm)
+      headers: getHeaders(),
+      body: JSON.stringify({
+        role: editForm.role,
+        balance: editForm.balance,
+        balance_coin: editForm.balance_coin
+      })
     })
 
     if (response.ok) {
       const index = users.value.findIndex(u => u.id === selectedUser.value.id)
       if (index !== -1) {
-        users.value[index] = { ...users.value[index], ...editForm }
+        users.value[index] = {
+          ...users.value[index],
+          role: editForm.role,
+          balance: editForm.balance,
+          balance_coin: editForm.balance_coin
+        }
       }
+      alert('Kullanıcı güncellendi!')
       closeModal()
+    } else {
+      const error = await response.json()
+      alert(error.detail || 'Güncelleme başarısız')
     }
   } catch (error) {
-    // Save error - modal stays open for retry
+    console.error('Save user error:', error)
+    alert('Bir hata oluştu')
   }
 }
 
@@ -376,28 +425,40 @@ const banUser = async (user) => {
   if (!confirm(`${user.username} kullanıcısını yasaklamak istediğinize emin misiniz?`)) return
 
   try {
-    const response = await fetch(`/api/admin/users/${user.id}/ban`, { method: 'POST' })
+    // Use DELETE endpoint which sets status to banned
+    const response = await fetch(`/api/admin/users/${user.id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    })
     if (response.ok) {
       user.is_banned = true
+      user.status = 'banned'
     }
   } catch (error) {
-    // Ban error - silent fail
+    console.error('Ban user error:', error)
   }
 }
 
 const unbanUser = async (user) => {
   try {
-    const response = await fetch(`/api/admin/users/${user.id}/unban`, { method: 'POST' })
+    // Update user status back to active
+    const response = await fetch(`/api/admin/users/${user.id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ status: 'active' })
+    })
     if (response.ok) {
       user.is_banned = false
+      user.status = 'active'
     }
   } catch (error) {
-    // Unban error - silent fail
+    console.error('Unban user error:', error)
   }
 }
 
 const exportUsers = () => {
-  window.open('/api/admin/users/export?format=csv', '_blank')
+  // Add token to export URL
+  window.open(`/api/admin/users/export?format=csv&token=${authStore.token}`, '_blank')
 }
 
 onMounted(() => {

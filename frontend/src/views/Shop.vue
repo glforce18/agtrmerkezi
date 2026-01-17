@@ -83,23 +83,15 @@
           class="package-card"
           :class="{ featured: pkg.slug.includes('pro') }"
         >
-          <!-- Badge -->
-          <div v-if="pkg.slug.includes('ultimate')" class="package-badge enterprise">
-            En Gucluu
-          </div>
-          <div v-else-if="pkg.slug.includes('pro')" class="package-badge popular">
-            Populer
+          <!-- Package Image -->
+          <div class="package-image">
+            <img :src="getPackageImage(pkg.slug)" :alt="pkg.name" />
           </div>
 
           <!-- Header -->
           <div class="package-header">
-            <div class="game-icon" :class="pkg.game_type">
-              <Gamepad2 :size="28" />
-            </div>
-            <div>
-              <h3 class="package-name">{{ pkg.name }}</h3>
-              <span class="game-type-label">{{ getGameLabel(pkg.game_type) }}</span>
-            </div>
+            <h3 class="package-name">{{ pkg.name }}</h3>
+            <span class="game-type-label">{{ getGameLabel(pkg.game_type) }}</span>
           </div>
 
           <!-- Price -->
@@ -366,6 +358,16 @@ const formatNumber = (val) => {
   return new Intl.NumberFormat('tr-TR').format(val || 0)
 }
 
+const getPackageImage = (slug) => {
+  const images = {
+    halflife: '/static/images/packages/hlpaket.png',
+    halflife_ag: '/static/images/packages/hlagpaket.png',
+    cs16_pro: '/static/images/packages/cspropublicpaket.png',
+    cs16_fun: '/static/images/packages/cszombiefunpaket.png'
+  }
+  return images[slug] || '/static/images/packages/hlpaket.png'
+}
+
 const getGameLabel = (type) => {
   const labels = {
     ag: 'Adrenaline Gamer',
@@ -610,10 +612,30 @@ onMounted(() => {
   color: white;
 }
 
-.package-header {
+.package-image {
+  margin: -24px -24px 16px -24px;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 100%);
+}
+
+.package-image img {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  object-fit: contain;
+  transition: transform 0.3s;
+}
+
+.package-card:hover .package-image img {
+  transform: scale(1.05);
+}
+
+.package-header {
+  text-align: center;
   margin-bottom: 16px;
 }
 
@@ -647,11 +669,13 @@ onMounted(() => {
   margin-bottom: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
+  text-align: center;
 }
 
 .price {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 4px;
 }
 

@@ -252,6 +252,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import { useAuthStore } from '@/stores/auth'
 import {
   Upload,
   Search,
@@ -265,6 +266,13 @@ import {
   Copy,
   Save
 } from 'lucide-vue-next'
+
+const authStore = useAuthStore()
+
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${authStore.token}`
+})
 
 // State
 const images = ref([])
@@ -316,11 +324,15 @@ const filteredImages = computed(() => {
 // Methods
 const fetchImages = async () => {
   try {
-    const response = await fetch('/api/admin/media')
+    const response = await fetch('/api/admin/media', {
+      headers: getHeaders()
+    })
     if (response.ok) {
-      images.value = await response.json()
+      const data = await response.json()
+      images.value = data.images || data || []
     }
   } catch (e) {
+    console.error('Fetch images error:', e)
     // Use static images as fallback
     images.value = [
       { id: 1, name: 'agtr-logo-main', file_path: '/static/images/logos/agtr-logo-main.png', category: 'logo', file_size: 1302574 },
@@ -414,6 +426,9 @@ const uploadFiles = async () => {
 
       const response = await fetch('/api/admin/media/upload', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`
+        },
         body: formData
       })
 
@@ -435,7 +450,7 @@ const updateImage = async () => {
   try {
     const response = await fetch(`/api/admin/media/${selectedImage.value.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(selectedImage.value)
     })
 
@@ -453,7 +468,8 @@ const deleteImage = async (image) => {
 
   try {
     const response = await fetch(`/api/admin/media/${image.id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getHeaders()
     })
 
     if (response.ok) {

@@ -239,6 +239,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import { useAuthStore } from '@/stores/auth'
 import {
   Search,
   RefreshCw,
@@ -259,6 +260,7 @@ import {
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
+const authStore = useAuthStore()
 const loading = ref(false)
 const refreshing = ref(false)
 const servers = ref([])
@@ -275,31 +277,44 @@ const selectedServer = ref(null)
 
 let searchTimeout = null
 
-const onlineCount = computed(() => servers.value.filter(s => s.is_online).length)
-const offlineCount = computed(() => servers.value.filter(s => !s.is_online).length)
-const totalPlayers = computed(() => servers.value.reduce((sum, s) => sum + (s.players || 0), 0))
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${authStore.token}`
+})
+
+const onlineCount = computed(() => servers.value.filter(s => s.is_online || s.status === 'running').length)
+const offlineCount = computed(() => servers.value.filter(s => !s.is_online && s.status !== 'running').length)
+const totalPlayers = computed(() => servers.value.reduce((sum, s) => sum + (s.players || s.current_players || 0), 0))
 
 const fetchServers = async () => {
   loading.value = true
   try {
     const params = new URLSearchParams({
       page: currentPage.value,
-      limit: perPage
+      per_page: perPage
     })
 
-    if (searchQuery.value) params.append('search', searchQuery.value)
-    if (filterGame.value) params.append('game', filterGame.value)
+    if (filterGame.value) params.append('game_type', filterGame.value)
     if (filterStatus.value) params.append('status', filterStatus.value)
 
-    const response = await fetch(`/api/admin/servers?${params}`)
+    const response = await fetch(`/api/admin/servers?${params}`, {
+      headers: getHeaders()
+    })
     if (response.ok) {
       const data = await response.json()
-      servers.value = data.servers || []
-      totalServers.value = data.total || 0
-      totalPages.value = Math.ceil(totalServers.value / perPage)
+      // Map API response to frontend expected format
+      servers.value = (data.servers || []).map(s => ({
+        ...s,
+        is_online: s.status === 'running',
+        players: s.current_players || 0,
+        max_players: s.slots || 32,
+        map: s.current_map || 'N/A'
+      }))
+      totalServers.value = data.pagination?.total || 0
+      totalPages.value = data.pagination?.pages || 1
     }
   } catch (error) {
-    // Fetch error - will show empty state
+    console.error('Fetch servers error:', error)
   }
   loading.value = false
 }
@@ -355,12 +370,15 @@ const restartServer = async (server) => {
   if (!confirm(`${server.name} sunucusunu yeniden başlatmak istediğinize emin misiniz?`)) return
 
   try {
-    const response = await fetch(`/api/admin/servers/${server.id}/restart`, { method: 'POST' })
+    const response = await fetch(`/api/admin/servers/${server.id}/restart`, {
+      method: 'POST',
+      headers: getHeaders()
+    })
     if (response.ok) {
       alert('Sunucu yeniden başlatılıyor...')
     }
   } catch (error) {
-    // Restart error - silent fail
+    console.error('Restart server error:', error)
   }
 }
 
@@ -368,13 +386,16 @@ const deleteServer = async (server) => {
   if (!confirm(`${server.name} sunucusunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz!`)) return
 
   try {
-    const response = await fetch(`/api/admin/servers/${server.id}`, { method: 'DELETE' })
+    const response = await fetch(`/api/admin/servers/${server.id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    })
     if (response.ok) {
       servers.value = servers.value.filter(s => s.id !== server.id)
       totalServers.value--
     }
   } catch (error) {
-    // Delete error - server remains in list
+    console.error('Delete server error:', error)
   }
 }
 

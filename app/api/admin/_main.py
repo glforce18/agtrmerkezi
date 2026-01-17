@@ -28,6 +28,9 @@ from app.models.database import (
     Announcement,
     AuditLog,
     BackupLog,
+    Banner,
+    BannerPosition,
+    BannerType,
     BankTransfer,
     GameServer,
     GameType,
@@ -2485,3 +2488,212 @@ async def update_ticket_status(
     db.commit()
     
     return {"success": True, "message": "Durum guncellendi"}
+
+
+# ==================== BANNER ENDPOINTS ====================
+
+class BannerCreateRequest(BaseModel):
+    name: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    link_url: Optional[str] = None
+    position: str = "hero"
+    is_active: bool = True
+    display_order: int = 0
+
+
+class BannerUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    link_url: Optional[str] = None
+    position: Optional[str] = None
+    is_active: Optional[bool] = None
+    display_order: Optional[int] = None
+
+
+@router.get("/banners")
+async def list_banners(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """Tum bannerlari listele"""
+    banners = db.query(Banner).order_by(Banner.display_order).all()
+    
+    return {
+        "banners": [{
+            "id": b.id,
+            "name": b.name,
+            "title": b.title,
+            "description": b.description,
+            "image_url": b.image_url,
+            "link_url": b.link_url,
+            "position": b.position.value if b.position else "hero",
+            "is_active": b.is_active,
+            "display_order": b.display_order,
+            "created_at": b.created_at.isoformat() if b.created_at else None
+        } for b in banners]
+    }
+
+
+@router.post("/banners")
+async def create_banner(
+    data: BannerCreateRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """Yeni banner olustur"""
+    try:
+        position = BannerPosition(data.position)
+    except ValueError:
+        position = BannerPosition.HERO
+    
+    banner = Banner(
+        name=data.name,
+        title=data.title,
+        description=data.description,
+        image_url=data.image_url,
+        link_url=data.link_url,
+        position=position,
+        is_active=data.is_active,
+        display_order=data.display_order
+    )
+    db.add(banner)
+    db.commit()
+    db.refresh(banner)
+    
+    return {"success": True, "id": banner.id}
+
+
+@router.put("/banners/{banner_id}")
+async def update_banner(
+    banner_id: int,
+    data: BannerUpdateRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """Banner guncelle"""
+    banner = db.query(Banner).filter(Banner.id == banner_id).first()
+    if not banner:
+        raise HTTPException(status_code=404, detail="Banner bulunamadi")
+    
+    if data.name is not None:
+        banner.name = data.name
+    if data.title is not None:
+        banner.title = data.title
+    if data.description is not None:
+        banner.description = data.description
+    if data.image_url is not None:
+        banner.image_url = data.image_url
+    if data.link_url is not None:
+        banner.link_url = data.link_url
+    if data.position is not None:
+        try:
+            banner.position = BannerPosition(data.position)
+        except ValueError:
+            pass
+    if data.is_active is not None:
+        banner.is_active = data.is_active
+    if data.display_order is not None:
+        banner.display_order = data.display_order
+    
+    db.commit()
+    return {"success": True}
+
+
+@router.delete("/banners/{banner_id}")
+async def delete_banner(
+    banner_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """Banner sil"""
+    banner = db.query(Banner).filter(Banner.id == banner_id).first()
+    if not banner:
+        raise HTTPException(status_code=404, detail="Banner bulunamadi")
+    
+    db.delete(banner)
+    db.commit()
+    return {"success": True}
+
+
+# ==================== MEDIA ENDPOINTS ====================
+
+@router.get("/media")
+async def list_media(
+    admin: User = Depends(get_current_admin)
+):
+    """Static gorselleri listele"""
+    import os
+    
+    media_items = []
+    static_path = Path("/var/www/agtrmerkezi/static/images")
+    
+    if static_path.exists():
+        for root, dirs, files in os.walk(static_path):
+            for file in files:
+                if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg")):
+                    full_path = Path(root) / file
+                    rel_path = full_path.relative_to(static_path.parent.parent)
+                    category = Path(root).name
+                    
+                    media_items.append({
+                        "id": len(media_items) + 1,
+                        "name": file.rsplit(".", 1)[0],
+                        "file_path": f"/{rel_path}",
+                        "category": category,
+                        "file_size": full_path.stat().st_size
+                    })
+    
+    return {"images": media_items}
+
+
+@router.post("/media/upload")
+async def upload_media(
+    file: UploadFile = File(...),
+    category: str = Query("general"),
+    admin: User = Depends(get_current_admin)
+):
+    """Gorsel yukle"""
+    import os
+    
+    allowed_ext = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
+    ext = Path(file.filename).suffix.lower()
+    
+    if ext not in allowed_ext:
+        raise HTTPException(status_code=400, detail="Gecersiz dosya formati")
+    
+    upload_dir = Path(f"/var/www/agtrmerkezi/static/images/{category}")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    file_path = upload_dir / file.filename
+    
+    with open(file_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+    
+    return {
+        "success": True,
+        "file_path": f"/static/images/{category}/{file.filename}"
+    }
+
+
+@router.delete("/media/{media_id}")
+async def delete_media(
+    media_id: int,
+    file_path: str = Query(...),
+    admin: User = Depends(get_current_admin)
+):
+    """Gorsel sil"""
+    import os
+    
+    full_path = Path(f"/var/www/agtrmerkezi{file_path}")
+    
+    if full_path.exists() and "/static/images/" in file_path:
+        os.remove(full_path)
+        return {"success": True}
+    
+    raise HTTPException(status_code=404, detail="Dosya bulunamadi")
+

@@ -27,8 +27,8 @@
         </div>
 
         <div class="balance-card armor">
-          <div class="card-icon">
-            <ShieldCheck :size="32" />
+          <div class="card-icon armor-icon">
+            <img :src="armorIconUrl" alt="Armor" />
           </div>
           <div class="card-info">
             <span class="card-label">Armor Bakiye</span>
@@ -70,8 +70,8 @@
             <div v-if="pkg.bonus_percent > 0" class="package-badge">
               +{{ pkg.bonus_percent }}% Bonus
             </div>
-            <div class="package-icon">
-              <ShieldCheck :size="40" />
+            <div class="package-icon armor-pkg-icon">
+              <img :src="armorIconUrl" alt="Armor" />
             </div>
             <div class="package-amount">{{ formatNumber(pkg.armor_amount) }}</div>
             <div class="package-name">Armor</div>
@@ -310,6 +310,12 @@ import {
 
 const authStore = useAuthStore()
 
+// Auth headers helper
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${authStore.token}`
+})
+
 // State
 const showDepositModal = ref(false)
 const showConvertModal = ref(false)
@@ -323,6 +329,7 @@ const transactions = ref([])
 
 // Constants
 const armorRate = 100 // 1 TL = 100 Armor
+const armorIconUrl = '/static/images/icons/armor.png'
 
 // Computed
 const user = computed(() => authStore.user)
@@ -419,7 +426,7 @@ const buyPackage = async (pkg) => {
   try {
     const response = await fetch('/api/wallet/buy-armor-package', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({ package_id: pkg.id })
     })
 
@@ -443,7 +450,7 @@ const processDeposit = async () => {
   try {
     const response = await fetch('/api/wallet/deposit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({
         amount: depositAmount.value,
         payment_method: selectedMethod.value
@@ -476,15 +483,15 @@ const processConversion = async () => {
 
   converting.value = true
   try {
-    const response = await fetch('/api/wallet/convert-to-armor', {
+    const response = await fetch('/api/wallet/exchange', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({ tl_amount: convertAmount.value })
     })
 
     if (response.ok) {
       const data = await response.json()
-      alert(`Donusum basarili! ${formatNumber(data.armor_amount)} Armor eklendi.`)
+      alert(`Donusum basarili! ${formatNumber(data.armor_added)} Armor eklendi.`)
       showConvertModal.value = false
       authStore.fetchUser()
       fetchTransactions()
@@ -501,12 +508,23 @@ const processConversion = async () => {
 
 const fetchTransactions = async () => {
   try {
-    const response = await fetch('/api/wallet/transactions')
+    const response = await fetch('/api/wallet/transactions', {
+      headers: getHeaders()
+    })
     if (response.ok) {
-      transactions.value = await response.json()
+      const data = await response.json()
+      // Map API response to frontend expected format
+      transactions.value = (data || []).map(tx => ({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount,
+        wallet_type: tx.wallet_type,
+        status: 'completed',
+        created_at: tx.created_at
+      }))
     }
   } catch (e) {
-    // Mock data
+    console.error('Fetch transactions error:', e)
     transactions.value = []
   }
 }
@@ -589,6 +607,12 @@ onMounted(() => {
 .balance-card.armor .card-icon {
   background: rgba(249, 115, 22, 0.1);
   color: #f97316;
+}
+
+.card-icon.armor-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
 }
 
 .balance-card.rate .card-icon {
@@ -704,6 +728,12 @@ onMounted(() => {
 .package-icon {
   color: var(--primary-color);
   margin-bottom: 12px;
+}
+
+.package-icon.armor-pkg-icon img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
 }
 
 .package-amount {

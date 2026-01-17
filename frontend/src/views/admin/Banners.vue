@@ -168,7 +168,15 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import { useAuthStore } from '@/stores/auth'
 import { Plus, Edit, Trash2, X, Save, Image } from 'lucide-vue-next'
+
+const authStore = useAuthStore()
+
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${authStore.token}`
+})
 
 const bannerLocations = [
   { id: 'hero', name: 'Ana Sayfa Hero', size: '1920x600', class: 'hero' },
@@ -239,6 +247,20 @@ const openMediaPicker = () => {
   // Open media picker modal
 }
 
+const fetchBanners = async () => {
+  try {
+    const response = await fetch('/api/admin/banners', {
+      headers: getHeaders()
+    })
+    if (response.ok) {
+      const data = await response.json()
+      banners.value = data.banners || data || []
+    }
+  } catch (e) {
+    console.error('Fetch banners error:', e)
+  }
+}
+
 const saveBanner = async () => {
   try {
     const method = editingBanner.value ? 'PUT' : 'POST'
@@ -248,12 +270,13 @@ const saveBanner = async () => {
 
     const response = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(formData)
     })
 
     if (response.ok) {
       closeModal()
+      fetchBanners()
     }
   } catch (e) {
     console.error('Save error:', e)
@@ -264,15 +287,20 @@ const removeBanner = async (banner) => {
   if (!confirm('Bu banneri silmek istediginize emin misiniz?')) return
 
   try {
-    await fetch(`/api/admin/banners/${banner.id}`, { method: 'DELETE' })
-    banners.value = banners.value.filter(b => b.id !== banner.id)
+    const response = await fetch(`/api/admin/banners/${banner.id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    })
+    if (response.ok) {
+      banners.value = banners.value.filter(b => b.id !== banner.id)
+    }
   } catch (e) {
     console.error('Delete error:', e)
   }
 }
 
 onMounted(() => {
-  // Fetch banners
+  fetchBanners()
 })
 </script>
 
