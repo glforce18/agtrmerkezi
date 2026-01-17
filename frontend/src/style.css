@@ -830,3 +830,225 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =========================================
+   GAMING THEME STYLES
+   ========================================= */
+
+/* Cyberpunk Theme */
+[data-theme="agtr_cyber"] {
+  --bg-primary: #0a0a14;
+  --bg-secondary: #12121f;
+  --text-primary: #eaeaea;
+  --primary-color: #ff00ff;
+  --secondary-color: #00ffff;
+  --accent-color: #ffff00;
+}
+
+[data-theme="agtr_cyber"] body {
+  background: linear-gradient(135deg, #0a0a14 0%, #1a0a2e 50%, #0a0a14 100%);
+}
+
+[data-theme="agtr_cyber"] .btn-primary {
+  box-shadow: 0 0 10px #ff00ff, 0 0 20px rgba(255, 0, 255, 0.3);
+}
+
+[data-theme="agtr_cyber"] .btn-primary:hover {
+  box-shadow: 0 0 20px #ff00ff, 0 0 40px rgba(255, 0, 255, 0.5);
+}
+
+[data-theme="agtr_cyber"] .glass-card {
+  border: 1px solid rgba(255, 0, 255, 0.3);
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.1);
+}
+
+/* Half-Life Theme */
+[data-theme="agtr_halflife"] {
+  --bg-primary: #121212;
+  --bg-secondary: #1a1a1a;
+  --text-primary: #e0e0e0;
+  --primary-color: #ff6600;
+  --secondary-color: #4a9c2d;
+}
+
+[data-theme="agtr_halflife"] body {
+  background: linear-gradient(135deg, #121212 0%, #1a1a1a 50%, #0d0d0d 100%);
+}
+
+[data-theme="agtr_halflife"] .btn-primary {
+  background: linear-gradient(135deg, #ff6600 0%, #cc5200 100%);
+  box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);
+}
+
+[data-theme="agtr_halflife"] .glass-card {
+  border: 1px solid rgba(255, 102, 0, 0.2);
+  background: rgba(26, 26, 26, 0.9);
+}
+
+/* Counter-Strike Theme */
+[data-theme="agtr_cs"] {
+  --bg-primary: #0d1318;
+  --bg-secondary: #1c2833;
+  --text-primary: #ecf0f1;
+  --primary-color: #4a90d9;
+  --secondary-color: #c9a227;
+}
+
+[data-theme="agtr_cs"] body {
+  background: linear-gradient(135deg, #0d1318 0%, #1c2833 50%, #0d1318 100%);
+}
+
+[data-theme="agtr_cs"] .btn-primary {
+  background: linear-gradient(135deg, #4a90d9 0%, #3a7bc0 100%);
+}
+
+[data-theme="agtr_cs"] .glass-card {
+  border: 1px solid rgba(74, 144, 217, 0.2);
+}
+
+/* Neon Glow Effects */
+.neon-text {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+}
+
+.neon-box {
+  box-shadow: 0 0 10px var(--primary-color, #f97316),
+              0 0 20px var(--primary-color, #f97316),
+              0 0 30px var(--primary-color, #f97316);
+}
+
+.neon-border {
+  border: 2px solid var(--primary-color, #f97316);
+  box-shadow: inset 0 0 10px rgba(249, 115, 22, 0.3),
+              0 0 10px rgba(249, 115, 22, 0.3);
+}
+
+/* Gaming Card Hover Effects */
+.gaming-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.gaming-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
+              0 0 20px rgba(249, 115, 22, 0.2);
+}
+
+/* Glitch Effect */
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+.glitch-hover:hover {
+  animation: glitch 0.3s ease-in-out;
+}
+
+/* Scan Lines Effect (optional for retro feel) */
+.scan-lines::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+}
+
+/* Pulse Glow Animation */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px var(--primary-color, #f97316);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--primary-color, #f97316),
+                0 0 30px var(--primary-color, #f97316);
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Status Indicators */
+.status-online {
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+}
+
+.status-offline {
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+}
+
+.status-away {
+  background: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
+}
+
+/* Gaming Button Styles */
+.btn-gaming {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--primary-color, #f97316) 0%, var(--gaming-orange-dark, #ea580c) 100%);
+  border: none;
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+}
+
+.btn-gaming::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-gaming:hover::before {
+  left: 100%;
+}
+
+.btn-gaming:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3);
+}
+
+/* Gradient Text */
+.text-gradient-orange {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-cyber {
+  background: linear-gradient(135deg, #ff00ff, #00ffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #c9a227, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

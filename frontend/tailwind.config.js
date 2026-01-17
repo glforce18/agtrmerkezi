@@ -135,26 +135,27 @@ export default {
   daisyui: {
     themes: [
       {
+        // Default AGTR Dark Theme - Clean Gaming
         agtr_dark: {
-          "primary": "#6366f1",
-          "primary-focus": "#4f46e5",
+          "primary": "#f97316",           // Orange - HL inspired
+          "primary-focus": "#ea580c",
           "primary-content": "#ffffff",
 
           "secondary": "#8b5cf6",
           "secondary-focus": "#7c3aed",
           "secondary-content": "#ffffff",
 
-          "accent": "#ec4899",
-          "accent-focus": "#db2777",
+          "accent": "#06b6d4",
+          "accent-focus": "#0891b2",
           "accent-content": "#ffffff",
 
           "neutral": "#1e293b",
           "neutral-focus": "#0f172a",
           "neutral-content": "#f1f5f9",
 
-          "base-100": "#0f172a",
-          "base-200": "#1e293b",
-          "base-300": "#334155",
+          "base-100": "#0a0f1a",           // Darker background
+          "base-200": "#111827",
+          "base-300": "#1f2937",
           "base-content": "#f1f5f9",
 
           "info": "#3b82f6",
@@ -162,28 +163,139 @@ export default {
           "warning": "#f59e0b",
           "error": "#ef4444",
 
-          "--rounded-box": "1rem",
+          "--rounded-box": "0.75rem",
           "--rounded-btn": "0.5rem",
-          "--rounded-badge": "1.9rem",
-          "--animation-btn": "0.25s",
-          "--animation-input": "0.2s",
+          "--rounded-badge": "1rem",
+          "--animation-btn": "0.2s",
+          "--animation-input": "0.15s",
           "--btn-text-case": "uppercase",
-          "--btn-focus-scale": "0.95",
-          "--border-btn": "1px",
-          "--tab-border": "1px",
+          "--btn-focus-scale": "0.97",
+          "--border-btn": "2px",
+          "--tab-border": "2px",
           "--tab-radius": "0.5rem",
         },
+        // Cyberpunk Neon Theme
+        agtr_cyber: {
+          "primary": "#ff00ff",           // Magenta
+          "primary-focus": "#cc00cc",
+          "primary-content": "#000000",
+
+          "secondary": "#00ffff",          // Cyan
+          "secondary-focus": "#00cccc",
+          "secondary-content": "#000000",
+
+          "accent": "#ffff00",             // Yellow
+          "accent-focus": "#cccc00",
+          "accent-content": "#000000",
+
+          "neutral": "#1a1a2e",
+          "neutral-focus": "#0f0f1a",
+          "neutral-content": "#eaeaea",
+
+          "base-100": "#0a0a14",
+          "base-200": "#12121f",
+          "base-300": "#1a1a2e",
+          "base-content": "#eaeaea",
+
+          "info": "#00d4ff",
+          "success": "#00ff88",
+          "warning": "#ffcc00",
+          "error": "#ff0055",
+
+          "--rounded-box": "0",
+          "--rounded-btn": "0",
+          "--rounded-badge": "0",
+          "--animation-btn": "0.15s",
+          "--animation-input": "0.1s",
+          "--btn-text-case": "uppercase",
+          "--btn-focus-scale": "1",
+          "--border-btn": "2px",
+        },
+        // Half-Life Orange Theme
+        agtr_halflife: {
+          "primary": "#ff6600",           // HL Orange
+          "primary-focus": "#cc5200",
+          "primary-content": "#ffffff",
+
+          "secondary": "#4a9c2d",          // HL Green
+          "secondary-focus": "#3d8024",
+          "secondary-content": "#ffffff",
+
+          "accent": "#2d7a9c",
+          "accent-focus": "#246580",
+          "accent-content": "#ffffff",
+
+          "neutral": "#2a2a2a",
+          "neutral-focus": "#1a1a1a",
+          "neutral-content": "#e0e0e0",
+
+          "base-100": "#121212",
+          "base-200": "#1a1a1a",
+          "base-300": "#2a2a2a",
+          "base-content": "#e0e0e0",
+
+          "info": "#3498db",
+          "success": "#4a9c2d",
+          "warning": "#ff6600",
+          "error": "#c0392b",
+
+          "--rounded-box": "0.25rem",
+          "--rounded-btn": "0.25rem",
+          "--rounded-badge": "0.25rem",
+          "--animation-btn": "0.2s",
+          "--animation-input": "0.15s",
+          "--btn-text-case": "uppercase",
+          "--btn-focus-scale": "0.98",
+          "--border-btn": "2px",
+        },
+        // Counter-Strike Blue Theme
+        agtr_cs: {
+          "primary": "#4a90d9",           // CS Blue
+          "primary-focus": "#3a7bc0",
+          "primary-content": "#ffffff",
+
+          "secondary": "#c9a227",          // CS Gold
+          "secondary-focus": "#a8871f",
+          "secondary-content": "#000000",
+
+          "accent": "#8b4513",
+          "accent-focus": "#723a10",
+          "accent-content": "#ffffff",
+
+          "neutral": "#1c2833",
+          "neutral-focus": "#0d1318",
+          "neutral-content": "#ecf0f1",
+
+          "base-100": "#0d1318",
+          "base-200": "#1c2833",
+          "base-300": "#2c3e50",
+          "base-content": "#ecf0f1",
+
+          "info": "#4a90d9",
+          "success": "#27ae60",
+          "warning": "#c9a227",
+          "error": "#e74c3c",
+
+          "--rounded-box": "0.5rem",
+          "--rounded-btn": "0.375rem",
+          "--rounded-badge": "1rem",
+          "--animation-btn": "0.2s",
+          "--btn-text-case": "uppercase",
+          "--btn-focus-scale": "0.98",
+          "--border-btn": "1px",
+        },
+        // Light theme
         agtr_light: {
-          "primary": "#6366f1",
-          "primary-focus": "#4f46e5",
+          "primary": "#f97316",
+          "primary-focus": "#ea580c",
           "primary-content": "#ffffff",
 
           "secondary": "#8b5cf6",
           "secondary-focus": "#7c3aed",
           "secondary-content": "#ffffff",
 
-          "accent": "#ec4899",
-          "accent-focus": "#db2777",
+          "accent": "#06b6d4",
+          "accent-focus": "#0891b2",
           "accent-content": "#ffffff",
 
           "neutral": "#64748b",
@@ -200,18 +312,24 @@ export default {
           "warning": "#f59e0b",
           "error": "#ef4444",
 
-          "--rounded-box": "1rem",
+          "--rounded-box": "0.75rem",
           "--rounded-btn": "0.5rem",
-          "--rounded-badge": "1.9rem",
-          "--animation-btn": "0.25s",
-          "--animation-input": "0.2s",
+          "--rounded-badge": "1rem",
+          "--animation-btn": "0.2s",
+          "--animation-input": "0.15s",
           "--btn-text-case": "uppercase",
-          "--btn-focus-scale": "0.95",
-          "--border-btn": "1px",
-          "--tab-border": "1px",
-          "--tab-radius": "0.5rem",
+          "--btn-focus-scale": "0.97",
+          "--border-btn": "2px",
         },
       },
+      // Include built-in gaming themes
+      "synthwave",
+      "cyberpunk",
+      "halloween",
+      "forest",
+      "black",
+      "luxury",
+      "dracula",
     ],
     darkTheme: "agtr_dark",
     base: true,
