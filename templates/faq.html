@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}Sıkça Sorulan Sorular - {{ settings.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1>
+            <svg class="icon" width="32" height="32"><use href="/static/images/icons.svg#icon-help"></use></svg>
+            Sıkça Sorulan Sorular
+        </h1>
+        <p class="page-subtitle">Merak ettiğiniz her şeyin cevabı burada</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="faq-page">
+        <!-- Arama -->
+        <div class="faq-search">
+            <input type="text" id="faqSearch" placeholder="Soru ara..." class="form-control">
+            <svg class="icon search-icon" width="20" height="20"><use href="/static/images/icons.svg#icon-search"></use></svg>
+        </div>
+
+        <!-- Kategori Tabs -->
+        <div class="faq-categories">
+            <button class="faq-tab active" data-category="all">Tümü</button>
+            {% for category in faq_categories %}
+            <button class="faq-tab" data-category="{{ category }}">{{ category }}</button>
+            {% endfor %}
+        </div>
+
+        <!-- FAQ Items -->
+        <div class="faq-list" id="faqList">
+            {% for category, items in faq_items.items() %}
+            <div class="faq-category-group" data-category="{{ category }}">
+                <h3 class="faq-category-title">{{ category }}</h3>
+                {% for item in items %}
+                <div class="faq-item" data-question="{{ item.question|lower }}" data-answer="{{ item.answer|lower }}">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-icon">{{ item.icon or '❓' }}</span>
+                        <span class="faq-text">{{ item.question }}</span>
+                        <svg class="faq-arrow" width="20" height="20"><use href="/static/images/icons.svg#icon-chevron-down"></use></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            {{ item.answer | safe }}
+                        </div>
+                        <div class="faq-helpful">
+                            <span>Bu cevap yardımcı oldu mu?</span>
+                            <button class="btn btn-sm btn-outline helpful-btn" data-id="{{ item.id }}" data-vote="yes">
+                                <svg width="16" height="16"><use href="/static/images/icons.svg#icon-thumbs-up"></use></svg>
+                                Evet
+                            </button>
+                            <button class="btn btn-sm btn-outline helpful-btn" data-id="{{ item.id }}" data-vote="no">
+                                <svg width="16" height="16"><use href="/static/images/icons.svg#icon-thumbs-down"></use></svg>
+                                Hayır
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Bulunamadı -->
+        <div class="faq-empty" id="faqEmpty" style="display: none;">
+            <svg class="icon" width="64" height="64"><use href="/static/images/icons.svg#icon-search"></use></svg>
+            <h3>Sonuç Bulunamadı</h3>
+            <p>Aradığınız soruyu bulamadık. Bize ulaşmak ister misiniz?</p>
+            <a href="/contact" class="btn btn-primary">İletişime Geç</a>
+        </div>
+
+        <!-- İletişim CTA -->
+        <div class="faq-contact-cta">
+            <div class="cta-content">
+                <h3>Sorunuz hala cevaplanmadı mı?</h3>
+                <p>Destek ekibimiz size yardımcı olmaktan mutluluk duyar.</p>
+            </div>
+            <div class="cta-buttons">
+                <a href="/contact" class="btn btn-primary">
+                    <svg width="20" height="20"><use href="/static/images/icons.svg#icon-mail"></use></svg>
+                    İletişim
+                </a>
+                {% if current_user %}
+                <a href="/panel/tickets/new" class="btn btn-secondary">
+                    <svg width="20" height="20"><use href="/static/images/icons.svg#icon-ticket"></use></svg>
+                    Destek Talebi
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    padding: 60px 0;
+    text-align: center;
+    margin-bottom: 40px;
+}
+.page-header h1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+.page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.faq-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 60px;
+}
+
+.faq-search {
+    position: relative;
+    margin-bottom: 30px;
+}
+.faq-search input {
+    padding-left: 50px;
+    font-size: 1.1rem;
+    height: 56px;
+    border-radius: 12px;
+}
+.faq-search .search-icon {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+.faq-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+.faq-tab {
+    padding: 10px 20px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.faq-tab:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+.faq-tab.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.faq-category-title {
+    font-size: 1.3rem;
+    margin: 30px 0 20px;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.faq-category-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+.faq-item {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s;
+}
+.faq-item:hover {
+    border-color: var(--primary-color);
+}
+.faq-item.open {
+    box-shadow: 0 4px 20px rgba(255, 107, 0, 0.15);
+}
+
+.faq-question {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+.faq-question:hover {
+    color: var(--primary-color);
+}
+.faq-icon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+.faq-text {
+    flex: 1;
+}
+.faq-arrow {
+    flex-shrink: 0;
+    transition: transform 0.3s;
+    color: var(--text-secondary);
+}
+.faq-item.open .faq-arrow {
+    transform: rotate(180deg);
+    color: var(--primary-color);
+}
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+.faq-item.open .faq-answer {
+    max-height: 500px;
+}
+.faq-answer-content {
+    padding: 0 20px 20px 55px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+.faq-answer-content a {
+    color: var(--primary-color);
+}
+
+.faq-helpful {
+    padding: 15px 20px 20px 55px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border-color);
+    margin-top: 10px;
+}
+.helpful-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.helpful-btn.voted {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.faq-empty {
+    text-align: center;
+    padding: 60px 20px;
+}
+.faq-empty .icon {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+.faq-empty h3 {
+    margin-bottom: 10px;
+}
+.faq-empty p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.faq-contact-cta {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #ff8c42 100%);
+    border-radius: 16px;
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    margin-top: 50px;
+    color: white;
+}
+.cta-content h3 {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+.cta-content p {
+    opacity: 0.9;
+}
+.cta-buttons {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.cta-buttons .btn-primary {
+    background: white;
+    color: var(--primary-color);
+}
+.cta-buttons .btn-secondary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-color: rgba(255,255,255,0.3);
+}
+
+@media (max-width: 768px) {
+    .page-header h1 { font-size: 1.8rem; }
+    .faq-contact-cta {
+        flex-direction: column;
+        text-align: center;
+    }
+    .faq-answer-content, .faq-helpful {
+        padding-left: 20px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // FAQ Accordion
+    document.querySelectorAll('.faq-question').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const item = this.closest('.faq-item');
+            const wasOpen = item.classList.contains('open');
+            
+            // Diğerlerini kapat
+            document.querySelectorAll('.faq-item.open').forEach(el => {
+                el.classList.remove('open');
+                el.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+            });
+            
+            // Bu item'ı toggle et
+            if (!wasOpen) {
+                item.classList.add('open');
+                this.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+
+    // Arama
+    const searchInput = document.getElementById('faqSearch');
+    const faqList = document.getElementById('faqList');
+    const faqEmpty = document.getElementById('faqEmpty');
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        let visibleCount = 0;
+
+        document.querySelectorAll('.faq-item').forEach(item => {
+            const question = item.dataset.question;
+            const answer = item.dataset.answer;
+            const matches = question.includes(query) || answer.includes(query);
+            
+            item.style.display = matches || !query ? '' : 'none';
+            if (matches || !query) visibleCount++;
+        });
+
+        // Boş kategori başlıklarını gizle
+        document.querySelectorAll('.faq-category-group').forEach(group => {
+            const visibleItems = group.querySelectorAll('.faq-item:not([style*="display: none"])');
+            group.style.display = visibleItems.length > 0 ? '' : 'none';
+        });
+
+        faqEmpty.style.display = visibleCount === 0 ? '' : 'none';
+    });
+
+    // Kategori filtreleme
+    document.querySelectorAll('.faq-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.faq-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            const category = this.dataset.category;
+            
+            document.querySelectorAll('.faq-category-group').forEach(group => {
+                if (category === 'all' || group.dataset.category === category) {
+                    group.style.display = '';
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // Helpful votes
+    document.querySelectorAll('.helpful-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const vote = this.dataset.vote;
+            
+            // Visual feedback
+            this.closest('.faq-helpful').querySelectorAll('.helpful-btn').forEach(b => {
+                b.classList.remove('voted');
+            });
+            this.classList.add('voted');
+
+            // API call
+            fetch(`/api/assets/faq/${id}/vote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ helpful: vote === 'yes' })
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

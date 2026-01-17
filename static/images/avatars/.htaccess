@@ -1,0 +1,2 @@
+# Fallback for missing avatars
+ErrorDocument 404 /static/images/default-avatar.svg

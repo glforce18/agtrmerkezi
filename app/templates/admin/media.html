@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Görsel Yönetimi - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-images me-2"></i>Görsel Yönetimi
+            </h1>
+            <p class="text-muted">Site, oyun ve forum görsellerini yönetin</p>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#site-media">
+                <i class="fas fa-desktop me-2"></i>Site Görselleri
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#game-logos">
+                <i class="fas fa-gamepad me-2"></i>Oyun Logoları
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#forum-icons">
+                <i class="fas fa-comments me-2"></i>Forum İkonları
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Site Görselleri -->
+        <div class="tab-pane fade show active" id="site-media">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Site Logosu</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="current-logo" class="mb-3 text-center">
+                                <img src="/static/images/logo.svg" alt="Logo" class="img-fluid" style="max-height: 150px;">
+                            </div>
+                            <form id="upload-logo-form" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label class="form-label">Yeni Logo Yükle</label>
+                                    <input type="file" class="form-control" name="file" accept="image/*" required>
+                                    <small class="text-muted">PNG, SVG veya JPG (Max 5MB)</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-2"></i>Yükle
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Favicon</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="current-favicon" class="mb-3 text-center">
+                                <img src="/static/images/favicon.svg" alt="Favicon" style="max-height: 64px;">
+                            </div>
+                            <form id="upload-favicon-form" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label class="form-label">Yeni Favicon Yükle</label>
+                                    <input type="file" class="form-control" name="file" accept="image/*" required>
+                                    <small class="text-muted">32x32 veya 64x64 PNG</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-2"></i>Yükle
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Banner Görseli</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="current-banner" class="mb-3 text-center">
+                                <img src="/static/images/banner.jpg" alt="Banner" class="img-fluid" style="max-height: 150px;">
+                            </div>
+                            <form id="upload-banner-form" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label class="form-label">Yeni Banner Yükle</label>
+                                    <input type="file" class="form-control" name="file" accept="image/*" required>
+                                    <small class="text-muted">1920x400 önerilen</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-2"></i>Yükle
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">OG Image (Sosyal Medya)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="current-og-image" class="mb-3 text-center">
+                                <img src="/static/images/og-image.jpg" alt="OG Image" class="img-fluid" style="max-height: 150px;">
+                            </div>
+                            <form id="upload-og-image-form" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label class="form-label">Yeni OG Image Yükle</label>
+                                    <input type="file" class="form-control" name="file" accept="image/*" required>
+                                    <small class="text-muted">1200x630 önerilen</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-2"></i>Yükle
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Oyun Logoları -->
+        <div class="tab-pane fade" id="game-logos">
+            <div class="row">
+                <div class="col-md-4 mb-4" data-game="hldm">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">Half-Life Deathmatch</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="current-game-logo mb-3 text-center">
+                                <i class="fas fa-gamepad fa-4x text-muted"></i>
+                            </div>
+                            <form class="upload-game-logo-form" enctype="multipart/form-data">
+                                <input type="hidden" name="game_type" value="hldm">
+                                <div class="mb-3">
+                                    <label class="form-label">Logo Yükle</label>
+                                    <input type="file" class="form-control" name="file" accept="image/*" required>
+                                </div>
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="fas fa-upload me-2"></i>Yükle
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4" data-game="ag">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">Adrenaline Gamer</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="current-game-logo mb-3 text-center">
+                                <i class="fas fa-running fa-4x text-muted"></i>
+                            </div>
+                            <form class="upload-game-logo-form" enctype="multipart/form-data">
+                                <input type="hidden" name="game_type" value="ag">
+                                <div class="mb-3">
+                                    <label class="form-label">Logo Yükle</label>
+                                    <input type="file" class="form-control" name="file" accept="image/*" required>
+                                </div>
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-upload me-2"></i>Yükle
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4" data-game="cs16">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">Counter-Strike 1.6</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="current-game-logo mb-3 text-center">
+                                <i class="fas fa-crosshairs fa-4x text-muted"></i>
+                            </div>
+                            <form class="upload-game-logo-form" enctype="multipart/form-data">
+                                <input type="hidden" name="game_type" value="cs16">
+                                <div class="mb-3">
+                                    <label class="form-label">Logo Yükle</label>
+                                    <input type="file" class="form-control" name="file" accept="image/*" required>
+                                </div>
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="fas fa-upload me-2"></i>Yükle
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forum İkonları -->
+        <div class="tab-pane fade" id="forum-icons">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Font Awesome İkonları:</strong> Özel görsel yüklemek yerine Font Awesome ikon sınıfı da kullanabilirsiniz.
+                        <a href="https://fontawesome.com/icons" target="_blank" class="alert-link">İkon Listesi</a>
+                    </div>
+                </div>
+
+                <div id="forum-categories-list" class="col-12">
+                    <!-- Forum kategorileri buraya dinamik yüklenecek -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Site görselleri yükleme
+['logo', 'favicon', 'banner', 'og-image'].forEach(type => {
+    const form = document.getElementById(`upload-${type}-form`);
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            formData.append('media_type', type);
+
+            try {
+                const res = await fetch('/api/media/site/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    alert('Görsel başarıyla yüklendi!');
+                    location.reload();
+                } else {
+                    alert('Yükleme başarısız!');
+                }
+            } catch (err) {
+                alert('Hata: ' + err.message);
+            }
+        });
+    }
+});
+
+// Oyun logoları yükleme
+document.querySelectorAll('.upload-game-logo-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+
+        try {
+            const res = await fetch('/api/media/games/upload', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // Önizlemeyi güncelle
+                const gameType = formData.get('game_type');
+                const container = form.closest('[data-game]');
+                const preview = container.querySelector('.current-game-logo');
+                preview.innerHTML = `<img src="${data.url}" class="img-fluid" style="max-height: 150px;">`;
+                alert('Logo başarıyla yüklendi!');
+            } else {
+                alert('Yükleme başarısız!');
+            }
+        } catch (err) {
+            alert('Hata: ' + err.message);
+        }
+    });
+});
+
+// Mevcut logoları yükle
+async function loadGameLogos() {
+    try {
+        const res = await fetch('/api/media/games/list');
+        const logos = await res.json();
+
+        for (const [gameType, url] of Object.entries(logos)) {
+            const container = document.querySelector(`[data-game="${gameType}"]`);
+            if (container) {
+                const preview = container.querySelector('.current-game-logo');
+                preview.innerHTML = `<img src="${url}" class="img-fluid" style="max-height: 150px;">`;
+            }
+        }
+    } catch (err) {
+        console.error('Logo yükleme hatası:', err);
+    }
+}
+
+// Sayfa yüklendiğinde logoları getir
+loadGameLogos();
+</script>
+{% endblock %}

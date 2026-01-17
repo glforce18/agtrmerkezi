@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Kullanım Şartları - {{ settings.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1>
+            <svg class="icon" width="32" height="32"><use href="/static/images/icons.svg#icon-document"></use></svg>
+            Kullanım Şartları
+        </h1>
+        <p class="page-subtitle">Son güncelleme: {{ page.updated_at.strftime('%d.%m.%Y') if page and page.updated_at else '01.01.2024' }}</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="legal-page">
+        <nav class="legal-nav">
+            <h4>İçindekiler</h4>
+            <ul>
+                <li><a href="#intro">Giriş</a></li>
+                <li><a href="#definitions">Tanımlar</a></li>
+                <li><a href="#services">Hizmetler</a></li>
+                <li><a href="#accounts">Hesap Kuralları</a></li>
+                <li><a href="#payments">Ödeme ve İadeler</a></li>
+                <li><a href="#usage">Kullanım Kuralları</a></li>
+                <li><a href="#liability">Sorumluluk</a></li>
+                <li><a href="#termination">Fesih</a></li>
+                <li><a href="#contact">İletişim</a></li>
+            </ul>
+        </nav>
+
+        <div class="legal-content">
+            {% if page and page.content %}
+                {{ page.content | safe }}
+            {% else %}
+            <section id="intro">
+                <h2>1. Giriş</h2>
+                <p>Bu Kullanım Şartları ("Şartlar"), AGTR Merkezi ("biz", "bizim", "Platform") tarafından sunulan tüm hizmetlerin kullanımını düzenler. Platformumuzu kullanarak bu şartları kabul etmiş sayılırsınız.</p>
+                <p>Bu şartları kabul etmiyorsanız, lütfen hizmetlerimizi kullanmayınız.</p>
+            </section>
+
+            <section id="definitions">
+                <h2>2. Tanımlar</h2>
+                <ul>
+                    <li><strong>Platform:</strong> AGTR Merkezi web sitesi ve tüm ilişkili hizmetler</li>
+                    <li><strong>Kullanıcı:</strong> Platforma kayıtlı her kişi</li>
+                    <li><strong>Sunucu:</strong> Kiralanan oyun sunucuları</li>
+                    <li><strong>Hizmet:</strong> Sunucu barındırma, yönetim ve ilgili eklentiler</li>
+                </ul>
+            </section>
+
+            <section id="services">
+                <h2>3. Hizmetler</h2>
+                <h3>3.1 Sunucu Barındırma</h3>
+                <p>Half-Life, Counter-Strike 1.6 ve türevleri için oyun sunucusu barındırma hizmeti sunuyoruz. Sunucular:</p>
+                <ul>
+                    <li>Seçilen pakete göre belirlenen slot sayısına sahiptir</li>
+                    <li>7/24 erişilebilir olmayı hedefler</li>
+                    <li>DDoS koruması altındadır</li>
+                    <li>Belirtilen süre boyunca aktif kalır</li>
+                </ul>
+
+                <h3>3.2 SLA (Hizmet Seviyesi Taahhüdü)</h3>
+                <p>Aylık %99.5 uptime hedefliyoruz. Planlı bakımlar önceden duyurulur ve SLA hesaplamasına dahil edilmez.</p>
+            </section>
+
+            <section id="accounts">
+                <h2>4. Hesap Kuralları</h2>
+                <h3>4.1 Kayıt</h3>
+                <ul>
+                    <li>Doğru ve güncel bilgiler sağlamalısınız</li>
+                    <li>Her kişi için tek hesap izni verilir</li>
+                    <li>Hesap bilgilerinizi güvende tutmak sizin sorumluluğunuzdur</li>
+                    <li>Hesabınızda gerçekleşen tüm aktivitelerden sorumlusunuz</li>
+                </ul>
+
+                <h3>4.2 Hesap Güvenliği</h3>
+                <p>İki faktörlü doğrulama (2FA) kullanmanızı şiddetle öneriyoruz. Hesabınıza yetkisiz erişim şüphesi durumunda derhal bizimle iletişime geçin.</p>
+            </section>
+
+            <section id="payments">
+                <h2>5. Ödeme ve İadeler</h2>
+                <h3>5.1 Ödeme</h3>
+                <ul>
+                    <li>Tüm fiyatlar Türk Lirası (TL) cinsindendir</li>
+                    <li>KDV dahildir</li>
+                    <li>Ödeme işlemi tamamlandıktan sonra hizmet aktif edilir</li>
+                </ul>
+
+                <h3>5.2 İade Politikası</h3>
+                <ul>
+                    <li>İlk 24 saat içinde hizmet kullanılmamışsa tam iade yapılabilir</li>
+                    <li>24 saat sonrası iadeler değerlendirilir</li>
+                    <li>Kural ihlali nedeniyle sonlandırılan hizmetler için iade yapılmaz</li>
+                    <li>Yüklenen bakiye 30 gün içinde talep edilirse iade edilir</li>
+                </ul>
+            </section>
+
+            <section id="usage">
+                <h2>6. Kullanım Kuralları</h2>
+                <h3>6.1 Yasak Aktiviteler</h3>
+                <p>Aşağıdaki aktiviteler kesinlikle yasaktır:</p>
+                <ul>
+                    <li>Hile, hack veya exploit kullanımı</li>
+                    <li>DDoS saldırısı düzenleme veya yardım etme</li>
+                    <li>Yasadışı içerik barındırma</li>
+                    <li>Irkçı, nefret söylemi içeren içerik</li>
+                    <li>Spam veya flood</li>
+                    <li>Başka kullanıcılara taciz</li>
+                    <li>Platformun kötüye kullanımı</li>
+                </ul>
+
+                <h3>6.2 Sunucu Kuralları</h3>
+                <ul>
+                    <li>Sunucunuz sadece belirtilen oyunlar için kullanılabilir</li>
+                    <li>Mining veya başka amaçlı kullanım yasaktır</li>
+                    <li>Kaynak limitlerine uyulmalıdır</li>
+                </ul>
+            </section>
+
+            <section id="liability">
+                <h2>7. Sorumluluk Sınırları</h2>
+                <p>Platform, aşağıdaki durumlardan sorumlu tutulamaz:</p>
+                <ul>
+                    <li>Doğal afetler, savaş veya mücbir sebepler</li>
+                    <li>Üçüncü taraf hizmetlerindeki kesintiler</li>
+                    <li>Kullanıcı hatalarından kaynaklanan veri kayıpları</li>
+                    <li>Dolaylı, arızi veya özel zararlar</li>
+                </ul>
+                <p>Toplam sorumluluk, son 12 ayda yapılan ödemelerle sınırlıdır.</p>
+            </section>
+
+            <section id="termination">
+                <h2>8. Fesih</h2>
+                <h3>8.1 Kullanıcı Tarafından</h3>
+                <p>Hesabınızı istediğiniz zaman kapatabilirsiniz. Aktif hizmetler süreleri sonuna kadar devam eder.</p>
+
+                <h3>8.2 Platform Tarafından</h3>
+                <p>Şartların ihlali durumunda hesabınız uyarı olmaksızın askıya alınabilir veya sonlandırılabilir.</p>
+            </section>
+
+            <section id="contact">
+                <h2>9. İletişim</h2>
+                <p>Sorularınız için:</p>
+                <ul>
+                    <li>E-posta: destek@agtrmerkezi.com</li>
+                    <li>Discord: <a href="#">AGTR Merkezi Discord</a></li>
+                    <li>İletişim formu: <a href="/contact">/contact</a></li>
+                </ul>
+            </section>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    padding: 60px 0;
+    text-align: center;
+    margin-bottom: 40px;
+}
+.page-header h1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.legal-page {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-bottom: 60px;
+}
+
+.legal-nav {
+    position: sticky;
+    top: 100px;
+    height: fit-content;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+}
+.legal-nav h4 {
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+.legal-nav ul {
+    list-style: none;
+}
+.legal-nav li {
+    margin-bottom: 8px;
+}
+.legal-nav a {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+.legal-nav a:hover {
+    color: var(--primary-color);
+}
+
+.legal-content section {
+    margin-bottom: 40px;
+    padding-top: 20px;
+}
+.legal-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+}
+.legal-content h3 {
+    font-size: 1.2rem;
+    margin: 25px 0 15px;
+}
+.legal-content p {
+    line-height: 1.8;
+    margin-bottom: 15px;
+    color: var(--text-secondary);
+}
+.legal-content ul {
+    margin: 15px 0;
+    padding-left: 25px;
+}
+.legal-content li {
+    margin-bottom: 10px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+}
+.legal-content a {
+    color: var(--primary-color);
+}
+
+@media (max-width: 992px) {
+    .legal-page {
+        grid-template-columns: 1fr;
+    }
+    .legal-nav {
+        position: static;
+    }
+}
+</style>
+{% endblock %}

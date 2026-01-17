@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#1a1d21"/>
+  <rect x="10" y="10" width="180" height="180" fill="#2d3238" rx="8"/>
+  <text x="100" y="90" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ff6b00" text-anchor="middle">AG</text>
+  <text x="100" y="120" font-family="Arial, sans-serif" font-size="14" fill="#9ca3af" text-anchor="middle">Adrenaline Gamer</text>
+  <circle cx="100" cy="150" r="8" fill="#ff6b00" opacity="0.3"/>
+</svg>

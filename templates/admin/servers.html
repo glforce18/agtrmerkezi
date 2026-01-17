@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Sunucular - Admin - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <div>
+                <h1>Sunucular</h1>
+                <p class="text-secondary">Sunucu yönetimi</p>
+            </div>
+            <a href="/admin" class="btn btn-secondary">← Geri</a>
+        </div>
+        
+        <div class="admin-content glass-card">
+            <div class="toolbar">
+                <input type="text" id="searchServer" placeholder="Sunucu ara..." class="search-input">
+                <select id="filterStatus" class="filter-select">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="online">Online</option>
+                    <option value="offline">Offline</option>
+                </select>
+                <button class="btn btn-primary" onclick="createServer()">+ Yeni Sunucu</button>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Sunucu Adı</th>
+                            <th>Sahip</th>
+                            <th>IP:Port</th>
+                            <th>Durum</th>
+                            <th>Bitiş</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="serversTable">
+                        {% if servers %}
+                        {% for server in servers %}
+                        <tr>
+                            <td>{{ server.id }}</td>
+                            <td><strong>{{ server.name }}</strong></td>
+                            <td>{{ server.owner.username if server.owner else 'N/A' }}</td>
+                            <td><code>{{ server.ip_address }}:{{ server.port }}</code></td>
+                            <td><span class="status-badge status-{{ server.status.value }}">{{ server.status.value }}</span></td>
+                            <td>{{ server.expires_at.strftime('%d.%m.%Y') if server.expires_at else '-' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary" onclick="manageServer({{ server.id }})">Yönet</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr><td colspan="7" style="text-align:center;padding:40px;">Sunucu bulunamadı</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.admin-section { padding: 40px 20px; min-height: calc(100vh - 70px); }
+.container { max-width: 1200px; margin: 0 auto; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.admin-header h1 { font-size: 28px; margin-bottom: 4px; }
+.text-secondary { color: var(--text-secondary); }
+.admin-content { padding: 20px; }
+.toolbar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+.search-input, .filter-select { padding: 10px 15px; background: var(--bg-tertiary); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-size: 14px; }
+.search-input { flex: 1; min-width: 200px; }
+.filter-select { min-width: 150px; }
+.table-wrapper { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.data-table th { background: var(--bg-tertiary); font-weight: 600; font-size: 13px; text-transform: uppercase; }
+.data-table tr:hover { background: rgba(255,255,255,0.02); }
+code { background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 13px; }
+.status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.status-running { background: rgba(0,200,0,0.2); color: #00c800; }
+.status-stopped { background: rgba(255,51,51,0.2); color: #ff3333; }
+.status-pending { background: rgba(255,200,0,0.2); color: #ffc800; }
+.status-suspended { background: rgba(255,100,0,0.2); color: #ff6400; }
+.status-expired { background: rgba(150,150,150,0.2); color: #999; }
+</style>
+{% endblock %}

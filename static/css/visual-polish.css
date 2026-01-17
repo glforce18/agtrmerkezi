@@ -1,0 +1,486 @@
+/**
+ * AGTR Merkezi - Visual Polish
+ * Smooth animations, micro-interactions, visual improvements
+ */
+
+/* ============================================
+   SMOOTH TRANSITIONS
+   ============================================ */
+
+* {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth button transitions */
+button,
+.btn,
+a.btn {
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+button::before,
+.btn::before,
+a.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+button:active::before,
+.btn:active::before,
+a.btn:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Smooth hover effects */
+.card,
+.glass-card,
+.server-card,
+.package-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover,
+.glass-card:hover,
+.server-card:hover,
+.package-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3),
+                0 0 30px rgba(255, 107, 0, 0.2);
+}
+
+/* ============================================
+   MICRO-INTERACTIONS
+   ============================================ */
+
+/* Button press effect */
+button:active,
+.btn:active {
+    transform: scale(0.95);
+}
+
+/* Link underline animation */
+a:not(.btn):not(.nav-link) {
+    position: relative;
+    text-decoration: none;
+}
+
+a:not(.btn):not(.nav-link)::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: currentColor;
+    transition: width 0.3s ease;
+}
+
+a:not(.btn):not(.nav-link):hover::after {
+    width: 100%;
+}
+
+/* Input focus glow */
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.2),
+                0 0 20px rgba(255, 107, 0, 0.1);
+    border-color: #ff6b00;
+    transform: scale(1.01);
+}
+
+/* Checkbox/Radio animations */
+input[type="checkbox"],
+input[type="radio"] {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+    transform: scale(1.1);
+}
+
+/* ============================================
+   PAGE TRANSITIONS
+   ============================================ */
+
+.page-transition {
+    animation: pageEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stagger animation for lists */
+.stagger-animation > * {
+    animation: staggerIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.stagger-animation > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-animation > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-animation > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-animation > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-animation > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-animation > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-animation > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-animation > *:nth-child(8) { animation-delay: 0.4s; }
+
+@keyframes staggerIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ============================================
+   IMPROVED SHADOWS
+   ============================================ */
+
+.shadow-sm {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-md {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.shadow-lg {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.shadow-xl {
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+}
+
+.shadow-glow {
+    box-shadow: 0 0 20px rgba(255, 107, 0, 0.3),
+                0 0 40px rgba(255, 107, 0, 0.1);
+}
+
+/* ============================================
+   TYPOGRAPHY IMPROVEMENTS
+   ============================================ */
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+p {
+    line-height: 1.8;
+}
+
+/* Text selection */
+::selection {
+    background: rgba(255, 107, 0, 0.3);
+    color: #fff;
+}
+
+::-moz-selection {
+    background: rgba(255, 107, 0, 0.3);
+    color: #fff;
+}
+
+/* ============================================
+   BADGE & PILL ANIMATIONS
+   ============================================ */
+
+.badge,
+.pill,
+.tag {
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+.badge:hover,
+.pill:hover,
+.tag:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   LOADING BARS
+   ============================================ */
+
+.progress-bar {
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    animation: progressShimmer 1.5s infinite;
+}
+
+@keyframes progressShimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* ============================================
+   MODAL & DIALOG ANIMATIONS
+   ============================================ */
+
+.modal {
+    animation: modalFadeIn 0.3s ease;
+}
+
+.modal-dialog {
+    animation: modalSlideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ============================================
+   TOAST ANIMATIONS
+   ============================================ */
+
+.toast {
+    animation: toastSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast.removing {
+    animation: toastSlideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes toastSlideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toastSlideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   DROPDOWN ANIMATIONS
+   ============================================ */
+
+.dropdown-menu {
+    animation: dropdownFadeIn 0.2s ease;
+    transform-origin: top;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: scaleY(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+/* ============================================
+   ICON ANIMATIONS
+   ============================================ */
+
+.icon-spin {
+    animation: spin 1s linear infinite;
+}
+
+.icon-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.icon-bounce {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* ============================================
+   HOVER GLOW EFFECTS
+   ============================================ */
+
+.glow-on-hover {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.glow-on-hover:hover {
+    filter: drop-shadow(0 0 10px rgba(255, 107, 0, 0.5));
+}
+
+/* ============================================
+   GLASSMORPHISM ENHANCEMENTS
+   ============================================ */
+
+.glass-card {
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    background: rgba(26, 29, 33, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-card:hover {
+    background: rgba(26, 29, 33, 0.9);
+    border-color: rgba(255, 107, 0, 0.3);
+}
+
+/* ============================================
+   GRADIENT TEXT
+   ============================================ */
+
+.gradient-text {
+    background: linear-gradient(135deg, #ff6b00, #ff8800, #ffaa00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 3s ease infinite;
+    background-size: 200% 200%;
+}
+
+@keyframes gradientShift {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+/* ============================================
+   IMPROVED FOCUS INDICATORS
+   ============================================ */
+
+*:focus-visible {
+    outline: 3px solid rgba(255, 107, 0, 0.5);
+    outline-offset: 2px;
+}
+
+/* ============================================
+   CURSOR ENHANCEMENTS
+   ============================================ */
+
+button,
+a,
+.clickable {
+    cursor: pointer;
+}
+
+button:disabled,
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* ============================================
+   RESPONSIVE IMPROVEMENTS
+   ============================================ */
+
+@media (max-width: 768px) {
+    .card:hover,
+    .glass-card:hover {
+        transform: none;
+    }
+
+    /* Reduce animations on mobile for performance */
+    * {
+        animation-duration: 0.5s !important;
+    }
+}
+
+/* ============================================
+   DARK MODE ADJUSTMENTS
+   ============================================ */
+
+[data-theme="light"] .shadow-glow {
+    box-shadow: 0 0 20px rgba(255, 107, 0, 0.2),
+                0 0 40px rgba(255, 107, 0, 0.05);
+}
+
+[data-theme="light"] .glass-card {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .glass-card:hover {
+    background: rgba(255, 255, 255, 0.95);
+}

@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}İletişim - {{ settings.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1>
+            <svg class="icon" width="32" height="32"><use href="/static/images/icons.svg#icon-mail"></use></svg>
+            İletişim
+        </h1>
+        <p class="page-subtitle">Sorularınız için bize ulaşın</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="contact-page">
+        <div class="contact-grid">
+            <!-- İletişim Formu -->
+            <div class="contact-form-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Mesaj Gönder</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="contactForm" class="contact-form">
+                            <div class="form-group">
+                                <label for="name">Adınız *</label>
+                                <input type="text" id="name" name="name" class="form-control" required
+                                       value="{{ current_user.display_name or current_user.username if current_user else '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">E-posta *</label>
+                                <input type="email" id="email" name="email" class="form-control" required
+                                       value="{{ current_user.email if current_user else '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="subject">Konu *</label>
+                                <select id="subject" name="subject" class="form-control" required>
+                                    <option value="">Konu Seçin</option>
+                                    <option value="Genel Soru">Genel Soru</option>
+                                    <option value="Teknik Destek">Teknik Destek</option>
+                                    <option value="Ödeme Sorunu">Ödeme Sorunu</option>
+                                    <option value="Sunucu Talebi">Sunucu Talebi</option>
+                                    <option value="İş Birliği">İş Birliği</option>
+                                    <option value="Şikayet">Şikayet</option>
+                                    <option value="Diğer">Diğer</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="message">Mesajınız *</label>
+                                <textarea id="message" name="message" class="form-control" rows="6" required
+                                          placeholder="Mesajınızı buraya yazın..."></textarea>
+                                <small class="form-text">Minimum 20 karakter</small>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                    <svg width="20" height="20"><use href="/static/images/icons.svg#icon-send"></use></svg>
+                                    Gönder
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Başarı Mesajı -->
+                        <div id="successMessage" class="success-message" style="display: none;">
+                            <svg width="64" height="64"><use href="/static/images/icons.svg#icon-check-circle"></use></svg>
+                            <h3>Mesajınız Alındı!</h3>
+                            <p>En kısa sürede size dönüş yapacağız.</p>
+                            <button class="btn btn-secondary" onclick="resetForm()">Yeni Mesaj</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- İletişim Bilgileri -->
+            <div class="contact-info-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>İletişim Bilgileri</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="contact-info-list">
+                            <div class="contact-info-item">
+                                <div class="info-icon">
+                                    <svg width="24" height="24"><use href="/static/images/icons.svg#icon-mail"></use></svg>
+                                </div>
+                                <div class="info-content">
+                                    <h4>E-posta</h4>
+                                    <a href="mailto:{{ site_settings.contact_email or 'destek@agtrmerkezi.com' }}">
+                                        {{ site_settings.contact_email or 'destek@agtrmerkezi.com' }}
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="contact-info-item">
+                                <div class="info-icon discord">
+                                    <svg width="24" height="24"><use href="/static/images/icons.svg#icon-discord"></use></svg>
+                                </div>
+                                <div class="info-content">
+                                    <h4>Discord</h4>
+                                    <a href="{{ site_settings.discord_url or '#' }}" target="_blank">
+                                        AGTR Merkezi Discord
+                                    </a>
+                                    <small>En hızlı destek için</small>
+                                </div>
+                            </div>
+
+                            <div class="contact-info-item">
+                                <div class="info-icon">
+                                    <svg width="24" height="24"><use href="/static/images/icons.svg#icon-clock"></use></svg>
+                                </div>
+                                <div class="info-content">
+                                    <h4>Yanıt Süresi</h4>
+                                    <span>Genellikle 24 saat içinde</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hızlı Linkler -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h2>Hızlı Linkler</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="quick-links">
+                            <a href="/faq" class="quick-link">
+                                <svg width="20" height="20"><use href="/static/images/icons.svg#icon-help"></use></svg>
+                                Sıkça Sorulan Sorular
+                            </a>
+                            <a href="/help" class="quick-link">
+                                <svg width="20" height="20"><use href="/static/images/icons.svg#icon-book"></use></svg>
+                                Yardım Merkezi
+                            </a>
+                            {% if current_user %}
+                            <a href="/panel/tickets/new" class="quick-link">
+                                <svg width="20" height="20"><use href="/static/images/icons.svg#icon-ticket"></use></svg>
+                                Destek Talebi Oluştur
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    padding: 60px 0;
+    text-align: center;
+    margin-bottom: 40px;
+}
+.page-header h1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+.page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.contact-page {
+    padding-bottom: 60px;
+}
+
+.contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 30px;
+}
+
+.contact-form .form-group {
+    margin-bottom: 20px;
+}
+.contact-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+.contact-form .form-control {
+    width: 100%;
+}
+.contact-form textarea {
+    resize: vertical;
+    min-height: 150px;
+}
+
+.form-actions {
+    margin-top: 30px;
+}
+.form-actions .btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 30px;
+}
+
+.success-message {
+    text-align: center;
+    padding: 40px 20px;
+}
+.success-message svg {
+    color: #22c55e;
+    margin-bottom: 20px;
+}
+.success-message h3 {
+    margin-bottom: 10px;
+    color: #22c55e;
+}
+.success-message p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.contact-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.contact-info-item {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+}
+.info-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    border-radius: 12px;
+    color: white;
+    flex-shrink: 0;
+}
+.info-icon.discord {
+    background: #5865F2;
+}
+.info-content h4 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+.info-content a {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+.info-content small {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.quick-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.quick-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+.quick-link:hover {
+    background: var(--primary-color);
+    color: white;
+}
+.quick-link svg {
+    flex-shrink: 0;
+}
+
+.mt-4 { margin-top: 24px; }
+
+@media (max-width: 992px) {
+    .contact-grid {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 768px) {
+    .page-header h1 { font-size: 1.8rem; }
+}
+</style>
+
+<script>
+document.getElementById('contactForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const submitBtn = document.getElementById('submitBtn');
+    const form = this;
+    const successMessage = document.getElementById('successMessage');
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span> Gönderiliyor...';
+
+    try {
+        const response = await fetch('/api/assets/contact', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCookie('csrf_token')
+            },
+            body: JSON.stringify({
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            form.style.display = 'none';
+            successMessage.style.display = 'block';
+        } else {
+            showToast(data.detail || 'Bir hata oluştu', 'error');
+        }
+    } catch (error) {
+        showToast('Bağlantı hatası', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="20" height="20"><use href="/static/images/icons.svg#icon-send"></use></svg> Gönder';
+    }
+});
+
+function resetForm() {
+    document.getElementById('contactForm').style.display = 'block';
+    document.getElementById('contactForm').reset();
+    document.getElementById('successMessage').style.display = 'none';
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+}
+</script>
+{% endblock %}

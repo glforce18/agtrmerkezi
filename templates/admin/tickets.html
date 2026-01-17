@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block title %}Destek Talepleri - Admin - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <div>
+                <h1>Destek Talepleri</h1>
+                <p class="text-secondary">Kullanıcı destek taleplerini yönetin</p>
+            </div>
+            <a href="/admin" class="btn btn-secondary">← Geri</a>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="stats-row">
+            <div class="stat-card glass-card">
+                <div class="stat-icon" style="background:rgba(239,68,68,0.2);color:#ef4444;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="openCount">{{ stats.open if stats else 0 }}</span>
+                    <span class="stat-label">Açık</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon" style="background:rgba(245,158,11,0.2);color:#f59e0b;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="pendingCount">{{ stats.pending if stats else 0 }}</span>
+                    <span class="stat-label">Beklemede</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon" style="background:rgba(16,185,129,0.2);color:#10b981;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="resolvedCount">{{ stats.resolved if stats else 0 }}</span>
+                    <span class="stat-label">Çözüldü</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon" style="background:rgba(59,130,246,0.2);color:#3b82f6;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalCount">{{ stats.total if stats else 0 }}</span>
+                    <span class="stat-label">Toplam</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="admin-content glass-card">
+            <!-- Filters -->
+            <div class="toolbar">
+                <input type="text" id="searchTicket" placeholder="Ticket ara..." class="search-input" onkeyup="filterTickets()">
+                <select id="filterStatus" class="filter-select" onchange="filterTickets()">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="open">Açık</option>
+                    <option value="pending">Beklemede</option>
+                    <option value="resolved">Çözüldü</option>
+                    <option value="closed">Kapatıldı</option>
+                </select>
+                <select id="filterPriority" class="filter-select" onchange="filterTickets()">
+                    <option value="">Tüm Öncelikler</option>
+                    <option value="high">Yüksek</option>
+                    <option value="medium">Orta</option>
+                    <option value="low">Düşük</option>
+                </select>
+                <select id="filterCategory" class="filter-select" onchange="filterTickets()">
+                    <option value="">Tüm Kategoriler</option>
+                    <option value="technical">Teknik Sorun</option>
+                    <option value="billing">Ödeme</option>
+                    <option value="account">Hesap</option>
+                    <option value="other">Diğer</option>
+                </select>
+            </div>
+            
+            <!-- Tickets Table -->
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Konu</th>
+                            <th>Kullanıcı</th>
+                            <th>Kategori</th>
+                            <th>Öncelik</th>
+                            <th>Durum</th>
+                            <th>Tarih</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticketsTable">
+                        {% if tickets %}
+                        {% for ticket in tickets %}
+                        <tr data-ticket-id="{{ ticket.id }}" 
+                            data-status="{{ ticket.status }}" 
+                            data-priority="{{ ticket.priority }}"
+                            data-category="{{ ticket.category }}">
+                            <td>#{{ ticket.id }}</td>
+                            <td>
+                                <div class="ticket-subject">
+                                    <span class="subject-text">{{ ticket.subject[:50] }}{% if ticket.subject|length > 50 %}...{% endif %}</span>
+                                    {% if ticket.unread_count %}
+                                    <span class="unread-badge">{{ ticket.unread_count }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="user-cell">
+                                    <div class="avatar-sm">{{ ticket.user.username[0]|upper if ticket.user else '?' }}</div>
+                                    <span>{{ ticket.user.username if ticket.user else 'Silinmiş' }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="category-badge category-{{ ticket.category }}">
+                                    {{ {'technical': 'Teknik', 'billing': 'Ödeme', 'account': 'Hesap', 'other': 'Diğer'}.get(ticket.category, ticket.category) }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="priority-badge priority-{{ ticket.priority }}">
+                                    {{ {'high': 'Yüksek', 'medium': 'Orta', 'low': 'Düşük'}.get(ticket.priority, ticket.priority) }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ ticket.status }}">
+                                    {{ {'open': 'Açık', 'pending': 'Beklemede', 'resolved': 'Çözüldü', 'closed': 'Kapatıldı'}.get(ticket.status, ticket.status) }}
+                                </span>
+                            </td>
+                            <td>{{ ticket.created_at.strftime('%d.%m.%Y %H:%M') if ticket.created_at else '-' }}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn btn-sm btn-primary" onclick="viewTicket({{ ticket.id }})" title="Görüntüle">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="changeTicketStatus({{ ticket.id }})" title="Durum Değiştir">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr><td colspan="8" style="text-align:center;padding:40px;">Destek talebi bulunamadı</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Ticket View Modal -->
+<div class="modal" id="ticketModal">
+    <div class="modal-backdrop" onclick="closeTicketModal()"></div>
+    <div class="modal-content modal-xl">
+        <div class="modal-header">
+            <h3 id="ticketModalTitle">Destek Talebi #--</h3>
+            <div class="modal-header-actions">
+                <select id="ticketStatusSelect" class="status-select" onchange="updateTicketStatus()">
+                    <option value="open">Açık</option>
+                    <option value="pending">Beklemede</option>
+                    <option value="resolved">Çözüldü</option>
+                    <option value="closed">Kapatıldı</option>
+                </select>
+                <button class="btn btn-icon btn-secondary" onclick="closeTicketModal()">✕</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="ticket-info-bar">
+                <div class="info-item">
+                    <span class="info-label">Kullanıcı</span>
+                    <span class="info-value" id="ticketUser">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Kategori</span>
+                    <span class="info-value" id="ticketCategory">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Öncelik</span>
+                    <span class="info-value" id="ticketPriority">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Oluşturulma</span>
+                    <span class="info-value" id="ticketDate">--</span>
+                </div>
+            </div>
+            
+            <div class="ticket-messages" id="ticketMessages">
+                <div class="loading-spinner">Yükleniyor...</div>
+            </div>
+            
+            <div class="ticket-reply">
+                <textarea id="replyMessage" class="form-control" rows="3" placeholder="Yanıtınızı yazın..."></textarea>
+                <div class="reply-actions">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="closeAfterReply"> Yanıtla ve kapat
+                    </label>
+                    <button class="btn btn-primary" onclick="sendReply()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                        </svg>
+                        Yanıtla
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-section { padding: 40px 20px; min-height: calc(100vh - 70px); }
+.container { max-width: 1400px; margin: 0 auto; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.admin-header h1 { font-size: 28px; margin-bottom: 4px; }
+.text-secondary { color: var(--text-secondary); }
+
+/* Stats Row */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+.stat-card { display: flex; align-items: center; gap: 16px; padding: 20px; }
+.stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.stat-info { display: flex; flex-direction: column; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); }
+.stat-label { font-size: 13px; color: var(--text-secondary); }
+
+.admin-content { padding: 20px; }
+.toolbar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+.search-input, .filter-select { padding: 10px 15px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; }
+.search-input { flex: 1; min-width: 200px; }
+.search-input:focus, .filter-select:focus { outline: none; border-color: var(--primary-color); }
+.filter-select { min-width: 140px; }
+
+/* Table */
+.table-wrapper { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+.data-table th { background: var(--bg-tertiary); font-weight: 600; font-size: 13px; text-transform: uppercase; }
+.data-table tr:hover { background: rgba(255,107,0,0.05); }
+
+.ticket-subject { display: flex; align-items: center; gap: 8px; }
+.subject-text { font-weight: 500; }
+.unread-badge { background: var(--primary-color); color: #000; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
+
+.user-cell { display: flex; align-items: center; gap: 8px; }
+.avatar-sm { width: 28px; height: 28px; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #000; }
+
+/* Badges */
+.category-badge, .priority-badge, .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.category-technical { background: rgba(59,130,246,0.2); color: #3b82f6; }
+.category-billing { background: rgba(16,185,129,0.2); color: #10b981; }
+.category-account { background: rgba(139,92,246,0.2); color: #8b5cf6; }
+.category-other { background: rgba(107,114,128,0.2); color: #6b7280; }
+
+.priority-high { background: rgba(239,68,68,0.2); color: #ef4444; }
+.priority-medium { background: rgba(245,158,11,0.2); color: #f59e0b; }
+.priority-low { background: rgba(16,185,129,0.2); color: #10b981; }
+
+.status-open { background: rgba(239,68,68,0.2); color: #ef4444; }
+.status-pending { background: rgba(245,158,11,0.2); color: #f59e0b; }
+.status-resolved { background: rgba(16,185,129,0.2); color: #10b981; }
+.status-closed { background: rgba(107,114,128,0.2); color: #6b7280; }
+
+.action-btns { display: flex; gap: 8px; }
+.btn-sm { padding: 6px 10px; font-size: 12px; }
+
+/* Modal */
+.modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2000; display: none; align-items: center; justify-content: center; }
+.modal.active { display: flex; }
+.modal-backdrop { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); }
+.modal-content { position: relative; background: var(--bg-secondary); border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; overflow: hidden; animation: modalIn 0.2s ease; }
+.modal-xl { max-width: 900px; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border-color); }
+.modal-header h3 { margin: 0; font-size: 18px; }
+.modal-header-actions { display: flex; gap: 12px; align-items: center; }
+.status-select { padding: 8px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 13px; }
+.modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
+
+/* Ticket Info Bar */
+.ticket-info-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 20px; }
+.info-item { display: flex; flex-direction: column; gap: 4px; }
+.info-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+.info-value { font-size: 14px; font-weight: 500; }
+
+/* Messages */
+.ticket-messages { max-height: 400px; overflow-y: auto; margin-bottom: 20px; }
+.message-item { display: flex; gap: 12px; padding: 16px; border-radius: 8px; margin-bottom: 12px; }
+.message-item.from-user { background: var(--bg-tertiary); }
+.message-item.from-admin { background: rgba(255,107,0,0.1); border-left: 3px solid var(--primary-color); }
+.message-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-weight: 600; color: #000; flex-shrink: 0; }
+.message-content { flex: 1; }
+.message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.message-author { font-weight: 600; font-size: 14px; }
+.message-time { font-size: 12px; color: var(--text-muted); }
+.message-text { font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+
+/* Reply */
+.ticket-reply { border-top: 1px solid var(--border-color); padding-top: 20px; }
+.ticket-reply .form-control { width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; resize: vertical; }
+.ticket-reply .form-control:focus { outline: none; border-color: var(--primary-color); }
+.reply-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+.checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+.checkbox-label input { accent-color: var(--primary-color); }
+
+.loading-spinner { text-align: center; padding: 40px; color: var(--text-muted); }
+
+@media (max-width: 768px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .ticket-info-bar { grid-template-columns: 1fr 1fr; }
+    .modal-content { margin: 10px; max-height: calc(100vh - 20px); }
+}
+</style>
+
+<script>
+let currentTicketId = null;
+
+// Filtreleme
+function filterTickets() {
+    const search = document.getElementById('searchTicket').value.toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+    const priority = document.getElementById('filterPriority').value;
+    const category = document.getElementById('filterCategory').value;
+    
+    document.querySelectorAll('#ticketsTable tr[data-ticket-id]').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const rowStatus = row.dataset.status;
+        const rowPriority = row.dataset.priority;
+        const rowCategory = row.dataset.category;
+        
+        const matchSearch = !search || text.includes(search);
+        const matchStatus = !status || rowStatus === status;
+        const matchPriority = !priority || rowPriority === priority;
+        const matchCategory = !category || rowCategory === category;
+        
+        row.style.display = (matchSearch && matchStatus && matchPriority && matchCategory) ? '' : 'none';
+    });
+}
+
+// Ticket görüntüle
+async function viewTicket(ticketId) {
+    currentTicketId = ticketId;
+    document.getElementById('ticketModal').classList.add('active');
+    document.getElementById('ticketModalTitle').textContent = `Destek Talebi #${ticketId}`;
+    document.getElementById('ticketMessages').innerHTML = '<div class="loading-spinner">Yükleniyor...</div>';
+    
+    try {
+        const res = await fetch(`/api/admin/tickets/${ticketId}`);
+        const data = await res.json();
+        
+        if (res.ok) {
+            renderTicketDetails(data);
+        } else {
+            document.getElementById('ticketMessages').innerHTML = '<p style="color:var(--danger-color);">Ticket yüklenemedi</p>';
+        }
+    } catch (e) {
+        document.getElementById('ticketMessages').innerHTML = '<p style="color:var(--danger-color);">Bağlantı hatası</p>';
+    }
+}
+
+function renderTicketDetails(ticket) {
+    // Info bar
+    document.getElementById('ticketUser').textContent = ticket.user?.username || 'Bilinmiyor';
+    document.getElementById('ticketCategory').innerHTML = `<span class="category-badge category-${ticket.category}">${getCategoryLabel(ticket.category)}</span>`;
+    document.getElementById('ticketPriority').innerHTML = `<span class="priority-badge priority-${ticket.priority}">${getPriorityLabel(ticket.priority)}</span>`;
+    document.getElementById('ticketDate').textContent = ticket.created_at ? new Date(ticket.created_at).toLocaleString('tr-TR') : '-';
+    document.getElementById('ticketStatusSelect').value = ticket.status;
+    
+    // Messages
+    const messagesHtml = ticket.messages?.map(m => `
+        <div class="message-item from-${m.is_admin ? 'admin' : 'user'}">
+            <div class="message-avatar">${m.author?.charAt(0).toUpperCase() || '?'}</div>
+            <div class="message-content">
+                <div class="message-header">
+                    <span class="message-author">${m.author || 'Anonim'}${m.is_admin ? ' (Admin)' : ''}</span>
+                    <span class="message-time">${m.created_at ? new Date(m.created_at).toLocaleString('tr-TR') : ''}</span>
+                </div>
+                <div class="message-text">${escapeHtml(m.content)}</div>
+            </div>
+        </div>
+    `).join('') || '<p style="text-align:center;color:var(--text-muted);">Henüz mesaj yok</p>';
+    
+    document.getElementById('ticketMessages').innerHTML = messagesHtml;
+}
+
+function getCategoryLabel(cat) {
+    return {'technical': 'Teknik', 'billing': 'Ödeme', 'account': 'Hesap', 'other': 'Diğer'}[cat] || cat;
+}
+
+function getPriorityLabel(pri) {
+    return {'high': 'Yüksek', 'medium': 'Orta', 'low': 'Düşük'}[pri] || pri;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Yanıt gönder
+async function sendReply() {
+    const message = document.getElementById('replyMessage').value.trim();
+    if (!message) {
+        showToast('Lütfen bir yanıt yazın', 'error');
+        return;
+    }
+    
+    const closeAfter = document.getElementById('closeAfterReply').checked;
+    
+    try {
+        const res = await fetch(`/api/admin/tickets/${currentTicketId}/reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, close_ticket: closeAfter })
+        });
+        
+        if (res.ok) {
+            document.getElementById('replyMessage').value = '';
+            showToast('Yanıt gönderildi', 'success');
+            viewTicket(currentTicketId); // Refresh
+            if (closeAfter) {
+                setTimeout(() => location.reload(), 500);
+            }
+        } else {
+            showToast('Yanıt gönderilemedi', 'error');
+        }
+    } catch (e) {
+        showToast('Bağlantı hatası', 'error');
+    }
+}
+
+// Durum güncelle
+async function updateTicketStatus() {
+    const status = document.getElementById('ticketStatusSelect').value;
+    
+    try {
+        const res = await fetch(`/api/admin/tickets/${currentTicketId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+        
+        if (res.ok) {
+            showToast('Durum güncellendi', 'success');
+        } else {
+            showToast('Durum güncellenemedi', 'error');
+        }
+    } catch (e) {
+        showToast('Bağlantı hatası', 'error');
+    }
+}
+
+function changeTicketStatus(ticketId) {
+    viewTicket(ticketId);
+}
+
+function closeTicketModal() {
+    document.getElementById('ticketModal').classList.remove('active');
+    currentTicketId = null;
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        z-index: 9999;
+        animation: slideInRight 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// ESC ile modal kapat
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeTicketModal();
+});
+</script>
+{% endblock %}

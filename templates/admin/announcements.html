@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Duyurular - Admin - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <div>
+                <h1>Duyurular</h1>
+                <p class="text-secondary">Duyuru yönetimi</p>
+            </div>
+            <a href="/admin" class="btn btn-secondary">← Geri</a>
+        </div>
+        
+        <div class="admin-content glass-card">
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="openAnnouncementModal()">+ Yeni Duyuru</button>
+            </div>
+            
+            <div class="announcements-list">
+                {% if announcements %}
+                {% for a in announcements %}
+                <div class="announcement-item">
+                    <div class="ann-header">
+                        <span class="ann-type ann-{{ a.type or 'info' }}">{{ a.type or 'info' }}</span>
+                        <span class="ann-date">{{ a.created_at.strftime('%d.%m.%Y %H:%M') if a.created_at else '-' }}</span>
+                    </div>
+                    <h4>{{ a.title }}</h4>
+                    <p>{{ a.content[:150] }}{% if a.content|length > 150 %}...{% endif %}</p>
+                    <div class="ann-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="editAnnouncement({{ a.id }})">Düzenle</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAnnouncement({{ a.id }})">Sil</button>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p style="text-align:center;padding:40px;color:var(--text-secondary);">Duyuru bulunamadı</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.admin-section { padding: 40px 20px; min-height: calc(100vh - 70px); }
+.container { max-width: 1200px; margin: 0 auto; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.admin-header h1 { font-size: 28px; margin-bottom: 4px; }
+.text-secondary { color: var(--text-secondary); }
+.admin-content { padding: 20px; }
+.toolbar { margin-bottom: 25px; }
+.announcements-list { display: flex; flex-direction: column; gap: 15px; }
+.announcement-item { background: var(--bg-tertiary); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; }
+.ann-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.ann-type { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.ann-info { background: rgba(0,150,255,0.2); color: #0096ff; }
+.ann-warning { background: rgba(255,200,0,0.2); color: #ffc800; }
+.ann-danger { background: rgba(255,51,51,0.2); color: #ff3333; }
+.ann-success { background: rgba(0,200,0,0.2); color: #00c800; }
+.ann-date { font-size: 13px; color: var(--text-muted); }
+.announcement-item h4 { font-size: 18px; margin-bottom: 8px; }
+.announcement-item p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin-bottom: 15px; }
+.ann-actions { display: flex; gap: 10px; }
+</style>
+{% endblock %}

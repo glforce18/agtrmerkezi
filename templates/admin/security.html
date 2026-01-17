@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Güvenlik - Admin - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <div>
+                <h1>Güvenlik Yönetimi</h1>
+                <p class="text-secondary">IP engelleme, loglar ve güvenlik ayarları</p>
+            </div>
+            <a href="/admin" class="btn btn-secondary">← Geri</a>
+        </div>
+        
+        <div class="security-tabs">
+            <button class="tab-btn active" data-tab="ipban">IP Engelleme</button>
+            <button class="tab-btn" data-tab="logs">Aktivite Logları</button>
+            <button class="tab-btn" data-tab="settings">Güvenlik Ayarları</button>
+        </div>
+        
+        <!-- IP Ban Tab -->
+        <div class="tab-content active" id="tab-ipban">
+            <div class="admin-content glass-card">
+                <div class="toolbar">
+                    <input type="text" id="banIP" class="form-input" placeholder="IP adresi girin" style="max-width:300px;">
+                    <input type="text" id="banReason" class="form-input" placeholder="Engelleme nedeni" style="flex:1;">
+                    <button class="btn btn-danger" onclick="banIP()">🚫 Engelle</button>
+                </div>
+                
+                <h4 style="margin:20px 0 15px;">Engellenen IP'ler</h4>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>IP Adresi</th>
+                                <th>Neden</th>
+                                <th>Engelleyen</th>
+                                <th>Tarih</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if banned_ips %}
+                            {% for ip in banned_ips %}
+                            <tr>
+                                <td><code>{{ ip.ip_address }}</code></td>
+                                <td>{{ ip.reason or '-' }}</td>
+                                <td>{{ ip.banned_by.username if ip.banned_by else 'Sistem' }}</td>
+                                <td>{{ ip.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                <td><button class="btn btn-sm btn-secondary" onclick="unbanIP('{{ ip.ip_address }}')">Kaldır</button></td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr><td colspan="5" class="empty">Engellenen IP yok</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Logs Tab -->
+        <div class="tab-content" id="tab-logs">
+            <div class="admin-content glass-card">
+                <div class="toolbar">
+                    <select id="logType" class="form-select" style="max-width:200px;">
+                        <option value="all">Tüm Loglar</option>
+                        <option value="login">Giriş Denemeleri</option>
+                        <option value="admin">Admin İşlemleri</option>
+                        <option value="payment">Ödeme İşlemleri</option>
+                        <option value="server">Sunucu İşlemleri</option>
+                    </select>
+                    <input type="text" class="form-input" placeholder="Ara..." style="max-width:250px;">
+                    <button class="btn btn-secondary">Filtrele</button>
+                    <button class="btn btn-secondary" style="margin-left:auto;">📥 Logları İndir</button>
+                </div>
+                
+                <div class="logs-list">
+                    <div class="log-item">
+                        <span class="log-type login">GİRİŞ</span>
+                        <span class="log-message">admin159 başarıyla giriş yaptı</span>
+                        <span class="log-ip">185.171.25.1</span>
+                        <span class="log-time">2 dakika önce</span>
+                    </div>
+                    <div class="log-item">
+                        <span class="log-type admin">ADMİN</span>
+                        <span class="log-message">Yeni paket eklendi: AG Pro Plus</span>
+                        <span class="log-ip">185.171.25.1</span>
+                        <span class="log-time">15 dakika önce</span>
+                    </div>
+                    <div class="log-item warning">
+                        <span class="log-type error">HATA</span>
+                        <span class="log-message">Başarısız giriş denemesi: user123</span>
+                        <span class="log-ip">45.67.89.123</span>
+                        <span class="log-time">1 saat önce</span>
+                    </div>
+                    <div class="log-item">
+                        <span class="log-type payment">ÖDEME</span>
+                        <span class="log-message">Ödeme onaylandı: #1234 - 100₺</span>
+                        <span class="log-ip">185.171.25.1</span>
+                        <span class="log-time">2 saat önce</span>
+                    </div>
+                </div>
+                
+                <div class="pagination">
+                    <button class="btn btn-sm btn-secondary">← Önceki</button>
+                    <span>Sayfa 1 / 50</span>
+                    <button class="btn btn-sm btn-secondary">Sonraki →</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div class="tab-content" id="tab-settings">
+            <div class="admin-content glass-card">
+                <h3>Güvenlik Ayarları</h3>
+                
+                <div class="settings-group">
+                    <h4>🔐 Giriş Güvenliği</h4>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <strong>Başarısız Giriş Limiti</strong>
+                            <span>Kaç başarısız denemeden sonra IP engellensin</span>
+                        </div>
+                        <input type="number" value="5" class="form-input" style="width:80px;">
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <strong>Engelleme Süresi</strong>
+                            <span>Dakika cinsinden IP engelleme süresi</span>
+                        </div>
+                        <input type="number" value="30" class="form-input" style="width:80px;">
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <strong>2FA Zorunlu (Admin)</strong>
+                            <span>Admin kullanıcılar için 2FA zorunlu olsun</span>
+                        </div>
+                        <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h4>🛡️ API Güvenliği</h4>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <strong>Rate Limiting</strong>
+                            <span>Dakikada maksimum istek sayısı</span>
+                        </div>
+                        <input type="number" value="100" class="form-input" style="width:80px;">
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <strong>CORS Kısıtlaması</strong>
+                            <span>Sadece izin verilen domainlerden istek kabul et</span>
+                        </div>
+                        <label class="toggle"><input type="checkbox"><span class="slider"></span></label>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h4>📧 Güvenlik Bildirimleri</h4>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <strong>Şüpheli Aktivite Bildirimi</strong>
+                            <span>Şüpheli aktivitelerde e-posta gönder</span>
+                        </div>
+                        <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <strong>Bildirim E-postası</strong>
+                            <span>Güvenlik bildirimlerinin gideceği adres</span>
+                        </div>
+                        <input type="email" value="admin@agtrmerkezi.com" class="form-input" style="width:250px;">
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" onclick="saveSecuritySettings()">Ayarları Kaydet</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.admin-section { padding: 40px 20px; min-height: calc(100vh - 70px); }
+.container { max-width: 1200px; margin: 0 auto; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.admin-header h1 { font-size: 28px; margin-bottom: 4px; }
+.text-secondary { color: var(--text-secondary); }
+
+.security-tabs { display: flex; gap: 5px; margin-bottom: 25px; }
+.tab-btn { padding: 10px 20px; background: var(--bg-tertiary); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-secondary); cursor: pointer; }
+.tab-btn:hover, .tab-btn.active { background: #ff6b00; color: #000; border-color: #ff6b00; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.admin-content { padding: 20px; }
+.toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.form-input, .form-select { padding: 10px 12px; background: var(--bg-tertiary); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); }
+
+.table-wrapper { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.data-table th { background: var(--bg-tertiary); font-weight: 600; font-size: 13px; }
+code { background: var(--bg-tertiary); padding: 4px 10px; border-radius: 4px; font-family: var(--font-mono); color: #ff6b00; }
+.empty { text-align: center; padding: 30px !important; color: var(--text-muted); }
+
+.logs-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.log-item { display: flex; align-items: center; gap: 15px; padding: 12px 15px; background: var(--bg-tertiary); border-radius: 8px; font-size: 13px; }
+.log-item.warning { border-left: 3px solid #ff3333; }
+.log-type { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.log-type.login { background: rgba(0,150,255,0.2); color: #0096ff; }
+.log-type.admin { background: rgba(178,77,255,0.2); color: #b24dff; }
+.log-type.payment { background: rgba(0,200,0,0.2); color: #00c800; }
+.log-type.error { background: rgba(255,51,51,0.2); color: #ff3333; }
+.log-message { flex: 1; }
+.log-ip { color: var(--text-muted); font-family: var(--font-mono); }
+.log-time { color: var(--text-muted); }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 15px; }
+
+.settings-group { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.settings-group h4 { margin-bottom: 20px; }
+.setting-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.setting-info strong { display: block; margin-bottom: 4px; }
+.setting-info span { font-size: 13px; color: var(--text-secondary); }
+.toggle { position: relative; width: 50px; height: 26px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background: var(--bg-tertiary); border-radius: 26px; transition: 0.3s; }
+.slider:before { content: ""; position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+.toggle input:checked + .slider { background: #ff6b00; }
+.toggle input:checked + .slider:before { transform: translateX(24px); }
+</style>
+
+<script>
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+});
+function banIP() {
+    const ip = document.getElementById('banIP').value;
+    const reason = document.getElementById('banReason').value;
+    if (!ip) return alert('IP adresi girin');
+    alert(ip + ' engellendi');
+}
+function unbanIP(ip) { if(confirm(ip + ' engelini kaldırmak istiyor musunuz?')) alert('Engel kaldırıldı'); }
+function saveSecuritySettings() { alert('Güvenlik ayarları kaydedildi'); }
+</script>
+{% endblock %}

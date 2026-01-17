@@ -1,0 +1,455 @@
+{% extends "base.html" %}
+
+{% block title %}Logo Ayarları - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-image me-2"></i>Logo Ayarları
+                    </h1>
+                    <p class="text-muted">Site logosunu değiştirin</p>
+                </div>
+                <a href="/admin" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Geri
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Mevcut Logo -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Mevcut Logo</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div id="current-logo-preview" class="p-4 mb-3" style="background: #1a1a2e; border-radius: 12px; min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                        <img src="{{ get_site_logo() }}" alt="Mevcut Logo" style="max-height: 150px; max-width: 100%;">
+                    </div>
+                    <p class="text-muted mb-0">
+                        <small><i class="fas fa-info-circle me-1"></i>Bu logo sitenin her yerinde kullanılır</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logo Yükleme -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Yeni Logo Yükle</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Drag & Drop Zone -->
+                    <div id="drop-zone" class="mb-4 text-center p-5" style="border: 2px dashed #6c757d; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                        <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-muted"></i>
+                        <h5>Dosyayı Sürükle veya Tıkla</h5>
+                        <p class="text-muted mb-0">PNG, SVG, JPG veya WebP (Max 5MB)</p>
+                        <input type="file" id="logo-file-input" accept="image/*" style="display: none;">
+                    </div>
+
+                    <!-- Önizleme -->
+                    <div id="preview-section" style="display: none;">
+                        <h6 class="mb-3">Önizleme:</h6>
+                        <div class="p-3 mb-3 text-center" style="background: #1a1a2e; border-radius: 8px;">
+                            <img id="preview-image" src="" alt="Önizleme" style="max-height: 120px; max-width: 100%;">
+                        </div>
+                        <div id="file-info" class="mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-file me-1"></i><span id="file-name"></span>
+                                (<span id="file-size"></span>)
+                            </small>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button id="upload-btn" class="btn btn-primary btn-lg">
+                                <i class="fas fa-upload me-2"></i>Yükle ve Kaydet
+                            </button>
+                            <button id="cancel-btn" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>İptal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bilgi Kartı -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="fas fa-lightbulb me-2 text-warning"></i>İpuçları</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>SVG</strong> formatı tercih edilir (her boyutta keskin)</li>
+                        <li>Önerilen boyut: <strong>200x60 piksel</strong></li>
+                        <li>Şeffaf arka plan için <strong>PNG</strong> kullanın</li>
+                        <li>Logo navbar ve footer'da görünecektir</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Panel --!>
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-bug me-2"></i>Debug Panel (Geliştirici Araçları)</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3"><strong>Sorun mu yaşıyorsunuz?</strong> Tarayıcınızın Console'unu açın (F12 > Console) ve yükleme yaparken logları kontrol edin.</p>
+
+                    <div class="mb-3">
+                        <button id="test-auth-btn" class="btn btn-sm btn-info me-2">
+                            <i class="fas fa-user-check me-1"></i>Oturum Durumunu Test Et
+                        </button>
+                        <button id="test-upload-btn" class="btn btn-sm btn-warning">
+                            <i class="fas fa-vial me-1"></i>Upload Endpoint'i Test Et
+                        </button>
+                    </div>
+
+                    <div id="debug-output" class="p-3" style="background: #1a1a2e; border-radius: 8px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- URL ile Logo Değiştirme (Alternatif) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Veya URL ile Logo Belirle</h5>
+                </div>
+                <div class="card-body">
+                    <form id="url-form">
+                        <div class="row align-items-end">
+                            <div class="col-md-8">
+                                <label class="form-label">Logo URL</label>
+                                <input type="url" class="form-control" id="logo-url"
+                                       placeholder="https://example.com/logo.svg"
+                                       value="">
+                                <small class="text-muted">Harici bir URL'den logo kullanabilirsiniz</small>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-save me-2"></i>URL'yi Kaydet
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#drop-zone:hover {
+    border-color: #00d9ff;
+    background: rgba(0, 217, 255, 0.05);
+}
+
+#drop-zone.dragover {
+    border-color: #00d9ff;
+    background: rgba(0, 217, 255, 0.1);
+    transform: scale(1.02);
+}
+</style>
+
+<script>
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('logo-file-input');
+const previewSection = document.getElementById('preview-section');
+const previewImage = document.getElementById('preview-image');
+const fileName = document.getElementById('file-name');
+const fileSize = document.getElementById('file-size');
+const uploadBtn = document.getElementById('upload-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+const urlForm = document.getElementById('url-form');
+const logoUrlInput = document.getElementById('logo-url');
+
+let selectedFile = null;
+
+// Drag & Drop
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFile(files[0]);
+    }
+});
+
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+    }
+});
+
+function handleFile(file) {
+    // Dosya tipi kontrolü
+    if (!file.type.startsWith('image/')) {
+        alert('❌ Lütfen bir resim dosyası seçin!');
+        return;
+    }
+
+    // Boyut kontrolü (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('❌ Dosya boyutu 5MB\'dan küçük olmalıdır!');
+        return;
+    }
+
+    selectedFile = file;
+
+    // Önizleme göster
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        previewImage.src = e.target.result;
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+
+        dropZone.style.display = 'none';
+        previewSection.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+// İptal
+cancelBtn.addEventListener('click', () => {
+    selectedFile = null;
+    fileInput.value = '';
+    dropZone.style.display = 'block';
+    previewSection.style.display = 'none';
+});
+
+// Upload
+uploadBtn.addEventListener('click', async () => {
+    if (!selectedFile) {
+        console.error('❌ Seçili dosya yok!');
+        return;
+    }
+
+    console.log('🚀 Upload başlıyor...', {
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        fileType: selectedFile.type
+    });
+
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Yükleniyor...';
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('media_type', 'logo');
+
+    console.log('📦 FormData hazırlandı');
+
+    try {
+        console.log('📡 Fetch isteği gönderiliyor: /api/media/site/upload');
+
+        const res = await fetch('/api/media/site/upload', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+
+        console.log('📬 Response alındı:', {
+            status: res.status,
+            statusText: res.statusText,
+            ok: res.ok
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            console.log('✅ Upload başarılı:', data);
+
+            // Logo URL'yi kaydet
+            console.log('💾 Logo URL kaydediliyor:', data.url);
+            await saveLogoUrl(data.url);
+
+            console.log('🎉 Tüm işlemler tamamlandı!');
+            alert('✅ Logo başarıyla yüklendi!');
+            location.reload();
+        } else {
+            const error = await res.json();
+            console.error('❌ Upload hatası:', error);
+            alert('❌ Yükleme başarısız: ' + (error.detail || 'Bilinmeyen hata'));
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Yükle ve Kaydet';
+        }
+    } catch (err) {
+        console.error('❌ Catch bloğu hatası:', err);
+        alert('❌ Hata: ' + err.message);
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Yükle ve Kaydet';
+    }
+});
+
+// URL ile kaydetme
+urlForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const url = logoUrlInput.value.trim();
+    if (!url) {
+        alert('❌ Lütfen bir URL girin!');
+        return;
+    }
+
+    try {
+        await saveLogoUrl(url);
+        alert('✅ Logo URL\'si kaydedildi!');
+        location.reload();
+    } catch (err) {
+        alert('❌ Hata: ' + err.message);
+    }
+});
+
+async function saveLogoUrl(url) {
+    console.log('💾 saveLogoUrl çağrıldı:', url);
+
+    const res = await fetch('/api/admin/settings/logo', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ logo_url: url })
+    });
+
+    console.log('📬 saveLogoUrl response:', {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok
+    });
+
+    if (!res.ok) {
+        const error = await res.json();
+        console.error('❌ Logo URL kaydetme hatası:', error);
+        throw new Error(error.detail || 'Kaydetme başarısız');
+    }
+
+    const result = await res.json();
+    console.log('✅ Logo URL kaydedildi:', result);
+    return result;
+}
+
+// Debug Panel
+const debugOutput = document.getElementById('debug-output');
+const testAuthBtn = document.getElementById('test-auth-btn');
+const testUploadBtn = document.getElementById('test-upload-btn');
+
+function addDebugLog(msg, type = 'info') {
+    debugOutput.style.display = 'block';
+    const colors = {
+        'info': '#00d9ff',
+        'success': '#10b981',
+        'error': '#ef4444',
+        'warning': '#f59e0b'
+    };
+    const color = colors[type] || colors.info;
+    debugOutput.innerHTML += `<div style="color: ${color}; margin-bottom: 4px;">${msg}</div>`;
+    debugOutput.scrollTop = debugOutput.scrollHeight;
+}
+
+testAuthBtn.addEventListener('click', async () => {
+    debugOutput.innerHTML = '';
+    addDebugLog('🔍 Oturum durumu test ediliyor...', 'info');
+
+    try {
+        // Check cookies
+        const cookies = document.cookie;
+        addDebugLog('🍪 Cookies: ' + (cookies || 'Yok'), cookies.includes('access_token') ? 'success' : 'warning');
+
+        // Test admin endpoint
+        const res = await fetch('/api/admin/stats', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        addDebugLog(`📡 Admin API yanıtı: ${res.status} ${res.statusText}`, res.ok ? 'success' : 'error');
+
+        if (res.ok) {
+            const data = await res.json();
+            addDebugLog('✅ Oturum AKTIF - Admin yetkisi var', 'success');
+        } else {
+            const error = await res.text();
+            addDebugLog(`❌ Oturum sorunu: ${error}`, 'error');
+        }
+    } catch (err) {
+        addDebugLog(`❌ Hata: ${err.message}`, 'error');
+    }
+});
+
+testUploadBtn.addEventListener('click', async () => {
+    debugOutput.innerHTML = '';
+    addDebugLog('🧪 Upload endpoint test ediliyor...', 'info');
+
+    try {
+        // Create a small test image (1x1 pixel PNG)
+        const testImageData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+        // Convert base64 to blob
+        const response = await fetch(testImageData);
+        const blob = await response.blob();
+        const testFile = new File([blob], 'test-logo.png', { type: 'image/png' });
+
+        addDebugLog(`📦 Test dosyası oluşturuldu: ${testFile.name} (${testFile.size} bytes)`, 'success');
+
+        const formData = new FormData();
+        formData.append('file', testFile);
+        formData.append('media_type', 'logo');
+
+        addDebugLog('📡 Upload isteği gönderiliyor...', 'info');
+
+        const uploadRes = await fetch('/api/media/site/upload', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+
+        addDebugLog(`📬 Yanıt alındı: ${uploadRes.status} ${uploadRes.statusText}`, uploadRes.ok ? 'success' : 'error');
+
+        if (uploadRes.ok) {
+            const data = await uploadRes.json();
+            addDebugLog('✅ Upload BAŞARILI!', 'success');
+            addDebugLog(`🔗 URL: ${data.url}`, 'info');
+            addDebugLog(`📁 Dosya: ${data.filename}`, 'info');
+        } else {
+            const error = await uploadRes.json();
+            addDebugLog(`❌ Upload BAŞARISIZ: ${error.detail || uploadRes.statusText}`, 'error');
+        }
+    } catch (err) {
+        addDebugLog(`❌ Hata: ${err.message}`, 'error');
+        console.error(err);
+    }
+});
+
+// On page load, log initial state
+console.log('🔧 Logo Ayarları Sayfası Yüklendi');
+console.log('🍪 Mevcut cookies:', document.cookie);
+console.log('📍 Sayfa URL:', window.location.href);
+</script>
+{% endblock %}

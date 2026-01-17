@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}İçerik Yönetimi - Admin - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <div>
+                <h1>İçerik Yönetimi</h1>
+                <p class="text-secondary">Site içeriklerini düzenleyin</p>
+            </div>
+            <a href="/admin" class="btn btn-secondary">← Geri</a>
+        </div>
+        
+        <div class="content-tabs">
+            <button class="tab-btn active" data-tab="hero">Ana Sayfa Hero</button>
+            <button class="tab-btn" data-tab="stats">İstatistikler</button>
+            <button class="tab-btn" data-tab="features">Özellikler</button>
+            <button class="tab-btn" data-tab="faq">SSS</button>
+            <button class="tab-btn" data-tab="footer">Footer</button>
+        </div>
+        
+        <!-- Hero Tab -->
+        <div class="tab-content active" id="tab-hero">
+            <div class="content-card glass-card">
+                <h3>Hero Bölümü</h3>
+                <div class="form-group">
+                    <label>Başlık (Sol)</label>
+                    <input type="text" id="heroTitleLeft" value="AGTR" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Başlık (Sağ)</label>
+                    <input type="text" id="heroTitleRight" value="Merkezi" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Alt Başlık</label>
+                    <textarea id="heroSubtitle" class="form-input" rows="2">Half-Life ve CS 1.6 sunucularınız için profesyonel hosting çözümleri.</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Badge Metni</label>
+                    <input type="text" id="heroBadge" value="Türkiye'nin #1 Gaming Platformu" class="form-input">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Birincil Buton</label>
+                        <input type="text" id="heroBtn1Text" value="Sunucu Kirala" class="form-input">
+                        <input type="text" id="heroBtn1Link" value="/servers" class="form-input" placeholder="Link">
+                    </div>
+                    <div class="form-group">
+                        <label>İkincil Buton</label>
+                        <input type="text" id="heroBtn2Text" value="Topluluğa Katıl" class="form-input">
+                        <input type="text" id="heroBtn2Link" value="/forum" class="form-input" placeholder="Link">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveHero()">Kaydet</button>
+            </div>
+        </div>
+        
+        <!-- Stats Tab -->
+        <div class="tab-content" id="tab-stats">
+            <div class="content-card glass-card">
+                <h3>İstatistik Kartları</h3>
+                <p class="hint">Bu değerler dinamik olarak veritabanından çekilebilir veya sabit değerler gösterebilir</p>
+                <div class="stats-editor">
+                    <div class="stat-edit-item">
+                        <input type="text" value="1.250" class="form-input" placeholder="Değer">
+                        <input type="text" value="Aktif Oyuncu" class="form-input" placeholder="Etiket">
+                        <select class="form-select">
+                            <option value="static">Sabit</option>
+                            <option value="dynamic">Dinamik</option>
+                        </select>
+                    </div>
+                    <div class="stat-edit-item">
+                        <input type="text" value="85" class="form-input" placeholder="Değer">
+                        <input type="text" value="Sunucu Online" class="form-input" placeholder="Etiket">
+                        <select class="form-select">
+                            <option value="static">Sabit</option>
+                            <option value="dynamic" selected>Dinamik</option>
+                        </select>
+                    </div>
+                    <div class="stat-edit-item">
+                        <input type="text" value="15.000" class="form-input" placeholder="Değer">
+                        <input type="text" value="Kayıtlı Üye" class="form-input" placeholder="Etiket">
+                        <select class="form-select">
+                            <option value="static">Sabit</option>
+                            <option value="dynamic" selected>Dinamik</option>
+                        </select>
+                    </div>
+                    <div class="stat-edit-item">
+                        <input type="text" value="%99.9" class="form-input" placeholder="Değer">
+                        <input type="text" value="Uptime" class="form-input" placeholder="Etiket">
+                        <select class="form-select">
+                            <option value="static" selected>Sabit</option>
+                            <option value="dynamic">Dinamik</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveStats()">Kaydet</button>
+            </div>
+        </div>
+        
+        <!-- Features Tab -->
+        <div class="tab-content" id="tab-features">
+            <div class="content-card glass-card">
+                <h3>Özellik Kartları</h3>
+                <div id="featuresEditor">
+                    <div class="feature-edit-item">
+                        <input type="text" value="⚡" class="form-input icon-input" placeholder="İkon">
+                        <input type="text" value="Anında Kurulum" class="form-input" placeholder="Başlık">
+                        <textarea class="form-input" rows="2" placeholder="Açıklama">Ödeme onayından sonra sunucunuz saniyeler içinde aktif.</textarea>
+                    </div>
+                    <div class="feature-edit-item">
+                        <input type="text" value="🛡️" class="form-input icon-input" placeholder="İkon">
+                        <input type="text" value="DDoS Koruması" class="form-input" placeholder="Başlık">
+                        <textarea class="form-input" rows="2" placeholder="Açıklama">Enterprise seviyesi DDoS koruması ile sunucunuz güvende.</textarea>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="addFeature()">+ Özellik Ekle</button>
+                <button class="btn btn-primary" onclick="saveFeatures()">Kaydet</button>
+            </div>
+        </div>
+        
+        <!-- FAQ Tab -->
+        <div class="tab-content" id="tab-faq">
+            <div class="content-card glass-card">
+                <h3>Sık Sorulan Sorular</h3>
+                <div id="faqEditor">
+                    <div class="faq-edit-item">
+                        <input type="text" class="form-input" placeholder="Soru" value="Sunucu ne kadar sürede aktif olur?">
+                        <textarea class="form-input" rows="2" placeholder="Cevap">Ödeme onayından sonra sunucunuz 1-2 dakika içinde otomatik olarak kurulur ve aktif hale gelir.</textarea>
+                        <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">Sil</button>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="addFAQ()">+ Soru Ekle</button>
+                <button class="btn btn-primary" onclick="saveFAQ()">Kaydet</button>
+            </div>
+        </div>
+        
+        <!-- Footer Tab -->
+        <div class="tab-content" id="tab-footer">
+            <div class="content-card glass-card">
+                <h3>Footer Bilgileri</h3>
+                <div class="form-group">
+                    <label>Site Açıklaması</label>
+                    <textarea id="footerDesc" class="form-input" rows="2">Türkiye'nin en iyi Half-Life ve CS 1.6 gaming platformu.</textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Discord Link</label>
+                        <input type="text" id="discordLink" class="form-input" placeholder="https://discord.gg/...">
+                    </div>
+                    <div class="form-group">
+                        <label>Steam Grup</label>
+                        <input type="text" id="steamLink" class="form-input" placeholder="https://steamcommunity.com/...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Copyright Metni</label>
+                    <input type="text" id="copyright" class="form-input" value="© 2024 AGTR Merkezi. Tüm hakları saklıdır.">
+                </div>
+                <button class="btn btn-primary" onclick="saveFooter()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.admin-section { padding: 40px 20px; min-height: calc(100vh - 70px); }
+.container { max-width: 1000px; margin: 0 auto; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.admin-header h1 { font-size: 28px; margin-bottom: 4px; }
+.text-secondary { color: var(--text-secondary); }
+
+.content-tabs { display: flex; gap: 5px; margin-bottom: 25px; flex-wrap: wrap; }
+.tab-btn { padding: 10px 20px; background: var(--bg-tertiary); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-secondary); cursor: pointer; transition: all 0.3s; }
+.tab-btn:hover, .tab-btn.active { background: #ff6b00; color: #000; border-color: #ff6b00; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.content-card { padding: 25px; }
+.content-card h3 { font-size: 18px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.hint { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
+.form-input, .form-select { width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-size: 14px; }
+.form-input:focus { border-color: #ff6b00; outline: none; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.stats-editor, #featuresEditor, #faqEditor { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+.stat-edit-item, .feature-edit-item, .faq-edit-item { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 10px; padding: 15px; background: var(--bg-tertiary); border-radius: 8px; align-items: start; }
+.feature-edit-item { grid-template-columns: auto 1fr; }
+.feature-edit-item .icon-input { width: 60px; text-align: center; font-size: 20px; }
+.faq-edit-item { grid-template-columns: 1fr auto; }
+.faq-edit-item textarea { grid-column: 1; }
+</style>
+
+<script>
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+});
+
+function addFAQ() {
+    const div = document.createElement('div');
+    div.className = 'faq-edit-item';
+    div.innerHTML = `
+        <input type="text" class="form-input" placeholder="Soru">
+        <textarea class="form-input" rows="2" placeholder="Cevap"></textarea>
+        <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">Sil</button>
+    `;
+    document.getElementById('faqEditor').appendChild(div);
+}
+
+function addFeature() {
+    const div = document.createElement('div');
+    div.className = 'feature-edit-item';
+    div.innerHTML = `
+        <input type="text" class="form-input icon-input" placeholder="İkon">
+        <input type="text" class="form-input" placeholder="Başlık">
+        <textarea class="form-input" rows="2" placeholder="Açıklama"></textarea>
+    `;
+    document.getElementById('featuresEditor').appendChild(div);
+}
+
+function saveHero() { alert('Hero içeriği kaydedildi!'); }
+function saveStats() { alert('İstatistikler kaydedildi!'); }
+function saveFeatures() { alert('Özellikler kaydedildi!'); }
+function saveFAQ() { alert('SSS kaydedildi!'); }
+function saveFooter() { alert('Footer kaydedildi!'); }
+</script>
+{% endblock %}

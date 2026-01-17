@@ -1,0 +1,232 @@
+{% extends "user/base.html" %}
+
+{% block title %}{{ category.name if category else 'Kategori' }} - Forum - AGTR{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/forum">Forum</a></li>
+            <li class="breadcrumb-item active" id="categoryName">Kategori</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 rounded-3 p-3 me-3">
+                        <i class="fas fa-folder text-primary fa-lg" id="categoryIcon"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-1" id="categoryTitle">Yükleniyor...</h4>
+                        <p class="text-muted mb-0" id="categoryDescription"></p>
+                    </div>
+                </div>
+                <a href="/forum/new?category={{ category_slug }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Yeni Konu
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topics List -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-0 py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Konular</h5>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm" id="sortSelect" onchange="loadTopics()" style="width: auto;">
+                        <option value="newest">En Yeni</option>
+                        <option value="oldest">En Eski</option>
+                        <option value="popular">En Popüler</option>
+                        <option value="most_replies">En Çok Yanıt</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div id="topicsContainer">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Pagination -->
+        <div class="card-footer bg-transparent border-0 py-3" id="paginationContainer" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted" id="topicCount">0 konu</small>
+                <nav id="pagination"></nav>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const categorySlug = '{{ category_slug }}';
+let currentPage = 1;
+let totalPages = 1;
+let categoryData = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategoryInfo();
+    loadTopics();
+});
+
+async function loadCategoryInfo() {
+    try {
+        const response = await fetch('/api/forum/categories/' + categorySlug);
+        if (!response.ok) {
+            window.location.href = '/forum';
+            return;
+        }
+        
+        categoryData = await response.json();
+        
+        document.getElementById('categoryName').textContent = categoryData.name;
+        document.getElementById('categoryTitle').textContent = categoryData.name;
+        document.getElementById('categoryDescription').textContent = categoryData.description || '';
+        document.getElementById('categoryIcon').className = (categoryData.icon || 'fas fa-folder') + ' text-primary fa-lg';
+        document.title = categoryData.name + ' - Forum - AGTR';
+        
+    } catch (error) {
+        console.error('Kategori yüklenemedi:', error);
+    }
+}
+
+async function loadTopics(page = 1) {
+    currentPage = page;
+    const sort = document.getElementById('sortSelect').value;
+    
+    try {
+        const response = await fetch('/api/forum/categories/' + categorySlug + '/topics?page=' + page + '&sort=' + sort);
+        const data = await response.json();
+        
+        totalPages = data.pages || 1;
+        renderTopics(data.topics || []);
+        
+        document.getElementById('topicCount').textContent = (data.total || 0) + ' konu';
+        document.getElementById('paginationContainer').style.display = data.total > 0 ? '' : 'none';
+        
+        renderPagination();
+        
+    } catch (error) {
+        console.error('Konular yüklenemedi:', error);
+        showToast('Konular yüklenirken hata oluştu', 'error');
+    }
+}
+
+function renderTopics(topics) {
+    const container = document.getElementById('topicsContainer');
+    
+    if (topics.length === 0) {
+        container.innerHTML = '<div class="text-center py-5 text-muted">' +
+            '<i class="fas fa-comments fa-3x mb-3 d-block opacity-50"></i>' +
+            '<p class="mb-3">Bu kategoride henüz konu bulunmuyor.</p>' +
+            '<a href="/forum/new?category=' + categorySlug + '" class="btn btn-primary btn-sm">İlk Konuyu Aç</a>' +
+        '</div>';
+        return;
+    }
+    
+    container.innerHTML = '<div class="list-group list-group-flush">' +
+        topics.map(topic => {
+            const badges = [];
+            if (topic.is_pinned) badges.push('<span class="badge bg-info me-2"><i class="fas fa-thumbtack me-1"></i>Sabit</span>');
+            if (topic.is_locked) badges.push('<span class="badge bg-warning me-2"><i class="fas fa-lock me-1"></i>Kilitli</span>');
+            
+            return '<a href="/forum/topic/' + topic.slug + '" class="list-group-item list-group-item-action py-3' + (topic.is_pinned ? ' bg-light' : '') + '">' +
+                '<div class="d-flex justify-content-between align-items-start">' +
+                    '<div class="flex-grow-1">' +
+                        '<div class="d-flex align-items-center mb-1">' +
+                            badges.join('') +
+                            '<h6 class="mb-0' + (topic.is_pinned ? ' text-primary' : '') + '">' + escapeHtml(topic.title) + '</h6>' +
+                        '</div>' +
+                        '<div class="d-flex align-items-center text-muted small">' +
+                            '<img src="' + (topic.author_avatar || '/static/images/default-avatar.png') + '" class="rounded-circle me-2" width="20" height="20" alt="">' +
+                            '<span>' + escapeHtml(topic.author_name || 'Anonim') + '</span>' +
+                            '<span class="mx-2">•</span>' +
+                            '<span>' + formatDate(topic.created_at) + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="text-end ms-3">' +
+                        '<div class="d-flex gap-3">' +
+                            '<div class="text-center">' +
+                                '<div class="fw-bold">' + (topic.reply_count || 0) + '</div>' +
+                                '<small class="text-muted">yanıt</small>' +
+                            '</div>' +
+                            '<div class="text-center">' +
+                                '<div class="fw-bold">' + formatViews(topic.view_count || 0) + '</div>' +
+                                '<small class="text-muted">görüntülenme</small>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</a>';
+        }).join('') +
+    '</div>';
+}
+
+function renderPagination() {
+    const container = document.getElementById('pagination');
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<ul class="pagination pagination-sm mb-0">';
+    
+    // Previous
+    html += '<li class="page-item' + (currentPage === 1 ? ' disabled' : '') + '">' +
+        '<a class="page-link" href="javascript:void(0)" onclick="loadTopics(' + (currentPage - 1) + ')">&laquo;</a></li>';
+    
+    // Pages
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += '<li class="page-item' + (i === currentPage ? ' active' : '') + '">' +
+                '<a class="page-link" href="javascript:void(0)" onclick="loadTopics(' + i + ')">' + i + '</a></li>';
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+    }
+    
+    // Next
+    html += '<li class="page-item' + (currentPage === totalPages ? ' disabled' : '') + '">' +
+        '<a class="page-link" href="javascript:void(0)" onclick="loadTopics(' + (currentPage + 1) + ')">&raquo;</a></li>';
+    
+    html += '</ul>';
+    container.innerHTML = html;
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Az önce';
+    if (diff < 3600000) return Math.floor(diff / 60000) + ' dk önce';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + ' saat önce';
+    if (diff < 604800000) return Math.floor(diff / 86400000) + ' gün önce';
+    
+    return date.toLocaleDateString('tr-TR');
+}
+
+function formatViews(count) {
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
+    return count.toString();
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

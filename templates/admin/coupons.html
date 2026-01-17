@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Kuponlar - Admin - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <div>
+                <h1>Kupon Yönetimi</h1>
+                <p class="text-secondary">İndirim kodlarını yönetin</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openCouponModal()">+ Yeni Kupon</button>
+                <a href="/admin" class="btn btn-secondary">← Geri</a>
+            </div>
+        </div>
+        
+        <div class="admin-content glass-card">
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Kod</th>
+                            <th>İndirim</th>
+                            <th>Kullanım</th>
+                            <th>Geçerlilik</th>
+                            <th>Durum</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if coupons %}
+                        {% for c in coupons %}
+                        <tr>
+                            <td><code>{{ c.code }}</code></td>
+                            <td>{% if c.discount_type == 'percent' %}%{{ c.discount_value|int }}{% else %}{{ c.discount_value }} ₺{% endif %}</td>
+                            <td>{{ c.usage_count }}/{{ c.usage_limit or '∞' }}</td>
+                            <td>{{ c.valid_until.strftime('%d.%m.%Y') if c.valid_until else 'Süresiz' }}</td>
+                            <td><span class="badge badge-{{ 'success' if c.is_active else 'danger' }}">{{ 'Aktif' if c.is_active else 'Pasif' }}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary" onclick="editCoupon({{ c.id }})">Düzenle</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteCoupon({{ c.id }})">Sil</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr><td colspan="6" class="empty">Henüz kupon eklenmemiş</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal -->
+<div class="modal" id="couponModal">
+    <div class="modal-content glass-card">
+        <div class="modal-header">
+            <h3>Yeni Kupon</h3>
+            <button class="close-btn" onclick="closeCouponModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Kupon Kodu</label>
+                <div class="code-gen">
+                    <input type="text" id="couponCode" class="form-input" placeholder="ORNEK2024">
+                    <button class="btn btn-sm btn-secondary" onclick="generateCode()">Otomatik</button>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>İndirim Tipi</label>
+                    <select id="discountType" class="form-select">
+                        <option value="percent">Yüzde (%)</option>
+                        <option value="fixed">Sabit (₺)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>İndirim Değeri</label>
+                    <input type="number" id="discountValue" class="form-input" value="10">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Kullanım Limiti</label>
+                    <input type="number" id="usageLimit" class="form-input" placeholder="Boş = Sınırsız">
+                </div>
+                <div class="form-group">
+                    <label>Minimum Tutar</label>
+                    <input type="number" id="minAmount" class="form-input" placeholder="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Başlangıç</label>
+                    <input type="date" id="validFrom" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Bitiş</label>
+                    <input type="date" id="validUntil" class="form-input">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeCouponModal()">İptal</button>
+            <button class="btn btn-primary" onclick="saveCoupon()">Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-section { padding: 40px 20px; min-height: calc(100vh - 70px); }
+.container { max-width: 1200px; margin: 0 auto; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.admin-header h1 { font-size: 28px; margin-bottom: 4px; }
+.text-secondary { color: var(--text-secondary); }
+.header-actions { display: flex; gap: 10px; }
+.admin-content { padding: 20px; }
+
+.table-wrapper { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.data-table th { background: var(--bg-tertiary); font-weight: 600; font-size: 13px; text-transform: uppercase; }
+.data-table tr:hover { background: rgba(255,255,255,0.02); }
+.empty { text-align: center; padding: 40px !important; color: var(--text-muted); }
+
+code { background: var(--bg-tertiary); padding: 4px 10px; border-radius: 4px; font-family: var(--font-mono); color: #ff6b00; }
+.badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-success { background: rgba(0,200,0,0.2); color: #00c800; }
+.badge-danger { background: rgba(255,51,51,0.2); color: #ff3333; }
+
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+.modal.active { display: flex; }
+.modal-content { width: 100%; max-width: 500px; margin: 20px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.modal-header h3 { font-size: 18px; }
+.close-btn { background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; }
+.modal-body { padding: 20px; }
+.modal-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; justify-content: flex-end; }
+
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
+.form-input, .form-select { width: 100%; padding: 10px 12px; background: var(--bg-tertiary); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.code-gen { display: flex; gap: 10px; }
+.code-gen .form-input { flex: 1; }
+</style>
+
+<script>
+function openCouponModal() { document.getElementById('couponModal').classList.add('active'); }
+function closeCouponModal() { document.getElementById('couponModal').classList.remove('active'); }
+function generateCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+    document.getElementById('couponCode').value = code;
+}
+function saveCoupon() { alert('Kupon kaydedildi!'); closeCouponModal(); }
+function editCoupon(id) { openCouponModal(); }
+function deleteCoupon(id) { if(confirm('Kuponu silmek istediğinize emin misiniz?')) alert('Kupon silindi'); }
+</script>
+{% endblock %}

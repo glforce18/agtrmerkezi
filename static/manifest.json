@@ -1,0 +1,17 @@
+{
+  "name": "AGTR Merkezi",
+  "short_name": "AGTR",
+  "description": "Türkiye'nin en iyi Half-Life ve CS 1.6 gaming platformu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1d21",
+  "theme_color": "#ff6b00",
+  "icons": [
+    {
+      "src": "/static/images/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

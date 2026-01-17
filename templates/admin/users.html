@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+
+{% block title %}Kullanıcılar - Admin - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header">
+            <div>
+                <h1>Kullanıcılar</h1>
+                <p class="text-secondary">Kullanıcı yönetimi</p>
+            </div>
+            <a href="/admin" class="btn btn-secondary">← Geri</a>
+        </div>
+        
+        <div class="admin-content glass-card">
+            <!-- Search & Filter -->
+            <div class="toolbar">
+                <input type="text" id="searchUser" placeholder="Kullanıcı ara..." class="search-input" onkeyup="filterUsers()">
+                <select id="filterRole" class="filter-select" onchange="filterUsers()">
+                    <option value="">Tüm Roller</option>
+                    <option value="admin">Admin</option>
+                    <option value="moderator">Moderatör</option>
+                    <option value="user">Kullanıcı</option>
+                </select>
+                <select id="filterStatus" class="filter-select" onchange="filterUsers()">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="active">Aktif</option>
+                    <option value="banned">Yasaklı</option>
+                    <option value="suspended">Askıda</option>
+                </select>
+            </div>
+            
+            <!-- Users Table -->
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Kullanıcı</th>
+                            <th>E-posta</th>
+                            <th>Rol</th>
+                            <th>Durum</th>
+                            <th>Bakiye</th>
+                            <th>Kayıt</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable">
+                        {% if users %}
+                        {% for user in users %}
+                        <tr data-user-id="{{ user.id }}" data-username="{{ user.username|lower }}" data-role="{{ user.role.value }}" data-status="{{ user.status.value if user.status else 'active' }}">
+                            <td>{{ user.id }}</td>
+                            <td>
+                                <div class="user-cell">
+                                    <div class="avatar">{{ user.username[0]|upper }}</div>
+                                    <div>
+                                        <span class="user-name">{{ user.username }}</span>
+                                        {% if user.is_online %}
+                                        <span class="status-dot online" style="width:8px;height:8px;display:inline-block;margin-left:6px;"></span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="badge badge-{{ 'danger' if user.role.value in ['admin', 'superadmin'] else 'warning' if user.role.value == 'moderator' else 'primary' }}">
+                                    {{ user.role.value }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ 'success' if user.status.value == 'active' else 'danger' if user.status.value == 'banned' else 'warning' }}">
+                                    {{ user.status.value if user.status else 'active' }}
+                                </span>
+                            </td>
+                            <td>{{ "%.2f"|format(user.balance or 0) }} ₺</td>
+                            <td>{{ user.created_at.strftime('%d.%m.%Y') if user.created_at else '-' }}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn btn-sm btn-secondary" onclick="editUser({{ user.id }})" title="Düzenle">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline" onclick="viewUserDetails({{ user.id }})" title="Detay">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr><td colspan="8" style="text-align:center;padding:40px;">Kullanıcı bulunamadı</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Edit User Modal -->
+<div class="modal" id="editUserModal">
+    <div class="modal-backdrop" onclick="closeEditModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Kullanıcı Düzenle</h3>
+            <button class="btn btn-icon btn-secondary" onclick="closeEditModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editUserId">
+            
+            <div class="form-group">
+                <label>Kullanıcı Adı</label>
+                <input type="text" id="editUsername" class="form-control" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>E-posta</label>
+                <input type="email" id="editEmail" class="form-control" readonly>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Rol</label>
+                    <select id="editRole" class="form-control">
+                        <option value="user">Kullanıcı</option>
+                        <option value="moderator">Moderatör</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Durum</label>
+                    <select id="editStatus" class="form-control">
+                        <option value="active">Aktif</option>
+                        <option value="suspended">Askıda</option>
+                        <option value="banned">Yasaklı</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Bakiye (₺)</label>
+                <input type="number" id="editBalance" class="form-control" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label>Not (Opsiyonel)</label>
+                <textarea id="editNote" class="form-control" rows="2" placeholder="Admin notu..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeEditModal()">İptal</button>
+            <button class="btn btn-danger" onclick="resetUserPassword()" style="margin-left:auto;">Şifre Sıfırla</button>
+            <button class="btn btn-primary" onclick="saveUserChanges()">Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal" id="userDetailsModal">
+    <div class="modal-backdrop" onclick="closeDetailsModal()"></div>
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3>Kullanıcı Detayları</h3>
+            <button class="btn btn-icon btn-secondary" onclick="closeDetailsModal()">✕</button>
+        </div>
+        <div class="modal-body" id="userDetailsContent">
+            <div class="loading-spinner">Yükleniyor...</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-section { padding: 40px 20px; min-height: calc(100vh - 70px); }
+.container { max-width: 1400px; margin: 0 auto; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.admin-header h1 { font-size: 28px; margin-bottom: 4px; }
+.text-secondary { color: var(--text-secondary); }
+.admin-content { padding: 20px; }
+.toolbar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+.search-input, .filter-select { padding: 10px 15px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; }
+.search-input { flex: 1; min-width: 200px; }
+.search-input:focus, .filter-select:focus { outline: none; border-color: var(--primary-color); }
+.filter-select { min-width: 150px; }
+.table-wrapper { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+.data-table th { background: var(--bg-tertiary); font-weight: 600; font-size: 13px; text-transform: uppercase; }
+.data-table tr:hover { background: rgba(255,107,0,0.05); }
+.user-cell { display: flex; align-items: center; gap: 10px; }
+.user-name { font-weight: 500; }
+.avatar { width: 36px; height: 36px; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; color: #000; }
+.badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-primary { background: rgba(255,107,0,0.2); color: #ff6b00; }
+.badge-success { background: rgba(16,185,129,0.2); color: #10b981; }
+.badge-warning { background: rgba(245,158,11,0.2); color: #f59e0b; }
+.badge-danger { background: rgba(239,68,68,0.2); color: #ef4444; }
+.action-btns { display: flex; gap: 8px; }
+.btn-sm { padding: 6px 10px; font-size: 12px; }
+
+/* Modal Styles */
+.modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2000; display: none; align-items: center; justify-content: center; }
+.modal.active { display: flex; }
+.modal-backdrop { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); }
+.modal-content { position: relative; background: var(--bg-secondary); border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow: hidden; animation: modalIn 0.2s ease; }
+.modal-lg { max-width: 700px; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border-color); }
+.modal-header h3 { margin: 0; font-size: 18px; }
+.modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+.modal-footer { display: flex; gap: 12px; padding: 20px; border-top: 1px solid var(--border-color); }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+.form-control { width: 100%; padding: 10px 14px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; }
+.form-control:focus { outline: none; border-color: var(--primary-color); }
+.form-control[readonly] { opacity: 0.7; cursor: not-allowed; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.loading-spinner { text-align: center; padding: 40px; color: var(--text-muted); }
+
+/* User Details */
+.user-detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.detail-item { padding: 12px; background: var(--bg-tertiary); border-radius: 8px; }
+.detail-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.detail-value { font-size: 14px; font-weight: 500; }
+.user-servers-list { margin-top: 20px; }
+.server-item { display: flex; justify-content: space-between; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 8px; }
+</style>
+
+<script>
+// Kullanıcı verilerini saklama
+let usersData = {};
+
+{% if users %}
+{% for user in users %}
+usersData[{{ user.id }}] = {
+    id: {{ user.id }},
+    username: "{{ user.username }}",
+    email: "{{ user.email }}",
+    role: "{{ user.role.value }}",
+    status: "{{ user.status.value if user.status else 'active' }}",
+    balance: {{ user.balance or 0 }},
+    created_at: "{{ user.created_at.isoformat() if user.created_at else '' }}",
+    last_login: "{{ user.last_login.isoformat() if user.last_login else '' }}"
+};
+{% endfor %}
+{% endif %}
+
+// Kullanıcı filtreleme
+function filterUsers() {
+    const search = document.getElementById('searchUser').value.toLowerCase();
+    const role = document.getElementById('filterRole').value;
+    const status = document.getElementById('filterStatus').value;
+    
+    document.querySelectorAll('#usersTable tr[data-user-id]').forEach(row => {
+        const username = row.dataset.username || '';
+        const userRole = row.dataset.role || '';
+        const userStatus = row.dataset.status || '';
+        
+        const matchSearch = !search || username.includes(search);
+        const matchRole = !role || userRole === role;
+        const matchStatus = !status || userStatus === status;
+        
+        row.style.display = (matchSearch && matchRole && matchStatus) ? '' : 'none';
+    });
+}
+
+// Kullanıcı düzenleme modalını aç
+function editUser(userId) {
+    const user = usersData[userId];
+    if (!user) {
+        showToast('Kullanıcı bulunamadı', 'error');
+        return;
+    }
+    
+    document.getElementById('editUserId').value = user.id;
+    document.getElementById('editUsername').value = user.username;
+    document.getElementById('editEmail').value = user.email;
+    document.getElementById('editRole').value = user.role;
+    document.getElementById('editStatus').value = user.status;
+    document.getElementById('editBalance').value = user.balance;
+    document.getElementById('editNote').value = '';
+    
+    document.getElementById('editUserModal').classList.add('active');
+}
+
+// Modalı kapat
+function closeEditModal() {
+    document.getElementById('editUserModal').classList.remove('active');
+}
+
+// Kullanıcı değişikliklerini kaydet
+async function saveUserChanges() {
+    const userId = document.getElementById('editUserId').value;
+    const role = document.getElementById('editRole').value;
+    const status = document.getElementById('editStatus').value;
+    const balance = parseFloat(document.getElementById('editBalance').value) || 0;
+    
+    try {
+        const res = await fetch(`/api/admin/users/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role, status, balance })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast('Kullanıcı güncellendi', 'success');
+            closeEditModal();
+            // Sayfayı yenile
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.detail || 'Güncelleme başarısız', 'error');
+        }
+    } catch (e) {
+        console.error('Save error:', e);
+        showToast('Bağlantı hatası', 'error');
+    }
+}
+
+// Şifre sıfırlama
+async function resetUserPassword() {
+    const userId = document.getElementById('editUserId').value;
+    const username = document.getElementById('editUsername').value;
+    
+    if (!confirm(`${username} kullanıcısının şifresini sıfırlamak istediğinize emin misiniz?`)) {
+        return;
+    }
+    
+    try {
+        const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
+            method: 'POST'
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast('Şifre sıfırlama e-postası gönderildi', 'success');
+        } else {
+            showToast(data.detail || 'Şifre sıfırlama başarısız', 'error');
+        }
+    } catch (e) {
+        showToast('Bağlantı hatası', 'error');
+    }
+}
+
+// Kullanıcı detaylarını görüntüle
+async function viewUserDetails(userId) {
+    document.getElementById('userDetailsModal').classList.add('active');
+    document.getElementById('userDetailsContent').innerHTML = '<div class="loading-spinner">Yükleniyor...</div>';
+    
+    try {
+        const res = await fetch(`/api/admin/users/${userId}/details`);
+        const data = await res.json();
+        
+        if (res.ok) {
+            renderUserDetails(data);
+        } else {
+            document.getElementById('userDetailsContent').innerHTML = '<p style="color:var(--danger-color);">Detaylar yüklenemedi</p>';
+        }
+    } catch (e) {
+        document.getElementById('userDetailsContent').innerHTML = '<p style="color:var(--danger-color);">Bağlantı hatası</p>';
+    }
+}
+
+function renderUserDetails(user) {
+    const html = `
+        <div class="user-detail-grid">
+            <div class="detail-item">
+                <div class="detail-label">Kullanıcı Adı</div>
+                <div class="detail-value">${user.username}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">E-posta</div>
+                <div class="detail-value">${user.email}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Rol</div>
+                <div class="detail-value"><span class="badge badge-primary">${user.role}</span></div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Durum</div>
+                <div class="detail-value"><span class="badge badge-success">${user.status}</span></div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Bakiye</div>
+                <div class="detail-value">${user.balance?.toFixed(2) || '0.00'} ₺</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Kayıt Tarihi</div>
+                <div class="detail-value">${user.created_at ? new Date(user.created_at).toLocaleDateString('tr-TR') : '-'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Son Giriş</div>
+                <div class="detail-value">${user.last_login ? new Date(user.last_login).toLocaleString('tr-TR') : 'Hiç'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">2FA Durumu</div>
+                <div class="detail-value">${user.two_factor_enabled ? '✓ Aktif' : '✗ Pasif'}</div>
+            </div>
+        </div>
+        
+        ${user.servers && user.servers.length > 0 ? `
+        <div class="user-servers-list">
+            <h4 style="margin-bottom:12px;">Sunucular (${user.servers.length})</h4>
+            ${user.servers.map(s => `
+                <div class="server-item">
+                    <span>${s.name}</span>
+                    <span class="badge badge-${s.status === 'running' ? 'success' : 'secondary'}">${s.status}</span>
+                </div>
+            `).join('')}
+        </div>
+        ` : ''}
+    `;
+    
+    document.getElementById('userDetailsContent').innerHTML = html;
+}
+
+function closeDetailsModal() {
+    document.getElementById('userDetailsModal').classList.remove('active');
+}
+
+// Toast bildirimi
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        z-index: 9999;
+        animation: slideInRight 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// ESC ile modal kapat
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeEditModal();
+        closeDetailsModal();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Yardım Merkezi - {{ settings.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1>
+            <svg class="icon" width="32" height="32"><use href="/static/images/icons.svg#icon-book"></use></svg>
+            Yardım Merkezi
+        </h1>
+        <p class="page-subtitle">Sunucu kurulum ve yönetim rehberleri</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="help-page">
+        <!-- Kategori Cards -->
+        <div class="help-categories">
+            <a href="#getting-started" class="help-category-card">
+                <div class="category-icon">🚀</div>
+                <h3>Başlangıç</h3>
+                <p>İlk adımlar, kayıt, hesap yönetimi</p>
+            </a>
+            <a href="#server-management" class="help-category-card">
+                <div class="category-icon">🖥️</div>
+                <h3>Sunucu Yönetimi</h3>
+                <p>Sunucu kurulum, RCON, ayarlar</p>
+            </a>
+            <a href="#payments" class="help-category-card">
+                <div class="category-icon">💳</div>
+                <h3>Ödeme</h3>
+                <p>Bakiye yükleme, fatura, iade</p>
+            </a>
+            <a href="#plugins" class="help-category-card">
+                <div class="category-icon">🔌</div>
+                <h3>Eklentiler</h3>
+                <p>Plugin kurulum, AMVP, Anti-Cheat</p>
+            </a>
+        </div>
+
+        <!-- Getting Started -->
+        <section id="getting-started" class="help-section">
+            <h2>🚀 Başlangıç Rehberi</h2>
+            
+            <div class="help-article">
+                <h3>Kayıt Olma</h3>
+                <ol>
+                    <li><a href="/register">Kayıt sayfasına</a> gidin</li>
+                    <li>Kullanıcı adı, e-posta ve şifre belirleyin</li>
+                    <li>E-postanızı doğrulayın (opsiyonel)</li>
+                    <li>Giriş yaparak panele erişin</li>
+                </ol>
+            </div>
+
+            <div class="help-article">
+                <h3>İlk Sunucunuzu Satın Alma</h3>
+                <ol>
+                    <li><a href="/servers">Sunucular</a> sayfasından paket seçin</li>
+                    <li>Oyun türü ve slot sayısını belirleyin</li>
+                    <li>Bakiye yükleyin veya direkt ödeme yapın</li>
+                    <li>Sunucunuz 1-2 dakika içinde hazır!</li>
+                </ol>
+            </div>
+
+            <div class="help-article">
+                <h3>2FA Güvenlik</h3>
+                <p>Hesabınızı korumak için iki faktörlü doğrulamayı aktif edin:</p>
+                <ol>
+                    <li>Panel > Ayarlar > Güvenlik</li>
+                    <li>"2FA Aktif Et" butonuna tıklayın</li>
+                    <li>QR kodu Google Authenticator ile tarayın</li>
+                    <li>Yedek kodlarınızı güvenli bir yere kaydedin</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Server Management -->
+        <section id="server-management" class="help-section">
+            <h2>🖥️ Sunucu Yönetimi</h2>
+            
+            <div class="help-article">
+                <h3>Sunucu Başlatma/Durdurma</h3>
+                <p>Panel > Sunucularım > [Sunucu] sayfasından:</p>
+                <ul>
+                    <li><strong>Başlat:</strong> Yeşil "Başlat" butonu</li>
+                    <li><strong>Durdur:</strong> Kırmızı "Durdur" butonu</li>
+                    <li><strong>Yeniden Başlat:</strong> Turuncu "Restart" butonu</li>
+                </ul>
+                <div class="tip-box">
+                    💡 <strong>İpucu:</strong> Otomatik yeniden başlatma özelliğini aktif edin, sunucunuz crash olursa otomatik olarak tekrar açılır.
+                </div>
+            </div>
+
+            <div class="help-article">
+                <h3>RCON Kullanımı</h3>
+                <p>RCON (Remote Console) ile sunucunuzu uzaktan yönetebilirsiniz:</p>
+                <pre><code>rcon_password "sifreniz"
+rcon komut_adi</code></pre>
+                <p><strong>Yaygın RCON Komutları:</strong></p>
+                <ul>
+                    <li><code>rcon changelevel de_dust2</code> - Harita değiştir</li>
+                    <li><code>rcon kick "isim"</code> - Oyuncu at</li>
+                    <li><code>rcon status</code> - Sunucu durumu</li>
+                    <li><code>rcon sv_restart 1</code> - Tur yeniden başlat</li>
+                </ul>
+            </div>
+
+            <div class="help-article">
+                <h3>server.cfg Düzenleme</h3>
+                <p>Panel > Sunucu > Ayarlar > server.cfg sekmesinden sunucu ayarlarını düzenleyebilirsiniz.</p>
+                <p><strong>Temel Ayarlar:</strong></p>
+                <pre><code>hostname "Sunucu Adiniz"
+sv_password "sifre"  // Boş bırakın veya şifre koyun
+mp_timelimit 25
+mp_roundtime 3</code></pre>
+            </div>
+        </section>
+
+        <!-- Payments -->
+        <section id="payments" class="help-section">
+            <h2>💳 Ödeme ve Bakiye</h2>
+            
+            <div class="help-article">
+                <h3>Bakiye Yükleme</h3>
+                <p>Bakiye yüklemek için:</p>
+                <ol>
+                    <li>Panel > Bakiye sayfasına gidin</li>
+                    <li>Yüklemek istediğiniz tutarı seçin</li>
+                    <li>Ödeme yöntemi seçin:
+                        <ul>
+                            <li>Kredi/Banka Kartı (iyzico)</li>
+                            <li>Havale/EFT</li>
+                        </ul>
+                    </li>
+                    <li>Ödemeyi tamamlayın</li>
+                </ol>
+            </div>
+
+            <div class="help-article">
+                <h3>Havale/EFT ile Ödeme</h3>
+                <ol>
+                    <li>Havale/EFT seçeneğini seçin</li>
+                    <li>Size verilen referans kodunu kopyalayın</li>
+                    <li>Banka hesabımıza transfer yapın</li>
+                    <li>Açıklama kısmına referans kodunu yazın</li>
+                    <li>Bakiye 1-24 saat içinde tanımlanır</li>
+                </ol>
+                <div class="warning-box">
+                    ⚠️ <strong>Önemli:</strong> Referans kodunu yazmayı unutmayın, aksi halde ödemeniz gecikebilir.
+                </div>
+            </div>
+
+            <div class="help-article">
+                <h3>Otomatik Yenileme</h3>
+                <p>Sunucunuzun süresi dolmadan otomatik yenilenmesi için:</p>
+                <ol>
+                    <li>Sunucu ayarlarından "Otomatik Yenile" seçeneğini aktif edin</li>
+                    <li>Bakiyenizde yeterli tutar olduğundan emin olun</li>
+                    <li>Süre dolmadan 3 gün önce otomatik yenilenir</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Plugins -->
+        <section id="plugins" class="help-section">
+            <h2>🔌 Eklentiler</h2>
+            
+            <div class="help-article">
+                <h3>AMVP Plugin</h3>
+                <p>AGTR MVP Plugin - Gelişmiş oyuncu istatistik sistemi:</p>
+                <ul>
+                    <li>Otomatik ELO hesaplama</li>
+                    <li>Sıralama ve leaderboard</li>
+                    <li>Discord entegrasyonu</li>
+                    <li>Web panel ile senkronizasyon</li>
+                </ul>
+                <p>Aktif etmek için: Panel > Sunucu > Eklentiler > AMVP</p>
+            </div>
+
+            <div class="help-article">
+                <h3>AGTR Anti-Cheat</h3>
+                <p>Hile koruması için Anti-Cheat sistemimizi kullanın:</p>
+                <ul>
+                    <li>Process tarama</li>
+                    <li>DLL kontrolü</li>
+                    <li>Screenshot sistemi</li>
+                    <li>Otomatik ban</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Yardım Bulunamadı -->
+        <div class="help-more">
+            <h3>Aradığınızı bulamadınız mı?</h3>
+            <p>Daha fazla yardım için:</p>
+            <div class="help-more-links">
+                <a href="/faq" class="btn btn-secondary">
+                    <svg width="20" height="20"><use href="/static/images/icons.svg#icon-help"></use></svg>
+                    SSS
+                </a>
+                <a href="/contact" class="btn btn-secondary">
+                    <svg width="20" height="20"><use href="/static/images/icons.svg#icon-mail"></use></svg>
+                    İletişim
+                </a>
+                {% if current_user %}
+                <a href="/panel/tickets/new" class="btn btn-primary">
+                    <svg width="20" height="20"><use href="/static/images/icons.svg#icon-ticket"></use></svg>
+                    Destek Talebi
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    padding: 60px 0;
+    text-align: center;
+    margin-bottom: 40px;
+}
+.page-header h1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.help-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 60px;
+}
+
+.help-categories {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 50px;
+}
+.help-category-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 25px 20px;
+    text-align: center;
+    transition: all 0.3s;
+    color: var(--text-primary);
+}
+.help-category-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(255, 107, 0, 0.15);
+}
+.category-icon {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+}
+.help-category-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+.help-category-card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.help-section {
+    margin-bottom: 50px;
+    padding-top: 20px;
+}
+.help-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.help-article {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+}
+.help-article h3 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+.help-article ol, .help-article ul {
+    margin: 15px 0;
+    padding-left: 25px;
+}
+.help-article li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+.help-article pre {
+    background: var(--bg-tertiary);
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 15px 0;
+}
+.help-article code {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.9rem;
+}
+
+.tip-box, .warning-box {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+.tip-box {
+    background: rgba(34, 197, 94, 0.1);
+    border-left: 4px solid #22c55e;
+}
+.warning-box {
+    background: rgba(251, 191, 36, 0.1);
+    border-left: 4px solid #fbbf24;
+}
+
+.help-more {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #ff8c42 100%);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    color: white;
+    margin-top: 50px;
+}
+.help-more h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+.help-more p {
+    opacity: 0.9;
+    margin-bottom: 20px;
+}
+.help-more-links {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.help-more .btn-secondary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-color: rgba(255,255,255,0.3);
+}
+.help-more .btn-primary {
+    background: white;
+    color: var(--primary-color);
+}
+
+@media (max-width: 992px) {
+    .help-categories {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 576px) {
+    .help-categories {
+        grid-template-columns: 1fr;
+    }
+    .page-header h1 { font-size: 1.8rem; }
+}
+</style>
+{% endblock %}

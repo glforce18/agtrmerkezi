@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+{% block title %}Yeni Konu - Forum - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<div class="new-topic-page">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb-nav">
+            <a href="/" class="breadcrumb-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                Ana Sayfa
+            </a>
+            <span class="breadcrumb-sep">/</span>
+            <a href="/forum" class="breadcrumb-link">Forum</a>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-current">Yeni Konu</span>
+        </nav>
+        
+        <div class="new-topic-card glass-card">
+            <div class="card-header">
+                <h1>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Yeni Konu Oluştur
+                </h1>
+                <p class="card-subtitle">Toplulukla paylaşmak istediğiniz bir şey mi var?</p>
+            </div>
+            
+            <form id="newTopicForm" class="topic-form">
+                <!-- Kategori Seçimi -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        Kategori
+                    </label>
+                    <div class="select-wrapper">
+                        <select name="category_id" id="categorySelect" class="form-control" required>
+                            <option value="">Kategori seçin...</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>
+                                {{ cat.icon or '📁' }} {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Başlık -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Konu Başlığı
+                    </label>
+                    <input type="text" name="title" id="topicTitle" class="form-control" required 
+                           placeholder="Açıklayıcı bir başlık yazın..." maxlength="200" minlength="5">
+                    <span class="form-hint">
+                        <span id="titleCharCount">0</span>/200 karakter
+                    </span>
+                </div>
+                
+                <!-- İçerik -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        İçerik
+                    </label>
+                    <div id="topic-editor"></div>
+                    <span class="form-hint">En az 10 karakter yazmalısınız</span>
+                </div>
+                
+                <!-- Actions -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                        <span class="btn-text">Konuyu Oluştur</span>
+                        <span class="btn-loader" style="display:none;">
+                            <svg class="spinner" width="20" height="20" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity="0.3"/>
+                                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                    </button>
+                    <a href="/forum" class="btn btn-secondary btn-lg">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        İptal
+                    </a>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tips -->
+        <div class="tips-card glass-card">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                İpuçları
+            </h3>
+            <ul>
+                <li>Açık ve anlaşılır bir başlık yazın</li>
+                <li>Konunuzu ilgili kategoriye açın</li>
+                <li>Detaylı açıklama yapın, ekran görüntüsü ekleyin</li>
+                <li>Forum kurallarına uygun içerik paylaşın</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.new-topic-page {
+    padding-top: 90px;
+    padding-bottom: 60px;
+    min-height: calc(100vh - 70px);
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Breadcrumb */
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.breadcrumb-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+    color: var(--primary);
+}
+
+.breadcrumb-sep {
+    color: var(--text-muted);
+}
+
+.breadcrumb-current {
+    color: var(--text-primary);
+}
+
+/* Card */
+.new-topic-card {
+    padding: 32px;
+    margin-bottom: 24px;
+}
+
+.card-header {
+    margin-bottom: 32px;
+}
+
+.card-header h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.card-subtitle {
+    color: var(--text-secondary);
+}
+
+/* Form */
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.form-control {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.select-wrapper {
+    position: relative;
+}
+
+.select-wrapper select {
+    appearance: none;
+    padding-right: 40px;
+    cursor: pointer;
+}
+
+.select-arrow {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text-muted);
+}
+
+.form-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Editor */
+#topic-editor {
+    height: 300px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+#topic-editor .ql-toolbar {
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+#topic-editor .ql-container {
+    border: none;
+    font-size: 15px;
+}
+
+#topic-editor .ql-editor {
+    min-height: 200px;
+}
+
+#topic-editor .ql-editor.ql-blank::before {
+    color: var(--text-muted);
+    font-style: normal;
+}
+
+/* Actions */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+}
+
+.btn-lg {
+    padding: 14px 24px;
+    font-size: 15px;
+}
+
+.btn-loader .spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+/* Tips */
+.tips-card {
+    padding: 24px;
+}
+
+.tips-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.tips-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tips-card li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.tips-card li::before {
+    content: '•';
+    color: var(--primary);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .new-topic-card {
+        padding: 20px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+let quillEditor = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Quill Editor
+    if (typeof Quill !== 'undefined') {
+        quillEditor = new Quill('#topic-editor', {
+            theme: 'snow',
+            placeholder: 'Konunuzun içeriğini yazın...',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline', 'strike'],
+                    ['blockquote', 'code-block'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'image'],
+                    ['clean']
+                ]
+            }
+        });
+    }
+    
+    // Title character count
+    const titleInput = document.getElementById('topicTitle');
+    const charCount = document.getElementById('titleCharCount');
+    
+    titleInput.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
+        if (this.value.length > 180) {
+            charCount.style.color = 'var(--neon-red)';
+        } else {
+            charCount.style.color = '';
+        }
+    });
+    
+    // Form submit
+    document.getElementById('newTopicForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const categoryId = document.getElementById('categorySelect').value;
+        const title = document.getElementById('topicTitle').value.trim();
+        const content = quillEditor ? quillEditor.root.innerHTML : '';
+        
+        // Validation
+        if (!categoryId) {
+            AGTR.Toast.warning('Lütfen bir kategori seçin');
+            return;
+        }
+        
+        if (title.length < 5) {
+            AGTR.Toast.warning('Başlık en az 5 karakter olmalı');
+            return;
+        }
+        
+        if (content === '<p><br></p>' || content.replace(/<[^>]*>/g, '').trim().length < 10) {
+            AGTR.Toast.warning('İçerik en az 10 karakter olmalı');
+            return;
+        }
+        
+        // Set loading state
+        const btn = document.getElementById('submitBtn');
+        const btnText = btn.querySelector('.btn-text');
+        const btnLoader = btn.querySelector('.btn-loader');
+        
+        btn.disabled = true;
+        btnText.style.display = 'none';
+        btnLoader.style.display = 'inline-flex';
+        
+        try {
+            const response = await fetch('/api/forum/topics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    category_id: parseInt(categoryId),
+                    title: title,
+                    content: content
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                AGTR.Toast.success('Konu başarıyla oluşturuldu!');
+                setTimeout(() => {
+                    window.location.href = `/forum/topic/${data.slug}`;
+                }, 500);
+            } else {
+                AGTR.Toast.error(data.detail || 'Konu oluşturulamadı');
+            }
+        } catch (error) {
+            AGTR.Toast.error('Bir hata oluştu');
+            console.error('Create topic error:', error);
+        } finally {
+            btn.disabled = false;
+            btnText.style.display = 'inline';
+            btnLoader.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

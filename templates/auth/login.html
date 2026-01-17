@@ -1,0 +1,646 @@
+{% extends "base.html" %}
+
+{% block title %}Giriş Yap - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-container">
+        <div class="auth-card glass-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="20" cy="20" r="18" stroke="url(#authGradient)" stroke-width="2"/>
+                        <path d="M14 28L20 12L26 28M16 24H24" stroke="url(#authGradient)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="authGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#ff6b00"/>
+                                <stop offset="100%" style="stop-color:#ff8c00"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h1 class="auth-title">Hoş Geldiniz</h1>
+                <p class="auth-subtitle">Hesabınıza giriş yapın</p>
+            </div>
+            
+            <!-- Error Alert -->
+            <div class="alert alert-error" id="errorAlert" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                <span id="errorMessage"></span>
+            </div>
+            
+            <!-- Login Form -->
+            <form class="auth-form" id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Kullanıcı Adı veya E-posta
+                    </label>
+                    <input type="text" name="username" id="username" class="form-control" placeholder="Kullanıcı adınız" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Şifre
+                    </label>
+                    <div class="password-input">
+                        <input type="password" name="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" class="password-toggle" onclick="togglePassword()">
+                            <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg class="eye-off-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                <line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="remember" id="remember">
+                        <span class="checkbox-custom"></span>
+                        <span>Beni hatırla</span>
+                    </label>
+                    <a href="/forgot-password" class="forgot-link">Şifremi unuttum</a>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg w-full" id="loginBtn">
+                    <span class="btn-text">Giriş Yap</span>
+                    <span class="btn-loader" style="display:none;">
+                        <svg class="spinner" width="20" height="20" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity="0.3"/>
+                            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                </button>
+            </form>
+            
+            <!-- 2FA Form (Hidden by default) -->
+            <form class="auth-form" id="twoFactorForm" style="display: none;">
+                <div class="twofa-info">
+                    <div class="twofa-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            <circle cx="12" cy="16" r="1"/>
+                        </svg>
+                    </div>
+                    <h3>İki Faktörlü Doğrulama</h3>
+                    <p>Authenticator uygulamanızdaki 6 haneli kodu girin</p>
+                </div>
+                
+                <div class="form-group">
+                    <div class="totp-input-container">
+                        <input type="text" name="totp_code" id="totpCode" class="form-control totp-input" 
+                               placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" 
+                               autocomplete="one-time-code" autofocus>
+                    </div>
+                </div>
+                
+                <input type="hidden" id="tempToken" name="temp_token">
+                <input type="hidden" id="userId" name="user_id">
+                
+                <button type="submit" class="btn btn-primary btn-lg w-full" id="verifyBtn">
+                    <span class="btn-text">Doğrula</span>
+                    <span class="btn-loader" style="display:none;">
+                        <svg class="spinner" width="20" height="20" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity="0.3"/>
+                            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                </button>
+                
+                <button type="button" class="btn btn-secondary w-full" onclick="showLoginForm()" style="margin-top: 12px;">
+                    Geri Dön
+                </button>
+                
+                <div class="backup-code-info">
+                    <p>Authenticator'a erişiminiz yok mu? <a href="#" onclick="showBackupCodeInfo()">Yedek kod kullanın</a></p>
+                </div>
+            </form>
+            
+            <div class="auth-divider">
+                <span>veya</span>
+            </div>
+            
+            <div class="social-login">
+                <button class="btn btn-secondary social-btn" disabled data-tooltip="Yakında">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+                    </svg>
+                    Discord ile Giriş
+                </button>
+                <button class="btn btn-secondary social-btn" disabled data-tooltip="Yakında">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                    </svg>
+                    GitHub ile Giriş
+                </button>
+            </div>
+            
+            <div class="auth-footer">
+                <p>Hesabınız yok mu? <a href="/register">Kayıt Ol</a></p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.auth-section {
+    min-height: calc(100vh - 70px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: radial-gradient(ellipse at top, rgba(var(--primary-rgb), 0.1) 0%, transparent 50%);
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+}
+
+.auth-card {
+    padding: 40px;
+    animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.auth-logo {
+    margin-bottom: 20px;
+}
+
+.auth-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.auth-subtitle {
+    color: var(--text-secondary);
+    font-size: 15px;
+}
+
+.auth-form .form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+.password-input {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.password-toggle:hover {
+    color: var(--text-secondary);
+}
+
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.checkbox-label input {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.checkbox-label input:checked + .checkbox-custom {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.checkbox-label input:checked + .checkbox-custom::after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+}
+
+.forgot-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
+.btn-lg {
+    padding: 16px 24px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.btn-loader .spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 24px 0;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.social-login {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px;
+}
+
+.social-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.auth-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Alert */
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.alert-error {
+    background: rgba(255, 51, 102, 0.1);
+    border: 1px solid rgba(255, 51, 102, 0.3);
+    color: var(--neon-red);
+}
+
+/* 2FA Form Styles */
+.twofa-info {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.twofa-icon {
+    margin-bottom: 16px;
+}
+
+.twofa-info h3 {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.twofa-info p {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.totp-input-container {
+    display: flex;
+    justify-content: center;
+}
+
+.totp-input {
+    width: 200px;
+    text-align: center;
+    font-size: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 8px;
+    padding: 16px;
+}
+
+.backup-code-info {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.backup-code-info a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.backup-code-info a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 24px;
+    }
+    
+    .form-options {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+}
+</style>
+
+<script>
+// Toggle password visibility
+function togglePassword() {
+    const input = document.getElementById('password');
+    const eyeIcon = document.querySelector('.eye-icon');
+    const eyeOffIcon = document.querySelector('.eye-off-icon');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        eyeIcon.style.display = 'none';
+        eyeOffIcon.style.display = 'block';
+    } else {
+        input.type = 'password';
+        eyeIcon.style.display = 'block';
+        eyeOffIcon.style.display = 'none';
+    }
+}
+
+// Show error message
+function showError(message) {
+    const alert = document.getElementById('errorAlert');
+    const msgEl = document.getElementById('errorMessage');
+    msgEl.textContent = message;
+    alert.style.display = 'flex';
+}
+
+// Hide error message
+function hideError() {
+    document.getElementById('errorAlert').style.display = 'none';
+}
+
+// Show 2FA form
+function showTwoFactorForm(userId, tempToken) {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('twoFactorForm').style.display = 'block';
+    document.getElementById('userId').value = userId;
+    document.getElementById('tempToken').value = tempToken;
+    document.getElementById('totpCode').focus();
+}
+
+// Show login form
+function showLoginForm() {
+    document.getElementById('twoFactorForm').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    hideError();
+}
+
+// Set button loading state
+function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    const text = btn.querySelector('.btn-text');
+    const loader = btn.querySelector('.btn-loader');
+    
+    btn.disabled = loading;
+    text.style.display = loading ? 'none' : 'inline';
+    loader.style.display = loading ? 'inline-flex' : 'none';
+}
+
+// Backup code info
+function showBackupCodeInfo() {
+    if (typeof AGTR !== 'undefined' && AGTR.Modal) {
+        AGTR.Modal.showContent('Yedek Kod Kullanımı', `
+            <div style="padding: 20px;">
+                <p style="margin-bottom: 16px;">Authenticator uygulamanıza erişiminiz yoksa, 2FA kurulumu sırasında aldığınız yedek kodlardan birini kullanabilirsiniz.</p>
+                <p style="margin-bottom: 16px;">Yedek kodunuzu doğrulama alanına girin ve "Doğrula" butonuna tıklayın.</p>
+                <p style="color: var(--text-muted); font-size: 13px;">Not: Her yedek kod yalnızca bir kez kullanılabilir.</p>
+            </div>
+        `);
+    } else {
+        alert('Authenticator uygulamanıza erişiminiz yoksa, 2FA kurulumu sırasında aldığınız yedek kodlardan birini kullanabilirsiniz.');
+    }
+}
+
+// Login form submit
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    hideError();
+    setLoading('loginBtn', true);
+    
+    const data = {
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value
+    };
+    
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            // Check if 2FA required
+            if (result.requires_2fa) {
+                showTwoFactorForm(result.user_id, result.temp_token);
+            } else {
+                // Success - redirect
+                if (typeof AGTR !== 'undefined' && AGTR.Toast) {
+                    AGTR.Toast.success('Giriş başarılı!');
+                }
+                window.location.href = result.redirect || '/panel';
+            }
+        } else {
+            showError(result.detail || result.message || 'Giriş başarısız');
+        }
+    } catch (error) {
+        showError('Bağlantı hatası. Lütfen tekrar deneyin.');
+        console.error('Login error:', error);
+    } finally {
+        setLoading('loginBtn', false);
+    }
+});
+
+// 2FA form submit
+document.getElementById('twoFactorForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    hideError();
+    setLoading('verifyBtn', true);
+    
+    const data = {
+        user_id: parseInt(document.getElementById('userId').value),
+        code: document.getElementById('totpCode').value.trim(),
+        temp_token: document.getElementById('tempToken').value
+    };
+    
+    try {
+        const response = await fetch('/api/auth/2fa/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            if (typeof AGTR !== 'undefined' && AGTR.Toast) {
+                AGTR.Toast.success('Giriş başarılı!');
+            }
+            window.location.href = result.redirect || '/panel';
+        } else {
+            showError(result.detail || result.message || 'Doğrulama başarısız');
+            document.getElementById('totpCode').value = '';
+            document.getElementById('totpCode').focus();
+        }
+    } catch (error) {
+        showError('Bağlantı hatası. Lütfen tekrar deneyin.');
+        console.error('2FA error:', error);
+    } finally {
+        setLoading('verifyBtn', false);
+    }
+});
+
+// Auto-format TOTP input
+document.getElementById('totpCode').addEventListener('input', function(e) {
+    this.value = this.value.replace(/\D/g, '').slice(0, 6);
+    
+    // Auto-submit when 6 digits entered
+    if (this.value.length === 6) {
+        document.getElementById('twoFactorForm').dispatchEvent(new Event('submit'));
+    }
+});
+</script>
+{% endblock %}

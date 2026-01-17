@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <div class="admin-header reveal">
+            <h1>Admin Panel</h1>
+            <p class="text-secondary">Sistem yönetimi ve istatistikler</p>
+        </div>
+        
+        <!-- Stats -->
+        <div class="admin-stats reveal">
+            <div class="stat-card glass-card">
+                <div class="stat-icon-wrap" style="background: rgba(59, 130, 246, 0.15); padding: 12px; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-users"></use>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ stats.total_users if stats else 0 }}</span>
+                    <span class="stat-label">Toplam Kullanıcı</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon-wrap" style="background: rgba(255, 107, 0, 0.15); padding: 12px; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff6b00" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-server"></use>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ stats.total_servers if stats else 0 }}</span>
+                    <span class="stat-label">Toplam Sunucu</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon-wrap" style="background: rgba(16, 185, 129, 0.15); padding: 12px; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-success"></use>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ stats.active_servers if stats else 0 }}</span>
+                    <span class="stat-label">Aktif Sunucu</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon-wrap" style="background: rgba(139, 92, 246, 0.15); padding: 12px; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-money"></use>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ "%.2f"|format(stats.total_revenue if stats else 0) }} ₺</span>
+                    <span class="stat-label">Toplam Gelir</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon-wrap" style="background: rgba(245, 158, 11, 0.15); padding: 12px; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-calendar"></use>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ "%.2f"|format(stats.monthly_revenue if stats else 0) }} ₺</span>
+                    <span class="stat-label">Bu Ay Gelir</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon-wrap" style="background: rgba(239, 68, 68, 0.15); padding: 12px; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-clock"></use>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">{{ stats.pending_payments if stats else 0 }}</span>
+                    <span class="stat-label">Bekleyen Ödeme</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Links -->
+        <div class="admin-grid reveal">
+            <a href="/admin/users" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(59, 130, 246, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-users"></use>
+                    </svg>
+                </div>
+                <h3>Kullanıcılar</h3>
+                <p>Kullanıcı yönetimi, roller, bakiye</p>
+            </a>
+            <a href="/admin/servers" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(255, 107, 0, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff6b00" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-server"></use>
+                    </svg>
+                </div>
+                <h3>Sunucular</h3>
+                <p>Sunucu yönetimi, RCON, monitoring</p>
+            </a>
+            <a href="/admin/payments" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(16, 185, 129, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-credit-card"></use>
+                    </svg>
+                </div>
+                <h3>Ödemeler</h3>
+                <p>Ödeme onaylama, faturalar</p>
+            </a>
+            <a href="/admin/packages" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(139, 92, 246, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-package"></use>
+                    </svg>
+                </div>
+                <h3>Paketler</h3>
+                <p>Sunucu paketleri, fiyatlar</p>
+            </a>
+            <a href="/admin/announcements" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(245, 158, 11, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-announcement"></use>
+                    </svg>
+                </div>
+                <h3>Duyurular</h3>
+                <p>Site duyuruları</p>
+            </a>
+            <a href="/admin/forum" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(6, 182, 212, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-forum"></use>
+                    </svg>
+                </div>
+                <h3>Forum</h3>
+                <p>Kategoriler, moderasyon</p>
+            </a>
+            <a href="/admin/media" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(236, 72, 153, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <i class="fas fa-images" style="color: #ec4899; font-size: 28px;"></i>
+                </div>
+                <h3>Görsel Yönetimi</h3>
+                <p>Logo, banner, icon, player model</p>
+            </a>
+            <a href="/admin/smart-media" class="admin-card glass-card" style="position: relative; overflow: hidden;">
+                <div class="admin-icon" style="background: linear-gradient(135deg, rgba(255, 107, 0, 0.15), rgba(0, 217, 255, 0.15)); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <i class="fas fa-magic" style="background: linear-gradient(135deg, #ff6b00, #00d9ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px;"></i>
+                </div>
+                <h3>
+                    Akıllı Medya
+                    <span class="badge bg-success ms-2" style="font-size: 10px; vertical-align: super;">YENİ</span>
+                </h3>
+                <p>Otomatik kategori algılama, sürükle-bırak</p>
+            </a>
+            <a href="/admin/tickets" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(239, 68, 68, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <h3>Destek Talepleri</h3>
+                <p>Kullanıcı destek yönetimi</p>
+            </a>
+            <a href="/admin/coupons" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(236, 72, 153, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-coupon"></use>
+                    </svg>
+                </div>
+                <h3>Kuponlar</h3>
+                <p>İndirim kodları</p>
+            </a>
+            <a href="/admin/theme" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(168, 85, 247, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-theme"></use>
+                    </svg>
+                </div>
+                <h3>Tema & Görünüm</h3>
+                <p>Renkler, logo, CSS</p>
+            </a>
+            <a href="/admin/content" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(34, 197, 94, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-content"></use>
+                    </svg>
+                </div>
+                <h3>İçerik</h3>
+                <p>Anasayfa, metinler, SSS</p>
+            </a>
+            <a href="/admin/reports" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(59, 130, 246, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-reports"></use>
+                    </svg>
+                </div>
+                <h3>Raporlar</h3>
+                <p>Gelir, kullanım istatistikleri</p>
+            </a>
+            <a href="/admin/security" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(239, 68, 68, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-security"></use>
+                    </svg>
+                </div>
+                <h3>Güvenlik</h3>
+                <p>IP engelleme, loglar</p>
+            </a>
+            <a href="/admin/settings" class="admin-card glass-card">
+                <div class="admin-icon" style="background: rgba(107, 114, 128, 0.15); width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                        <use href="/static/images/icons.svg#icon-settings"></use>
+                    </svg>
+                </div>
+                <h3>Ayarlar</h3>
+                <p>Site ayarları, API anahtarları</p>
+            </a>
+        </div>
+    </div>
+</section>
+
+<style>
+.admin-section {
+    padding: 40px 20px;
+    min-height: calc(100vh - 70px);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.admin-header {
+    margin-bottom: 40px;
+}
+
+.admin-header h1 {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-icon {
+    font-size: 32px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: var(--font-display);
+    color: #ff6b00;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.admin-card {
+    padding: 30px;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all var(--transition-normal);
+}
+
+.admin-card:hover {
+    transform: translateY(-4px);
+    border-color: #ff6b00;
+}
+
+.admin-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+}
+
+.admin-card h3 {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.admin-card p {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+</style>
+{% endblock %}

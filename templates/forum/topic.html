@@ -1,0 +1,775 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} - Forum - AGTR Merkezi{% endblock %}
+
+{% block content %}
+<div class="forum-topic-page">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb-nav">
+            <a href="/" class="breadcrumb-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                Ana Sayfa
+            </a>
+            <span class="breadcrumb-sep">/</span>
+            <a href="/forum" class="breadcrumb-link">Forum</a>
+            <span class="breadcrumb-sep">/</span>
+            {% if topic.category %}
+            <a href="/forum/category/{{ topic.category.slug }}" class="breadcrumb-link">{{ topic.category.name }}</a>
+            <span class="breadcrumb-sep">/</span>
+            {% endif %}
+            <span class="breadcrumb-current">{{ topic.title[:50] }}{% if topic.title|length > 50 %}...{% endif %}</span>
+        </nav>
+        
+        <!-- Topic Header -->
+        <div class="topic-header glass-card">
+            <div class="topic-badges">
+                {% if topic.is_pinned %}
+                <span class="badge badge-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    Sabitlenmiş
+                </span>
+                {% endif %}
+                {% if topic.is_locked %}
+                <span class="badge badge-warning">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    Kilitli
+                </span>
+                {% endif %}
+                {% if topic.is_featured %}
+                <span class="badge badge-success">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    Öne Çıkan
+                </span>
+                {% endif %}
+            </div>
+            
+            <h1 class="topic-title">{{ topic.title }}</h1>
+            
+            <div class="topic-meta">
+                <div class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span>{{ topic.author.display_name or topic.author.username if topic.author else 'Anonim' }}</span>
+                </div>
+                <div class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <span>{{ topic.created_at.strftime('%d.%m.%Y %H:%M') if topic.created_at else '-' }}</span>
+                </div>
+                <div class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span>{{ topic.view_count or 0 }} görüntülenme</span>
+                </div>
+                <div class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span>{{ topic.reply_count or 0 }} yanıt</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Posts -->
+        <div class="posts-container">
+            {% for post in posts %}
+            <article class="post-card glass-card {% if post.is_first_post %}first-post{% endif %}" id="post-{{ post.id }}">
+                <div class="post-layout">
+                    <!-- Author Info -->
+                    <aside class="post-author">
+                        <a href="/profile/{{ post.author.username if post.author else '' }}" class="author-avatar">
+                            <img src="{{ post.author.avatar or '/static/images/default-avatar.png' }}" 
+                                 alt="{{ post.author.username if post.author else 'Anonim' }}">
+                            {% if post.author and post.author.role.value in ['admin', 'superadmin'] %}
+                            <span class="author-badge admin" title="Admin">👑</span>
+                            {% elif post.author and post.author.role.value == 'moderator' %}
+                            <span class="author-badge mod" title="Moderatör">🛡️</span>
+                            {% elif post.author and post.author.role.value == 'vip' %}
+                            <span class="author-badge vip" title="VIP">⭐</span>
+                            {% endif %}
+                        </a>
+                        <a href="/profile/{{ post.author.username if post.author else '' }}" class="author-name">
+                            {{ post.author.display_name or post.author.username if post.author else 'Anonim' }}
+                        </a>
+                        <span class="author-role {{ post.author.role.value if post.author else '' }}">
+                            {{ post.author.role.value|title if post.author else '' }}
+                        </span>
+                        <div class="author-stats">
+                            <span>{{ post.author.post_count or 0 if post.author else 0 }} mesaj</span>
+                        </div>
+                    </aside>
+                    
+                    <!-- Post Content -->
+                    <div class="post-main">
+                        <header class="post-header">
+                            <time class="post-date" datetime="{{ post.created_at.isoformat() if post.created_at else '' }}">
+                                {{ post.created_at.strftime('%d.%m.%Y %H:%M') if post.created_at else '-' }}
+                            </time>
+                            <a href="#post-{{ post.id }}" class="post-link" title="Bu mesaja link">
+                                #{{ loop.index }}
+                            </a>
+                        </header>
+                        
+                        <div class="post-content">
+                            {{ post.content|safe }}
+                        </div>
+                        
+                        {% if post.is_edited %}
+                        <div class="post-edited">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            Düzenlendi: {{ post.edited_at.strftime('%d.%m.%Y %H:%M') if post.edited_at else '' }}
+                            {% if post.edit_reason %} - {{ post.edit_reason }}{% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <footer class="post-footer">
+                            <div class="post-actions">
+                                {% if current_user %}
+                                <button class="action-btn like-btn {% if post.user_liked %}liked{% endif %}" 
+                                        onclick="likePost({{ post.id }})" data-post-id="{{ post.id }}">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                                    </svg>
+                                    <span class="like-count">{{ post.like_count or 0 }}</span>
+                                </button>
+                                <button class="action-btn" onclick="quotePost({{ post.id }})">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                    </svg>
+                                    Alıntıla
+                                </button>
+                                {% endif %}
+                                
+                                {% if current_user and (current_user.id == post.author_id or current_user.role.value in ['admin', 'superadmin', 'moderator']) %}
+                                <button class="action-btn" onclick="editPost({{ post.id }})">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                    Düzenle
+                                </button>
+                                <button class="action-btn danger" onclick="deletePost({{ post.id }})">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"/>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    </svg>
+                                    Sil
+                                </button>
+                                {% endif %}
+                            </div>
+                        </footer>
+                    </div>
+                </div>
+            </article>
+            {% else %}
+            <div class="no-posts">
+                <p>Bu konuda henüz mesaj yok.</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Reply Form -->
+        {% if current_user and not topic.is_locked %}
+        <div class="reply-section glass-card">
+            <h3 class="reply-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 17 4 12 9 7"/>
+                    <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                </svg>
+                Yanıt Yaz
+            </h3>
+            
+            <form id="replyForm" class="reply-form">
+                <div class="editor-container">
+                    <div id="reply-editor"></div>
+                </div>
+                <input type="hidden" name="content" id="reply-content">
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                        Gönder
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearEditor()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        Temizle
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% elif topic.is_locked %}
+        <div class="locked-notice glass-card">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <p>Bu konu kilitlenmiş, yeni yanıt eklenemez.</p>
+        </div>
+        {% else %}
+        <div class="login-notice glass-card">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            <p>Yanıt yazmak için <a href="/login?redirect=/forum/topic/{{ topic.slug }}">giriş yapın</a>.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.forum-topic-page {
+    padding-top: 90px;
+    padding-bottom: 60px;
+    min-height: calc(100vh - 70px);
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Breadcrumb */
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    flex-wrap: wrap;
+}
+
+.breadcrumb-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.breadcrumb-link:hover {
+    color: var(--primary);
+}
+
+.breadcrumb-sep {
+    color: var(--text-muted);
+}
+
+.breadcrumb-current {
+    color: var(--text-primary);
+}
+
+/* Topic Header */
+.topic-header {
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.topic-badges {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+}
+
+.badge-primary {
+    background: rgba(var(--primary-rgb), 0.2);
+    color: var(--primary);
+}
+
+.badge-warning {
+    background: rgba(var(--neon-yellow-rgb, 255, 204, 0), 0.2);
+    color: var(--neon-yellow);
+}
+
+.badge-success {
+    background: rgba(var(--neon-green-rgb, 0, 255, 136), 0.2);
+    color: var(--neon-green);
+}
+
+.topic-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    line-height: 1.3;
+}
+
+.topic-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* Posts */
+.posts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.post-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.post-card.first-post {
+    border-left: 3px solid var(--primary);
+}
+
+.post-layout {
+    display: flex;
+    min-height: 200px;
+}
+
+/* Author Sidebar */
+.post-author {
+    width: 140px;
+    padding: 20px;
+    background: rgba(var(--bg-tertiary-rgb, 30, 30, 40), 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.author-avatar {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.author-avatar img {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    object-fit: cover;
+}
+
+.author-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    font-size: 16px;
+}
+
+.author-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration: none;
+    margin-bottom: 4px;
+}
+
+.author-name:hover {
+    color: var(--primary);
+}
+
+.author-role {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--bg-tertiary);
+    margin-bottom: 8px;
+}
+
+.author-role.superadmin,
+.author-role.admin {
+    background: rgba(var(--primary-rgb), 0.2);
+    color: var(--primary);
+}
+
+.author-role.moderator {
+    background: rgba(var(--neon-green-rgb, 0, 255, 136), 0.2);
+    color: var(--neon-green);
+}
+
+.author-stats {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Post Main Content */
+.post-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.post-date {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.post-link {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.post-link:hover {
+    color: var(--primary);
+}
+
+.post-content {
+    flex: 1;
+    line-height: 1.7;
+    color: var(--text-primary);
+}
+
+.post-content img {
+    max-width: 100%;
+    border-radius: var(--radius-md);
+}
+
+.post-content blockquote {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-left: 3px solid var(--primary);
+    border-radius: var(--radius-sm);
+}
+
+.post-content pre {
+    background: var(--bg-tertiary);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+}
+
+.post-content code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.post-edited {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.post-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.post-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.action-btn.liked {
+    background: rgba(var(--primary-rgb), 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.action-btn.danger:hover {
+    border-color: var(--neon-red);
+    color: var(--neon-red);
+}
+
+/* Reply Section */
+.reply-section {
+    margin-top: 32px;
+    padding: 24px;
+}
+
+.reply-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 18px;
+}
+
+.editor-container {
+    margin-bottom: 16px;
+}
+
+#reply-editor {
+    height: 250px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* Notice Cards */
+.locked-notice,
+.login-notice {
+    margin-top: 32px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-secondary);
+}
+
+.locked-notice {
+    border-left: 3px solid var(--neon-yellow);
+}
+
+.login-notice {
+    border-left: 3px solid var(--primary);
+}
+
+.login-notice a {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .post-layout {
+        flex-direction: column;
+    }
+    
+    .post-author {
+        width: 100%;
+        flex-direction: row;
+        gap: 16px;
+        padding: 16px;
+    }
+    
+    .author-avatar {
+        margin-bottom: 0;
+    }
+    
+    .author-avatar img {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .topic-meta {
+        gap: 12px;
+    }
+    
+    .meta-item {
+        font-size: 13px;
+    }
+}
+</style>
+
+<script>
+let quillEditor = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Quill editor
+    if (typeof Quill !== 'undefined' && document.getElementById('reply-editor')) {
+        quillEditor = new Quill('#reply-editor', {
+            theme: 'snow',
+            placeholder: 'Yanıtınızı yazın...',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline', 'strike'],
+                    ['blockquote', 'code-block'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'image'],
+                    ['clean']
+                ]
+            }
+        });
+    }
+    
+    // Reply form submit
+    const replyForm = document.getElementById('replyForm');
+    if (replyForm) {
+        replyForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!quillEditor) return;
+            
+            const content = quillEditor.root.innerHTML;
+            if (content === '<p><br></p>' || !content.trim()) {
+                AGTR.Toast.warning('Lütfen bir mesaj yazın');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/forum/topics/{{ topic.id }}/posts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: content })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    AGTR.Toast.success('Yanıtınız eklendi');
+                    location.reload();
+                } else {
+                    AGTR.Toast.error(data.detail || 'Yanıt eklenemedi');
+                }
+            } catch (error) {
+                AGTR.Toast.error('Bir hata oluştu');
+            }
+        });
+    }
+});
+
+function clearEditor() {
+    if (quillEditor) {
+        quillEditor.setText('');
+    }
+}
+
+async function likePost(postId) {
+    try {
+        const res = await fetch(`/api/forum/posts/${postId}/like`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            const btn = document.querySelector(`[data-post-id="${postId}"]`);
+            const countEl = btn.querySelector('.like-count');
+            
+            if (data.liked) {
+                btn.classList.add('liked');
+                countEl.textContent = parseInt(countEl.textContent) + 1;
+            } else {
+                btn.classList.remove('liked');
+                countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
+            }
+        }
+    } catch (error) {
+        console.error('Like error:', error);
+    }
+}
+
+function quotePost(postId) {
+    const postEl = document.getElementById(`post-${postId}`);
+    if (!postEl || !quillEditor) return;
+    
+    const content = postEl.querySelector('.post-content').innerHTML;
+    const author = postEl.querySelector('.author-name')?.textContent || 'Kullanıcı';
+    
+    quillEditor.clipboard.dangerouslyPasteHTML(
+        `<blockquote><strong>${author} dedi:</strong><br>${content}</blockquote><p><br></p>`
+    );
+    
+    // Scroll to editor
+    document.querySelector('.reply-section')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function editPost(postId) {
+    // TODO: Implement edit modal
+    AGTR.Toast.info('Düzenleme özelliği yakında');
+}
+
+async function deletePost(postId) {
+    if (!confirm('Bu mesajı silmek istediğinizden emin misiniz?')) return;
+    
+    try {
+        const res = await fetch(`/api/forum/posts/${postId}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+            AGTR.Toast.success('Mesaj silindi');
+            document.getElementById(`post-${postId}`)?.remove();
+        } else {
+            AGTR.Toast.error(data.detail || 'Mesaj silinemedi');
+        }
+    } catch (error) {
+        AGTR.Toast.error('Bir hata oluştu');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,797 @@
+{# 
+  AGTR Icon Component System
+  
+  Usage:
+    {% from "components/icons.html" import icon, game_icon, rank_badge, status_dot %}
+    
+    {{ icon('users', size=24, class='text-primary') }}
+    {{ game_icon('ag', size=32) }}
+    {{ rank_badge('legendary', size=20) }}
+    {{ status_dot('online') }}
+#}
+
+{# ==================== MAIN ICON MACRO ==================== #}
+{% macro icon(name, size=20, class='', id='', style='', title='') %}
+<svg 
+    width="{{ size }}" 
+    height="{{ size }}" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    class="icon icon-{{ name }}{% if class %} {{ class }}{% endif %}"
+    {% if id %}id="{{ id }}"{% endif %}
+    {% if style %}style="{{ style }}"{% endif %}
+    {% if title %}aria-label="{{ title }}"{% endif %}
+    role="img"
+>
+    <use href="/static/images/icons.svg#icon-{{ name }}"></use>
+</svg>
+{% endmacro %}
+
+{# ==================== GAME ICON MACRO ==================== #}
+{% macro game_icon(game, size=24, class='', with_bg=false) %}
+{% set game_colors = {
+    'ag': '#ff6b00',
+    'halflife': '#ff6b00',
+    'cs16': '#f59e0b',
+    'hldm': '#ef4444',
+    'tfc': '#3b82f6'
+} %}
+{% set game_names = {
+    'ag': 'Adrenaline Gamer',
+    'halflife': 'Half-Life',
+    'cs16': 'Counter-Strike 1.6',
+    'hldm': 'Half-Life Deathmatch',
+    'tfc': 'Team Fortress Classic'
+} %}
+{% if with_bg %}
+<div class="game-icon-wrapper{% if class %} {{ class }}{% endif %}" style="background: linear-gradient(135deg, {{ game_colors.get(game, '#ff6b00') }}20, {{ game_colors.get(game, '#ff6b00') }}40); padding: {{ (size * 0.25)|int }}px; border-radius: {{ (size * 0.3)|int }}px;">
+{% endif %}
+<svg 
+    width="{{ size }}" 
+    height="{{ size }}" 
+    viewBox="0 0 24 24" 
+    fill="none"
+    class="game-icon game-icon-{{ game }}{% if not with_bg and class %} {{ class }}{% endif %}"
+    style="color: {{ game_colors.get(game, '#ff6b00') }}"
+    aria-label="{{ game_names.get(game, game) }}"
+    role="img"
+>
+    <use href="/static/images/icons.svg#icon-{{ game }}"></use>
+</svg>
+{% if with_bg %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{# ==================== RANK BADGE MACRO ==================== #}
+{% macro rank_badge(tier, size=20, show_label=false, class='') %}
+{% set tier_data = {
+    'legendary': {'color': '#ff6b00', 'gradient': 'linear-gradient(135deg, #ff6b00, #ff8c00)', 'label': 'Efsane', 'min_elo': 2000},
+    'master': {'color': '#9333ea', 'gradient': 'linear-gradient(135deg, #9333ea, #a855f7)', 'label': 'Usta', 'min_elo': 1600},
+    'diamond': {'color': '#06b6d4', 'gradient': 'linear-gradient(135deg, #06b6d4, #22d3ee)', 'label': 'Elmas', 'min_elo': 1400},
+    'gold': {'color': '#f59e0b', 'gradient': 'linear-gradient(135deg, #f59e0b, #fbbf24)', 'label': 'Altın', 'min_elo': 1200},
+    'silver': {'color': '#6b7280', 'gradient': 'linear-gradient(135deg, #6b7280, #9ca3af)', 'label': 'Gümüş', 'min_elo': 1000},
+    'bronze': {'color': '#b45309', 'gradient': 'linear-gradient(135deg, #b45309, #d97706)', 'label': 'Bronz', 'min_elo': 0}
+} %}
+{% set data = tier_data.get(tier, tier_data.bronze) %}
+<span class="rank-badge rank-badge-{{ tier }}{% if class %} {{ class }}{% endif %}" style="display: inline-flex; align-items: center; gap: 6px;">
+    <svg 
+        width="{{ size }}" 
+        height="{{ size }}" 
+        viewBox="0 0 24 24" 
+        fill="none"
+        style="color: {{ data.color }}"
+        class="rank-icon"
+    >
+        <use href="/static/images/icons.svg#icon-rank-{{ tier }}"></use>
+    </svg>
+    {% if show_label %}
+    <span class="rank-label" style="background: {{ data.gradient }}; color: {% if tier in ['gold'] %}#000{% else %}#fff{% endif %}; padding: 2px 10px; border-radius: 12px; font-size: {{ (size * 0.6)|int }}px; font-weight: 600;">{{ data.label }}</span>
+    {% endif %}
+</span>
+{% endmacro %}
+
+{# ==================== GET RANK BY ELO ==================== #}
+{% macro rank_badge_by_elo(elo, size=20, show_label=false, class='') %}
+{% if elo >= 2000 %}
+    {{ rank_badge('legendary', size, show_label, class) }}
+{% elif elo >= 1600 %}
+    {{ rank_badge('master', size, show_label, class) }}
+{% elif elo >= 1400 %}
+    {{ rank_badge('diamond', size, show_label, class) }}
+{% elif elo >= 1200 %}
+    {{ rank_badge('gold', size, show_label, class) }}
+{% elif elo >= 1000 %}
+    {{ rank_badge('silver', size, show_label, class) }}
+{% else %}
+    {{ rank_badge('bronze', size, show_label, class) }}
+{% endif %}
+{% endmacro %}
+
+{# ==================== STATUS DOT MACRO ==================== #}
+{% macro status_dot(status='offline', size=12, animated=true, class='') %}
+{% set status_colors = {
+    'online': '#10b981',
+    'offline': '#6b7280',
+    'maintenance': '#f59e0b',
+    'busy': '#ef4444',
+    'away': '#f59e0b'
+} %}
+<span 
+    class="status-dot status-{{ status }}{% if class %} {{ class }}{% endif %}{% if animated and status == 'online' %} pulse{% endif %}"
+    style="
+        display: inline-block;
+        width: {{ size }}px;
+        height: {{ size }}px;
+        border-radius: 50%;
+        background: {{ status_colors.get(status, '#6b7280') }};
+        {% if animated and status == 'online' %}
+        box-shadow: 0 0 0 0 {{ status_colors.online }};
+        animation: pulse-animation 2s infinite;
+        {% endif %}
+    "
+    title="{% if status == 'online' %}Çevrimiçi{% elif status == 'offline' %}Çevrimdışı{% elif status == 'maintenance' %}Bakımda{% elif status == 'busy' %}Meşgul{% elif status == 'away' %}Uzakta{% endif %}"
+></span>
+{% endmacro %}
+
+{# ==================== SERVER STATUS MACRO ==================== #}
+{% macro server_status(status='offline', size=16, show_text=false, class='') %}
+{% set status_info = {
+    'online': {'color': '#10b981', 'bg': 'rgba(16, 185, 129, 0.1)', 'text': 'Aktif', 'icon': 'status-online'},
+    'running': {'color': '#10b981', 'bg': 'rgba(16, 185, 129, 0.1)', 'text': 'Çalışıyor', 'icon': 'status-online'},
+    'offline': {'color': '#6b7280', 'bg': 'rgba(107, 114, 128, 0.1)', 'text': 'Kapalı', 'icon': 'status-offline'},
+    'stopped': {'color': '#6b7280', 'bg': 'rgba(107, 114, 128, 0.1)', 'text': 'Durduruldu', 'icon': 'status-offline'},
+    'maintenance': {'color': '#f59e0b', 'bg': 'rgba(245, 158, 11, 0.1)', 'text': 'Bakımda', 'icon': 'status-maintenance'},
+    'starting': {'color': '#3b82f6', 'bg': 'rgba(59, 130, 246, 0.1)', 'text': 'Başlatılıyor', 'icon': 'refresh'},
+    'error': {'color': '#ef4444', 'bg': 'rgba(239, 68, 68, 0.1)', 'text': 'Hata', 'icon': 'error'}
+} %}
+{% set info = status_info.get(status, status_info.offline) %}
+<span class="server-status server-status-{{ status }}{% if class %} {{ class }}{% endif %}" style="display: inline-flex; align-items: center; gap: 6px; padding: {% if show_text %}4px 12px{% else %}4px{% endif %}; border-radius: 20px; background: {{ info.bg }};">
+    <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" style="color: {{ info.color }}">
+        <use href="/static/images/icons.svg#icon-{{ info.icon }}"></use>
+    </svg>
+    {% if show_text %}
+    <span style="color: {{ info.color }}; font-size: {{ (size * 0.75)|int }}px; font-weight: 500;">{{ info.text }}</span>
+    {% endif %}
+</span>
+{% endmacro %}
+
+{# ==================== MEDAL MACRO ==================== #}
+{% macro medal(position, size=24, class='') %}
+{% set medal_map = {1: 'medal-gold', 2: 'medal-silver', 3: 'medal-bronze'} %}
+{% if position in medal_map %}
+<svg 
+    width="{{ size }}" 
+    height="{{ size }}" 
+    viewBox="0 0 24 24" 
+    class="medal medal-{{ position }}{% if class %} {{ class }}{% endif %}"
+>
+    <use href="/static/images/icons.svg#icon-{{ medal_map[position] }}"></use>
+</svg>
+{% else %}
+<span class="rank-number{% if class %} {{ class }}{% endif %}" style="display: inline-flex; align-items: center; justify-content: center; width: {{ size }}px; height: {{ size }}px; font-weight: 700; color: var(--text-muted);">#{{ position }}</span>
+{% endif %}
+{% endmacro %}
+
+{# ==================== SOCIAL ICON MACRO ==================== #}
+{% macro social_icon(platform, size=20, href='', class='') %}
+{% set social_colors = {
+    'discord': '#5865F2',
+    'steam': '#171a21',
+    'twitch': '#9146FF',
+    'youtube': '#FF0000'
+} %}
+{% if href %}
+<a href="{{ href }}" target="_blank" rel="noopener noreferrer" class="social-link{% if class %} {{ class }}{% endif %}" style="color: {{ social_colors.get(platform, 'currentColor') }}">
+{% endif %}
+<svg 
+    width="{{ size }}" 
+    height="{{ size }}" 
+    viewBox="0 0 24 24" 
+    class="social-icon social-icon-{{ platform }}"
+    style="{% if not href %}color: {{ social_colors.get(platform, 'currentColor') }}{% endif %}"
+>
+    <use href="/static/images/icons.svg#icon-{{ platform }}"></use>
+</svg>
+{% if href %}
+</a>
+{% endif %}
+{% endmacro %}
+
+{# ==================== STAT ICON CARD MACRO ==================== #}
+{% macro stat_card(icon_name, value, label, color='#ff6b00', class='') %}
+<div class="stat-card-icon{% if class %} {{ class }}{% endif %}" style="display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;">
+    <div class="stat-icon-wrapper" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: {{ color }}20; border-radius: 12px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" style="color: {{ color }}">
+            <use href="/static/images/icons.svg#icon-{{ icon_name }}"></use>
+        </svg>
+    </div>
+    <div class="stat-info">
+        <span class="stat-value" style="display: block; font-size: 24px; font-weight: 700; color: {{ color }};">{{ value }}</span>
+        <span class="stat-label" style="font-size: 14px; color: var(--text-secondary);">{{ label }}</span>
+    </div>
+</div>
+{% endmacro %}
+
+{# ==================== BUTTON WITH ICON MACRO ==================== #}
+{% macro icon_button(icon_name, text='', href='', type='button', variant='primary', size='md', class='', onclick='') %}
+{% set sizes = {'sm': 14, 'md': 18, 'lg': 22} %}
+{% set icon_size = sizes.get(size, 18) %}
+{% if href %}
+<a href="{{ href }}" class="btn btn-{{ variant }} btn-{{ size }}{% if class %} {{ class }}{% endif %}">
+{% else %}
+<button type="{{ type }}" class="btn btn-{{ variant }} btn-{{ size }}{% if class %} {{ class }}{% endif %}"{% if onclick %} onclick="{{ onclick }}"{% endif %}>
+{% endif %}
+    <svg width="{{ icon_size }}" height="{{ icon_size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <use href="/static/images/icons.svg#icon-{{ icon_name }}"></use>
+    </svg>
+    {% if text %}<span>{{ text }}</span>{% endif %}
+{% if href %}
+</a>
+{% else %}
+</button>
+{% endif %}
+{% endmacro %}
+
+{# ==================== NAV LINK WITH ICON MACRO ==================== #}
+{% macro nav_link(icon_name, text, href, active=false, badge='', class='') %}
+<a href="{{ href }}" class="nav-link{% if active %} active{% endif %}{% if class %} {{ class }}{% endif %}">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <use href="/static/images/icons.svg#icon-{{ icon_name }}"></use>
+    </svg>
+    <span>{{ text }}</span>
+    {% if badge %}
+    <span class="nav-badge">{{ badge }}</span>
+    {% endif %}
+</a>
+{% endmacro %}
+
+{# ==================== LOADING SPINNER MACRO ==================== #}
+{% macro loading_spinner(size=48, color='#ff6b00', class='') %}
+<div class="loading-spinner{% if class %} {{ class }}{% endif %}" style="width: {{ size }}px; height: {{ size }}px;">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="animation: spin 1s linear infinite;">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="{{ color }}20" stroke-width="8"/>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="{{ color }}" stroke-width="8" stroke-linecap="round" stroke-dasharray="62.83 188.49" transform="rotate(-90 50 50)"/>
+    </svg>
+</div>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+{% endmacro %}
+
+{# ==================== LAMBDA LOADING SPINNER ==================== #}
+{% macro lambda_spinner(size=64, class='') %}
+<div class="lambda-spinner{% if class %} {{ class }}{% endif %}" style="width: {{ size }}px; height: {{ size }}px; animation: pulse 1.5s ease-in-out infinite;">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="spinnerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#ff6b00"/>
+                <stop offset="100%" style="stop-color:#ff8c00"/>
+            </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#spinnerGradient)" stroke-width="3" opacity="0.3"/>
+        <path d="M35 75 L50 25 L65 75" fill="none" stroke="url(#spinnerGradient)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M40 62 L60 62" fill="none" stroke="url(#spinnerGradient)" stroke-width="6" stroke-linecap="round"/>
+    </svg>
+</div>
+<style>
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.95); }
+}
+</style>
+{% endmacro %}
+
+{# ==================== EMPTY STATE MACRO ==================== #}
+{% macro empty_state(icon_name, title, description='', button_text='', button_href='', class='') %}
+<div class="empty-state{% if class %} {{ class }}{% endif %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center;">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--text-muted); opacity: 0.5; margin-bottom: 16px;">
+        <use href="/static/images/icons.svg#icon-{{ icon_name }}"></use>
+    </svg>
+    <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">{{ title }}</h3>
+    {% if description %}
+    <p style="color: var(--text-muted); font-size: 14px; max-width: 400px;">{{ description }}</p>
+    {% endif %}
+    {% if button_text and button_href %}
+    <a href="{{ button_href }}" class="btn btn-primary" style="margin-top: 20px;">{{ button_text }}</a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# ==================== TOAST NOTIFICATION MACRO ==================== #}
+{% macro toast_icon(type='info', size=20) %}
+{% set type_icons = {
+    'success': 'success',
+    'error': 'error',
+    'warning': 'warning',
+    'info': 'info'
+} %}
+{% set type_colors = {
+    'success': '#10b981',
+    'error': '#ef4444',
+    'warning': '#f59e0b',
+    'info': '#3b82f6'
+} %}
+<svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" style="color: {{ type_colors.get(type, type_colors.info) }}">
+    <use href="/static/images/icons.svg#icon-{{ type_icons.get(type, 'info') }}"></use>
+</svg>
+{% endmacro %}
+
+{# ==================== ICON WITH TOOLTIP ==================== #}
+{% macro icon_tooltip(icon_name, tooltip, size=18, class='') %}
+<span class="icon-tooltip{% if class %} {{ class }}{% endif %}" data-tooltip="{{ tooltip }}" style="cursor: help;">
+    <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <use href="/static/images/icons.svg#icon-{{ icon_name }}"></use>
+    </svg>
+</span>
+{% endmacro %}
+
+{# ==================== ACHIEVEMENT BADGE MACRO ==================== #}
+{% macro achievement_badge(type, size=24, show_tooltip=true, class='') %}
+{% set achievements = {
+    'first-win': {'name': 'İlk Galibiyet', 'desc': 'İlk maçını kazan', 'color': '#10b981'},
+    '100kills': {'name': '100 Kill', 'desc': '100 kill yap', 'color': '#ef4444'},
+    'champion': {'name': 'Turnuva Şampiyonu', 'desc': 'Bir turnuva kazan', 'color': '#fbbf24'},
+    'veteran': {'name': 'Veteran Oyuncu', 'desc': '1 yıllık üyelik', 'color': '#8b5cf6'},
+    'top10': {'name': 'Top 10', 'desc': 'Sıralamada ilk 10a gir', 'color': '#3b82f6'},
+    'streak': {'name': 'Seri Galibiyetler', 'desc': '5 maç üst üste kazan', 'color': '#f97316'},
+    'early': {'name': 'Erken Destekçi', 'desc': 'Beta döneminde katıl', 'color': '#06b6d4'}
+} %}
+{% set ach = achievements.get(type, achievements['first-win']) %}
+<span class="achievement-badge{% if class %} {{ class }}{% endif %}" {% if show_tooltip %}data-tooltip="{{ ach.desc }}"{% endif %} style="display: inline-flex; cursor: help;">
+    <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" class="icon-hover-glow" style="transition: filter 0.3s;">
+        <use href="/static/images/icons.svg#icon-achievement-{{ type }}"></use>
+    </svg>
+</span>
+{% endmacro %}
+
+{# ==================== PAYMENT METHOD ICON MACRO ==================== #}
+{% macro payment_icon(method, size=24, show_label=false, class='') %}
+{% set methods = {
+    'papara': {'name': 'Papara', 'color': '#7B68EE'},
+    'bank': {'name': 'Banka Havalesi', 'color': '#3b82f6'},
+    'card': {'name': 'Kredi Kartı', 'color': '#10b981'},
+    'crypto': {'name': 'Kripto', 'color': '#f59e0b'},
+    'tl': {'name': 'Türk Lirası', 'color': '#ef4444'}
+} %}
+{% set pay = methods.get(method, methods['tl']) %}
+<span class="payment-method{% if class %} {{ class }}{% endif %}" style="display: inline-flex; align-items: center; gap: 8px;">
+    <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" style="color: {{ pay.color }}">
+        <use href="/static/images/icons.svg#icon-payment-{{ method }}"></use>
+    </svg>
+    {% if show_label %}
+    <span style="font-size: {{ (size * 0.6)|int }}px; color: var(--text-secondary);">{{ pay.name }}</span>
+    {% endif %}
+</span>
+{% endmacro %}
+
+{# ==================== ANIMATED STAT CARD ==================== #}
+{% macro animated_stat_card(icon_name, value, label, color='#ff6b00', delay=0, class='') %}
+<div class="stat-card-animated glass-card animate-fadeInUp{% if class %} {{ class }}{% endif %}" style="display: flex; align-items: center; gap: 16px; padding: 20px; animation-delay: {{ delay }}s;">
+    <div class="stat-icon-wrapper icon-hover-pulse" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: {{ color }}15; border-radius: 12px; transition: transform 0.3s;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{{ color }}" stroke-width="2" class="animate-float" style="animation-delay: {{ delay + 0.2 }}s;">
+            <use href="/static/images/icons.svg#icon-{{ icon_name }}"></use>
+        </svg>
+    </div>
+    <div class="stat-info">
+        <span class="stat-value count-up" style="display: block; font-size: 28px; font-weight: 700; color: {{ color }};">{{ value }}</span>
+        <span class="stat-label" style="font-size: 14px; color: var(--text-secondary);">{{ label }}</span>
+    </div>
+</div>
+{% endmacro %}
+
+{# ==================== SKELETON LOADERS ==================== #}
+{% macro skeleton_card(height=200, class='') %}
+<div class="skeleton skeleton-card{% if class %} {{ class }}{% endif %}" style="height: {{ height }}px;"></div>
+{% endmacro %}
+
+{% macro skeleton_row(count=3, class='') %}
+<div class="skeleton-rows{% if class %} {{ class }}{% endif %}">
+    {% for i in range(count) %}
+    <div class="skeleton skeleton-text" style="animation-delay: {{ i * 0.1 }}s;"></div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro skeleton_user(class='') %}
+<div class="skeleton-user{% if class %} {{ class }}{% endif %}" style="display: flex; align-items: center; gap: 12px;">
+    <div class="skeleton skeleton-avatar"></div>
+    <div style="flex: 1;">
+        <div class="skeleton skeleton-text" style="width: 60%;"></div>
+        <div class="skeleton skeleton-text-sm" style="width: 40%;"></div>
+    </div>
+</div>
+{% endmacro %}
+
+{# ==================== LOADING SPINNER WITH TEXT ==================== #}
+{% macro loading_state(text='Yükleniyor...', size=48, class='') %}
+<div class="loading-state{% if class %} {{ class }}{% endif %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; gap: 16px;">
+    <div class="lambda-loader" style="width: {{ size }}px; height: {{ size }}px;">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="loaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ff6b00"/>
+                    <stop offset="100%" style="stop-color:#ff8c00"/>
+                </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="url(#loaderGradient)" stroke-width="3" opacity="0.3"/>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="url(#loaderGradient)" stroke-width="3" stroke-linecap="round" stroke-dasharray="70 200" class="animate-spin" style="transform-origin: center;"/>
+        </svg>
+    </div>
+    <span style="color: var(--text-secondary); font-size: 14px;">{{ text }}</span>
+</div>
+{% endmacro %}
+
+{# ==================== SUCCESS/ERROR FEEDBACK ==================== #}
+{% macro feedback_icon(type='success', size=48, animated=true, class='') %}
+{% set types = {
+    'success': {'icon': 'success', 'color': '#10b981'},
+    'error': {'icon': 'error', 'color': '#ef4444'},
+    'warning': {'icon': 'warning', 'color': '#f59e0b'},
+    'info': {'icon': 'info', 'color': '#3b82f6'}
+} %}
+{% set fb = types.get(type, types['success']) %}
+<div class="feedback-icon{% if class %} {{ class }}{% endif %}{% if animated %} animate-popIn{% endif %}" style="display: inline-flex;">
+    <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="{{ fb.color }}" stroke-width="2">
+        <use href="/static/images/icons.svg#icon-{{ fb.icon }}"></use>
+    </svg>
+</div>
+{% endmacro %}
+
+{# ==================== CSS FOR ANIMATIONS ==================== #}
+{% macro icon_styles() %}
+<style>
+/* Icon Base Styles */
+.icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* Game Icons */
+.game-icon {
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+.game-icon:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* Rank Badges */
+.rank-badge {
+    transition: transform 0.2s ease;
+}
+.rank-badge:hover {
+    transform: scale(1.05);
+}
+
+/* Status Dot Animation */
+@keyframes pulse-animation {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Social Icons */
+.social-link {
+    display: inline-flex;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.social-link:hover {
+    transform: translateY(-2px);
+    opacity: 0.8;
+}
+
+/* Icon Tooltip */
+.icon-tooltip {
+    position: relative;
+}
+.icon-tooltip[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    z-index: 1000;
+}
+.icon-tooltip:hover[data-tooltip]::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Loading Spinner */
+.loading-spinner svg,
+.lambda-spinner svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Medal Shine Effect */
+.medal {
+    transition: transform 0.2s ease;
+}
+.medal:hover {
+    transform: scale(1.1) rotate(5deg);
+}
+</style>
+{% endmacro %}
+
+{# ==================== FASE 3: OYUN GÖRSELLERİ (13-17) ==================== #}
+
+{# Map Preview Card #}
+{% macro map_preview(map_name, players=0, max_players=20, image_url='', game='ag', class='') %}
+{% set map_colors = {
+    'dust2': '#d4a76a',
+    'crossfire': '#4a5568',
+    'bootcamp': '#2d5a27',
+    'default': '#ff6b00'
+} %}
+{% set map_color = map_colors.get(map_name|lower, map_colors.default) %}
+<div class="map-preview-card card-hover-lift{% if class %} {{ class }}{% endif %}" style="position: relative; border-radius: 12px; overflow: hidden; background: var(--bg-secondary);">
+    <div class="map-image" style="height: 140px; background: linear-gradient(135deg, {{ map_color }}20, {{ map_color }}40); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+        {% if image_url %}
+        <img src="{{ image_url }}" alt="{{ map_name }}" style="width: 100%; height: 100%; object-fit: cover;">
+        {% else %}
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="{{ map_color }}" stroke-width="1" opacity="0.5">
+            <use href="/static/images/icons.svg#icon-map-{{ map_name|lower }}"></use>
+        </svg>
+        {% endif %}
+        <div style="position: absolute; top: 10px; right: 10px;">
+            {{ game_icon(game, size=24, with_bg=true) }}
+        </div>
+    </div>
+    <div style="padding: 12px;">
+        <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 8px 0;">{{ map_name }}</h4>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 13px; color: var(--text-secondary);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                    <use href="/static/images/icons.svg#icon-users"></use>
+                </svg>
+                {{ players }}/{{ max_players }}
+            </span>
+            <span class="map-marker map-marker-{% if players > max_players // 2 %}t{% else %}ct{% endif %}" style="width: 10px; height: 10px; border-radius: 50%; background: {% if players > max_players // 2 %}#ef4444{% else %}#10b981{% endif %};"></span>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Game Banner #}
+{% macro game_banner(game, title='', subtitle='', show_play_btn=true, class='') %}
+{% set game_gradients = {
+    'ag': 'linear-gradient(135deg, #ff6b00, #ff8c00)',
+    'halflife': 'linear-gradient(135deg, #ff6b00, #cc5500)',
+    'cs16': 'linear-gradient(135deg, #f59e0b, #d97706)',
+    'hldm': 'linear-gradient(135deg, #ef4444, #dc2626)',
+    'tfc': 'linear-gradient(135deg, #3b82f6, #2563eb)'
+} %}
+{% set game_titles = {
+    'ag': 'Adrenaline Gamer',
+    'halflife': 'Half-Life',
+    'cs16': 'Counter-Strike 1.6',
+    'hldm': 'Half-Life Deathmatch',
+    'tfc': 'Team Fortress Classic'
+} %}
+<div class="game-banner{% if class %} {{ class }}{% endif %}" style="background: {{ game_gradients.get(game, game_gradients.ag) }}; border-radius: 16px; padding: 30px; position: relative; overflow: hidden;">
+    <div class="game-banner-content" style="position: relative; z-index: 2;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 72px; height: 72px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                {{ game_icon(game, size=48) }}
+            </div>
+            <div>
+                <h2 style="font-size: 28px; font-weight: 700; color: #fff; margin: 0;">{{ title or game_titles.get(game, game) }}</h2>
+                {% if subtitle %}
+                <p style="font-size: 16px; color: rgba(255,255,255,0.8); margin: 4px 0 0 0;">{{ subtitle }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% if show_play_btn %}
+        <button class="btn-hover-lift" style="margin-top: 20px; background: rgba(255,255,255,0.2); border: none; padding: 12px 24px; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5,3 19,12 5,21"/>
+            </svg>
+            Şimdi Oyna
+        </button>
+        {% endif %}
+    </div>
+    <div style="position: absolute; right: -20px; bottom: -20px; opacity: 0.1;">
+        {{ game_icon(game, size=200) }}
+    </div>
+</div>
+{% endmacro %}
+
+{# Game Card #}
+{% macro game_card(game, servers=0, players=0, featured=false, class='') %}
+{% set game_data = {
+    'ag': {'name': 'Adrenaline Gamer', 'color': '#ff6b00'},
+    'halflife': {'name': 'Half-Life', 'color': '#ff6b00'},
+    'cs16': {'name': 'Counter-Strike 1.6', 'color': '#f59e0b'},
+    'hldm': {'name': 'Half-Life Deathmatch', 'color': '#ef4444'},
+    'tfc': {'name': 'Team Fortress Classic', 'color': '#3b82f6'}
+} %}
+{% set data = game_data.get(game, game_data.ag) %}
+<div class="game-card card-hover-lift{% if featured %} featured{% endif %}{% if class %} {{ class }}{% endif %}" style="background: var(--bg-secondary); border-radius: 16px; overflow: hidden; border: 2px solid {% if featured %}{{ data.color }}{% else %}transparent{% endif %};">
+    <div style="height: 120px; background: linear-gradient(135deg, {{ data.color }}20, {{ data.color }}40); display: flex; align-items: center; justify-content: center; position: relative;">
+        {{ game_icon(game, size=64) }}
+        {% if featured %}
+        <span style="position: absolute; top: 10px; right: 10px; background: {{ data.color }}; color: {% if game == 'cs16' %}#000{% else %}#fff{% endif %}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">ÖNE ÇIKAN</span>
+        {% endif %}
+    </div>
+    <div style="padding: 16px;">
+        <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0 0 12px 0;">{{ data.name }}</h3>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
+            <span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+                    <use href="/static/images/icons.svg#icon-server"></use>
+                </svg>
+                {{ servers }} Sunucu
+            </span>
+            <span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+                    <use href="/static/images/icons.svg#icon-users"></use>
+                </svg>
+                {{ players }} Oyuncu
+            </span>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Game Selector Tabs #}
+{% macro game_selector(games=['ag', 'cs16', 'hldm', 'tfc'], selected='ag', class='') %}
+<div class="game-selector{% if class %} {{ class }}{% endif %}" style="display: flex; gap: 8px; background: var(--bg-secondary); padding: 8px; border-radius: 12px;">
+    {% for game in games %}
+    {% set game_names = {'ag': 'AG', 'cs16': 'CS 1.6', 'hldm': 'HLDM', 'tfc': 'TFC'} %}
+    <button class="game-selector-btn{% if game == selected %} active{% endif %}" data-game="{{ game }}" style="padding: 10px 16px; border-radius: 8px; border: none; background: {% if game == selected %}var(--primary-color){% else %}transparent{% endif %}; color: {% if game == selected %}#fff{% else %}var(--text-secondary){% endif %}; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+        {{ game_icon(game, size=18) }}
+        <span>{{ game_names.get(game, game) }}</span>
+    </button>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{# ==================== FASE 3: BONUS EFEKTLER (25-26) ==================== #}
+
+{# Confetti Trigger Button #}
+{% macro confetti_trigger(text='🎉 Kutla!', class='') %}
+<button class="confetti-trigger btn-hover-lift{% if class %} {{ class }}{% endif %}" onclick="triggerConfetti()" style="background: linear-gradient(135deg, #fbbf24, #f97316); border: none; padding: 12px 24px; border-radius: 8px; color: #000; font-weight: 600; cursor: pointer;">
+    {{ text }}
+</button>
+{% endmacro %}
+
+{# Achievement Unlock Component #}
+{% macro achievement_unlock_notification(id='achievement-notif', class='') %}
+<div id="{{ id }}" class="achievement-notification{% if class %} {{ class }}{% endif %}" style="display: none;">
+    <div class="badge-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24">
+            <use href="/static/images/icons.svg#icon-achievement-unlock"></use>
+        </svg>
+    </div>
+    <div class="badge-info">
+        <span class="badge-title">Başarım Açıldı!</span>
+        <span class="badge-name" id="{{ id }}-name">--</span>
+        <span class="badge-desc" id="{{ id }}-desc">--</span>
+    </div>
+</div>
+{% endmacro %}
+
+{# Level Up Overlay #}
+{% macro level_up_overlay(id='level-up-overlay', class='') %}
+<div id="{{ id }}" class="level-up-container{% if class %} {{ class }}{% endif %}" style="display: none;">
+    <div class="level-up-rays">
+        <svg viewBox="0 0 300 300" style="width: 100%; height: 100%;">
+            {% for i in range(12) %}
+            <line x1="150" y1="150" x2="150" y2="0" stroke="#fbbf24" stroke-width="2" opacity="0.3" transform="rotate({{ i * 30 }} 150 150)"/>
+            {% endfor %}
+        </svg>
+    </div>
+    <div class="level-up-badge">
+        <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.5">
+            <use href="/static/images/icons.svg#icon-level-up"></use>
+        </svg>
+    </div>
+    <div class="level-up-number" id="{{ id }}-level">--</div>
+    <div class="level-up-text">SEVİYE ATLADIN!</div>
+</div>
+{% endmacro %}
+
+{# Victory Celebration #}
+{% macro victory_celebration(id='victory-overlay', class='') %}
+<div id="{{ id }}" class="victory-container{% if class %} {{ class }}{% endif %}" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+    <svg class="victory-crown" width="150" height="150" viewBox="0 0 24 24">
+        <use href="/static/images/icons.svg#icon-victory"></use>
+    </svg>
+    <h1 style="color: #fbbf24; font-size: 48px; font-weight: 900; margin: 20px 0 10px 0; text-transform: uppercase; letter-spacing: 4px;">ZAFER!</h1>
+    <p style="color: rgba(255,255,255,0.7); font-size: 18px;">Tebrikler, kazandınız!</p>
+</div>
+{% endmacro %}
+
+{# ==================== FASE 3: TEMA TOGGLe (29) ==================== #}
+
+{# Theme Toggle Button #}
+{% macro theme_toggle(current_theme='dark', class='') %}
+<button class="theme-toggle-btn theme-icon-hover{% if class %} {{ class }}{% endif %}" onclick="toggleTheme()" aria-label="Tema değiştir" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s;">
+    {% if current_theme == 'dark' %}
+    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <use href="/static/images/icons.svg#icon-moon"></use>
+    </svg>
+    {% else %}
+    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <use href="/static/images/icons.svg#icon-sun"></use>
+    </svg>
+    {% endif %}
+</button>
+{% endmacro %}
+
+{# Theme Toggle with Label #}
+{% macro theme_toggle_labeled(current_theme='dark', class='') %}
+<div class="theme-toggle-wrapper{% if class %} {{ class }}{% endif %}" style="display: flex; align-items: center; gap: 12px;">
+    <button class="theme-toggle-btn theme-icon-hover" onclick="toggleTheme()" style="width: 60px; height: 32px; border-radius: 16px; border: none; background: var(--bg-secondary); position: relative; cursor: pointer; transition: all 0.3s;">
+        <span style="position: absolute; left: {% if current_theme == 'dark' %}calc(100% - 28px){% else %}4px{% endif %}; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); display: flex; align-items: center; justify-content: center; transition: left 0.3s;">
+            {% if current_theme == 'dark' %}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                <use href="/static/images/icons.svg#icon-moon"></use>
+            </svg>
+            {% else %}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                <use href="/static/images/icons.svg#icon-sun"></use>
+            </svg>
+            {% endif %}
+        </span>
+    </button>
+    <span style="font-size: 14px; color: var(--text-secondary);">{% if current_theme == 'dark' %}Karanlık{% else %}Aydınlık{% endif %} Tema</span>
+</div>
+{% endmacro %}
+
+{# Theme Selector (3 options) #}
+{% macro theme_selector(current_theme='dark', class='') %}
+<div class="theme-selector{% if class %} {{ class }}{% endif %}" style="display: flex; gap: 8px; background: var(--bg-secondary); padding: 6px; border-radius: 10px;">
+    <button class="theme-btn{% if current_theme == 'light' %} active{% endif %}" data-theme="light" onclick="setTheme('light')" style="padding: 8px 12px; border-radius: 6px; border: none; background: {% if current_theme == 'light' %}var(--bg-tertiary){% else %}transparent{% endif %}; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{% if current_theme == 'light' %}#fbbf24{% else %}var(--text-muted){% endif %}" stroke-width="2">
+            <use href="/static/images/icons.svg#icon-sun"></use>
+        </svg>
+        <span style="font-size: 12px; color: var(--text-secondary);">Aydınlık</span>
+    </button>
+    <button class="theme-btn{% if current_theme == 'dark' %} active{% endif %}" data-theme="dark" onclick="setTheme('dark')" style="padding: 8px 12px; border-radius: 6px; border: none; background: {% if current_theme == 'dark' %}var(--bg-tertiary){% else %}transparent{% endif %}; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{% if current_theme == 'dark' %}#6366f1{% else %}var(--text-muted){% endif %}" stroke-width="2">
+            <use href="/static/images/icons.svg#icon-moon"></use>
+        </svg>
+        <span style="font-size: 12px; color: var(--text-secondary);">Karanlık</span>
+    </button>
+    <button class="theme-btn{% if current_theme == 'auto' %} active auto-theme-active{% endif %}" data-theme="auto" onclick="setTheme('auto')" style="padding: 8px 12px; border-radius: 6px; border: none; background: {% if current_theme == 'auto' %}var(--bg-tertiary){% else %}transparent{% endif %}; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{% if current_theme == 'auto' %}#10b981{% else %}var(--text-muted){% endif %}" stroke-width="2">
+            <use href="/static/images/icons.svg#icon-theme-auto"></use>
+        </svg>
+        <span style="font-size: 12px; color: var(--text-secondary);">Otomatik</span>
+    </button>
+</div>
+{% endmacro %}
+
+{# ==================== SPLASH SCREEN ==================== #}
+
+{% macro splash_screen(logo_url='/static/images/logo.svg', title='AGTR Merkezi', class='') %}
+<div class="splash-screen{% if class %} {{ class }}{% endif %}" id="splash-screen">
+    <div class="splash-logo">
+        <img src="{{ logo_url }}" alt="{{ title }}" style="width: 120px; height: 120px;">
+    </div>
+    <h1 class="splash-title" style="font-size: 28px; font-weight: 700; color: var(--text-primary); margin-top: 20px;">{{ title }}</h1>
+    <div class="splash-progress-bar">
+        <div class="splash-progress-fill"></div>
+    </div>
+    <p style="color: var(--text-muted); font-size: 12px; margin-top: 16px; animation: fadeIn 0.5s ease-out 1s forwards; opacity: 0;">Yükleniyor...</p>
+</div>
+{% endmacro %}
