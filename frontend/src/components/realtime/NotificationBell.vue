@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNotificationsWS } from '@/composables/useWebSocket'
 import { useRealtimeStore } from '@/stores/realtime'
 
@@ -98,8 +98,17 @@ function formatTime(timestamp) {
 }
 
 // Sync live notifications to store
+let notificationInterval = null
+
+const handleClickOutside = (event) => {
+  const dropdown = document.querySelector('.notification-bell')
+  if (dropdown && !dropdown.contains(event.target)) {
+    isOpen.value = false
+  }
+}
+
 onMounted(() => {
-  const interval = setInterval(() => {
+  notificationInterval = setInterval(() => {
     if (liveNotifications.value.length > 0) {
       liveNotifications.value.forEach(notif => {
         realtimeStore.addNotification(notif)
@@ -107,23 +116,14 @@ onMounted(() => {
     }
   }, 1000)
 
-  return () => clearInterval(interval)
+  document.addEventListener('click', handleClickOutside)
 })
 
-// Close dropdown when clicking outside
-onMounted(() => {
-  const handleClickOutside = (event) => {
-    const dropdown = document.querySelector('.notification-bell')
-    if (dropdown && !dropdown.contains(event.target)) {
-      isOpen.value = false
-    }
+onUnmounted(() => {
+  if (notificationInterval) {
+    clearInterval(notificationInterval)
   }
-
-  document.addEventListener('click', handleClickOutside)
-
-  return () => {
-    document.removeEventListener('click', handleClickOutside)
-  }
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 

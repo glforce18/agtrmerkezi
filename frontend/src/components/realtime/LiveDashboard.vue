@@ -87,11 +87,11 @@ onUnmounted(() => {
 }
 
 .status-dot.connected {
-  background: #10b981;
+  background: var(--success-color, #10b981);
 }
 
 .status-dot.disconnected {
-  background: #ef4444;
+  background: var(--error-color, #ef4444);
   animation: none;
 }
 

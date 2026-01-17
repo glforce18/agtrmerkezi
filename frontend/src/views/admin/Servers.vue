@@ -438,11 +438,11 @@ onMounted(() => {
 }
 
 .mini-stat.online svg {
-  color: #10b981;
+  color: var(--success-color, #10b981);
 }
 
 .mini-stat.offline svg {
-  color: #ef4444;
+  color: var(--error-color, #ef4444);
 }
 
 .stat-value {
@@ -635,17 +635,17 @@ onMounted(() => {
 
 .game-badge.hldm {
   background: rgba(255, 107, 0, 0.15);
-  color: #ff6b00;
+  color: var(--primary-color, #ff6b00);
 }
 
 .game-badge.ag {
   background: rgba(139, 92, 246, 0.15);
-  color: #8b5cf6;
+  color: var(--secondary-color, #8b5cf6);
 }
 
 .game-badge.cs16 {
   background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  color: var(--info-color, #3b82f6);
 }
 
 .user-cell {
@@ -670,7 +670,7 @@ onMounted(() => {
 }
 
 .player-count.full {
-  color: #10b981;
+  color: var(--success-color, #10b981);
 }
 
 .server-address {
@@ -707,7 +707,7 @@ onMounted(() => {
 
 .btn-icon.danger:hover {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--error-color, #ef4444);
 }
 
 .empty-state {
@@ -799,12 +799,12 @@ onMounted(() => {
 
 .server-status-large.online {
   background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  color: var(--success-color, #10b981);
 }
 
 .server-status-large.offline {
   background: rgba(107, 114, 128, 0.15);
-  color: #6b7280;
+  color: var(--text-muted, #6b7280);
 }
 
 .server-detail-header h4 {

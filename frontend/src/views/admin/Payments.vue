@@ -594,22 +594,22 @@ onMounted(() => {
 
 .stat-icon.green {
   background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  color: var(--success-color, #10b981);
 }
 
 .stat-icon.blue {
   background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  color: var(--info-color, #3b82f6);
 }
 
 .stat-icon.orange {
   background: rgba(255, 107, 0, 0.15);
-  color: #ff6b00;
+  color: var(--primary-color, #ff6b00);
 }
 
 .stat-icon.purple {
   background: rgba(139, 92, 246, 0.15);
-  color: #8b5cf6;
+  color: var(--secondary-color, #8b5cf6);
 }
 
 .stat-value {
@@ -705,7 +705,7 @@ onMounted(() => {
 }
 
 .btn-danger {
-  background: #ef4444;
+  background: var(--error-color, #ef4444);
   color: white;
 }
 
@@ -843,7 +843,7 @@ onMounted(() => {
 
 .amount {
   font-weight: 600;
-  color: #10b981;
+  color: var(--success-color, #10b981);
 }
 
 .method-badge {
@@ -858,17 +858,17 @@ onMounted(() => {
 
 .method-badge.bank {
   background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  color: var(--info-color, #3b82f6);
 }
 
 .method-badge.papara {
   background: rgba(139, 92, 246, 0.15);
-  color: #8b5cf6;
+  color: var(--secondary-color, #8b5cf6);
 }
 
 .method-badge.crypto {
   background: rgba(255, 107, 0, 0.15);
-  color: #ff6b00;
+  color: var(--primary-color, #ff6b00);
 }
 
 .status-badge {
@@ -883,17 +883,17 @@ onMounted(() => {
 
 .status-badge.pending {
   background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  color: var(--warning-color, #f59e0b);
 }
 
 .status-badge.completed {
   background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  color: var(--success-color, #10b981);
 }
 
 .status-badge.failed {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--error-color, #ef4444);
 }
 
 .status-badge.large {
@@ -925,21 +925,21 @@ onMounted(() => {
 
 .btn-action.approve {
   background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  color: var(--success-color, #10b981);
 }
 
 .btn-action.approve:hover {
-  background: #10b981;
+  background: var(--success-color, #10b981);
   color: white;
 }
 
 .btn-action.reject {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--error-color, #ef4444);
 }
 
 .btn-action.reject:hover {
-  background: #ef4444;
+  background: var(--error-color, #ef4444);
   color: white;
 }
 
@@ -1041,7 +1041,7 @@ onMounted(() => {
 .amount-large {
   font-size: 32px;
   font-weight: 700;
-  color: #10b981;
+  color: var(--success-color, #10b981);
   margin-bottom: 8px;
 }
 
@@ -1099,7 +1099,7 @@ onMounted(() => {
 }
 
 .reject-section p {
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--error-color, #ef4444);
 }
 
 .form-group label {

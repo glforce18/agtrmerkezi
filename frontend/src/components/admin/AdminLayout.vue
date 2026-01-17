@@ -277,7 +277,7 @@ const logout = async () => {
 }
 
 .logout-btn {
-  color: #ef4444;
+  color: var(--error-color, #ef4444);
 }
 
 .logout-btn:hover {

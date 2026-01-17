@@ -699,12 +699,12 @@ onMounted(() => {
 
 .btn-icon.danger:hover {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--error-color, #ef4444);
 }
 
 .btn-icon.success:hover {
   background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  color: var(--success-color, #10b981);
 }
 
 .empty-state {
