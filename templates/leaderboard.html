@@ -84,7 +84,7 @@
             <div class="rank-tiers">
                 <div class="tier-item">
                     <span class="tier-badge-wrap" style="display: flex; align-items: center; gap: 8px;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" style="color: #ff6b00">
+                        <svg width="20" height="20" viewBox="0 0 24 24" style="color: var(--primary-color)">
                             <use href="/static/images/icons.svg#icon-rank-legendary"></use>
                         </svg>
                         <span class="tier-badge legendary">Efsane</span>
@@ -243,7 +243,7 @@
                             {% set elo = player.elo or 1000 %}
                             {% if elo >= 2000 %}
                             <span class="tier-badge-with-icon" style="display: flex; align-items: center; gap: 6px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" style="color: #ff6b00"><use href="/static/images/icons.svg#icon-rank-legendary"></use></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" style="color: var(--primary-color)"><use href="/static/images/icons.svg#icon-rank-legendary"></use></svg>
                                 <span class="tier-badge legendary">Efsane</span>
                             </span>
                             {% elif elo >= 1600 %}

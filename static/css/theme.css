@@ -2586,3 +2586,72 @@ input[type="text"].search::placeholder,
 [data-theme="light"] .search-header input::placeholder {
     color: rgba(0, 0, 0, 0.4);
 }
+
+/* ==================== BUG FIX: Navbar Search & Icon Buttons ==================== */
+/* Dark theme - make icon buttons more visible */
+.navbar .btn-icon.btn-secondary {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.navbar .btn-icon.btn-secondary:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+}
+
+.navbar .btn-icon.btn-secondary svg {
+    color: var(--text-primary);
+    opacity: 0.9;
+}
+
+.navbar .btn-icon.btn-secondary:hover svg {
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+/* Light theme - icon buttons */
+[data-theme="light"] .navbar .btn-icon.btn-secondary {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .navbar .btn-icon.btn-secondary:hover {
+    background: #f8fafc;
+    border-color: var(--primary-color);
+}
+
+[data-theme="light"] .navbar .btn-icon.btn-secondary svg {
+    color: var(--text-primary);
+}
+
+/* Forum search input enhanced */
+.forum-search input {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+}
+
+.forum-search input:focus {
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
+    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15);
+    outline: none;
+}
+
+.forum-search input::placeholder {
+    color: var(--text-muted);
+}
+
+.forum-search svg {
+    color: var(--text-secondary);
+}
+
+[data-theme="light"] .forum-search input {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .forum-search input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(229, 90, 0, 0.1);
+}
