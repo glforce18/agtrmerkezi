@@ -24,7 +24,7 @@
               :key="social.name"
               :href="social.url"
               target="_blank"
-              class="w-10 h-10 rounded-lg bg-base-200 hover:bg-orange-500 flex items-center justify-center transition-all group"
+              class="social-btn w-10 h-10 rounded-lg flex items-center justify-center transition-all group"
             >
               <component :is="social.icon" class="w-5 h-5 opacity-60 group-hover:opacity-100 group-hover:text-white" />
             </a>
@@ -67,7 +67,7 @@
           </ul>
 
           <!-- System Status -->
-          <div class="mt-6 p-3 rounded-lg bg-base-200">
+          <div class="status-box mt-6 p-3 rounded-lg">
             <div class="flex items-center gap-2 mb-1">
               <div class="status-online w-2 h-2"></div>
               <span class="text-xs font-semibold text-green-500">Sistem Calisiyor</span>
@@ -159,3 +159,37 @@ const legalLinks = [
   { path: '/contact', label: 'Iletisim' }
 ]
 </script>
+
+<style scoped>
+/* Social Media Buttons */
+.social-btn {
+  background-color: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-color, #475569);
+}
+
+.social-btn:hover {
+  background-color: #f97316;
+  border-color: #f97316;
+}
+
+/* System Status Box */
+.status-box {
+  background-color: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-color, #475569);
+}
+
+.status-online {
+  background-color: #10b981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+</style>
