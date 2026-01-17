@@ -753,3 +753,185 @@ async def get_2fa_status(current_user: User = Depends(get_current_user_required)
         "required": requires_2fa,
         "backup_codes_remaining": len(current_user.two_factor_backup_codes) if current_user.two_factor_backup_codes else 0
     }
+
+
+# ==================== OAUTH / SOCIAL LOGIN ====================
+
+from app.core.oauth import SteamOAuth2Provider, DiscordOAuth2Provider, GoogleOAuth2Provider
+from app.models.database import OAuthAccount
+from fastapi.responses import RedirectResponse
+
+# OAuth provider instances
+steam_provider = SteamOAuth2Provider()
+discord_provider = DiscordOAuth2Provider()
+google_provider = GoogleOAuth2Provider()
+
+
+def get_oauth_provider(provider: str):
+    """Get OAuth provider by name"""
+    providers = {
+        "steam": steam_provider,
+        "discord": discord_provider,
+        "google": google_provider
+    }
+    if provider not in providers:
+        raise HTTPException(status_code=400, detail=f"Desteklenmeyen OAuth provider: {provider}")
+    return providers[provider]
+
+
+@router.get("/oauth/{provider}")
+async def oauth_login(provider: str, request: Request, db: Session = Depends(get_db)):
+    """OAuth login baslat - Provider'a yonlendir"""
+    oauth = get_oauth_provider(provider)
+
+    # State token olustur (CSRF koruma)
+    state = secrets.token_urlsafe(32)
+
+    # State'i Redis'e kaydet (10 dakika)
+    try:
+        from app.core.redis_manager import redis_manager
+        await redis_manager.set(f"oauth_state:{state}", provider, ex=settings.OAUTH_STATE_EXPIRE_MINUTES * 60)
+    except Exception as e:
+        logger.warning(f"Redis state kayit hatasi: {e}")
+
+    # Callback URL
+    callback_url = f"{settings.BASE_URL}/api/auth/oauth/{provider}/callback"
+
+    # Provider'a yonlendir
+    auth_url = oauth.get_authorization_url(callback_url, state)
+    return RedirectResponse(url=auth_url)
+
+
+@router.get("/oauth/{provider}/callback")
+async def oauth_callback(
+    provider: str,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """OAuth callback - Provider'dan donen veriyi isle"""
+    oauth = get_oauth_provider(provider)
+    params = dict(request.query_params)
+
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent", "")[:500]
+
+    try:
+        if provider == "steam":
+            # Steam OpenID verification
+            steam_id = await oauth.verify_openid_response(params)
+            if not steam_id:
+                logger.error("Steam OpenID dogrulama basarisiz")
+                return RedirectResponse(url="/login?error=steam_verification_failed")
+
+            # Steam kullanici bilgilerini al
+            user_info = await oauth.get_user_info(steam_id)
+            normalized = oauth.normalize_user_data(user_info)
+            normalized["provider_id"] = steam_id
+
+        else:
+            # Discord/Google OAuth2 flow
+            code = params.get("code")
+            if not code:
+                logger.error(f"{provider} OAuth code eksik")
+                return RedirectResponse(url=f"/login?error={provider}_no_code")
+
+            callback_url = f"{settings.BASE_URL}/api/auth/oauth/{provider}/callback"
+            token_data = await oauth.exchange_code(code, callback_url)
+            access_token = token_data.get("access_token")
+
+            if not access_token:
+                logger.error(f"{provider} access token alinamadi")
+                return RedirectResponse(url=f"/login?error={provider}_token_failed")
+
+            user_info = await oauth.get_user_info(access_token)
+            normalized = oauth.normalize_user_data(user_info)
+
+        # Mevcut OAuth hesabi kontrol et
+        oauth_account = db.query(OAuthAccount).filter(
+            OAuthAccount.provider == provider,
+            OAuthAccount.provider_id == normalized["provider_id"]
+        ).first()
+
+        if oauth_account:
+            # Mevcut hesap - giris yap
+            user = oauth_account.user
+            oauth_account.last_used_at = datetime.utcnow()
+            oauth_account.provider_avatar = normalized.get("avatar")
+            db.commit()
+        else:
+            # Yeni kullanici olustur veya mevcut kullaniciya bagla
+            username_base = normalized.get("username", f"{provider}_user")
+            username = username_base.lower().replace(" ", "_")[:20]
+
+            # Benzersiz kullanici adi
+            existing = db.query(User).filter(User.username == username).first()
+            if existing:
+                username = f"{username}_{secrets.token_hex(4)}"
+
+            # Yeni kullanici
+            user = User(
+                username=username,
+                email=normalized.get("email"),
+                display_name=normalized.get("display_name", username),
+                avatar=normalized.get("avatar"),
+                password_hash=hash_password(secrets.token_urlsafe(32)),  # Random password
+                role=UserRole.USER,
+                status=UserStatus.ACTIVE,
+                steam_id=normalized["provider_id"] if provider == "steam" else None
+            )
+            db.add(user)
+            db.flush()
+
+            # OAuth hesabi olustur
+            oauth_account = OAuthAccount(
+                user_id=user.id,
+                provider=provider,
+                provider_id=normalized["provider_id"],
+                provider_username=normalized.get("username"),
+                provider_email=normalized.get("email"),
+                provider_avatar=normalized.get("avatar")
+            )
+            db.add(oauth_account)
+            db.commit()
+
+            logger.info(f"Yeni {provider} kullanicisi: {user.username}")
+
+        # Hesap kontrolu
+        if user.status == UserStatus.BANNED:
+            return RedirectResponse(url="/login?error=account_banned")
+
+        if user.status == UserStatus.SUSPENDED:
+            return RedirectResponse(url="/login?error=account_suspended")
+
+        # Basarili giris
+        user.last_login = datetime.utcnow()
+        user.last_ip = client_ip
+        db.commit()
+
+        token = create_access_token({"sub": str(user.id)})
+        create_session(db, user.id, token, request)
+
+        # Cookie set et
+        redirect_response = RedirectResponse(url="/dashboard", status_code=302)
+        redirect_response.set_cookie(
+            key="access_token",
+            value=token,
+            httponly=True,
+            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            samesite="lax",
+            secure=settings.SESSION_COOKIE_SECURE
+        )
+
+        # Audit log
+        log_audit(db, user.id, "oauth_login", "user", user.id,
+                  new_values={"provider": provider},
+                  ip_address=client_ip, user_agent=user_agent)
+
+        logger.info(f"{provider} girisi basarili: {user.username} - IP: {client_ip}")
+
+        return redirect_response
+
+    except Exception as e:
+        logger.error(f"OAuth callback hatasi ({provider}): {str(e)}")
+        return RedirectResponse(url=f"/login?error={provider}_failed")

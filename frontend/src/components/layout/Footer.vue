@@ -86,14 +86,9 @@
           </div>
 
           <div class="flex items-center gap-6 text-xs opacity-50">
-            <div class="flex items-center gap-2">
-              <ServerIcon class="w-4 h-4" />
-              <span>{{ activeServers }} Aktif Sunucu</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <UsersIcon class="w-4 h-4" />
-              <span>{{ onlineUsers }} Cevrimici</span>
-            </div>
+            <a href="https://discord.gg/agtrmerkezi" target="_blank" class="flex items-center gap-2 hover:text-orange-500 transition-colors">
+              <span>Discord'a Katıl</span>
+            </a>
           </div>
 
           <div class="text-sm opacity-50">
@@ -106,8 +101,7 @@
 </template>
 
 <script setup>
-import { ref, computed, markRaw } from 'vue'
-import { ServerIcon, UsersIcon } from 'lucide-vue-next'
+import { computed, markRaw } from 'vue'
 
 // Discord Icon Component
 const DiscordIcon = {
@@ -137,8 +131,6 @@ const SteamIcon = {
 }
 
 const currentYear = computed(() => new Date().getFullYear())
-const activeServers = ref(1247)
-const onlineUsers = ref(8432)
 
 const socialLinks = [
   { name: 'Discord', url: 'https://discord.gg/agtrmerkezi', icon: markRaw(DiscordIcon) },

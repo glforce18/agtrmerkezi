@@ -69,7 +69,7 @@
 
               <button
                 @click="loginWithOAuth('google')"
-                class="btn btn-block bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 gap-2 flex items-center justify-center"
+                class="btn btn-block google-btn gap-2 flex items-center justify-center"
                 :disabled="loading"
               >
                 <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
@@ -274,5 +274,17 @@ const loginWithOAuth = async (provider) => {
 
 .text-gradient-primary {
   @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+}
+
+.google-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.google-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-muted);
 }
 </style>

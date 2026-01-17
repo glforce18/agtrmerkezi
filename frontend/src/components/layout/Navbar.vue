@@ -216,7 +216,8 @@ import {
   Trophy,
   Home,
   ShoppingBag,
-  ChevronDown
+  ChevronDown,
+  Dice5
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -240,6 +241,7 @@ const navItems = [
   { path: '/servers', label: 'Sunucular', icon: Server },
   { path: '/leaderboard', label: 'Siralamalar', icon: Trophy },
   { path: '/forum', label: 'Forum', icon: MessageSquare },
+  { path: '/jackpot', label: 'Jackpot', icon: Dice5 },
   { path: '/shop', label: 'Premium', icon: ShoppingBag }
 ]
 

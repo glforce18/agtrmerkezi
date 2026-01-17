@@ -15,6 +15,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -366,7 +367,8 @@ class User(Base):
     steam_id = Column(String(50), unique=True, index=True)
     role = Column(Enum(UserRole), default=UserRole.USER)
     status = Column(Enum(UserStatus), default=UserStatus.ACTIVE)
-    balance = Column(Float, default=0.0)
+    balance = Column(Float, default=0.0)  # TL bakiye (gerçek para)
+    balance_coin = Column(Float, default=0.0)  # Coin bakiye (sanal para)
     post_count = Column(Integer, default=0)
     reputation = Column(Integer, default=0)
     
@@ -1024,19 +1026,64 @@ class Invoice(Base):
 
 
 # ==================== TRANSACTION ====================
+class WalletType(enum.Enum):
+    """Cüzdan türleri"""
+    REAL = "real"  # TL bakiye
+    COIN = "coin"  # Sanal para
+
+
+class TransactionType(enum.Enum):
+    """İşlem türleri"""
+    DEPOSIT = "deposit"  # Para yatırma
+    WITHDRAW = "withdraw"  # Para çekme
+    PAYMENT = "payment"  # Ödeme (sunucu kiralama vb.)
+    REFUND = "refund"  # İade
+    BONUS = "bonus"  # Bonus/hediye
+    TRANSFER = "transfer"  # Transfer (kullanıcılar arası)
+    GAME_WIN = "game_win"  # Oyun kazancı
+    GAME_LOSS = "game_loss"  # Oyun kaybı
+    JACKPOT = "jackpot"  # Jackpot işlemi
+    EXCHANGE = "exchange"  # TL -> Coin dönüşüm
+
+
 class Transaction(Base):
-    """Bakiye islemleri"""
+    """Bakiye islemleri - Çift cüzdan ledger sistemi"""
     __tablename__ = "transactions"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    type = Column(String(50), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    wallet_type = Column(Enum(WalletType), default=WalletType.REAL, nullable=False)
+    type = Column(String(50), nullable=False)  # TransactionType value
     amount = Column(Float, nullable=False)
-    description = Column(String(200))
-    payment_id = Column(Integer, ForeignKey("payments.id"))
+    description = Column(String(500))
+    reference_id = Column(String(100), index=True)  # Ödeme ID, oyun ID vb.
+    reference_type = Column(String(50))  # payment, game, transfer vb.
+
+    # Ledger bilgileri
     balance_before = Column(Float, default=0)
     balance_after = Column(Float, default=0)
+
+    # Transfer işlemleri için
+    target_user_id = Column(Integer, ForeignKey("users.id"))
+
+    # Meta bilgiler
+    ip_address = Column(String(45))
+    user_agent = Column(String(500))
+    extra_data = Column(JSON)  # Ek bilgiler (metadata rezerve kelime)
+
+    # Tarihler
     created_at = Column(DateTime, default=func.now())
+
+    # Index
+    __table_args__ = (
+        Index('idx_tx_user_wallet', 'user_id', 'wallet_type'),
+        Index('idx_tx_user_type', 'user_id', 'type'),
+        Index('idx_tx_created', 'created_at'),
+    )
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id], backref="transactions")
+    target_user = relationship("User", foreign_keys=[target_user_id])
 
 
 # ==================== BANNER/ADVERTISEMENT ====================

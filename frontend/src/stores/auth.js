@@ -10,6 +10,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const isAdmin = computed(() => user.value?.role === 'admin')
+  const balanceReal = computed(() => user.value?.balance || 0)
+  const balanceCoin = computed(() => user.value?.balance_coin || 0)
 
   async function login(credentials) {
     loading.value = true
@@ -141,6 +143,8 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     isAuthenticated,
     isAdmin,
+    balanceReal,
+    balanceCoin,
     login,
     register,
     logout,

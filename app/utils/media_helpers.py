@@ -124,8 +124,8 @@ def get_site_favicon() -> str:
 def get_game_display_name(game_type: str) -> str:
     """Oyun görünen adını getir"""
     names = {
-        "hldm": "Half-Life Deathmatch",
-        "ag": "Adrenaline Gamer",
+        "hldm": "Half-Life",
+        "ag": "Half-Life AG",
         "cs16": "Counter-Strike 1.6"
     }
     return names.get(game_type.lower(), game_type.upper())

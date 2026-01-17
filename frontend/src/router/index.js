@@ -58,6 +58,12 @@ const routes = [
     meta: { title: 'Sıralama' }
   },
   {
+    path: '/jackpot',
+    name: 'jackpot',
+    component: () => import('@/views/Jackpot.vue'),
+    meta: { title: 'Jackpot', requiresAuth: true }
+  },
+  {
     path: '/profile/:id?',
     name: 'profile',
     component: () => import('@/views/Profile.vue'),
@@ -66,8 +72,38 @@ const routes = [
   {
     path: '/admin',
     name: 'admin',
-    component: () => import('@/views/Admin.vue'),
+    component: () => import('@/views/admin/Dashboard.vue'),
     meta: { title: 'Admin Panel', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/users',
+    name: 'admin-users',
+    component: () => import('@/views/admin/Users.vue'),
+    meta: { title: 'Kullanıcı Yönetimi', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/servers',
+    name: 'admin-servers',
+    component: () => import('@/views/admin/Servers.vue'),
+    meta: { title: 'Sunucu Yönetimi', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/payments',
+    name: 'admin-payments',
+    component: () => import('@/views/admin/Payments.vue'),
+    meta: { title: 'Ödeme Yönetimi', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/packages',
+    name: 'admin-packages',
+    component: () => import('@/views/admin/Packages.vue'),
+    meta: { title: 'Paket Yönetimi', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/settings',
+    name: 'admin-settings',
+    component: () => import('@/views/admin/Settings.vue'),
+    meta: { title: 'Sistem Ayarları', requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/login',

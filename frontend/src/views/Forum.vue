@@ -271,10 +271,10 @@ const searchQuery = ref('')
 const showNewTopicModal = ref(false)
 
 const stats = reactive({
-  totalTopics: 1248,
-  totalPosts: 8432,
-  totalMembers: 3456,
-  onlineUsers: 142
+  totalTopics: 0,
+  totalPosts: 0,
+  totalMembers: 0,
+  onlineUsers: 0
 })
 
 const categories = ref([

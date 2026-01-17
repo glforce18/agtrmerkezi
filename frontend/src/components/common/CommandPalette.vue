@@ -19,7 +19,7 @@
               v-model="query"
               type="text"
               placeholder="Hızlı aramak yaz veya bir komut seç..."
-              class="flex-1 bg-transparent border-none outline-none text-lg placeholder-slate-500"
+              class="flex-1 bg-transparent border-none outline-none text-lg search-input"
               @keydown="handleKeyDown"
             />
             <kbd class="kbd kbd-sm bg-base-200">ESC</kbd>
@@ -335,7 +335,7 @@ defineExpose({
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background-color: rgba(15, 23, 42, 0.5);
+  background-color: var(--bg-tertiary);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -349,5 +349,14 @@ defineExpose({
 
 .kbd {
   @apply px-1.5 py-0.5 text-xs font-mono rounded bg-base-200 border border-base-300;
+}
+
+.search-input {
+  color: var(--text-primary);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 </style>

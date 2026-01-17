@@ -39,7 +39,7 @@
 
             <button
               @click="registerWithOAuth('google')"
-              class="btn btn-block bg-white hover:bg-gray-100 text-gray-800 border border-gray-300"
+              class="btn btn-block google-btn"
               :disabled="loading"
             >
               <svg class="w-5 h-5" viewBox="0 0 24 24">
@@ -308,5 +308,17 @@ const registerWithOAuth = async (provider) => {
 
 .animate-slide-up {
   animation: slideUp 0.6s ease-out 0.2s backwards;
+}
+
+.google-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.google-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-muted);
 }
 </style>

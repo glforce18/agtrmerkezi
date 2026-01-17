@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/static/dist/',
+  base: '/',
 
   resolve: {
     alias: {
@@ -18,10 +18,6 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true
-      },
-      '/static': {
-        target: 'http://localhost:8000',
-        changeOrigin: true
       }
     }
   },
@@ -31,7 +27,6 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     chunkSizeWarningLimit: 1000,
-    base: '/static/dist/',
     rollupOptions: {
       output: {
         manualChunks: {

@@ -123,6 +123,14 @@ class Settings(BaseSettings):
     TWO_FACTOR_ISSUER: str = "AGTR Merkezi"
     TWO_FACTOR_REQUIRED_FOR_ADMIN: bool = False
     TWO_FACTOR_BACKUP_CODES_COUNT: int = 10
+
+    # OAuth Ayarlari
+    STEAM_API_KEY: str = ""
+    DISCORD_CLIENT_ID: str = ""
+    DISCORD_CLIENT_SECRET: str = ""
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    OAUTH_STATE_EXPIRE_MINUTES: int = 10
     
     # Email Ayarlari
     SMTP_HOST: str = "localhost"
