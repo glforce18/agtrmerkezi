@@ -187,6 +187,7 @@ onUnmounted(() => {
 .dropdown-header h4 {
   margin: 0;
   font-size: 16px;
+  color: var(--text-primary);
 }
 
 .mark-all-read {

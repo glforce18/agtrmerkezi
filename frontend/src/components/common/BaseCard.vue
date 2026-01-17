@@ -36,7 +36,7 @@ const props = defineProps({
 })
 
 const cardClasses = computed(() => {
-  const classes = ['card', 'bg-base-200']
+  const classes = ['card', 'base-card']
 
   const variants = {
     default: '',

@@ -234,6 +234,13 @@
     }
   }
 
+  /* ===== BASE CARD - Theme Aware ===== */
+  .base-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+  }
+
   /* ===== GLASS CARD EFFECTS ===== */
   /* Dark Theme Glass */
   [data-theme="agtr_dark"] .glass-card {

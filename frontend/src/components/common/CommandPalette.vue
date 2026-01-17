@@ -10,9 +10,9 @@
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="close"></div>
 
         <!-- Command Palette -->
-        <div class="relative w-full max-w-2xl bg-base-300/95 backdrop-blur-xl border border-base-300/50 rounded-2xl shadow-2xl overflow-hidden">
+        <div class="command-palette-container relative w-full max-w-2xl backdrop-blur-xl border rounded-2xl shadow-2xl overflow-hidden">
           <!-- Search Input -->
-          <div class="flex items-center gap-3 px-6 py-4 border-b border-base-300/50">
+          <div class="flex items-center gap-3 px-6 py-4 border-b border-[var(--border-color)]">
             <Search class="w-5 h-5 opacity-60" />
             <input
               ref="searchInput"
@@ -358,5 +358,18 @@ defineExpose({
 .search-input::placeholder {
   color: var(--text-muted);
   opacity: 0.7;
+}
+
+.command-palette-container {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.command-item {
+  color: var(--text-primary);
+}
+
+.command-item:hover {
+  background-color: var(--bg-tertiary);
 }
 </style>
