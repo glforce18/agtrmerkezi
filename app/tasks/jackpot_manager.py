@@ -81,7 +81,7 @@ class JackpotManager:
 
                 # Benzersiz oyuncu sayısını hesapla
                 unique_players = db.query(JackpotBet.user_id).filter(
-                    JackpotBet.round_id == round.id
+                    JackpotBet.game_id == round.id
                 ).distinct().count()
 
                 # Minimum oyuncuya ulaşıldı mı?
@@ -89,7 +89,7 @@ class JackpotManager:
                     if round.status == JackpotStatus.WAITING:
                         # Turu aktif yap ve geri sayımı başlat
                         round.status = JackpotStatus.ACTIVE
-                        round.start_time = datetime.utcnow()
+                        round.started_at = datetime.utcnow()
                         db.commit()
                         logger.info(f"Jackpot #{round.round_number} aktif, geri sayım başladı")
 
@@ -98,8 +98,8 @@ class JackpotManager:
 
                     elif round.status == JackpotStatus.ACTIVE:
                         # Geri sayım kontrolü
-                        if round.start_time:
-                            elapsed = (datetime.utcnow() - round.start_time).total_seconds()
+                        if round.started_at:
+                            elapsed = (datetime.utcnow() - round.started_at).total_seconds()
                             remaining = max(0, self.COUNTDOWN_START - int(elapsed))
 
                             if remaining > 0:

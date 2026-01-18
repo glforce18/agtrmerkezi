@@ -116,16 +116,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[UYARI] WebSocket task baslatilamadi: {e}")
 
-    # Jackpot Manager baslat (devre disi - model uyumsuzlugu)
-    # TODO: JackpotGame modeline uyumlu hale getir
-    # try:
-    #     from app.tasks.jackpot_manager import start_jackpot_manager
-    #     import asyncio
-    #     asyncio.create_task(start_jackpot_manager())
-    #     print("[OK] Jackpot manager baslatildi")
-    # except Exception as e:
-    #     print(f"[UYARI] Jackpot manager baslatilamadi: {e}")
-    print("[BILGI] Jackpot manager devre disi (model guncelleniyor)")
+    # Jackpot Manager baslat
+    try:
+        from app.tasks.jackpot_manager import start_jackpot_manager
+        asyncio.create_task(start_jackpot_manager())
+        print("[OK] Jackpot manager baslatildi")
+    except Exception as e:
+        print(f"[UYARI] Jackpot manager baslatilamadi: {e}")
 
     print("=" * 50)
     print(f"API: {settings.BASE_URL}/api")
