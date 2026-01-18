@@ -56,7 +56,7 @@
                 :style="{ borderColor: item.color }"
               >
                 <img
-                  :src="item.avatar || getDefaultAvatar(item.username)"
+                  :src="getAvatarUrl(item.avatar, item.username)"
                   :alt="item.username"
                   class="spinner-avatar"
                 />
@@ -70,7 +70,7 @@
         <Transition name="winner-popup">
           <div v-if="winner && !isSpinning" class="winner-display">
             <div class="winner-content">
-              <img :src="winner.avatar || getDefaultAvatar(winner.username)" class="winner-avatar" />
+              <img :src="getAvatarUrl(winner.avatar, winner.username)" class="winner-avatar" />
               <div class="winner-info">
                 <span class="winner-label">KAZANAN!</span>
                 <span class="winner-name">{{ winner.username }}</span>
@@ -101,7 +101,7 @@
             class="player-card"
             :style="{ borderColor: player.color }"
           >
-            <img :src="player.avatar || getDefaultAvatar(player.username)" class="player-avatar" />
+            <img :src="getAvatarUrl(player.avatar, player.username)" class="player-avatar" />
             <div class="player-info">
               <span class="player-name">{{ player.username }}</span>
               <span class="player-bet">{{ formatArmor(player.total_bet) }} Armor</span>
@@ -338,6 +338,13 @@ const formatArmor = (amount) => {
 
 const getDefaultAvatar = (username) => {
   return `https://api.dicebear.com/7.x/initials/svg?seed=${username}`
+}
+
+const getAvatarUrl = (avatar, username) => {
+  if (!avatar) return getDefaultAvatar(username)
+  // If avatar is a relative path, add /static/ prefix
+  if (avatar.startsWith('http')) return avatar
+  return `/static/${avatar}`
 }
 
 const getPlayerColor = (index) => {
