@@ -283,7 +283,7 @@ async def list_coupons(
     current_user: User = Depends(get_current_user)
 ):
     """📋 Kuponları listele (Admin)"""
-    if current_user.role.value < 2:  # Admin değilse
+    if current_user.role.value not in ["admin", "superadmin"]:  # Admin değilse
         raise HTTPException(403, "Yetkiniz yok")
     
     ensure_payment_tables(db)
@@ -309,7 +309,7 @@ async def create_coupon(
     current_user: User = Depends(get_current_user)
 ):
     """➕ Kupon oluştur"""
-    if current_user.role.value < 2:
+    if current_user.role.value not in ["admin", "superadmin"]:
         raise HTTPException(403, "Yetkiniz yok")
     
     ensure_payment_tables(db)
@@ -585,7 +585,7 @@ async def list_bank_transfers(
     ensure_payment_tables(db)
     
     # Admin tüm bildirimleri görebilir
-    if current_user.role.value >= 2:
+    if current_user.role.value in ["admin", "superadmin"]:
         q = "SELECT bt.*, u.username FROM bank_transfers bt LEFT JOIN users u ON bt.user_id = u.id WHERE 1=1"
         p = {}
     else:
@@ -616,7 +616,7 @@ async def approve_bank_transfer(
     current_user: User = Depends(get_current_user)
 ):
     """✅ Havale onayla"""
-    if current_user.role.value < 2:
+    if current_user.role.value not in ["admin", "superadmin"]:
         raise HTTPException(403, "Yetkiniz yok")
     
     transfer = db.execute(text(
@@ -663,7 +663,7 @@ async def list_invoices(
     """📋 Faturalar"""
     ensure_payment_tables(db)
     
-    if current_user.role.value >= 2:
+    if current_user.role.value in ["admin", "superadmin"]:
         q = "SELECT i.*, u.username FROM invoices i LEFT JOIN users u ON i.user_id = u.id ORDER BY i.created_at DESC LIMIT 100"
         rows = db.execute(text(q)).fetchall()
     else:
@@ -693,7 +693,7 @@ async def get_invoice(
     if not invoice:
         raise HTTPException(404, "Fatura bulunamadı")
     
-    if invoice[2] != current_user.id and current_user.role.value < 2:
+    if invoice[2] != current_user.id and current_user.role.value not in ["admin", "superadmin"]:
         raise HTTPException(403, "Yetkiniz yok")
     
     items = db.execute(text(
@@ -772,7 +772,7 @@ async def payment_stats(
     current_user: User = Depends(get_current_user)
 ):
     """📊 Ödeme istatistikleri"""
-    if current_user.role.value < 2:
+    if current_user.role.value not in ["admin", "superadmin"]:
         raise HTTPException(403, "Yetkiniz yok")
     
     ensure_payment_tables(db)

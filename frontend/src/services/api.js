@@ -14,9 +14,27 @@ class ApiError extends Error {
   }
 }
 
+// Get CSRF token from cookie
+const getCsrfToken = () => {
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'csrf_token') return value
+  }
+  return null
+}
+
 const getAuthHeaders = () => {
+  const headers = {}
   const token = localStorage.getItem('access_token')
-  return token ? { 'Authorization': `Bearer ${token}` } : {}
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  const csrfToken = getCsrfToken()
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+  return headers
 }
 
 const handleResponse = async (response) => {

@@ -1,15 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authAPI } from '@/api'
+import { STORAGE_KEYS, ADMIN_ROLES } from '@/constants'
+import { getAccessToken, setAccessToken, removeAccessToken } from '@/utils/http'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
-  const token = ref(localStorage.getItem('access_token') || null)
+  const token = ref(getAccessToken())
   const loading = ref(false)
   const error = ref(null)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
-  const isAdmin = computed(() => ['admin', 'superadmin'].includes(user.value?.role))
+  const isAdmin = computed(() => ADMIN_ROLES.includes(user.value?.role))
   const balanceReal = computed(() => user.value?.balance || 0)
   const balanceCoin = computed(() => user.value?.balance_coin || 0)
 
@@ -33,7 +35,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       token.value = accessToken
       user.value = response.user
-      localStorage.setItem('access_token', accessToken)
+      setAccessToken(accessToken)
       return response
     } catch (err) {
       error.value = err.response?.data?.detail || err.message || 'Login failed'
@@ -58,7 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       token.value = accessToken
       user.value = response.user
-      localStorage.setItem('access_token', accessToken)
+      setAccessToken(accessToken)
       return response
     } catch (err) {
       error.value = err.response?.data?.detail || err.message || 'Registration failed'
@@ -76,7 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       token.value = null
       user.value = null
-      localStorage.removeItem('access_token')
+      removeAccessToken()
     }
   }
 
@@ -86,14 +88,14 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       const response = await authAPI.me()
-      // /auth/check returns { authenticated: true, user: {...} }
-      if (response.authenticated && response.user) {
-        user.value = response.user
-        return true
-      }
-      // Fallback for direct user object
+      // /auth/me returns direct user object with all fields including balance_coin
       if (response.id && response.username) {
         user.value = response
+        return true
+      }
+      // Fallback for /auth/check format (legacy)
+      if (response.authenticated && response.user) {
+        user.value = response.user
         return true
       }
       throw new Error('Invalid response')
@@ -101,7 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Token invalid, clear auth
       token.value = null
       user.value = null
-      localStorage.removeItem('access_token')
+      removeAccessToken()
       return false
     } finally {
       loading.value = false
@@ -112,7 +114,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authAPI.refresh()
       token.value = response.access_token
-      localStorage.setItem('access_token', response.access_token)
+      setAccessToken(response.access_token)
       return true
     } catch (err) {
       // Token refresh failed
@@ -135,13 +137,28 @@ export const useAuthStore = defineStore('auth', () => {
 
       token.value = accessToken
       user.value = response.user
-      localStorage.setItem('access_token', accessToken)
+      setAccessToken(accessToken)
       return response
     } catch (err) {
       error.value = err.response?.data?.detail || err.message || '2FA verification failed'
       throw err
     } finally {
       loading.value = false
+    }
+  }
+
+  // Update user balance locally (for real-time updates)
+  function updateBalance(newBalance, newBalanceCoin) {
+    if (user.value) {
+      if (newBalance !== undefined) user.value.balance = newBalance
+      if (newBalanceCoin !== undefined) user.value.balance_coin = newBalanceCoin
+    }
+  }
+
+  // Update user data
+  function updateUser(userData) {
+    if (user.value && userData) {
+      user.value = { ...user.value, ...userData }
     }
   }
 
@@ -159,6 +176,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     fetchUser,
     refreshToken,
-    verify2FA
+    verify2FA,
+    updateBalance,
+    updateUser
   }
 })

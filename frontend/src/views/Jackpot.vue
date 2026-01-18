@@ -397,9 +397,13 @@ const placeBet = async () => {
 
   betting.value = true
   try {
+    const token = localStorage.getItem('access_token')
     const res = await fetch('/api/games/jackpot/bet', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ amount: betAmount.value })
     })
 
@@ -432,7 +436,7 @@ const connectWebSocket = () => {
     console.log('Jackpot WebSocket bağlandı')
 
     // Authenticate if logged in
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('access_token')
     if (token) {
       ws.value.send(JSON.stringify({ action: 'auth', token }))
     }

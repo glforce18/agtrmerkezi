@@ -143,6 +143,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
+import { useAuthStore } from '@/stores/auth'
 import {
   Plus,
   Edit,
@@ -155,6 +156,30 @@ import {
   ShoppingBag,
   Info
 } from 'lucide-vue-next'
+
+const authStore = useAuthStore()
+
+// Get CSRF token from cookie
+const getCsrfToken = () => {
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'csrf_token') return value
+  }
+  return null
+}
+
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authStore.token}`
+  }
+  const csrfToken = getCsrfToken()
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+  return headers
+}
 
 const pages = ref([
   {
@@ -242,7 +267,7 @@ const savePage = async () => {
 
     const response = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(formData)
     })
 

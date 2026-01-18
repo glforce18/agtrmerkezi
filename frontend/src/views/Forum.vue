@@ -221,6 +221,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import {
   SearchIcon,
   PlusCircleIcon,
@@ -238,6 +239,29 @@ import {
 } from 'lucide-vue-next'
 
 const router = useRouter()
+const authStore = useAuthStore()
+
+// Get CSRF token from cookie
+const getCsrfToken = () => {
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'csrf_token') return value
+  }
+  return null
+}
+
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authStore.token}`
+  }
+  const csrfToken = getCsrfToken()
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+  return headers
+}
 const searchQuery = ref('')
 const showNewTopicModal = ref(false)
 
@@ -392,7 +416,7 @@ const createTopic = async () => {
   try {
     const response = await fetch('/api/forum/topics', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({
         category_id: newTopic.categoryId,
         title: newTopic.title.trim(),

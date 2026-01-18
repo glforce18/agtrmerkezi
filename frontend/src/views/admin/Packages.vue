@@ -239,10 +239,27 @@ const filteredPackages = computed(() => {
   })
 })
 
-const getHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${authStore.token}`
-})
+// Get CSRF token from cookie
+const getCsrfToken = () => {
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'csrf_token') return value
+  }
+  return null
+}
+
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authStore.token}`
+  }
+  const csrfToken = getCsrfToken()
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+  return headers
+}
 
 const fetchPackages = async () => {
   loading.value = true

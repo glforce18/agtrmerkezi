@@ -1,64 +1,66 @@
 import axios from 'axios'
+import { STORAGE_KEYS, API_CONFIG } from '@/constants'
+import { getCsrfToken, getAccessToken, removeAccessToken } from '@/utils/http'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || API_CONFIG.BASE_URL
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: API_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// Request interceptor
+// Request interceptor - Otomatik header ekleme
 apiClient.interceptors.request.use(
   (config) => {
-    // Add CSRF token
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+    // CSRF token ekle
+    const csrfToken = getCsrfToken()
     if (csrfToken) {
       config.headers['X-CSRF-Token'] = csrfToken
     }
 
-    // Add auth token
-    const token = localStorage.getItem('access_token')
+    // Auth token ekle
+    const token = getAccessToken()
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     }
 
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
-// Response interceptor
+// Response interceptor - Hata yönetimi
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response) {
-      // Handle specific error codes
       switch (error.response.status) {
         case 401:
-          // Unauthorized - clear token and redirect to login
-          localStorage.removeItem('access_token')
+          // Token geçersiz - temizle ve login'e yönlendir
+          removeAccessToken()
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login'
           }
           break
         case 403:
-          console.error('Forbidden:', error.response.data)
+          console.error('Yetkisiz erişim:', error.response.data)
           break
         case 404:
-          console.error('Not Found:', error.response.data)
+          console.error('Bulunamadı:', error.response.data)
           break
         case 500:
-          console.error('Server Error:', error.response.data)
+          console.error('Sunucu hatası:', error.response.data)
           break
       }
     }
     return Promise.reject(error)
   }
 )
+
+// Re-export utilities for backward compatibility
+export { getCsrfToken }
 
 export default apiClient

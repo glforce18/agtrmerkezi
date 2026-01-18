@@ -26,7 +26,7 @@ class CategoryCreate(BaseModel):
     slug: Optional[str] = None
     description: Optional[str] = None
     icon: Optional[str] = "fas fa-folder"
-    order_index: Optional[int] = 0
+    display_order: Optional[int] = 0
     is_active: Optional[bool] = True
 
 
@@ -35,7 +35,7 @@ class CategoryUpdate(BaseModel):
     slug: Optional[str] = None
     description: Optional[str] = None
     icon: Optional[str] = None
-    order_index: Optional[int] = None
+    display_order: Optional[int] = None
     is_active: Optional[bool] = None
 
 
@@ -47,7 +47,7 @@ class CategoryResponse(BaseModel):
     slug: str
     description: Optional[str]
     icon: str
-    order_index: int
+    display_order: int
     is_active: bool
     topic_count: int = 0
     reply_count: int = 0
@@ -92,7 +92,7 @@ async def get_categories(
     current_user: User = Depends(get_current_admin)
 ):
     """Tüm forum kategorilerini getir"""
-    categories = db.query(ForumCategory).order_by(ForumCategory.order_index).all()
+    categories = db.query(ForumCategory).order_by(ForumCategory.display_order).all()
     
     result = []
     for cat in categories:
@@ -111,8 +111,8 @@ async def get_categories(
             "slug": cat.slug,
             "description": cat.description,
             "icon": cat.icon or "fas fa-folder",
-            "order_index": cat.order_index or 0,
-            "is_active": cat.is_active,
+            "display_order": cat.display_order or 0,
+            "is_active": cat.is_visible,
             "topic_count": topic_count,
             "reply_count": reply_count
         })
@@ -141,8 +141,8 @@ async def get_category(
         "slug": category.slug,
         "description": category.description,
         "icon": category.icon,
-        "order_index": category.order_index,
-        "is_active": category.is_active,
+        "display_order": category.display_order,
+        "is_active": category.is_visible,
         "topic_count": topic_count
     }
 
@@ -168,8 +168,8 @@ async def create_category(
         slug=slug,
         description=data.description,
         icon=data.icon or "fas fa-folder",
-        order_index=data.order_index or 0,
-        is_active=data.is_active if data.is_active is not None else True
+        display_order=data.display_order or 0,
+        is_visible=data.is_active if data.is_active is not None else True
     )
     
     db.add(category)
@@ -223,11 +223,11 @@ async def update_category(
     if data.icon is not None:
         category.icon = data.icon
     
-    if data.order_index is not None:
-        category.order_index = data.order_index
+    if data.display_order is not None:
+        category.display_order = data.display_order
     
     if data.is_active is not None:
-        category.is_active = data.is_active
+        category.is_visible = data.is_active
     
     db.commit()
     db.refresh(category)
@@ -272,7 +272,7 @@ async def delete_category(
 
 @router.post("/categories/reorder")
 async def reorder_categories(
-    order: list[dict],  # [{"id": 1, "order_index": 0}, ...]
+    order: list[dict],  # [{"id": 1, "display_order": 0}, ...]
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin)
 ):
@@ -280,7 +280,7 @@ async def reorder_categories(
     for item in order:
         category = db.query(ForumCategory).filter(ForumCategory.id == item["id"]).first()
         if category:
-            category.order_index = item["order_index"]
+            category.display_order = item["display_order"]
     
     db.commit()
     return {"message": "Sıralama güncellendi"}
