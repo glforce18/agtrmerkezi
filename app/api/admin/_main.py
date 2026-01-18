@@ -61,6 +61,7 @@ router = APIRouter()
 
 class UserUpdateRequest(BaseModel):
     balance: Optional[float] = None
+    balance_coin: Optional[float] = None
     role: Optional[str] = None
     status: Optional[str] = None
 
@@ -358,6 +359,7 @@ async def list_users(
             "role": u.role.value,
             "status": u.status.value,
             "balance": u.balance,
+            "balance_coin": u.balance_coin,
             "post_count": u.post_count,
             "last_login": u.last_login.isoformat() if u.last_login else None,
             "created_at": u.created_at.isoformat()
@@ -394,6 +396,7 @@ async def get_user(
             "role": user.role.value,
             "status": user.status.value,
             "balance": user.balance,
+            "balance_coin": user.balance_coin,
             "post_count": user.post_count,
             "reputation": user.reputation,
             "steam_id": user.steam_id,
@@ -432,7 +435,10 @@ async def update_user(
     
     if data.balance is not None:
         user.balance = data.balance
-    
+
+    if data.balance_coin is not None:
+        user.balance_coin = data.balance_coin
+
     if data.role:
         try:
             new_role = UserRole(data.role)
