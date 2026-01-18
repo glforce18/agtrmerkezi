@@ -707,12 +707,14 @@ class ForumCategory(Base):
 
 class ForumTopic(Base):
     __tablename__ = "forum_topics"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     category_id = Column(Integer, ForeignKey("forum_categories.id", ondelete="CASCADE"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(200), nullable=False)
     slug = Column(String(220), nullable=False)
+    content = Column(Text)  # Konu icerigi
+    is_active = Column(Boolean, default=True)  # Aktif/silindi
     is_pinned = Column(Boolean, default=False)
     is_locked = Column(Boolean, default=False)
     is_featured = Column(Boolean, default=False)
@@ -723,7 +725,12 @@ class ForumTopic(Base):
     last_post_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    
+
+    # user_id alias for backward compatibility
+    @property
+    def user_id(self):
+        return self.author_id
+
     # Relationships
     author = relationship("User", back_populates="topics", foreign_keys=[author_id])
     category = relationship("ForumCategory", back_populates="topics")

@@ -1,290 +1,160 @@
 <template>
-  <div class="navbar-wrapper">
-    <nav class="navbar navbar-glass sticky top-0 z-50 shadow-lg">
-      <div class="container-custom">
-        <div class="flex items-center justify-between h-16">
-          <!-- Left: Logo -->
-          <div class="flex items-center gap-4">
-            <!-- Mobile Menu Button -->
-            <button
-              @click="mobileMenuOpen = !mobileMenuOpen"
-              class="lg:hidden p-2 rounded-lg hover:bg-base-200 transition-colors"
-            >
-              <Menu class="w-6 h-6" />
-            </button>
+  <nav class="sticky top-0 z-50 border-b" :class="isDark ? 'bg-zinc-900/95 border-zinc-800' : 'bg-white/95 border-zinc-200'" style="backdrop-filter: blur(12px);">
+    <div class="container-main">
+      <div class="flex items-center justify-between h-16">
+        <!-- Left: Logo & Nav -->
+        <div class="flex items-center gap-6">
+          <!-- Mobile Menu -->
+          <n-button quaternary circle class="lg:hidden" @click="mobileMenuOpen = !mobileMenuOpen">
+            <template #icon>
+              <n-icon><Menu /></n-icon>
+            </template>
+          </n-button>
 
-            <!-- Logo -->
-            <router-link to="/" class="flex items-center gap-2 group">
-              <img
-                src="/logo-navbar.png"
-                alt="AGTR Merkezi"
-                class="h-10 w-auto group-hover:scale-105 transition-transform"
-              />
-            </router-link>
-          </div>
+          <!-- Logo -->
+          <router-link to="/" class="flex items-center gap-2">
+            <img src="/logo-navbar.png" alt="AGTR Merkezi" class="h-9 w-auto" />
+          </router-link>
 
-          <!-- Center: Navigation Links (Desktop) -->
+          <!-- Desktop Nav -->
           <div class="hidden lg:flex items-center gap-1">
             <router-link
               v-for="item in navItems"
               :key="item.path"
               :to="item.path"
-              class="nav-link px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
-              :class="isActive(item.path) ? 'nav-link-active' : ''"
+              class="nav-link"
+              :class="{ 'nav-link-active': isActive(item.path) }"
             >
-              <component :is="item.icon" class="w-4 h-4" />
+              <n-icon :component="item.icon" size="16" />
               {{ item.label }}
             </router-link>
           </div>
+        </div>
 
-          <!-- Right: Actions -->
-          <div class="flex items-center gap-2">
-            <!-- Wallet Display (when logged in) -->
-            <div v-if="user" class="hidden md:flex items-center gap-3 mr-2">
-              <!-- TL Balance -->
-              <div class="wallet-item flex items-center gap-1.5 px-3 py-1.5 rounded-lg">
-                <span class="text-green-500 font-bold text-sm">TL</span>
-                <span class="font-mono font-semibold text-sm">{{ formatCurrency(user.balance || 0) }}</span>
+        <!-- Right: Actions -->
+        <div class="flex items-center gap-2">
+          <!-- Wallet (logged in) -->
+          <div v-if="user" class="hidden md:flex items-center gap-2">
+            <n-tag type="success" :bordered="false">
+              {{ formatCurrency(user.balance || 0) }} TL
+            </n-tag>
+            <n-tag type="warning" :bordered="false">
+              <template #icon>
+                <n-icon><ShieldCheck /></n-icon>
+              </template>
+              {{ formatNumber(user.balance_coin || 0) }} Armor
+            </n-tag>
+          </div>
+
+          <!-- Theme Toggle -->
+          <n-button quaternary circle @click="toggleTheme">
+            <template #icon>
+              <n-icon :component="isDark ? Sun : Moon" :color="isDark ? '#facc15' : undefined" />
+            </template>
+          </n-button>
+
+          <!-- Notifications -->
+          <n-popover v-if="user" trigger="click" placement="bottom-end" :show-arrow="false">
+            <template #trigger>
+              <n-badge :value="unreadCount" :max="9" :show="unreadCount > 0">
+                <n-button quaternary circle>
+                  <template #icon>
+                    <n-icon><Bell /></n-icon>
+                  </template>
+                </n-button>
+              </n-badge>
+            </template>
+            <div class="w-72">
+              <div class="flex items-center justify-between mb-3">
+                <span class="font-semibold">Bildirimler</span>
+                <n-button text type="primary" size="small">Tumu okundu</n-button>
               </div>
+              <n-list v-if="notifications.length > 0" :show-divider="false">
+                <n-list-item v-for="n in notifications" :key="n.id">
+                  <div class="text-sm font-medium">{{ n.title }}</div>
+                  <div class="text-xs opacity-60">{{ n.message }}</div>
+                </n-list-item>
+              </n-list>
+              <n-empty v-else description="Bildirim yok" size="small" />
+            </div>
+          </n-popover>
 
-              <!-- Armor Balance -->
-              <div class="wallet-item wallet-armor flex items-center gap-1.5 px-3 py-1.5 rounded-lg">
-                <ShieldCheck class="w-4 h-4 text-orange-500" />
-                <span class="font-mono font-semibold text-sm text-orange-500">{{ formatNumber(user.balance_coin || 0) }}</span>
-                <span class="text-xs opacity-60">Armor</span>
+          <!-- User Menu -->
+          <n-dropdown v-if="user" trigger="click" :options="userMenuOptions" @select="handleUserMenuSelect">
+            <n-button quaternary class="!px-2">
+              <div class="flex items-center gap-2">
+                <n-avatar
+                  :size="32"
+                  :src="user.avatar"
+                  :fallback-src="undefined"
+                  round
+                >
+                  {{ getInitials(user.username) }}
+                </n-avatar>
+                <span class="hidden sm:inline font-medium">{{ user.username }}</span>
+                <n-icon><ChevronDown /></n-icon>
               </div>
-            </div>
+            </n-button>
+          </n-dropdown>
 
-            <!-- Search Button (Desktop) -->
-            <button
-              @click="openCommandPalette"
-              class="search-btn hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm"
+          <!-- Login Button -->
+          <router-link v-else to="/login">
+            <n-button type="primary">
+              <template #icon>
+                <n-icon><LogIn /></n-icon>
+              </template>
+              <span class="hidden sm:inline">Giris Yap</span>
+            </n-button>
+          </router-link>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <n-collapse-transition :show="mobileMenuOpen">
+      <div class="lg:hidden border-t" :class="isDark ? 'border-zinc-800' : 'border-zinc-200'">
+        <div class="container-main py-4">
+          <!-- Mobile Wallet -->
+          <div v-if="user" class="flex gap-2 mb-4 pb-4 border-b" :class="isDark ? 'border-zinc-800' : 'border-zinc-200'">
+            <n-tag type="success" :bordered="false" class="flex-1 justify-center">
+              {{ formatCurrency(user.balance || 0) }} TL
+            </n-tag>
+            <n-tag type="warning" :bordered="false" class="flex-1 justify-center">
+              {{ formatNumber(user.balance_coin || 0) }} Armor
+            </n-tag>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <router-link
+              v-for="item in navItems"
+              :key="item.path"
+              :to="item.path"
+              class="nav-link-mobile"
+              :class="{ 'nav-link-mobile-active': isActive(item.path) }"
+              @click="mobileMenuOpen = false"
             >
-              <Search class="w-4 h-4 opacity-60" />
-              <span class="opacity-60">Ara...</span>
-              <kbd class="search-kbd hidden xl:inline px-1.5 py-0.5 text-xs rounded opacity-60">Ctrl+K</kbd>
-            </button>
-
-            <!-- Theme Toggle -->
-            <button
-              @click="toggleTheme"
-              class="p-2 rounded-lg hover:bg-base-200 transition-colors"
-              :title="darkMode ? 'Light Mode' : 'Dark Mode'"
-            >
-              <Sun v-if="darkMode" class="w-5 h-5 text-yellow-500" />
-              <Moon v-else class="w-5 h-5 opacity-40" />
-            </button>
-
-            <!-- Notifications -->
-            <div class="relative" v-if="user">
-              <button
-                @click="notificationsOpen = !notificationsOpen"
-                class="p-2 rounded-lg hover:bg-base-200 transition-colors relative"
-              >
-                <Bell class="w-5 h-5" />
-                <span
-                  v-if="unreadCount > 0"
-                  class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
-                ></span>
-              </button>
-
-              <!-- Notifications Dropdown -->
-              <Transition name="dropdown">
-                <div
-                  v-if="notificationsOpen"
-                  class="absolute right-0 mt-2 w-80 dropdown-glass p-4"
-                >
-                  <div class="flex items-center justify-between mb-3">
-                    <h3 class="font-bold">Bildirimler</h3>
-                    <button class="text-xs text-primary hover:underline">Tumunu Okundu</button>
-                  </div>
-                  <div class="space-y-2 max-h-64 overflow-y-auto">
-                    <div
-                      v-for="notification in notifications"
-                      :key="notification.id"
-                      class="p-3 rounded-lg bg-base-200 hover:bg-base-300 transition-colors cursor-pointer"
-                    >
-                      <p class="font-medium text-sm">{{ notification.title }}</p>
-                      <p class="text-xs opacity-60 mt-1">{{ notification.message }}</p>
-                    </div>
-                    <div v-if="notifications.length === 0" class="text-center py-8 opacity-60">
-                      <Bell class="w-8 h-8 mx-auto mb-2" />
-                      <p class="text-sm">Bildirim yok</p>
-                    </div>
-                  </div>
-                </div>
-              </Transition>
-            </div>
-
-            <!-- User Menu -->
-            <div v-if="user" class="relative">
-              <button
-                @click="userMenuOpen = !userMenuOpen"
-                class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-base-200 transition-colors"
-              >
-                <!-- Avatar - Steam veya varsayilan -->
-                <div class="w-8 h-8 rounded-lg overflow-hidden">
-                  <img
-                    v-if="user.avatar"
-                    :src="user.avatar"
-                    :alt="user.username"
-                    class="w-full h-full object-cover"
-                  />
-                  <div
-                    v-else
-                    class="w-full h-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center"
-                  >
-                    <span class="text-white font-bold text-sm">{{ getInitials(user.username) }}</span>
-                  </div>
-                </div>
-                <ChevronDown class="w-4 h-4 hidden sm:block" />
-              </button>
-
-              <!-- User Dropdown -->
-              <Transition name="dropdown">
-                <div
-                  v-if="userMenuOpen"
-                  class="absolute right-0 mt-2 w-72 dropdown-glass p-2"
-                >
-                  <!-- User Info -->
-                  <div class="flex items-center gap-3 px-3 py-3 border-b border-base-300 mb-2">
-                    <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                      <img
-                        v-if="user.avatar"
-                        :src="user.avatar"
-                        :alt="user.username"
-                        class="w-full h-full object-cover"
-                      />
-                      <div
-                        v-else
-                        class="w-full h-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center"
-                      >
-                        <span class="text-white font-bold">{{ getInitials(user.username) }}</span>
-                      </div>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <p class="font-bold truncate">{{ user.display_name || user.username }}</p>
-                      <p class="text-xs opacity-60 truncate">@{{ user.username }}</p>
-                    </div>
-                  </div>
-
-                  <!-- Wallet Summary in Dropdown -->
-                  <div class="px-3 py-2 mb-2 space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="text-sm opacity-60">TL Bakiye</span>
-                      <span class="font-mono font-bold text-green-500">{{ formatCurrency(user.balance || 0) }} TL</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <span class="text-sm opacity-60 flex items-center gap-1">
-                        <ShieldCheck class="w-4 h-4 text-orange-500" /> Armor
-                      </span>
-                      <span class="font-mono font-bold text-orange-500">{{ formatNumber(user.balance_coin || 0) }}</span>
-                    </div>
-                    <router-link
-                      to="/shop"
-                      class="block w-full mt-2 text-center py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold hover:from-orange-600 hover:to-orange-700 transition-all"
-                      @click="userMenuOpen = false"
-                    >
-                      Armor Yukle
-                    </router-link>
-                  </div>
-
-                  <div class="border-t border-base-300 pt-2">
-                    <!-- Menu Items -->
-                    <router-link
-                      v-for="item in userMenuItems"
-                      :key="item.path"
-                      :to="item.path"
-                      class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors"
-                      @click="userMenuOpen = false"
-                    >
-                      <component :is="item.icon" class="w-4 h-4" />
-                      <span class="text-sm">{{ item.label }}</span>
-                    </router-link>
-                  </div>
-
-                  <div class="border-t border-base-300 mt-2 pt-2">
-                    <button
-                      @click="handleLogout"
-                      class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-500 w-full transition-colors"
-                    >
-                      <LogOut class="w-4 h-4" />
-                      <span class="text-sm">Cikis Yap</span>
-                    </button>
-                  </div>
-                </div>
-              </Transition>
-            </div>
-
-            <!-- Login Button -->
-            <router-link v-else to="/login">
-              <button class="btn-gaming text-sm px-4 py-2">
-                <LogIn class="w-4 h-4" />
-                <span class="hidden sm:inline">Giris Yap</span>
-              </button>
+              <n-icon :component="item.icon" size="20" />
+              {{ item.label }}
             </router-link>
           </div>
         </div>
       </div>
-
-      <!-- Mobile Menu -->
-      <Transition name="slide-down">
-        <div v-if="mobileMenuOpen" class="lg:hidden border-t border-base-300">
-          <div class="container-custom py-4">
-            <!-- Mobile Wallet -->
-            <div v-if="user" class="flex items-center gap-3 mb-4 pb-4 border-b border-base-300">
-              <div class="wallet-item flex items-center gap-1.5 px-3 py-2 rounded-lg flex-1 justify-center">
-                <span class="text-green-500 font-bold">TL</span>
-                <span class="font-mono font-semibold">{{ formatCurrency(user.balance || 0) }}</span>
-              </div>
-              <div class="wallet-item wallet-armor flex items-center gap-1.5 px-3 py-2 rounded-lg flex-1 justify-center">
-                <ShieldCheck class="w-4 h-4 text-orange-500" />
-                <span class="font-mono font-semibold text-orange-500">{{ formatNumber(user.balance_coin || 0) }}</span>
-                <span class="text-xs opacity-60">Armor</span>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <router-link
-                v-for="item in navItems"
-                :key="item.path"
-                :to="item.path"
-                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors"
-                :class="isActive(item.path) ? 'bg-orange-500/10 text-orange-500' : ''"
-                @click="mobileMenuOpen = false"
-              >
-                <component :is="item.icon" class="w-5 h-5" />
-                <span class="font-medium">{{ item.label }}</span>
-              </router-link>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </nav>
-
-    <!-- Click outside to close dropdowns -->
-    <div
-      v-if="notificationsOpen || userMenuOpen"
-      class="fixed inset-0 z-40"
-      @click="notificationsOpen = false; userMenuOpen = false"
-    ></div>
-  </div>
+    </n-collapse-transition>
+  </nav>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import { NIcon } from 'naive-ui'
 import {
   Menu,
-  Search,
   Bell,
   Sun,
   Moon,
   User,
-  Settings,
-  CreditCard,
   Shield,
   ShieldCheck,
   LogOut,
@@ -296,8 +166,7 @@ import {
   Home,
   ShoppingBag,
   ChevronDown,
-  Dice5,
-  Wallet
+  Dice5
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -305,17 +174,12 @@ const route = useRoute()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 
-// State
 const mobileMenuOpen = ref(false)
-const notificationsOpen = ref(false)
-const userMenuOpen = ref(false)
 
-// Computed
 const user = computed(() => authStore.user)
-const darkMode = computed(() => themeStore.currentTheme === 'dark')
+const isDark = computed(() => themeStore.isDark)
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
 
-// Navigation items
 const navItems = [
   { path: '/', label: 'Ana Sayfa', icon: Home },
   { path: '/servers', label: 'Sunucular', icon: Server },
@@ -325,28 +189,56 @@ const navItems = [
   { path: '/shop', label: 'Premium', icon: ShoppingBag }
 ]
 
-// User menu items
-const userMenuItems = computed(() => {
-  const items = [
-    { path: '/profile', label: 'Profil', icon: User },
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/servers', label: 'Sunucularim', icon: Server }
-  ]
-
-  if (['admin', 'superadmin'].includes(user.value?.role)) {
-    items.push({ path: '/admin', label: 'Admin Panel', icon: Shield })
-  }
-
-  return items
-})
-
-// Notifications (mock data)
 const notifications = ref([
   { id: 1, title: 'Sunucu Basladi', message: 'AGTR Public #1 basariyla basladi.', read: false },
   { id: 2, title: 'Yeni Guncelleme', message: 'v8.0 yayinlandi!', read: false }
 ])
 
-// Methods
+const userMenuOptions = computed(() => {
+  const items = [
+    {
+      label: user.value?.username || 'Kullanici',
+      key: 'header',
+      disabled: true
+    },
+    { type: 'divider', key: 'd1' },
+    {
+      label: 'Profil',
+      key: 'profile',
+      icon: () => h(NIcon, null, { default: () => h(User) })
+    },
+    {
+      label: 'Dashboard',
+      key: 'dashboard',
+      icon: () => h(NIcon, null, { default: () => h(LayoutDashboard) })
+    },
+    {
+      label: 'Sunucularim',
+      key: 'servers',
+      icon: () => h(NIcon, null, { default: () => h(Server) })
+    }
+  ]
+
+  if (['admin', 'superadmin'].includes(user.value?.role)) {
+    items.push({
+      label: 'Admin Panel',
+      key: 'admin',
+      icon: () => h(NIcon, null, { default: () => h(Shield) })
+    })
+  }
+
+  items.push(
+    { type: 'divider', key: 'd2' },
+    {
+      label: 'Cikis Yap',
+      key: 'logout',
+      icon: () => h(NIcon, null, { default: () => h(LogOut) })
+    }
+  )
+
+  return items
+})
+
 const isActive = (path) => {
   if (path === '/') return route.path === '/'
   return route.path.startsWith(path)
@@ -372,109 +264,48 @@ const toggleTheme = () => {
   themeStore.toggleTheme()
 }
 
-const openCommandPalette = () => {
-  window.dispatchEvent(new CustomEvent('open-command-palette'))
-}
-
-const handleLogout = async () => {
-  userMenuOpen.value = false
-  await authStore.logout()
-  router.push('/login')
-}
-
-// Close dropdowns on escape key
-const handleEscape = (e) => {
-  if (e.key === 'Escape') {
-    notificationsOpen.value = false
-    userMenuOpen.value = false
-    mobileMenuOpen.value = false
+const handleUserMenuSelect = async (key) => {
+  if (key === 'logout') {
+    await authStore.logout()
+    router.push('/login')
+  } else if (key === 'profile') {
+    router.push('/profile')
+  } else if (key === 'dashboard') {
+    router.push('/dashboard')
+  } else if (key === 'servers') {
+    router.push('/servers')
+  } else if (key === 'admin') {
+    router.push('/admin')
   }
 }
-
-// Keyboard shortcut for search
-const handleKeydown = (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    e.preventDefault()
-    openCommandPalette()
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', handleEscape)
-  window.addEventListener('keydown', handleKeydown)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleEscape)
-  window.removeEventListener('keydown', handleKeydown)
-})
 </script>
 
 <style scoped>
-/* Navigation Link Styles */
 .nav-link {
-  color: var(--text-secondary, #94a3b8);
+  @apply flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors;
+  color: var(--n-text-color-3, #94a3b8);
 }
 
 .nav-link:hover {
-  color: var(--text-primary, #f8fafc);
-  background-color: var(--bg-secondary, rgba(30, 41, 59, 0.5));
+  color: var(--n-text-color, #f8fafc);
+  background-color: var(--n-hover-color, rgba(255, 255, 255, 0.05));
 }
 
 .nav-link-active {
-  color: var(--primary-color, #f97316);
-  background-color: rgba(249, 115, 22, 0.1);
+  color: #f97316 !important;
+  background-color: rgba(249, 115, 22, 0.1) !important;
 }
 
-/* Search Button Styles */
-.search-btn {
-  background-color: var(--bg-secondary, #1e293b);
-  border: 1px solid var(--border-color, #475569);
-  color: var(--text-secondary, #94a3b8);
+.nav-link-mobile {
+  @apply flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors;
 }
 
-.search-btn:hover {
-  background-color: var(--bg-tertiary, #334155);
-  border-color: var(--text-muted, #64748b);
+.nav-link-mobile:hover {
+  background-color: var(--n-hover-color, rgba(255, 255, 255, 0.05));
 }
 
-.search-kbd {
-  background-color: var(--bg-tertiary, #334155);
-  color: var(--text-muted, #64748b);
-}
-
-/* Wallet Styles */
-.wallet-item {
-  background-color: var(--bg-secondary, #1e293b);
-  border: 1px solid var(--border-color, #475569);
-}
-
-.wallet-armor {
-  border-color: rgba(249, 115, 22, 0.3);
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 88, 12, 0.05) 100%);
-}
-
-/* Dropdown Transitions */
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: all 0.2s ease;
-}
-
-.dropdown-enter-from,
-.dropdown-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-/* Slide Down Transition */
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-down-enter-from,
-.slide-down-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
+.nav-link-mobile-active {
+  color: #f97316 !important;
+  background-color: rgba(249, 115, 22, 0.1) !important;
 }
 </style>

@@ -15,7 +15,7 @@ from app.models.connection import get_db
 from app.models.database import User
 from app.models.forum import ForumCategory, ForumReply, ForumTopic
 
-router = APIRouter(prefix="/forum", tags=["forum"])
+router = APIRouter(tags=["forum"])
 
 
 # ============ Pydantic Schemas ============
@@ -63,16 +63,15 @@ def ensure_unique_slug(db: Session, slug: str) -> str:
 async def get_categories(db: Session = Depends(get_db)):
     """Aktif kategorileri getir"""
     categories = db.query(ForumCategory).filter(
-        ForumCategory.is_active == True
-    ).order_by(ForumCategory.order_index).all()
-    
+        ForumCategory.is_visible == True
+    ).order_by(ForumCategory.display_order).all()
+
     result = []
     for cat in categories:
         topic_count = db.query(func.count(ForumTopic.id)).filter(
-            ForumTopic.category_id == cat.id,
-            ForumTopic.is_active == True
+            ForumTopic.category_id == cat.id
         ).scalar() or 0
-        
+
         result.append({
             "id": cat.id,
             "name": cat.name,
@@ -81,7 +80,7 @@ async def get_categories(db: Session = Depends(get_db)):
             "icon": cat.icon or "fas fa-folder",
             "topic_count": topic_count
         })
-    
+
     return {"categories": result}
 
 
@@ -90,17 +89,16 @@ async def get_category(slug: str, db: Session = Depends(get_db)):
     """Kategori detayı"""
     category = db.query(ForumCategory).filter(
         ForumCategory.slug == slug,
-        ForumCategory.is_active == True
+        ForumCategory.is_visible == True
     ).first()
-    
+
     if not category:
         raise HTTPException(status_code=404, detail="Kategori bulunamadı")
-    
+
     topic_count = db.query(func.count(ForumTopic.id)).filter(
-        ForumTopic.category_id == category.id,
-        ForumTopic.is_active == True
+        ForumTopic.category_id == category.id
     ).scalar() or 0
-    
+
     return {
         "id": category.id,
         "name": category.name,
@@ -122,17 +120,16 @@ async def get_category_topics(
     """Kategorinin konularını getir"""
     category = db.query(ForumCategory).filter(
         ForumCategory.slug == slug,
-        ForumCategory.is_active == True
+        ForumCategory.is_visible == True
     ).first()
-    
+
     if not category:
         raise HTTPException(status_code=404, detail="Kategori bulunamadı")
-    
+
     query = db.query(ForumTopic).options(
         joinedload(ForumTopic.author)
     ).filter(
-        ForumTopic.category_id == category.id,
-        ForumTopic.is_active == True
+        ForumTopic.category_id == category.id
     )
     
     # Sorting
@@ -194,7 +191,7 @@ async def get_topics(
     """Son konuları getir"""
     query = db.query(ForumTopic).options(
         joinedload(ForumTopic.author)
-    ).filter(ForumTopic.is_active == True).order_by(
+    ).order_by(
         desc(ForumTopic.is_pinned),
         desc(ForumTopic.created_at)
     )
@@ -231,8 +228,7 @@ async def get_topic(slug: str, db: Session = Depends(get_db)):
         joinedload(ForumTopic.author),
         joinedload(ForumTopic.category)
     ).filter(
-        ForumTopic.slug == slug,
-        ForumTopic.is_active == True
+        ForumTopic.slug == slug
     ).first()
     
     if not topic:
@@ -277,27 +273,27 @@ async def create_topic(
     # Kategori kontrolü
     category = db.query(ForumCategory).filter(
         ForumCategory.id == data.category_id,
-        ForumCategory.is_active == True
+        ForumCategory.is_visible == True
     ).first()
-    
+
     if not category:
         raise HTTPException(status_code=400, detail="Geçersiz kategori")
-    
+
     # Validation
     if len(data.title.strip()) < 5:
         raise HTTPException(status_code=400, detail="Başlık en az 5 karakter olmalı")
-    
+
     if len(data.content.strip()) < 20:
         raise HTTPException(status_code=400, detail="İçerik en az 20 karakter olmalı")
-    
+
     slug = generate_slug(data.title)
     slug = ensure_unique_slug(db, slug)
-    
+
     topic = ForumTopic(
         title=data.title.strip(),
         slug=slug,
         category_id=data.category_id,
-        user_id=current_user.id,
+        author_id=current_user.id,
         content=data.content.strip(),
         is_active=True
     )
@@ -305,8 +301,33 @@ async def create_topic(
     db.add(topic)
     db.commit()
     db.refresh(topic)
-    
-    return {"message": "Konu oluşturuldu", "topic_id": topic.id, "slug": topic.slug}
+
+    # Forum puan ödülü
+    reward_amount = None
+    try:
+        from app.services.forum_rewards import get_forum_reward_service
+        reward_service = get_forum_reward_service(db)
+        reward_amount = reward_service.reward_topic_create(
+            user_id=current_user.id,
+            topic_id=topic.id
+        )
+    except Exception as e:
+        # Ödül hatası ana işlemi etkilemesin
+        pass
+
+    response = {
+        "message": "Konu oluşturuldu",
+        "topic_id": topic.id,
+        "slug": topic.slug
+    }
+
+    if reward_amount:
+        response["reward"] = {
+            "amount": reward_amount,
+            "message": f"+{reward_amount} Coin kazandınız!"
+        }
+
+    return response
 
 
 # ============ Reply Endpoints ============
@@ -372,12 +393,37 @@ async def create_reply(
         content=data.content.strip(),
         is_active=True
     )
-    
+
     db.add(reply)
     db.commit()
     db.refresh(reply)
-    
-    return {"message": "Yanıt eklendi", "reply_id": reply.id}
+
+    # Forum puan ödülü
+    reward_amount = None
+    try:
+        from app.services.forum_rewards import get_forum_reward_service
+        reward_service = get_forum_reward_service(db)
+        reward_amount = reward_service.reward_reply_create(
+            user_id=current_user.id,
+            reply_id=reply.id,
+            topic_id=topic.id
+        )
+    except Exception as e:
+        # Ödül hatası ana işlemi etkilemesin
+        pass
+
+    response = {
+        "message": "Yanıt eklendi",
+        "reply_id": reply.id
+    }
+
+    if reward_amount:
+        response["reward"] = {
+            "amount": reward_amount,
+            "message": f"+{reward_amount} Coin kazandınız!"
+        }
+
+    return response
 
 
 # ============ Stats Endpoint ============
@@ -386,19 +432,60 @@ async def create_reply(
 async def get_forum_stats(db: Session = Depends(get_db)):
     """Forum istatistikleri (public)"""
     category_count = db.query(func.count(ForumCategory.id)).filter(
-        ForumCategory.is_active == True
+        ForumCategory.is_visible == True
     ).scalar() or 0
-    
+
     topic_count = db.query(func.count(ForumTopic.id)).filter(
         ForumTopic.is_active == True
     ).scalar() or 0
-    
+
     reply_count = db.query(func.count(ForumReply.id)).filter(
         ForumReply.is_active == True
     ).scalar() or 0
-    
+
     return {
         "categories": category_count,
         "topics": topic_count,
         "replies": reply_count
+    }
+
+
+@router.get("/rewards/me")
+async def get_my_forum_rewards(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Kullanıcının forum puan istatistikleri"""
+    from app.services.forum_rewards import get_forum_reward_service
+    reward_service = get_forum_reward_service(db)
+    return reward_service.get_user_forum_stats(current_user.id)
+
+
+@router.get("/rewards/info")
+async def get_forum_reward_info():
+    """Forum puan sistemi bilgileri"""
+    from app.services.forum_rewards import (
+        REWARD_TOPIC_CREATE,
+        REWARD_REPLY_CREATE,
+        REWARD_LIKE_RECEIVED,
+        REWARD_FIRST_TOPIC,
+        REWARD_FIRST_REPLY,
+        DAILY_TOPIC_LIMIT,
+        DAILY_REPLY_LIMIT,
+        DAILY_LIKE_LIMIT
+    )
+
+    return {
+        "rewards": {
+            "topic_create": REWARD_TOPIC_CREATE,
+            "reply_create": REWARD_REPLY_CREATE,
+            "like_received": REWARD_LIKE_RECEIVED,
+            "first_topic_bonus": REWARD_FIRST_TOPIC,
+            "first_reply_bonus": REWARD_FIRST_REPLY
+        },
+        "daily_limits": {
+            "topics": DAILY_TOPIC_LIMIT,
+            "replies": DAILY_REPLY_LIMIT,
+            "likes": DAILY_LIKE_LIMIT
+        }
     }

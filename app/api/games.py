@@ -12,9 +12,14 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user_required
 from app.models.connection import get_db
-from app.models.database import User
-from app.models.games import GameStatus
+from app.models.database import User, JackpotStatus
 from app.services.jackpot import get_jackpot_service
+
+# Alias
+GameStatus = JackpotStatus
+
+# WebSocket broadcast imports
+import asyncio
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -111,14 +116,33 @@ async def place_jackpot_bet(
     wallet = get_wallet_service(db)
     new_balance = wallet.get_balance(current_user.id, WalletType.COIN)
 
+    # WebSocket broadcast - yeni bahis
+    try:
+        from app.api.websocket import broadcast_jackpot_bet, broadcast_jackpot_round_update
+        bet_broadcast_data = {
+            "user_id": current_user.id,
+            "username": current_user.username,
+            "avatar": current_user.avatar,
+            "amount": bet.amount,
+            "tickets": f"{bet.ticket_start}-{bet.ticket_end}",
+            "win_chance": round(bet.win_chance, 2)
+        }
+        asyncio.create_task(broadcast_jackpot_bet(bet_broadcast_data))
+
+        # Tur bilgisi güncelleme
+        round_data = jackpot.get_round_info(bet.game_id)
+        asyncio.create_task(broadcast_jackpot_round_update(round_data))
+    except Exception as e:
+        logger.warning(f"WebSocket broadcast error: {e}")
+
     return BetResponse(
         success=True,
         message=f"{data.amount} Coin ile bahis yapıldı!",
         bet_id=bet.id,
-        round_number=bet.round.round_number,
+        round_number=bet.round.round_number if hasattr(bet, 'round') else bet.game.round_number if hasattr(bet, 'game') else 0,
         amount=bet.amount,
-        tickets=f"{bet.ticket_start}-{bet.ticket_end}",
-        win_chance=round(bet.win_chance, 2),
+        tickets=f"{int(bet.ticket_start)}-{int(bet.ticket_end)}",
+        win_chance=round(bet.win_chance, 2) if hasattr(bet, 'win_chance') else 0,
         new_balance=new_balance
     )
 
@@ -163,6 +187,42 @@ async def finish_jackpot_round(
     jackpot = get_jackpot_service(db)
     result = jackpot.finish_round(round_id, client_seed)
 
+    # WebSocket broadcast - kazanan
+    try:
+        from app.api.websocket import broadcast_jackpot_rolling, broadcast_jackpot_winner
+
+        # Önce rolling animasyonu
+        animation_data = {
+            "round_id": result["round_id"],
+            "round_number": result["round_number"],
+            "total_pot": result["total_pot"],
+            "winner_index": result.get("winner_index", 0),  # Animasyon için index
+            "players": jackpot.get_round_info(round_id).get("players", []),
+            "duration": 10  # 10 saniye animasyon
+        }
+        asyncio.create_task(broadcast_jackpot_rolling(animation_data))
+
+        # 10 saniye sonra kazanan
+        async def delayed_winner_broadcast():
+            await asyncio.sleep(10)
+            winner_data = {
+                "round_id": result["round_id"],
+                "round_number": result["round_number"],
+                "winner_id": result["winner_id"],
+                "winner_username": result["winner_username"],
+                "winning_ticket": result["winning_ticket"],
+                "total_pot": result["total_pot"],
+                "winner_amount": result["winner_amount"],
+                "server_seed": result["server_seed"],
+                "client_seed": result["client_seed"]
+            }
+            from app.api.websocket import broadcast_jackpot_winner
+            await broadcast_jackpot_winner(winner_data)
+
+        asyncio.create_task(delayed_winner_broadcast())
+    except Exception as e:
+        logger.warning(f"WebSocket winner broadcast error: {e}")
+
     return result
 
 
@@ -177,7 +237,7 @@ async def verify_round_fairness(round_id: int, db: Session = Depends(get_db)):
     if not round:
         raise HTTPException(status_code=404, detail="Tur bulunamadı")
 
-    if round.status != GameStatus.FINISHED:
+    if round.status != JackpotStatus.COMPLETED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Sadece bitmiş turlar doğrulanabilir"

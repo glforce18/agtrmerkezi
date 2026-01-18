@@ -36,7 +36,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     MAX_TRACKED_IPS = 10000
     CLEANUP_THRESHOLD = 8000  # Cleanup when reaching this many IPs
 
-    def __init__(self, app, requests_per_minute: int = 120, requests_per_second: int = 20):
+    def __init__(self, app, requests_per_minute: int = 300, requests_per_second: int = 50):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.requests_per_second = requests_per_second
@@ -212,6 +212,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Static dosyalar icin limit yok
         if request.url.path.startswith(("/static/", "/favicon")):
+            return await call_next(request)
+
+        # WebSocket, health check ve bazi API'ler icin limit yok
+        if request.url.path.startswith(("/ws", "/api/health", "/api/ws")):
             return await call_next(request)
 
         # Admin paneli ve media upload icin limit yok (zaten auth middleware koruyor)

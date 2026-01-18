@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen ">
+  <div class="min-h-screen">
     <div class="container-custom py-8">
       <!-- Header -->
-      <div class="mb-8 animate-slide-down">
+      <div class="mb-8">
         <h1 class="text-4xl font-display font-bold mb-2">
-          <span class="neon-text">Topluluk Forumu</span>
+          <span class="text-gradient">Topluluk Forumu</span>
         </h1>
-        <p class="opacity-60">
+        <p class="text-gray-400">
           CS 1.6 topluluğuyla bağlantıda kalın, sorular sorun ve bilginizi paylaşın
         </p>
       </div>
@@ -15,241 +15,212 @@
         <!-- Main Content -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Search & New Topic -->
-          <BaseCard variant="glass" class="animate-slide-up">
-            <div class="p-4">
-              <div class="flex flex-col md:flex-row gap-3">
-                <div class="flex-1">
-                  <BaseInput
-                    v-model="searchQuery"
-                    placeholder="Forumlarda ara..."
-                    :icon="SearchIcon"
-                  />
-                </div>
-                <BaseButton variant="gaming" @click="showNewTopicModal = true">
-                  <PlusCircleIcon class="w-4 h-4 mr-2" />
-                  Yeni Konu
-                </BaseButton>
+          <n-card class="glass-card">
+            <div class="flex flex-col md:flex-row gap-3">
+              <div class="flex-1">
+                <n-input v-model:value="searchQuery" placeholder="Forumlarda ara...">
+                  <template #prefix>
+                    <SearchIcon class="w-4 h-4 text-gray-400" />
+                  </template>
+                </n-input>
               </div>
+              <n-button type="primary" @click="showNewTopicModal = true">
+                <template #icon><PlusCircleIcon class="w-4 h-4" /></template>
+                Yeni Konu
+              </n-button>
             </div>
-          </BaseCard>
+          </n-card>
 
           <!-- Categories -->
-          <div class="space-y-4 animate-slide-up" style="animation-delay: 0.1s">
-            <BaseCard
+          <div class="space-y-4">
+            <n-card
               v-for="category in categories"
               :key="category.id"
-              variant="glass"
-              class="card-hover group cursor-pointer"
+              class="glass-card cursor-pointer category-card"
               @click="router.push(`/forum/category/${category.id}`)"
             >
-              <div class="p-6">
-                <div class="flex items-start gap-4">
-                  <!-- Category Icon -->
-                  <div
-                    :class="[
-                      'w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0',
-                      `bg-gradient-to-br ${category.gradient}`
-                    ]"
-                  >
-                    <component :is="category.icon" class="w-8 h-8 text-white" />
+              <div class="flex items-start gap-4">
+                <!-- Category Icon -->
+                <div
+                  :class="[
+                    'w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0',
+                    getCategoryGradient(category.gradient)
+                  ]"
+                >
+                  <component :is="category.icon" class="w-8 h-8 text-white" />
+                </div>
+
+                <!-- Category Info -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 class="text-xl font-bold hover:text-orange-500 transition-colors">
+                        {{ category.name }}
+                      </h3>
+                      <p class="text-sm text-gray-400">
+                        {{ category.description }}
+                      </p>
+                    </div>
                   </div>
 
-                  <!-- Category Info -->
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 class="text-xl font-bold group-hover:text-primary transition-colors">
-                          {{ category.name }}
-                        </h3>
-                        <p class="text-sm opacity-60">
-                          {{ category.description }}
+                  <!-- Stats -->
+                  <div class="flex items-center gap-6 text-sm mt-3">
+                    <div class="flex items-center gap-2 text-gray-400">
+                      <FileTextIcon class="w-4 h-4" />
+                      <span>{{ category.topics }} Konu</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-400">
+                      <MessageSquareIcon class="w-4 h-4" />
+                      <span>{{ category.posts }} Gönderi</span>
+                    </div>
+                  </div>
+
+                  <!-- Latest Topic -->
+                  <div
+                    v-if="category.latestTopic"
+                    class="mt-4 pt-4 border-t border-white/10 flex items-center justify-between"
+                  >
+                    <div class="flex items-center gap-2 min-w-0">
+                      <n-avatar round :size="24" :src="category.latestTopic.authorAvatar" />
+                      <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold truncate">
+                          {{ category.latestTopic.title }}
+                        </p>
+                        <p class="text-xs text-gray-500">
+                          {{ category.latestTopic.author }} • {{ category.latestTopic.time }}
                         </p>
                       </div>
                     </div>
-
-                    <!-- Stats -->
-                    <div class="flex items-center gap-6 text-sm mt-3">
-                      <div class="flex items-center gap-2 opacity-60">
-                        <FileTextIcon class="w-4 h-4" />
-                        <span>{{ category.topics }} Konu</span>
-                      </div>
-                      <div class="flex items-center gap-2 opacity-60">
-                        <MessageSquareIcon class="w-4 h-4" />
-                        <span>{{ category.posts }} Gönderi</span>
-                      </div>
-                    </div>
-
-                    <!-- Latest Topic -->
-                    <div
-                      v-if="category.latestTopic"
-                      class="mt-4 pt-4 border-t border-base-300 flex items-center justify-between"
-                    >
-                      <div class="flex items-center gap-2 min-w-0">
-                        <div class="avatar">
-                          <div class="w-6 h-6 rounded-full">
-                            <img :src="category.latestTopic.authorAvatar" />
-                          </div>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <p class="text-sm font-semibold truncate">
-                            {{ category.latestTopic.title }}
-                          </p>
-                          <p class="text-xs opacity-50">
-                            {{ category.latestTopic.author }} • {{ category.latestTopic.time }}
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRightIcon class="w-5 h-5 opacity-40 flex-shrink-0" />
-                    </div>
+                    <ChevronRightIcon class="w-5 h-5 text-gray-500 flex-shrink-0" />
                   </div>
                 </div>
               </div>
-            </BaseCard>
+            </n-card>
           </div>
         </div>
 
         <!-- Sidebar -->
         <div class="space-y-6">
           <!-- Forum Stats -->
-          <BaseCard variant="glass" class="animate-slide-up" style="animation-delay: 0.2s">
-            <div class="p-6">
-              <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                <TrendingUpIcon class="w-5 h-5 text-primary" />
-                Forum İstatistikleri
-              </h3>
-              <div class="space-y-3">
-                <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
-                  <span class="opacity-60">Toplam Konu</span>
-                  <span class="font-bold text-primary">{{ stats.totalTopics }}</span>
-                </div>
-                <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
-                  <span class="opacity-60">Toplam Gönderi</span>
-                  <span class="font-bold text-secondary">{{ stats.totalPosts }}</span>
-                </div>
-                <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
-                  <span class="opacity-60">Toplam Üye</span>
-                  <span class="font-bold text-accent">{{ stats.totalMembers }}</span>
-                </div>
-                <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
-                  <span class="opacity-60">Çevrimiçi</span>
-                  <span class="font-bold text-success">{{ stats.onlineUsers }}</span>
-                </div>
+          <n-card class="glass-card">
+            <template #header>
+              <div class="flex items-center gap-2">
+                <TrendingUpIcon class="w-5 h-5 text-orange-500" />
+                <span class="font-bold">Forum İstatistikleri</span>
+              </div>
+            </template>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                <span class="text-gray-400">Toplam Konu</span>
+                <span class="font-bold text-orange-500">{{ stats.totalTopics }}</span>
+              </div>
+              <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                <span class="text-gray-400">Toplam Gönderi</span>
+                <span class="font-bold text-purple-500">{{ stats.totalPosts }}</span>
+              </div>
+              <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                <span class="text-gray-400">Toplam Üye</span>
+                <span class="font-bold text-cyan-500">{{ stats.totalMembers }}</span>
+              </div>
+              <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                <span class="text-gray-400">Çevrimiçi</span>
+                <span class="font-bold text-green-500">{{ stats.onlineUsers }}</span>
               </div>
             </div>
-          </BaseCard>
+          </n-card>
 
           <!-- Active Users -->
-          <BaseCard variant="glass" class="animate-slide-up" style="animation-delay: 0.3s">
-            <div class="p-6">
-              <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                <UsersIcon class="w-5 h-5 text-primary" />
-                Aktif Kullanıcılar
-              </h3>
-              <div class="space-y-3">
-                <div
-                  v-for="user in activeUsers"
-                  :key="user.id"
-                  class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200/50 transition-colors cursor-pointer"
-                >
-                  <div class="avatar online">
-                    <div class="w-10 h-10 rounded-full">
-                      <img :src="user.avatar" />
-                    </div>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-semibold truncate">{{ user.name }}</p>
-                    <p class="text-xs opacity-50">{{ user.posts }} gönderi</p>
-                  </div>
+          <n-card class="glass-card">
+            <template #header>
+              <div class="flex items-center gap-2">
+                <UsersIcon class="w-5 h-5 text-orange-500" />
+                <span class="font-bold">Aktif Kullanıcılar</span>
+              </div>
+            </template>
+            <div class="space-y-3">
+              <div
+                v-for="user in activeUsers"
+                :key="user.id"
+                class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <div class="relative">
+                  <n-avatar round :size="40" :src="user.avatar" />
+                  <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold truncate">{{ user.name }}</p>
+                  <p class="text-xs text-gray-500">{{ user.posts }} gönderi</p>
                 </div>
               </div>
             </div>
-          </BaseCard>
+          </n-card>
 
           <!-- Recent Activity -->
-          <BaseCard variant="glass" class="animate-slide-up" style="animation-delay: 0.4s">
-            <div class="p-6">
-              <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                <ActivityIcon class="w-5 h-5 text-primary" />
-                Son Aktiviteler
-              </h3>
-              <div class="space-y-3">
-                <div
-                  v-for="activity in recentActivity"
-                  :key="activity.id"
-                  class="flex items-start gap-3 p-3 bg-base-200/50 rounded-lg"
-                >
-                  <div :class="['w-2 h-2 rounded-full mt-2', `bg-${activity.type}`]"></div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm">{{ activity.message }}</p>
-                    <span class="text-xs opacity-50">{{ activity.time }}</span>
-                  </div>
+          <n-card class="glass-card">
+            <template #header>
+              <div class="flex items-center gap-2">
+                <ActivityIcon class="w-5 h-5 text-orange-500" />
+                <span class="font-bold">Son Aktiviteler</span>
+              </div>
+            </template>
+            <div class="space-y-3">
+              <div
+                v-for="activity in recentActivity"
+                :key="activity.id"
+                class="flex items-start gap-3 p-3 bg-white/5 rounded-lg"
+              >
+                <div :class="['w-2 h-2 rounded-full mt-2', getActivityColor(activity.type)]"></div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm">{{ activity.message }}</p>
+                  <span class="text-xs text-gray-500">{{ activity.time }}</span>
                 </div>
               </div>
             </div>
-          </BaseCard>
+          </n-card>
         </div>
       </div>
     </div>
 
     <!-- New Topic Modal -->
-    <div v-if="showNewTopicModal" class="modal modal-open">
-      <div class="modal-box max-w-2xl">
-        <h3 class="font-bold text-lg mb-4">Yeni Konu Oluştur</h3>
-
-        <form @submit.prevent="createTopic" class="space-y-4">
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Kategori Seç</span>
-            </label>
-            <select v-model="newTopic.categoryId" class="select select-bordered bg-base-200">
-              <option disabled selected>Kategori seçin</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
-              </option>
-            </select>
-          </div>
-
-          <BaseInput
-            v-model="newTopic.title"
-            label="Konu Başlığı"
-            placeholder="Başlık girin..."
-            required
+    <n-modal v-model:show="showNewTopicModal" preset="card" title="Yeni Konu Oluştur" style="width: 600px;">
+      <n-form @submit.prevent="createTopic" class="space-y-4">
+        <n-form-item label="Kategori Seç">
+          <n-select
+            v-model:value="newTopic.categoryId"
+            placeholder="Kategori seçin"
+            :options="categoryOptions"
           />
+        </n-form-item>
 
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">İçerik</span>
-            </label>
-            <textarea
-              v-model="newTopic.content"
-              class="textarea textarea-bordered h-40 bg-base-200"
-              placeholder="Konu içeriği..."
-              required
-            ></textarea>
-          </div>
+        <n-form-item label="Konu Başlığı">
+          <n-input v-model:value="newTopic.title" placeholder="Başlık girin..." />
+        </n-form-item>
 
-          <div class="flex gap-2">
-            <BaseButton variant="gaming" type="submit">
-              <SendIcon class="w-4 h-4 mr-2" />
-              Konuyu Oluştur
-            </BaseButton>
-            <BaseButton variant="ghost" type="button" @click="showNewTopicModal = false">
-              İptal
-            </BaseButton>
-          </div>
-        </form>
-      </div>
-      <div class="modal-backdrop" @click="showNewTopicModal = false"></div>
-    </div>
+        <n-form-item label="İçerik">
+          <n-input
+            v-model:value="newTopic.content"
+            type="textarea"
+            placeholder="Konu içeriği..."
+            :rows="6"
+          />
+        </n-form-item>
+      </n-form>
+      <template #footer>
+        <div class="flex gap-3 justify-end">
+          <n-button quaternary @click="showNewTopicModal = false">İptal</n-button>
+          <n-button type="primary" @click="createTopic">
+            <template #icon><SendIcon class="w-4 h-4" /></template>
+            Konuyu Oluştur
+          </n-button>
+        </div>
+      </template>
+    </n-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseInput from '@/components/common/BaseInput.vue'
 import {
   SearchIcon,
   PlusCircleIcon,
@@ -283,7 +254,7 @@ const categories = ref([
     name: 'Genel Tartışma',
     description: 'CS 1.6 hakkında genel konular',
     icon: MessageSquareIcon,
-    gradient: 'from-primary to-secondary',
+    gradient: 'primary-secondary',
     topics: 342,
     posts: 2145,
     latestTopic: {
@@ -298,7 +269,7 @@ const categories = ref([
     name: 'Sunucu Ayarları',
     description: 'Sunucu kurulumu ve yönetimi',
     icon: ServerIcon,
-    gradient: 'from-secondary to-accent',
+    gradient: 'secondary-accent',
     topics: 256,
     posts: 1834,
     latestTopic: {
@@ -313,7 +284,7 @@ const categories = ref([
     name: 'Teknik Destek',
     description: 'Sorunlarınız için yardım alın',
     icon: WrenchIcon,
-    gradient: 'from-accent to-error',
+    gradient: 'accent-error',
     topics: 428,
     posts: 3214,
     latestTopic: {
@@ -328,7 +299,7 @@ const categories = ref([
     name: 'Soru & Cevap',
     description: 'Sorularınızı sorun, cevaplar alın',
     icon: HelpCircleIcon,
-    gradient: 'from-primary to-accent',
+    gradient: 'primary-accent',
     topics: 534,
     posts: 2876,
     latestTopic: {
@@ -343,7 +314,7 @@ const categories = ref([
     name: 'Turnuvalar & Etkinlikler',
     description: 'Topluluk etkinlikleri ve turnuvalar',
     icon: TrophyIcon,
-    gradient: 'from-warning to-success',
+    gradient: 'warning-success',
     topics: 88,
     posts: 1463,
     latestTopic: {
@@ -354,6 +325,34 @@ const categories = ref([
     }
   }
 ])
+
+const categoryOptions = computed(() => {
+  return categories.value.map(cat => ({
+    label: cat.name,
+    value: cat.id
+  }))
+})
+
+const getCategoryGradient = (gradient) => {
+  const gradients = {
+    'primary-secondary': 'bg-gradient-to-br from-orange-500 to-purple-500',
+    'secondary-accent': 'bg-gradient-to-br from-purple-500 to-cyan-500',
+    'accent-error': 'bg-gradient-to-br from-cyan-500 to-red-500',
+    'primary-accent': 'bg-gradient-to-br from-orange-500 to-cyan-500',
+    'warning-success': 'bg-gradient-to-br from-yellow-500 to-green-500'
+  }
+  return gradients[gradient] || 'bg-gradient-to-br from-orange-500 to-purple-500'
+}
+
+const getActivityColor = (type) => {
+  const colors = {
+    primary: 'bg-orange-500',
+    secondary: 'bg-purple-500',
+    success: 'bg-green-500',
+    accent: 'bg-cyan-500'
+  }
+  return colors[type] || 'bg-gray-500'
+}
 
 const activeUsers = ref([
   { id: 1, name: 'Player123', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u1', posts: 1234 },
@@ -377,17 +376,16 @@ const newTopic = reactive({
 })
 
 const createTopic = async () => {
-  // Validate form before submission
   if (!newTopic.categoryId) {
-    alert('Lütfen bir kategori seçin')
+    window.$message?.warning('Lütfen bir kategori seçin')
     return
   }
   if (!newTopic.title || newTopic.title.trim().length < 5) {
-    alert('Başlık en az 5 karakter olmalıdır')
+    window.$message?.warning('Başlık en az 5 karakter olmalıdır')
     return
   }
   if (!newTopic.content || newTopic.content.trim().length < 20) {
-    alert('İçerik en az 20 karakter olmalıdır')
+    window.$message?.warning('İçerik en az 20 karakter olmalıdır')
     return
   }
 
@@ -404,54 +402,40 @@ const createTopic = async () => {
 
     if (response.ok) {
       showNewTopicModal.value = false
-      // Reset form
       newTopic.categoryId = null
       newTopic.title = ''
       newTopic.content = ''
-      // Refresh topics list
-      // TODO: Implement refresh logic
+      window.$message?.success('Konu başarıyla oluşturuldu')
     } else {
       const error = await response.json()
-      alert(error.detail || 'Konu oluşturulamadı')
+      window.$message?.error(error.detail || 'Konu oluşturulamadı')
     }
   } catch (error) {
-    alert('Bir hata oluştu, lütfen tekrar deneyin')
+    window.$message?.error('Bir hata oluştu, lütfen tekrar deneyin')
   }
 }
 </script>
 
 <style scoped>
-.neon-text {
-  @apply text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-accent;
+.text-gradient {
+  background: linear-gradient(to right, #f97316, #8b5cf6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.category-card {
+  transition: all 0.2s ease;
 }
 
-.animate-slide-down {
-  animation: slideDown 0.6s ease-out;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.6s ease-out 0.2s backwards;
+.category-card:hover {
+  border-color: rgba(249, 115, 22, 0.5);
+  transform: translateY(-2px);
 }
 </style>

@@ -417,3 +417,124 @@ async def broadcast_notification(user_id: int, notification: dict):
 async def broadcast_activity(activity: dict):
     """Aktivite feed'e ekle"""
     await manager.broadcast("activity", activity)
+
+
+# ==================== JACKPOT WEBSOCKET ====================
+
+# Jackpot için ayrı manager (state takibi için)
+jackpot_state = {
+    "current_round": None,
+    "players": [],
+    "total_pot": 0,
+    "status": "waiting",
+    "countdown": 0
+}
+
+
+@router.websocket("/ws/jackpot")
+async def jackpot_ws(websocket: WebSocket):
+    """Jackpot gerçek zamanlı bağlantı"""
+    await manager.connect(websocket, "jackpot")
+
+    try:
+        # İlk bağlantıda mevcut tur bilgisini gönder
+        await websocket.send_json({
+            "type": "round_info",
+            "data": await get_jackpot_state()
+        })
+
+        while True:
+            data = await websocket.receive_text()
+
+            try:
+                message = json.loads(data)
+                action = message.get("action")
+
+                if action == "auth":
+                    # Token ile authenticate
+                    token = message.get("token")
+                    if token:
+                        decoded = decode_token(token)
+                        if decoded:
+                            user_id = decoded.get("sub")
+                            if user_id:
+                                manager.authenticate(websocket, int(user_id))
+                                await websocket.send_json({
+                                    "type": "auth_success",
+                                    "user_id": int(user_id)
+                                })
+
+                elif action == "ping":
+                    await websocket.send_json({"type": "pong"})
+
+                elif action == "get_state":
+                    # Güncel durum iste
+                    await websocket.send_json({
+                        "type": "round_info",
+                        "data": await get_jackpot_state()
+                    })
+
+            except json.JSONDecodeError:
+                pass
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, "jackpot")
+
+
+async def get_jackpot_state() -> dict:
+    """Jackpot mevcut durumunu getir"""
+    try:
+        with db_session() as db:
+            from app.services.jackpot import get_jackpot_service
+            jackpot = get_jackpot_service(db)
+            round_info = jackpot.get_round_info()
+
+            if round_info:
+                return round_info
+            else:
+                # Yeni tur oluştur
+                new_round = jackpot.get_or_create_round()
+                return jackpot.get_round_info(new_round.id)
+    except Exception as e:
+        logger.error(f"Get jackpot state error: {e}")
+        return {"error": str(e)}
+
+
+async def broadcast_jackpot_bet(bet_data: dict):
+    """Yeni bahis broadcast et"""
+    await manager.broadcast("jackpot", {
+        "type": "new_bet",
+        "data": bet_data
+    })
+
+
+async def broadcast_jackpot_round_update(round_data: dict):
+    """Tur güncellemesi broadcast et"""
+    await manager.broadcast("jackpot", {
+        "type": "round_update",
+        "data": round_data
+    })
+
+
+async def broadcast_jackpot_countdown(seconds: int):
+    """Geri sayım broadcast et"""
+    await manager.broadcast("jackpot", {
+        "type": "countdown",
+        "seconds": seconds
+    })
+
+
+async def broadcast_jackpot_rolling(animation_data: dict):
+    """Çark dönüyor broadcast et"""
+    await manager.broadcast("jackpot", {
+        "type": "rolling",
+        "data": animation_data
+    })
+
+
+async def broadcast_jackpot_winner(winner_data: dict):
+    """Kazanan broadcast et"""
+    await manager.broadcast("jackpot", {
+        "type": "winner",
+        "data": winner_data
+    })

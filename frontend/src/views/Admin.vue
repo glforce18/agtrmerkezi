@@ -1781,7 +1781,10 @@ const enableMaintenance = () => {
 
 <style scoped>
 .neon-text {
-  @apply text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-accent;
+  background: linear-gradient(to right, #f97316, #8b5cf6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 @keyframes slideDown {

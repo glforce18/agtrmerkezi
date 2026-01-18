@@ -1,342 +1,326 @@
 <template>
-  <div class="min-h-screen ">
+  <div class="min-h-screen">
     <div class="container-custom py-8">
       <!-- Profile Header -->
-      <div class="mb-8">
-        <BaseCard variant="glass">
-          <div class="flex flex-col md:flex-row items-center gap-6">
-            <!-- Avatar -->
-            <div class="relative">
-              <div class="avatar">
-                <div class="w-32 h-32 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-                  <img :src="user?.avatar || '/default-avatar.png'" :alt="user?.username" />
-                </div>
-              </div>
-              <button class="btn btn-circle btn-sm btn-primary absolute bottom-0 right-0">
-                <CameraIcon class="w-4 h-4" />
-              </button>
-            </div>
+      <n-card class="glass-card mb-8">
+        <div class="flex flex-col md:flex-row items-center gap-6">
+          <!-- Avatar -->
+          <div class="relative">
+            <n-avatar
+              round
+              :size="128"
+              :src="user?.avatar || '/default-avatar.png'"
+              class="ring-4 ring-orange-500 ring-offset-2 ring-offset-gray-900"
+            />
+            <n-button circle size="small" type="primary" class="absolute bottom-0 right-0">
+              <template #icon><CameraIcon class="w-4 h-4" /></template>
+            </n-button>
+          </div>
 
-            <!-- User Info -->
-            <div class="flex-1 text-center md:text-left">
-              <h1 class="text-3xl font-bold mb-2">
-                {{ user?.username }}
-                <span v-if="user?.verified" class="badge badge-primary badge-sm ml-2">
-                  <CheckCircleIcon class="w-3 h-3 mr-1" /> Doğrulanmış
-                </span>
-              </h1>
-              <p class="opacity-60 mb-4">{{ user?.email }}</p>
-              <div class="flex flex-wrap gap-2 justify-center md:justify-start">
-                <div class="badge badge-outline">
-                  <CalendarIcon class="w-3 h-3 mr-1" />
-                  {{ formatDate(user?.created_at) }} tarihinde katıldı
-                </div>
-                <div class="badge badge-outline">
-                  <ServerIcon class="w-3 h-3 mr-1" />
-                  {{ user?.servers_count || 0 }} Sunucu
-                </div>
-              </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="flex gap-2">
-              <BaseButton variant="primary" size="sm" @click="activeTab = 'settings'">
-                <SettingsIcon class="w-4 h-4 mr-1" /> Ayarlar
-              </BaseButton>
+          <!-- User Info -->
+          <div class="flex-1 text-center md:text-left">
+            <h1 class="text-3xl font-bold mb-2">
+              {{ user?.username }}
+              <n-tag v-if="user?.verified" type="primary" size="small" class="ml-2">
+                <template #icon><CheckCircleIcon class="w-3 h-3" /></template>
+                Doğrulanmış
+              </n-tag>
+            </h1>
+            <p class="text-gray-400 mb-4">{{ user?.email }}</p>
+            <div class="flex flex-wrap gap-2 justify-center md:justify-start">
+              <n-tag :bordered="false">
+                <template #icon><CalendarIcon class="w-3 h-3" /></template>
+                {{ formatDate(user?.created_at) }} tarihinde katıldı
+              </n-tag>
+              <n-tag :bordered="false">
+                <template #icon><ServerIcon class="w-3 h-3" /></template>
+                {{ user?.servers_count || 0 }} Sunucu
+              </n-tag>
             </div>
           </div>
-        </BaseCard>
-      </div>
+
+          <!-- Quick Actions -->
+          <div class="flex gap-2">
+            <n-button type="primary" size="small" @click="activeTab = 'settings'">
+              <template #icon><SettingsIcon class="w-4 h-4" /></template>
+              Ayarlar
+            </n-button>
+          </div>
+        </div>
+      </n-card>
 
       <!-- Tabs -->
-      <div class="tabs tabs-boxed bg-base-200/50 mb-6">
-        <a class="tab" :class="{ 'tab-active': activeTab === 'profile' }" @click="activeTab = 'profile'">
-          <UserIcon class="w-4 h-4 mr-2" /> Profil
-        </a>
-        <a class="tab" :class="{ 'tab-active': activeTab === 'security' }" @click="activeTab = 'security'">
-          <ShieldCheckIcon class="w-4 h-4 mr-2" /> Güvenlik
-        </a>
-        <a class="tab" :class="{ 'tab-active': activeTab === 'settings' }" @click="activeTab = 'settings'">
-          <SettingsIcon class="w-4 h-4 mr-2" /> Ayarlar
-        </a>
-        <a class="tab" :class="{ 'tab-active': activeTab === 'activity' }" @click="activeTab = 'activity'">
-          <ActivityIcon class="w-4 h-4 mr-2" /> Aktivite
-        </a>
-      </div>
+      <n-tabs v-model:value="activeTab" type="segment" animated class="mb-6">
+        <n-tab-pane name="profile" tab="Profil">
+          <template #tab>
+            <div class="flex items-center gap-2">
+              <UserIcon class="w-4 h-4" />
+              <span>Profil</span>
+            </div>
+          </template>
+        </n-tab-pane>
+        <n-tab-pane name="security" tab="Güvenlik">
+          <template #tab>
+            <div class="flex items-center gap-2">
+              <ShieldCheckIcon class="w-4 h-4" />
+              <span>Güvenlik</span>
+            </div>
+          </template>
+        </n-tab-pane>
+        <n-tab-pane name="settings" tab="Ayarlar">
+          <template #tab>
+            <div class="flex items-center gap-2">
+              <SettingsIcon class="w-4 h-4" />
+              <span>Ayarlar</span>
+            </div>
+          </template>
+        </n-tab-pane>
+        <n-tab-pane name="activity" tab="Aktivite">
+          <template #tab>
+            <div class="flex items-center gap-2">
+              <ActivityIcon class="w-4 h-4" />
+              <span>Aktivite</span>
+            </div>
+          </template>
+        </n-tab-pane>
+      </n-tabs>
 
       <!-- Tab Content -->
       <div v-if="activeTab === 'profile'">
-        <BaseCard variant="glass">
-          <template #title>Profil Bilgileri</template>
-
-          <form @submit.prevent="updateProfile" class="space-y-6">
+        <n-card class="glass-card" title="Profil Bilgileri">
+          <n-form @submit.prevent="updateProfile" class="space-y-6">
             <div class="grid md:grid-cols-2 gap-4">
-              <BaseInput
-                v-model="profileForm.username"
-                label="Kullanıcı Adı"
-                placeholder="kullaniciadi"
-                required
-              />
+              <n-form-item label="Kullanıcı Adı">
+                <n-input v-model:value="profileForm.username" placeholder="kullaniciadi" />
+              </n-form-item>
 
-              <BaseInput
-                v-model="profileForm.email"
-                label="E-posta"
-                type="email"
-                placeholder="ornek@email.com"
-                required
-              />
+              <n-form-item label="E-posta">
+                <n-input v-model:value="profileForm.email" type="email" placeholder="ornek@email.com" />
+              </n-form-item>
 
-              <BaseInput
-                v-model="profileForm.first_name"
-                label="Ad"
-                placeholder="Adınız"
-              />
+              <n-form-item label="Ad">
+                <n-input v-model:value="profileForm.first_name" placeholder="Adınız" />
+              </n-form-item>
 
-              <BaseInput
-                v-model="profileForm.last_name"
-                label="Soyad"
-                placeholder="Soyadınız"
-              />
+              <n-form-item label="Soyad">
+                <n-input v-model:value="profileForm.last_name" placeholder="Soyadınız" />
+              </n-form-item>
 
-              <BaseInput
-                v-model="profileForm.phone"
-                label="Telefon"
-                placeholder="+90 555 123 4567"
-              />
+              <n-form-item label="Telefon">
+                <n-input v-model:value="profileForm.phone" placeholder="+90 555 123 4567" />
+              </n-form-item>
 
-              <BaseInput
-                v-model="profileForm.country"
-                label="Ülke"
-                placeholder="Türkiye"
-              />
+              <n-form-item label="Ülke">
+                <n-input v-model:value="profileForm.country" placeholder="Türkiye" />
+              </n-form-item>
             </div>
 
-            <div>
-              <label class="label">
-                <span class="label-text">Biyografi</span>
-              </label>
-              <textarea
-                v-model="profileForm.bio"
-                class="textarea textarea-bordered w-full"
+            <n-form-item label="Biyografi">
+              <n-input
+                v-model:value="profileForm.bio"
+                type="textarea"
                 placeholder="Kendinizden bahsedin..."
-                rows="4"
-              ></textarea>
-            </div>
+                :rows="4"
+              />
+            </n-form-item>
 
             <div class="flex justify-end gap-2">
-              <BaseButton variant="ghost" type="button">İptal</BaseButton>
-              <BaseButton variant="primary" type="submit" :loading="saving">
+              <n-button quaternary>İptal</n-button>
+              <n-button type="primary" attr-type="submit" :loading="saving">
                 Kaydet
-              </BaseButton>
+              </n-button>
             </div>
-          </form>
-        </BaseCard>
+          </n-form>
+        </n-card>
       </div>
 
       <div v-else-if="activeTab === 'security'">
         <div class="space-y-6">
           <!-- Change Password - Only show for non-OAuth users -->
-          <BaseCard v-if="!isOAuthUser" variant="glass">
-            <template #title>Şifre Değiştir</template>
+          <n-card v-if="!isOAuthUser" class="glass-card" title="Şifre Değiştir">
+            <n-form @submit.prevent="changePassword" class="space-y-4">
+              <n-form-item label="Mevcut Şifre">
+                <n-input
+                  v-model:value="passwordForm.current_password"
+                  type="password"
+                  show-password-on="click"
+                  placeholder="••••••••"
+                />
+              </n-form-item>
 
-            <form @submit.prevent="changePassword" class="space-y-4">
-              <BaseInput
-                v-model="passwordForm.current_password"
-                label="Mevcut Şifre"
-                type="password"
-                placeholder="••••••••"
-                required
-              />
+              <n-form-item label="Yeni Şifre">
+                <n-input
+                  v-model:value="passwordForm.new_password"
+                  type="password"
+                  show-password-on="click"
+                  placeholder="••••••••"
+                />
+              </n-form-item>
 
-              <BaseInput
-                v-model="passwordForm.new_password"
-                label="Yeni Şifre"
-                type="password"
-                placeholder="••••••••"
-                required
-              />
-
-              <BaseInput
-                v-model="passwordForm.confirm_password"
-                label="Yeni Şifre (Tekrar)"
-                type="password"
-                placeholder="••••••••"
-                required
-              />
+              <n-form-item label="Yeni Şifre (Tekrar)">
+                <n-input
+                  v-model:value="passwordForm.confirm_password"
+                  type="password"
+                  show-password-on="click"
+                  placeholder="••••••••"
+                />
+              </n-form-item>
 
               <div class="flex justify-end gap-2">
-                <BaseButton variant="primary" type="submit" :loading="savingPassword">
+                <n-button type="primary" attr-type="submit" :loading="savingPassword">
                   Şifreyi Güncelle
-                </BaseButton>
+                </n-button>
               </div>
-            </form>
-          </BaseCard>
+            </n-form>
+          </n-card>
 
           <!-- OAuth User Notice -->
-          <BaseCard v-else variant="glass">
-            <template #title>Şifre Yönetimi</template>
-            <div class="alert alert-info">
-              <InfoIcon class="w-5 h-5" />
-              <span>
-                Steam veya Discord ile giriş yaptığınız için şifre belirlemeniz gerekmemektedir.
-                Hesabınız OAuth sağlayıcısı üzerinden güvence altındadır.
-              </span>
-            </div>
-          </BaseCard>
+          <n-card v-else class="glass-card" title="Şifre Yönetimi">
+            <n-alert type="info" title="Bilgi">
+              <template #icon><InfoIcon class="w-5 h-5" /></template>
+              Steam veya Discord ile giriş yaptığınız için şifre belirlemeniz gerekmemektedir.
+              Hesabınız OAuth sağlayıcısı üzerinden güvence altındadır.
+            </n-alert>
+          </n-card>
 
           <!-- Two-Factor Authentication -->
-          <BaseCard variant="glass">
-            <template #title>
+          <n-card class="glass-card">
+            <template #header>
               <div class="flex items-center justify-between">
                 <span>İki Faktörlü Doğrulama (2FA)</span>
-                <span v-if="user?.two_factor_enabled" class="badge badge-success">Aktif</span>
-                <span v-else class="badge badge-warning">Pasif</span>
+                <n-tag v-if="user?.two_factor_enabled" type="success" size="small">Aktif</n-tag>
+                <n-tag v-else type="warning" size="small">Pasif</n-tag>
               </div>
             </template>
 
             <div class="space-y-4">
-              <p class="text-sm opacity-60">
+              <p class="text-sm text-gray-400">
                 İki faktörlü doğrulama, hesabınıza ek bir güvenlik katmanı ekler.
                 Giriş yaparken şifrenizin yanında authenticator uygulamanızdan bir kod girmeniz gerekir.
               </p>
 
               <div v-if="!user?.two_factor_enabled">
-                <BaseButton variant="primary" @click="enable2FA">
-                  <ShieldCheckIcon class="w-4 h-4 mr-2" /> 2FA'yı Etkinleştir
-                </BaseButton>
+                <n-button type="primary" @click="enable2FA">
+                  <template #icon><ShieldCheckIcon class="w-4 h-4" /></template>
+                  2FA'yı Etkinleştir
+                </n-button>
               </div>
 
               <div v-else class="space-y-4">
-                <div class="alert alert-success">
-                  <CheckCircleIcon class="w-5 h-5" />
-                  <span>2FA başarıyla etkinleştirildi!</span>
-                </div>
+                <n-alert type="success" title="2FA Aktif">
+                  2FA başarıyla etkinleştirildi!
+                </n-alert>
 
                 <div class="flex gap-2">
-                  <BaseButton variant="outline" size="sm" @click="show2FABackupCodes = true">
-                    <KeyIcon class="w-4 h-4 mr-1" /> Yedek Kodları Gör
-                  </BaseButton>
-                  <BaseButton variant="error" size="sm" @click="disable2FA">
-                    <XCircleIcon class="w-4 h-4 mr-1" /> 2FA'yı Devre Dışı Bırak
-                  </BaseButton>
+                  <n-button size="small" secondary @click="show2FABackupCodes = true">
+                    <template #icon><KeyIcon class="w-4 h-4" /></template>
+                    Yedek Kodları Gör
+                  </n-button>
+                  <n-button size="small" type="error" @click="disable2FA">
+                    <template #icon><XCircleIcon class="w-4 h-4" /></template>
+                    2FA'yı Devre Dışı Bırak
+                  </n-button>
                 </div>
               </div>
             </div>
-          </BaseCard>
+          </n-card>
 
           <!-- Active Sessions -->
-          <BaseCard variant="glass">
-            <template #title>Aktif Oturumlar</template>
-
+          <n-card class="glass-card" title="Aktif Oturumlar">
             <div class="space-y-3">
               <div v-for="session in sessions" :key="session.id"
-                   class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg">
+                   class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                 <div class="flex items-center gap-4">
-                  <div class="p-3 bg-base-200/50 rounded-lg">
+                  <div class="p-3 bg-white/10 rounded-lg">
                     <MonitorIcon v-if="session.device_type === 'desktop'" class="w-5 h-5" />
                     <SmartphoneIcon v-else class="w-5 h-5" />
                   </div>
                   <div>
                     <h4 class="font-medium">{{ session.device_name }}</h4>
-                    <p class="text-sm opacity-60">{{ session.ip }} • {{ session.location }}</p>
-                    <p class="text-xs opacity-50">
+                    <p class="text-sm text-gray-400">{{ session.ip }} • {{ session.location }}</p>
+                    <p class="text-xs text-gray-500">
                       Son aktivite: {{ formatTime(session.last_activity) }}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <span v-if="session.is_current" class="badge badge-success badge-sm">Mevcut</span>
-                  <BaseButton v-else variant="ghost" size="sm" @click="revokeSession(session.id)">
+                  <n-tag v-if="session.is_current" type="success" size="small">Mevcut</n-tag>
+                  <n-button v-else quaternary size="small" @click="revokeSession(session.id)">
                     Sonlandır
-                  </BaseButton>
+                  </n-button>
                 </div>
               </div>
             </div>
 
             <div class="mt-4 flex justify-end">
-              <BaseButton variant="error" size="sm" @click="revokeAllSessions">
+              <n-button type="error" size="small" @click="revokeAllSessions">
                 Tüm Oturumları Sonlandır
-              </BaseButton>
+              </n-button>
             </div>
-          </BaseCard>
+          </n-card>
         </div>
       </div>
 
       <div v-else-if="activeTab === 'settings'">
-        <BaseCard variant="glass">
-          <template #title>Tercihler</template>
-
+        <n-card class="glass-card" title="Tercihler">
           <div class="space-y-6">
             <!-- Notifications -->
             <div>
               <h3 class="font-semibold mb-4">Bildirimler</h3>
 
               <!-- Email warning for users without email -->
-              <div v-if="!hasEmail" class="alert alert-warning mb-4">
-                <AlertCircleIcon class="w-5 h-5" />
-                <span>E-posta bildirimleri için önce profil sayfanızdan e-posta adresinizi eklemeniz gerekmektedir.</span>
-              </div>
+              <n-alert v-if="!hasEmail" type="warning" title="Uyarı" class="mb-4">
+                E-posta bildirimleri için önce profil sayfanızdan e-posta adresinizi eklemeniz gerekmektedir.
+              </n-alert>
 
-              <div class="space-y-3">
-                <label class="flex items-center justify-between cursor-pointer" :class="{ 'opacity-50': !hasEmail }">
+              <div class="space-y-4">
+                <div class="flex items-center justify-between" :class="{ 'opacity-50': !hasEmail }">
                   <span class="text-sm">E-posta bildirimleri</span>
-                  <input
-                    type="checkbox"
-                    v-model="settings.email_notifications"
-                    class="toggle toggle-primary"
-                    :disabled="!hasEmail"
-                  />
-                </label>
-                <label class="flex items-center justify-between cursor-pointer">
+                  <n-switch v-model:value="settings.email_notifications" :disabled="!hasEmail" />
+                </div>
+                <div class="flex items-center justify-between">
                   <span class="text-sm">Sunucu uyarıları</span>
-                  <input type="checkbox" v-model="settings.server_alerts" class="toggle toggle-primary" />
-                </label>
-                <label class="flex items-center justify-between cursor-pointer" :class="{ 'opacity-50': !hasEmail }">
+                  <n-switch v-model:value="settings.server_alerts" />
+                </div>
+                <div class="flex items-center justify-between" :class="{ 'opacity-50': !hasEmail }">
                   <span class="text-sm">Güvenlik bildirimleri (E-posta)</span>
-                  <input
-                    type="checkbox"
-                    v-model="settings.security_alerts"
-                    class="toggle toggle-primary"
-                    :disabled="!hasEmail"
-                  />
-                </label>
+                  <n-switch v-model:value="settings.security_alerts" :disabled="!hasEmail" />
+                </div>
               </div>
             </div>
 
-            <div class="divider"></div>
+            <n-divider />
 
             <!-- Privacy -->
             <div>
               <h3 class="font-semibold mb-4">Gizlilik</h3>
-              <div class="space-y-3">
-                <label class="flex items-center justify-between cursor-pointer">
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
                   <span class="text-sm">Profili herkese açık yap</span>
-                  <input type="checkbox" v-model="settings.public_profile" class="toggle toggle-primary" />
-                </label>
-                <label class="flex items-center justify-between cursor-pointer">
+                  <n-switch v-model:value="settings.public_profile" />
+                </div>
+                <div class="flex items-center justify-between">
                   <span class="text-sm">Online durumunu göster</span>
-                  <input type="checkbox" v-model="settings.show_online_status" class="toggle toggle-primary" />
-                </label>
+                  <n-switch v-model:value="settings.show_online_status" />
+                </div>
               </div>
             </div>
 
             <div class="flex justify-end gap-2">
-              <BaseButton variant="primary" @click="saveSettings" :loading="savingSettings">
+              <n-button type="primary" @click="saveSettings" :loading="savingSettings">
                 Ayarları Kaydet
-              </BaseButton>
+              </n-button>
             </div>
           </div>
-        </BaseCard>
+        </n-card>
       </div>
 
       <div v-else-if="activeTab === 'activity'">
-        <BaseCard variant="glass">
-          <template #title>Son Aktiviteler</template>
-
+        <n-card class="glass-card" title="Son Aktiviteler">
           <div class="space-y-3">
             <div v-for="activity in activities" :key="activity.id"
-                 class="flex gap-4 p-4 bg-base-200/50 rounded-lg">
+                 class="flex gap-4 p-4 bg-white/5 rounded-lg">
               <div class="flex-shrink-0">
                 <div class="w-10 h-10 rounded-full flex items-center justify-center"
                      :class="getActivityIconClass(activity.type)">
@@ -345,44 +329,38 @@
               </div>
               <div class="flex-1">
                 <p class="font-medium">{{ activity.title }}</p>
-                <p class="text-sm opacity-60">{{ activity.description }}</p>
-                <p class="text-xs opacity-50 mt-1">{{ formatTime(activity.created_at) }}</p>
+                <p class="text-sm text-gray-400">{{ activity.description }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ formatTime(activity.created_at) }}</p>
               </div>
             </div>
           </div>
-        </BaseCard>
+        </n-card>
       </div>
     </div>
 
     <!-- 2FA Backup Codes Modal -->
-    <div v-if="show2FABackupCodes" class="modal modal-open">
-      <div class="modal-box">
-        <h3 class="font-bold text-lg mb-4">Yedek Kodlar</h3>
-        <p class="text-sm opacity-60 mb-4">
-          Bu kodları güvenli bir yerde saklayın. Authenticator uygulamanıza erişiminizi kaybederseniz
-          bu kodları kullanarak giriş yapabilirsiniz.
-        </p>
-        <div class="grid grid-cols-2 gap-2 mb-6">
-          <div v-for="code in backupCodes" :key="code"
-               class="p-3 bg-base-200 rounded font-mono text-center">
-            {{ code }}
-          </div>
-        </div>
-        <div class="modal-action">
-          <BaseButton variant="ghost" @click="show2FABackupCodes = false">Kapat</BaseButton>
-          <BaseButton variant="primary" @click="downloadBackupCodes">İndir</BaseButton>
+    <n-modal v-model:show="show2FABackupCodes" preset="dialog" title="Yedek Kodlar">
+      <p class="text-sm text-gray-400 mb-4">
+        Bu kodları güvenli bir yerde saklayın. Authenticator uygulamanıza erişiminizi kaybederseniz
+        bu kodları kullanarak giriş yapabilirsiniz.
+      </p>
+      <div class="grid grid-cols-2 gap-2 mb-6">
+        <div v-for="code in backupCodes" :key="code"
+             class="p-3 bg-white/10 rounded font-mono text-center">
+          {{ code }}
         </div>
       </div>
-    </div>
+      <template #action>
+        <n-button quaternary @click="show2FABackupCodes = false">Kapat</n-button>
+        <n-button type="primary" @click="downloadBackupCodes">İndir</n-button>
+      </template>
+    </n-modal>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseInput from '@/components/common/BaseInput.vue'
 import {
   UserIcon,
   ShieldCheckIcon,
@@ -505,63 +483,101 @@ const getActivityIcon = (type) => {
 
 const getActivityIconClass = (type) => {
   const classes = {
-    info: 'bg-info/20 text-info',
-    success: 'bg-success/20 text-success',
-    warning: 'bg-warning/20 text-warning',
-    error: 'bg-error/20 text-error'
+    info: 'bg-blue-500/20 text-blue-500',
+    success: 'bg-green-500/20 text-green-500',
+    warning: 'bg-yellow-500/20 text-yellow-500',
+    error: 'bg-red-500/20 text-red-500'
   }
-  return classes[type] || 'bg-base-200/50 opacity-60'
+  return classes[type] || 'bg-white/10 text-gray-400'
 }
 
 const updateProfile = async () => {
   saving.value = true
-  // TODO: API call
-  setTimeout(() => {
+  try {
+    // TODO: API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    window.$message?.success('Profil güncellendi')
+  } catch (error) {
+    window.$message?.error('Profil güncellenemedi')
+  } finally {
     saving.value = false
-  }, 1000)
+  }
 }
 
 const changePassword = async () => {
   if (passwordForm.new_password !== passwordForm.confirm_password) {
-    alert('Şifreler eşleşmiyor!')
+    window.$message?.error('Şifreler eşleşmiyor!')
     return
   }
   savingPassword.value = true
-  // TODO: API call
-  setTimeout(() => {
+  try {
+    // TODO: API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    window.$message?.success('Şifre güncellendi')
+    passwordForm.current_password = ''
+    passwordForm.new_password = ''
+    passwordForm.confirm_password = ''
+  } catch (error) {
+    window.$message?.error('Şifre güncellenemedi')
+  } finally {
     savingPassword.value = false
-  }, 1000)
+  }
 }
 
 const enable2FA = () => {
-  // TODO: Show 2FA setup modal
-  alert('2FA setup modal gösterilecek')
+  window.$message?.info('2FA kurulum modalı açılacak')
 }
 
 const disable2FA = () => {
-  if (confirm('2FA\'yı devre dışı bırakmak istediğinizden emin misiniz?')) {
-    // TODO: API call
-  }
+  window.$dialog?.warning({
+    title: 'Uyarı',
+    content: '2FA\'yı devre dışı bırakmak istediğinizden emin misiniz?',
+    positiveText: 'Evet',
+    negativeText: 'İptal',
+    onPositiveClick: () => {
+      // TODO: API call
+      window.$message?.success('2FA devre dışı bırakıldı')
+    }
+  })
 }
 
 const revokeSession = (sessionId) => {
-  if (confirm('Bu oturumu sonlandırmak istediğinizden emin misiniz?')) {
-    sessions.value = sessions.value.filter(s => s.id !== sessionId)
-  }
+  window.$dialog?.warning({
+    title: 'Oturumu Sonlandır',
+    content: 'Bu oturumu sonlandırmak istediğinizden emin misiniz?',
+    positiveText: 'Evet',
+    negativeText: 'İptal',
+    onPositiveClick: () => {
+      sessions.value = sessions.value.filter(s => s.id !== sessionId)
+      window.$message?.success('Oturum sonlandırıldı')
+    }
+  })
 }
 
 const revokeAllSessions = () => {
-  if (confirm('Mevcut oturum hariç tüm oturumları sonlandırmak istediğinizden emin misiniz?')) {
-    sessions.value = sessions.value.filter(s => s.is_current)
-  }
+  window.$dialog?.warning({
+    title: 'Tüm Oturumları Sonlandır',
+    content: 'Mevcut oturum hariç tüm oturumları sonlandırmak istediğinizden emin misiniz?',
+    positiveText: 'Evet',
+    negativeText: 'İptal',
+    onPositiveClick: () => {
+      sessions.value = sessions.value.filter(s => s.is_current)
+      window.$message?.success('Tüm oturumlar sonlandırıldı')
+    }
+  })
 }
 
 const saveSettings = async () => {
   savingSettings.value = true
-  // TODO: API call
-  setTimeout(() => {
+  try {
+    // TODO: API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    window.$message?.success('Ayarlar kaydedildi')
+  } catch (error) {
+    window.$message?.error('Ayarlar kaydedilemedi')
+  } finally {
     savingSettings.value = false
-  }, 1000)
+  }
 }
 
 const downloadBackupCodes = () => {
@@ -573,6 +589,7 @@ const downloadBackupCodes = () => {
   a.download = '2fa-backup-codes.txt'
   a.click()
   URL.revokeObjectURL(url)
+  window.$message?.success('Yedek kodlar indirildi')
 }
 
 onMounted(() => {
@@ -582,3 +599,11 @@ onMounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+</style>

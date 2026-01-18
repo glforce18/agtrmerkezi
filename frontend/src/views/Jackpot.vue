@@ -28,25 +28,47 @@
 
     <!-- Main Game Area -->
     <div class="game-container">
-      <!-- Wheel/Spinner Section -->
-      <div class="wheel-section">
-        <div class="wheel-container" :class="{ spinning: isSpinning }">
-          <div class="wheel-pointer"></div>
-          <div class="wheel" ref="wheelRef" :style="wheelStyle">
+      <!-- Spinner Section - CS:GO Style Horizontal -->
+      <div class="spinner-section">
+        <!-- Countdown Display -->
+        <div v-if="countdown > 0" class="countdown-display">
+          <span class="countdown-number">{{ countdown }}</span>
+          <span class="countdown-text">saniye</span>
+        </div>
+
+        <!-- Horizontal Spinner -->
+        <div class="spinner-container">
+          <!-- Winner Line (Ortadaki çizgi) -->
+          <div class="winner-line"></div>
+
+          <!-- Spinner Track -->
+          <div class="spinner-track" ref="spinnerTrackRef">
             <div
-              v-for="(player, index) in players"
-              :key="player.user_id"
-              class="wheel-segment"
-              :style="getSegmentStyle(player, index)"
+              class="spinner-items"
+              ref="spinnerItemsRef"
+              :style="spinnerStyle"
+              :class="{ spinning: isSpinning }"
             >
-              <img :src="player.avatar || getDefaultAvatar(player.username)" :alt="player.username" class="segment-avatar" />
+              <div
+                v-for="(item, index) in spinnerItems"
+                :key="index"
+                class="spinner-item"
+                :style="{ borderColor: item.color }"
+              >
+                <img
+                  :src="item.avatar || getDefaultAvatar(item.username)"
+                  :alt="item.username"
+                  class="spinner-avatar"
+                />
+                <span class="spinner-name">{{ item.username }}</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Winner Display -->
         <Transition name="winner-popup">
-          <div v-if="winner" class="winner-display">
+          <div v-if="winner && !isSpinning" class="winner-display">
             <div class="winner-content">
               <img :src="winner.avatar || getDefaultAvatar(winner.username)" class="winner-avatar" />
               <div class="winner-info">
@@ -57,6 +79,12 @@
             </div>
           </div>
         </Transition>
+
+        <!-- Pot Display -->
+        <div class="pot-display" v-if="!winner">
+          <div class="pot-label">Toplam Havuz</div>
+          <div class="pot-amount">{{ formatArmor(currentRound?.total_pot || 0) }} <span class="armor-text">ARMOR</span></div>
+        </div>
       </div>
 
       <!-- Players & Bets Section -->
@@ -185,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import {
   Trophy as TrophyIcon,
@@ -208,6 +236,12 @@ const winner = ref(null)
 const showFairnessModal = ref(false)
 const wheelRotation = ref(0)
 
+// WebSocket state
+const ws = ref(null)
+const wsConnected = ref(false)
+const countdown = ref(0)
+const countdownInterval = ref(null)
+
 // Constants
 const minBet = 10
 const maxBet = 1000
@@ -224,6 +258,8 @@ const balance = computed(() => authStore.user?.balance_coin || 0)
 
 const statusText = computed(() => {
   if (!currentRound.value) return 'Yükleniyor...'
+  if (countdown.value > 0) return `${countdown.value}s`
+  if (isSpinning.value) return 'Dönüyor'
   switch (currentRound.value.status) {
     case 'waiting': return 'Bekleniyor'
     case 'active': return 'Aktif'
@@ -247,6 +283,51 @@ const canBet = computed(() => {
 
 const wheelStyle = computed(() => ({
   transform: `rotate(${wheelRotation.value}deg)`
+}))
+
+// Spinner için ref ve state
+const spinnerTrackRef = ref(null)
+const spinnerItemsRef = ref(null)
+const spinnerOffset = ref(0)
+
+// Spinner items - oyuncuları tekrarlayarak uzun liste oluştur
+const spinnerItems = computed(() => {
+  if (players.value.length === 0) return []
+
+  // Her oyuncuyu bilet sayısına göre tekrarla
+  const items = []
+  const repeatCount = 50 // Toplam item sayısı
+
+  for (let i = 0; i < repeatCount; i++) {
+    // Weighted random selection based on win_chance
+    const player = selectWeightedPlayer()
+    items.push({
+      ...player,
+      index: i
+    })
+  }
+
+  return items
+})
+
+// Ağırlıklı oyuncu seçimi
+const selectWeightedPlayer = () => {
+  if (players.value.length === 0) return null
+
+  const totalChance = players.value.reduce((sum, p) => sum + (p.win_chance || 0), 0)
+  let random = Math.random() * totalChance
+
+  for (const player of players.value) {
+    random -= player.win_chance || 0
+    if (random <= 0) return player
+  }
+
+  return players.value[0]
+}
+
+// Spinner style
+const spinnerStyle = computed(() => ({
+  transform: `translateX(${spinnerOffset.value}px)`
 }))
 
 // Methods
@@ -339,22 +420,249 @@ const placeBet = async () => {
   }
 }
 
-// Polling for updates
-let pollInterval = null
+// WebSocket connection
+const connectWebSocket = () => {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}/ws/jackpot`
+
+  ws.value = new WebSocket(wsUrl)
+
+  ws.value.onopen = () => {
+    wsConnected.value = true
+    console.log('Jackpot WebSocket bağlandı')
+
+    // Authenticate if logged in
+    const token = localStorage.getItem('token')
+    if (token) {
+      ws.value.send(JSON.stringify({ action: 'auth', token }))
+    }
+  }
+
+  ws.value.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data)
+      handleWebSocketMessage(message)
+    } catch (e) {
+      console.error('WebSocket mesaj parse hatası:', e)
+    }
+  }
+
+  ws.value.onclose = () => {
+    wsConnected.value = false
+    console.log('Jackpot WebSocket kapandı')
+    // Reconnect after 3 seconds
+    setTimeout(connectWebSocket, 3000)
+  }
+
+  ws.value.onerror = (error) => {
+    console.error('Jackpot WebSocket hatası:', error)
+  }
+}
+
+const handleWebSocketMessage = (message) => {
+  switch (message.type) {
+    case 'round_info':
+      // İlk bağlantıda veya state güncellemesinde
+      updateRoundInfo(message.data)
+      break
+
+    case 'new_bet':
+      // Yeni bahis geldi
+      handleNewBet(message.data)
+      break
+
+    case 'round_update':
+      // Tur bilgisi güncellendi
+      updateRoundInfo(message.data)
+      break
+
+    case 'countdown':
+      // Geri sayım
+      startCountdown(message.seconds)
+      break
+
+    case 'rolling':
+      // Çark dönüyor
+      startSpinAnimation(message.data)
+      break
+
+    case 'winner':
+      // Kazanan belirlendi
+      showWinner(message.data)
+      break
+
+    case 'auth_success':
+      console.log('WebSocket auth başarılı')
+      break
+
+    case 'pong':
+      // Heartbeat response
+      break
+  }
+}
+
+const updateRoundInfo = (data) => {
+  if (!data) return
+  currentRound.value = data
+  players.value = data.players?.map((p, i) => ({
+    ...p,
+    color: getPlayerColor(i)
+  })) || []
+
+  if (data.winner) {
+    winner.value = data.winner
+  }
+
+  // Yeni tur başladıysa winner'ı temizle
+  if (data.new_round) {
+    winner.value = null
+    isSpinning.value = false
+    wheelRotation.value = 0
+    countdown.value = 0
+  }
+}
+
+const handleNewBet = (data) => {
+  // Yeni bahis animasyonu
+  console.log('Yeni bahis:', data)
+  // Players listesini güncelle (round_update ile gelecek)
+}
+
+const startCountdown = (seconds) => {
+  countdown.value = seconds
+
+  // Mevcut interval'ı temizle
+  if (countdownInterval.value) {
+    clearInterval(countdownInterval.value)
+  }
+
+  // Geri sayım
+  countdownInterval.value = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(countdownInterval.value)
+      countdown.value = 0
+    }
+  }, 1000)
+}
+
+const startSpinAnimation = (data) => {
+  isSpinning.value = true
+  winner.value = null
+
+  // Item genişliği (CSS ile senkronize)
+  const itemWidth = 120 // px
+
+  // Kazananın indexini bul (spinner items içinde)
+  const winnerIndex = findWinnerIndexInSpinner(data.winner_id)
+
+  // Hedef pozisyon - kazanan ortada duracak şekilde
+  const trackWidth = spinnerTrackRef.value?.offsetWidth || 800
+  const centerOffset = trackWidth / 2 - itemWidth / 2
+
+  // Toplam kaydırma miktarı
+  const targetOffset = -(winnerIndex * itemWidth) + centerOffset
+
+  // Animasyonu başlat
+  spinnerOffset.value = 0
+
+  // requestAnimationFrame ile smooth animasyon
+  const duration = (data.duration || 10) * 1000
+  const startTime = Date.now()
+  const startOffset = 0
+
+  const animate = () => {
+    const elapsed = Date.now() - startTime
+    const progress = Math.min(elapsed / duration, 1)
+
+    // Cubic ease-out
+    const easeOut = 1 - Math.pow(1 - progress, 3)
+
+    spinnerOffset.value = startOffset + (targetOffset * easeOut)
+
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    } else {
+      isSpinning.value = false
+    }
+  }
+
+  requestAnimationFrame(animate)
+}
+
+const findWinnerIndexInSpinner = (winnerId) => {
+  // Spinner items içinde kazananın bulunduğu index (ortaya yakın olanı)
+  const items = spinnerItems.value
+  const centerIndex = Math.floor(items.length / 2)
+
+  // Kazananı merkeze yakın bir yerde bul
+  for (let i = centerIndex; i < items.length; i++) {
+    if (items[i]?.user_id === winnerId) {
+      return i
+    }
+  }
+
+  // Bulamazsa en yakınını döndür
+  return centerIndex
+}
+
+const findWinnerIndex = (winnerId) => {
+  return players.value.findIndex(p => p.user_id === winnerId) || 0
+}
+
+const calculateWinnerAngle = (winnerIndex) => {
+  let angle = 0
+  for (let i = 0; i < winnerIndex; i++) {
+    angle += (players.value[i]?.win_chance || 0) / 100 * 360
+  }
+  // Segment'in ortasına gel
+  angle += (players.value[winnerIndex]?.win_chance || 0) / 100 * 180
+  return angle
+}
+
+const showWinner = (data) => {
+  winner.value = {
+    user_id: data.winner_id,
+    username: data.winner_username,
+    amount: data.winner_amount,
+    avatar: players.value.find(p => p.user_id === data.winner_id)?.avatar
+  }
+
+  // History'yi güncelle
+  fetchHistory()
+
+  // Bakiye güncelle
+  authStore.fetchUser()
+}
+
+// Heartbeat gönder
+const startHeartbeat = () => {
+  setInterval(() => {
+    if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+      ws.value.send(JSON.stringify({ action: 'ping' }))
+    }
+  }, 30000)
+}
 
 onMounted(() => {
+  // İlk veri yükle
   fetchCurrentRound()
   fetchHistory()
 
-  // Poll every 3 seconds
-  pollInterval = setInterval(() => {
-    fetchCurrentRound()
-  }, 3000)
+  // WebSocket bağlan
+  connectWebSocket()
+  startHeartbeat()
 })
 
 onUnmounted(() => {
-  if (pollInterval) {
-    clearInterval(pollInterval)
+  // WebSocket kapat
+  if (ws.value) {
+    ws.value.close()
+  }
+
+  // Countdown interval temizle
+  if (countdownInterval.value) {
+    clearInterval(countdownInterval.value)
   }
 })
 </script>
@@ -445,71 +753,184 @@ onUnmounted(() => {
   margin-bottom: 32px;
 }
 
-/* Wheel Section */
-.wheel-section {
+/* Spinner Section - CS:GO Style */
+.spinner-section {
   background: var(--bg-secondary);
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  padding: 40px;
+  padding: 24px;
+  position: relative;
+  min-height: 300px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
-  min-height: 400px;
 }
 
-.wheel-container {
-  position: relative;
-  width: 320px;
-  height: 320px;
-}
-
-.wheel-pointer {
+/* Countdown */
+.countdown-display {
   position: absolute;
-  top: -20px;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+}
+
+.countdown-number {
+  display: block;
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--primary-color);
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(255, 107, 0, 0.5);
+}
+
+.countdown-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+/* Spinner Container */
+.spinner-container {
+  width: 100%;
+  position: relative;
+  padding: 20px 0;
+}
+
+/* Winner Line - Ortadaki seçim çizgisi */
+.winner-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--primary-color);
+  transform: translateX(-50%);
+  z-index: 10;
+  box-shadow: 0 0 20px rgba(255, 107, 0, 0.8);
+}
+
+.winner-line::before,
+.winner-line::after {
+  content: '';
+  position: absolute;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 15px solid transparent;
-  border-right: 15px solid transparent;
-  border-top: 30px solid var(--primary-color);
-  z-index: 10;
-  filter: drop-shadow(0 4px 8px rgba(255, 107, 0, 0.4));
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
 }
 
-.wheel {
+.winner-line::before {
+  top: -5px;
+  border-top: 15px solid var(--primary-color);
+}
+
+.winner-line::after {
+  bottom: -5px;
+  border-bottom: 15px solid var(--primary-color);
+}
+
+/* Spinner Track */
+.spinner-track {
   width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: var(--bg-tertiary);
-  border: 4px solid var(--border-color);
-  position: relative;
-  transition: transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99);
   overflow: hidden;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+  position: relative;
 }
 
-.wheel-container.spinning .wheel {
-  transition: transform 8s cubic-bezier(0.17, 0.67, 0.12, 0.99);
-}
-
-.wheel-segment {
+.spinner-track::before,
+.spinner-track::after {
+  content: '';
   position: absolute;
-  width: 50%;
-  height: 50%;
   top: 0;
-  left: 50%;
-  transform-origin: 0 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  bottom: 0;
+  width: 100px;
+  z-index: 5;
+  pointer-events: none;
 }
 
-.segment-avatar {
-  width: 40px;
-  height: 40px;
+.spinner-track::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-tertiary), transparent);
+}
+
+.spinner-track::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-tertiary), transparent);
+}
+
+/* Spinner Items */
+.spinner-items {
+  display: flex;
+  padding: 10px 0;
+  will-change: transform;
+}
+
+.spinner-items.spinning {
+  /* Animasyon JavaScript ile kontrol ediliyor */
+}
+
+.spinner-item {
+  flex-shrink: 0;
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  border-left: 3px solid;
+  transition: transform 0.2s;
+}
+
+.spinner-avatar {
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 3px solid var(--border-color);
+  background: var(--bg-secondary);
+  object-fit: cover;
+}
+
+.spinner-name {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pot Display */
+.pot-display {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.pot-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.pot-amount {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.armor-text {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 /* Winner Display */

@@ -1,217 +1,197 @@
 <template>
-  <div class="min-h-screen ">
+  <div class="min-h-screen">
     <div class="container-custom py-8">
       <!-- Breadcrumb -->
-      <div class="breadcrumbs mb-4 animate-slide-down">
-        <ul>
-          <li>
-            <router-link to="/forum" class="hover:text-primary transition-colors">
-              <HomeIcon class="w-4 h-4 inline mr-1" />
-              Forum
-            </router-link>
-          </li>
-          <li>
-            <router-link to="/forum/category/1" class="hover:text-primary transition-colors">
-              Genel Tartışma
-            </router-link>
-          </li>
-          <li class="text-primary truncate">{{ topic?.title }}</li>
-        </ul>
-      </div>
+      <n-breadcrumb class="mb-4">
+        <n-breadcrumb-item @click="router.push('/forum')">
+          <HomeIcon class="w-4 h-4 inline mr-1" />
+          Forum
+        </n-breadcrumb-item>
+        <n-breadcrumb-item @click="router.push('/forum/category/1')">
+          Genel Tartışma
+        </n-breadcrumb-item>
+        <n-breadcrumb-item>
+          <span class="text-orange-500 truncate">{{ topic?.title }}</span>
+        </n-breadcrumb-item>
+      </n-breadcrumb>
 
       <!-- Topic Header -->
-      <BaseCard variant="glass" class="mb-6 animate-slide-up">
-        <div class="p-6">
-          <div class="flex items-start justify-between gap-4 mb-4">
-            <h1 class="text-3xl font-display font-bold">
-              <span class="neon-text">{{ topic?.title }}</span>
-            </h1>
-            <div class="flex gap-2">
-              <div v-if="topic?.isPinned" class="badge badge-primary">
-                <PinIcon class="w-3 h-3 mr-1" />
-                Sabitlenmiş
-              </div>
-              <div v-if="topic?.isLocked" class="badge badge-error">
-                <LockIcon class="w-3 h-3 mr-1" />
-                Kilitli
-              </div>
-            </div>
-          </div>
-
-          <!-- Topic Stats -->
-          <div class="flex items-center gap-6 text-sm opacity-60">
-            <div class="flex items-center gap-2">
-              <MessageSquareIcon class="w-4 h-4" />
-              <span>{{ replies.length }} Yanıt</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <EyeIcon class="w-4 h-4" />
-              <span>{{ topic?.views }} Görüntülenme</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <ClockIcon class="w-4 h-4" />
-              <span>{{ topic?.created }}</span>
-            </div>
+      <n-card class="glass-card mb-6">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <h1 class="text-3xl font-display font-bold">
+            <span class="text-gradient">{{ topic?.title }}</span>
+          </h1>
+          <div class="flex gap-2">
+            <n-tag v-if="topic?.isPinned" type="primary">
+              <template #icon><PinIcon class="w-3 h-3" /></template>
+              Sabitlenmiş
+            </n-tag>
+            <n-tag v-if="topic?.isLocked" type="error">
+              <template #icon><LockIcon class="w-3 h-3" /></template>
+              Kilitli
+            </n-tag>
           </div>
         </div>
-      </BaseCard>
+
+        <!-- Topic Stats -->
+        <div class="flex items-center gap-6 text-sm text-gray-400">
+          <div class="flex items-center gap-2">
+            <MessageSquareIcon class="w-4 h-4" />
+            <span>{{ replies.length }} Yanıt</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <EyeIcon class="w-4 h-4" />
+            <span>{{ topic?.views }} Görüntülenme</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <ClockIcon class="w-4 h-4" />
+            <span>{{ topic?.created }}</span>
+          </div>
+        </div>
+      </n-card>
 
       <!-- Original Post -->
-      <BaseCard variant="glass" class="mb-6 animate-slide-up" style="animation-delay: 0.1s">
-        <div class="p-6">
-          <div class="flex gap-6">
-            <!-- Author Sidebar -->
-            <div class="flex-shrink-0 w-48 text-center">
-              <div class="avatar mb-3">
-                <div class="w-24 h-24 rounded-full ring ring-primary ring-offset-2 ring-offset-slate-900">
-                  <img :src="topic?.authorAvatar" />
-                </div>
-              </div>
-              <h3 class="font-bold text-lg">{{ topic?.author }}</h3>
-              <div class="badge badge-sm badge-primary my-2">{{ topic?.authorRole }}</div>
-              <div class="text-xs opacity-50 space-y-1">
-                <p>{{ topic?.authorPosts }} gönderi</p>
-                <p>Üyelik: {{ topic?.authorJoined }}</p>
-              </div>
+      <n-card class="glass-card mb-6">
+        <div class="flex gap-6">
+          <!-- Author Sidebar -->
+          <div class="flex-shrink-0 w-48 text-center">
+            <n-avatar
+              round
+              :size="96"
+              :src="topic?.authorAvatar"
+              class="mb-3 ring-2 ring-orange-500 ring-offset-2 ring-offset-gray-900"
+            />
+            <h3 class="font-bold text-lg">{{ topic?.author }}</h3>
+            <n-tag type="primary" size="small" class="my-2">{{ topic?.authorRole }}</n-tag>
+            <div class="text-xs text-gray-500 space-y-1">
+              <p>{{ topic?.authorPosts }} gönderi</p>
+              <p>Üyelik: {{ topic?.authorJoined }}</p>
+            </div>
+          </div>
+
+          <!-- Post Content -->
+          <div class="flex-1 min-w-0">
+            <div class="prose prose-invert max-w-none mb-4">
+              <p class="text-gray-300 whitespace-pre-line">{{ topic?.content }}</p>
             </div>
 
-            <!-- Post Content -->
-            <div class="flex-1 min-w-0">
-              <div class="prose prose-invert max-w-none mb-4">
-                <p>{{ topic?.content }}</p>
+            <!-- Post Actions -->
+            <div class="flex items-center justify-between pt-4 border-t border-white/10">
+              <div class="flex gap-2">
+                <n-button quaternary size="small" @click="likeTopic">
+                  <template #icon><ThumbsUpIcon class="w-4 h-4" /></template>
+                  {{ topic?.likes }} Beğeni
+                </n-button>
+                <n-button quaternary size="small">
+                  <template #icon><ShareIcon class="w-4 h-4" /></template>
+                  Paylaş
+                </n-button>
               </div>
-
-              <!-- Post Actions -->
-              <div class="flex items-center justify-between pt-4 border-t border-base-300">
-                <div class="flex gap-2">
-                  <button class="btn btn-sm btn-ghost" @click="likeTopic">
-                    <ThumbsUpIcon class="w-4 h-4 mr-1" />
-                    {{ topic?.likes }} Beğeni
-                  </button>
-                  <button class="btn btn-sm btn-ghost">
-                    <ShareIcon class="w-4 h-4 mr-1" />
-                    Paylaş
-                  </button>
-                </div>
-                <div class="flex gap-2">
-                  <button class="btn btn-sm btn-ghost text-error">
-                    <FlagIcon class="w-4 h-4 mr-1" />
-                    Bildir
-                  </button>
-                </div>
+              <div class="flex gap-2">
+                <n-button quaternary size="small" type="error">
+                  <template #icon><FlagIcon class="w-4 h-4" /></template>
+                  Bildir
+                </n-button>
               </div>
             </div>
           </div>
         </div>
-      </BaseCard>
+      </n-card>
 
       <!-- Replies -->
-      <div class="space-y-4 mb-6 animate-slide-up" style="animation-delay: 0.2s">
-        <BaseCard
+      <div class="space-y-4 mb-6">
+        <n-card
           v-for="(reply, index) in replies"
           :key="reply.id"
-          variant="glass"
-          class="card-hover"
+          class="glass-card reply-card"
         >
-          <div class="p-6">
-            <div class="flex gap-6">
-              <!-- Reply Author Sidebar -->
-              <div class="flex-shrink-0 w-48 text-center">
-                <div class="avatar mb-3">
-                  <div class="w-16 h-16 rounded-full">
-                    <img :src="reply.authorAvatar" />
-                  </div>
-                </div>
-                <h4 class="font-semibold">{{ reply.author }}</h4>
-                <div class="badge badge-xs badge-ghost my-1">{{ reply.authorRole }}</div>
-                <div class="text-xs opacity-50">
-                  <p>{{ reply.authorPosts }} gönderi</p>
-                </div>
+          <div class="flex gap-6">
+            <!-- Reply Author Sidebar -->
+            <div class="flex-shrink-0 w-48 text-center">
+              <n-avatar round :size="64" :src="reply.authorAvatar" class="mb-3" />
+              <h4 class="font-semibold">{{ reply.author }}</h4>
+              <n-tag :bordered="false" size="tiny" class="my-1">{{ reply.authorRole }}</n-tag>
+              <div class="text-xs text-gray-500">
+                <p>{{ reply.authorPosts }} gönderi</p>
+              </div>
+            </div>
+
+            <!-- Reply Content -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-gray-500">#{{ index + 1 }} · {{ reply.created }}</span>
               </div>
 
-              <!-- Reply Content -->
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between mb-3">
-                  <span class="text-sm opacity-50">#{{ index + 1 }} · {{ reply.created }}</span>
-                </div>
+              <div class="prose prose-invert prose-sm max-w-none mb-3">
+                <p class="text-gray-300">{{ reply.content }}</p>
+              </div>
 
-                <div class="prose prose-invert prose-sm max-w-none mb-3">
-                  <p>{{ reply.content }}</p>
-                </div>
-
-                <!-- Reply Actions -->
-                <div class="flex items-center gap-3 pt-3 border-t border-base-300">
-                  <button class="btn btn-xs btn-ghost" @click="likeReply(reply.id)">
-                    <ThumbsUpIcon class="w-3 h-3 mr-1" />
-                    {{ reply.likes }}
-                  </button>
-                  <button class="btn btn-xs btn-ghost" @click="quoteReply(reply)">
-                    <QuoteIcon class="w-3 h-3 mr-1" />
-                    Alıntıla
-                  </button>
-                  <button class="btn btn-xs btn-ghost text-error">
-                    <FlagIcon class="w-3 h-3 mr-1" />
-                    Bildir
-                  </button>
-                </div>
+              <!-- Reply Actions -->
+              <div class="flex items-center gap-3 pt-3 border-t border-white/10">
+                <n-button text size="tiny" @click="likeReply(reply.id)">
+                  <template #icon><ThumbsUpIcon class="w-3 h-3" /></template>
+                  {{ reply.likes }}
+                </n-button>
+                <n-button text size="tiny" @click="quoteReply(reply)">
+                  <template #icon><QuoteIcon class="w-3 h-3" /></template>
+                  Alıntıla
+                </n-button>
+                <n-button text size="tiny" type="error">
+                  <template #icon><FlagIcon class="w-3 h-3" /></template>
+                  Bildir
+                </n-button>
               </div>
             </div>
           </div>
-        </BaseCard>
+        </n-card>
       </div>
 
       <!-- Pagination -->
-      <div class="flex justify-center mb-8 animate-slide-up" style="animation-delay: 0.3s">
-        <div class="join">
-          <button class="join-item btn btn-sm">«</button>
-          <button class="join-item btn btn-sm btn-active">1</button>
-          <button class="join-item btn btn-sm">2</button>
-          <button class="join-item btn btn-sm">3</button>
-          <button class="join-item btn btn-sm">»</button>
-        </div>
+      <div class="flex justify-center mb-8">
+        <n-pagination
+          v-model:page="currentPage"
+          :page-count="3"
+          show-quick-jumper
+        />
       </div>
 
       <!-- Reply Form -->
-      <BaseCard v-if="!topic?.isLocked" variant="glass" class="animate-slide-up" style="animation-delay: 0.4s">
-        <div class="p-6">
-          <h3 class="text-xl font-bold mb-4">Yanıt Yaz</h3>
+      <n-card v-if="!topic?.isLocked" class="glass-card">
+        <template #header>
+          <span class="font-bold">Yanıt Yaz</span>
+        </template>
 
-          <form @submit.prevent="submitReply" class="space-y-4">
-            <div class="form-control">
-              <textarea
-                v-model="newReply"
-                class="textarea textarea-bordered h-32 bg-base-200"
-                placeholder="Yanıtınızı yazın..."
-                required
-              ></textarea>
-            </div>
+        <n-form @submit.prevent="submitReply" class="space-y-4">
+          <n-form-item>
+            <n-input
+              v-model:value="newReply"
+              type="textarea"
+              placeholder="Yanıtınızı yazın..."
+              :rows="5"
+            />
+          </n-form-item>
 
-            <div class="flex justify-between items-center">
-              <div class="text-sm opacity-50">
-                Markdown destekleniyor
-              </div>
-              <div class="flex gap-2">
-                <BaseButton variant="ghost" type="button">
-                  Önizle
-                </BaseButton>
-                <BaseButton variant="gaming" type="submit">
-                  <SendIcon class="w-4 h-4 mr-2" />
-                  Yanıtla
-                </BaseButton>
-              </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-500">Markdown destekleniyor</span>
+            <div class="flex gap-2">
+              <n-button quaternary>Önizle</n-button>
+              <n-button type="primary" attr-type="submit">
+                <template #icon><SendIcon class="w-4 h-4" /></template>
+                Yanıtla
+              </n-button>
             </div>
-          </form>
-        </div>
-      </BaseCard>
+          </div>
+        </n-form>
+      </n-card>
 
       <!-- Locked Message -->
-      <BaseCard v-else variant="glass" class="text-center py-12 animate-slide-up" style="animation-delay: 0.4s">
-        <LockIcon class="w-12 h-12 mx-auto mb-4 text-error" />
+      <n-card v-else class="glass-card text-center py-12">
+        <LockIcon class="w-12 h-12 mx-auto mb-4 text-red-500" />
         <h3 class="text-xl font-bold mb-2">Bu Konu Kilitli</h3>
-        <p class="opacity-60">
+        <p class="text-gray-400">
           Bu konuya yeni yanıt ekleyemezsiniz.
         </p>
-      </BaseCard>
+      </n-card>
     </div>
   </div>
 </template>
@@ -219,8 +199,6 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
 import {
   HomeIcon,
   MessageSquareIcon,
@@ -239,10 +217,21 @@ const route = useRoute()
 const router = useRouter()
 const topicId = route.params.id
 
+const currentPage = ref(1)
+
 const topic = ref({
   id: 1,
   title: 'Yeni güncelleme hakkında düşünceleriniz?',
-  content: 'Merhaba arkadaşlar,\n\nYeni güncelleme ile birlikte gelen özellikleri denedim. Özellikle sunucu performansında ciddi bir iyileşme var. Sizin düşünceleriniz neler?\n\nBen özellikle şu noktaları beğendim:\n- Gelişmiş DDoS koruması\n- Yeni admin paneli arayüzü\n- Otomatik yedekleme sistemi\n\nSizce en iyi özellik hangisi?',
+  content: `Merhaba arkadaşlar,
+
+Yeni güncelleme ile birlikte gelen özellikleri denedim. Özellikle sunucu performansında ciddi bir iyileşme var. Sizin düşünceleriniz neler?
+
+Ben özellikle şu noktaları beğendim:
+- Gelişmiş DDoS koruması
+- Yeni admin paneli arayüzü
+- Otomatik yedekleme sistemi
+
+Sizce en iyi özellik hangisi?`,
   author: 'Player123',
   authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
   authorRole: 'Admin',
@@ -303,12 +292,14 @@ const submitReply = () => {
       likes: 0
     })
     newReply.value = ''
+    window.$message?.success('Yanıtınız gönderildi')
   }
 }
 
 const likeTopic = () => {
   if (topic.value) {
     topic.value.likes++
+    window.$message?.success('Beğenildi')
   }
 }
 
@@ -316,54 +307,35 @@ const likeReply = (replyId) => {
   const reply = replies.value.find(r => r.id === replyId)
   if (reply) {
     reply.likes++
+    window.$message?.success('Beğenildi')
   }
 }
 
 const quoteReply = (reply) => {
   newReply.value = `> ${reply.author} yazdı:\n> ${reply.content}\n\n`
+  window.$message?.info('Alıntı eklendi')
 }
 </script>
 
 <style scoped>
-.neon-text {
-  @apply text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-accent;
+.text-gradient {
+  background: linear-gradient(to right, #f97316, #8b5cf6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.prose {
-  @apply opacity-70;
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.prose p {
-  @apply mb-4 leading-relaxed;
+.reply-card {
+  transition: all 0.2s ease;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slide-down {
-  animation: slideDown 0.6s ease-out;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.6s ease-out 0.2s backwards;
+.reply-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
 }
 </style>

@@ -1,9 +1,34 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    AutoImport({
+      imports: [
+        'vue',
+        'vue-router',
+        'pinia',
+        {
+          'naive-ui': [
+            'useDialog',
+            'useMessage',
+            'useNotification',
+            'useLoadingBar'
+          ]
+        }
+      ],
+      dts: 'src/auto-imports.d.ts'
+    }),
+    Components({
+      resolvers: [NaiveUiResolver()],
+      dts: 'src/components.d.ts'
+    })
+  ],
   base: '/',
 
   resolve: {
@@ -26,18 +51,19 @@ export default defineConfig({
     outDir: '../static/dist',
     emptyOutDir: true,
     sourcemap: false,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks: {
           'vendor': ['vue', 'vue-router', 'pinia'],
-          'utils': ['axios', '@vueuse/core']
+          'naive-ui': ['naive-ui'],
+          'utils': ['@vueuse/core', 'date-fns']
         }
       }
     }
   },
 
   optimizeDeps: {
-    include: ['vue', 'vue-router', 'pinia', 'axios']
+    include: ['vue', 'vue-router', 'pinia', 'naive-ui', 'date-fns']
   }
 })

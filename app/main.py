@@ -31,6 +31,7 @@ from app.api import (
     banners,
     discord_bot,
     forum,
+    game_integration,
     games,
     media,
     notifications,
@@ -115,6 +116,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[UYARI] WebSocket task baslatilamadi: {e}")
 
+    # Jackpot Manager baslat (devre disi - model uyumsuzlugu)
+    # TODO: JackpotGame modeline uyumlu hale getir
+    # try:
+    #     from app.tasks.jackpot_manager import start_jackpot_manager
+    #     import asyncio
+    #     asyncio.create_task(start_jackpot_manager())
+    #     print("[OK] Jackpot manager baslatildi")
+    # except Exception as e:
+    #     print(f"[UYARI] Jackpot manager baslatilamadi: {e}")
+    print("[BILGI] Jackpot manager devre disi (model guncelleniyor)")
+
     print("=" * 50)
     print(f"API: {settings.BASE_URL}/api")
     print(f"Docs: {settings.BASE_URL}/api/docs")
@@ -134,6 +146,14 @@ async def lifespan(app: FastAPI):
         from app.tasks.scheduler import task_scheduler
         task_scheduler.stop()
         print("[OK] Scheduler durduruldu")
+    except Exception:
+        pass
+
+    # Jackpot Manager durdur
+    try:
+        from app.tasks.jackpot_manager import stop_jackpot_manager
+        await stop_jackpot_manager()
+        print("[OK] Jackpot manager durduruldu")
     except Exception:
         pass
 
@@ -275,6 +295,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(user.router, prefix="/api/user", tags=["User"])
 app.include_router(wallet.router, prefix="/api/wallet", tags=["Wallet"])
 app.include_router(games.router, prefix="/api/games", tags=["Games"])
+app.include_router(game_integration.router, prefix="/api", tags=["Game Integration"])
 
 # Role Management
 from app.api import roles

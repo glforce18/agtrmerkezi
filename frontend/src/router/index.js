@@ -64,6 +64,12 @@ const routes = [
     meta: { title: 'Jackpot', requiresAuth: true }
   },
   {
+    path: '/verify',
+    name: 'verify',
+    component: () => import('@/views/Verify.vue'),
+    meta: { title: 'Provably Fair' }
+  },
+  {
     path: '/wallet',
     name: 'wallet',
     component: () => import('@/views/Wallet.vue'),
