@@ -113,6 +113,21 @@ class SiteSettingsUpdateRequest(BaseModel):
     discount_3_month: Optional[float] = None
     discount_6_month: Optional[float] = None
     discount_12_month: Optional[float] = None
+    # Branding fields
+    logo_url: Optional[str] = None
+    logo_dark_url: Optional[str] = None
+    logo_mobile_url: Optional[str] = None
+    logo_width: Optional[str] = None
+    logo_height: Optional[str] = None
+    logo_text: Optional[str] = None
+    logo_subtitle: Optional[str] = None
+    show_logo_text: Optional[bool] = None
+    footer_logo_url: Optional[str] = None
+    footer_logo_width: Optional[str] = None
+    footer_logo_height: Optional[str] = None
+    favicon_url: Optional[str] = None
+    primary_color: Optional[str] = None
+    secondary_color: Optional[str] = None
 
 
 class PaymentRejectRequest(BaseModel):
@@ -1093,7 +1108,22 @@ async def get_settings(db: Session = Depends(get_db), admin: User = Depends(get_
             "price_per_slot": settings_obj.price_per_slot,
             "discount_3_month": settings_obj.discount_3_month,
             "discount_6_month": settings_obj.discount_6_month,
-            "discount_12_month": settings_obj.discount_12_month
+            "discount_12_month": settings_obj.discount_12_month,
+            # Branding
+            "logo_url": settings_obj.logo_url,
+            "logo_dark_url": settings_obj.logo_dark_url,
+            "logo_mobile_url": settings_obj.logo_mobile_url,
+            "logo_width": settings_obj.logo_width,
+            "logo_height": settings_obj.logo_height,
+            "logo_text": settings_obj.logo_text,
+            "logo_subtitle": settings_obj.logo_subtitle,
+            "show_logo_text": settings_obj.show_logo_text,
+            "footer_logo_url": settings_obj.footer_logo_url,
+            "footer_logo_width": settings_obj.footer_logo_width,
+            "footer_logo_height": settings_obj.footer_logo_height,
+            "favicon_url": settings_obj.favicon_url,
+            "primary_color": settings_obj.primary_color,
+            "secondary_color": settings_obj.secondary_color
         }
     }
 
@@ -1133,7 +1163,36 @@ async def update_settings(
         settings_obj.discount_6_month = data.discount_6_month
     if data.discount_12_month is not None:
         settings_obj.discount_12_month = data.discount_12_month
-    
+    # Branding fields
+    if data.logo_url is not None:
+        settings_obj.logo_url = data.logo_url
+    if data.logo_dark_url is not None:
+        settings_obj.logo_dark_url = data.logo_dark_url
+    if data.logo_mobile_url is not None:
+        settings_obj.logo_mobile_url = data.logo_mobile_url
+    if data.logo_width is not None:
+        settings_obj.logo_width = data.logo_width
+    if data.logo_height is not None:
+        settings_obj.logo_height = data.logo_height
+    if data.logo_text is not None:
+        settings_obj.logo_text = data.logo_text
+    if data.logo_subtitle is not None:
+        settings_obj.logo_subtitle = data.logo_subtitle
+    if data.show_logo_text is not None:
+        settings_obj.show_logo_text = data.show_logo_text
+    if data.footer_logo_url is not None:
+        settings_obj.footer_logo_url = data.footer_logo_url
+    if data.footer_logo_width is not None:
+        settings_obj.footer_logo_width = data.footer_logo_width
+    if data.footer_logo_height is not None:
+        settings_obj.footer_logo_height = data.footer_logo_height
+    if data.favicon_url is not None:
+        settings_obj.favicon_url = data.favicon_url
+    if data.primary_color is not None:
+        settings_obj.primary_color = data.primary_color
+    if data.secondary_color is not None:
+        settings_obj.secondary_color = data.secondary_color
+
     db.commit()
     
     log = SystemLog(
@@ -1216,14 +1275,14 @@ async def get_audit_logs(
         try:
             df = datetime.fromisoformat(date_from)
             query = query.filter(AuditLog.created_at >= df)
-        except:
-            pass
+        except ValueError:
+            logger.warning(f"Invalid date_from format: {date_from}")
     if date_to:
         try:
             dt = datetime.fromisoformat(date_to)
             query = query.filter(AuditLog.created_at <= dt)
-        except:
-            pass
+        except ValueError:
+            logger.warning(f"Invalid date_to format: {date_to}")
     
     total = query.count()
     logs = query.order_by(desc(AuditLog.created_at)).offset((page - 1) * per_page).limit(per_page).all()
@@ -1274,8 +1333,8 @@ async def list_plugins(
         try:
             gt = GameType(game_type)
             query = query.filter(Plugin.game_type == gt)
-        except:
-            pass
+        except ValueError:
+            logger.warning(f"Invalid game_type filter: {game_type}")
     if category:
         query = query.filter(Plugin.category == category)
     if is_active is not None:
@@ -1354,8 +1413,8 @@ async def create_plugin(
     if game_type:
         try:
             gt = GameType(game_type)
-        except:
-            pass
+        except ValueError:
+            logger.warning(f"Invalid game_type for plugin: {game_type}")
     
     # DB'ye ekle
     plugin = Plugin(
@@ -1485,8 +1544,8 @@ async def delete_plugin(
     if plugin.file_path:
         try:
             Path(plugin.file_path).unlink(missing_ok=True)
-        except:
-            pass
+        except OSError as e:
+            logger.warning(f"Failed to delete plugin file {plugin.file_path}: {e}")
     
     plugin_name = plugin.name
     
@@ -1541,7 +1600,7 @@ async def assign_plugin_to_server(
         try:
             src = Path(plugin.file_path)
             game_dir = "ag" if server.game_type == GameType.AG else "cstrike"
-            dest_dir = Path(f"/home/gameservers/servers/server_{server_id}/{game_dir}/addons/amxmodx/plugins")
+            dest_dir = Path(settings.HLDS_PATH) / "servers" / f"server_{server_id}" / game_dir / "addons" / "amxmodx" / "plugins"
             dest_dir.mkdir(parents=True, exist_ok=True)
             dest = dest_dir / src.name
             shutil.copy2(src, dest)
@@ -1786,22 +1845,28 @@ async def create_backup(
         if not server:
             raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
         
-        f"/home/gameservers/servers/server_{server_id}"
+        servers_dir = Path(settings.HLDS_PATH) / "servers"
         backup_name = f"server_{server_id}_{timestamp}.tar.gz"
         backup_path = backup_dir / backup_name
-        
+
         try:
             subprocess.run(
-                f"tar -czf {backup_path} -C /home/gameservers/servers server_{server_id}",
-                shell=True, check=True, timeout=300
+                ["tar", "-czf", str(backup_path), "-C", str(servers_dir), f"server_{server_id}"],
+                shell=False, check=True, timeout=300
             )
             file_size = backup_path.stat().st_size
             status = "success"
             error = None
+        except subprocess.CalledProcessError as e:
+            file_size = 0
+            status = "failed"
+            error = f"Backup failed with code {e.returncode}"
+            backup_path = None
         except Exception as e:
             file_size = 0
             status = "failed"
-            error = str(e)
+            error = "Backup process error"
+            logger.error(f"Server backup error: {e}")
             backup_path = None
     else:
         # Database yedegi
@@ -1898,8 +1963,8 @@ async def delete_backup(
     if backup.file_path:
         try:
             Path(backup.file_path).unlink(missing_ok=True)
-        except:
-            pass
+        except OSError as e:
+            logger.warning(f"Failed to delete backup file {backup.file_path}: {e}")
     
     client_ip = request.client.host if request.client else None
     log_admin_audit(db, admin.id, "backup_delete", "backup", backup_id,

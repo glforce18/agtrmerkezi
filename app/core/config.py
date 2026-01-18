@@ -23,12 +23,13 @@ class Settings(BaseSettings):
     APP_VERSION: str = "5.1.0"
     APP_DESCRIPTION: str = "Half-Life & CS 1.6 Gaming Community Platform"
     DEBUG: bool = False
-    SECRET_KEY: str = "change-this-secret-key-in-production-min-32-chars"
-    
-    # Default Admin Credentials (from environment variables)
-    DEFAULT_ADMIN_USERNAME: str = "admin"
-    DEFAULT_ADMIN_EMAIL: str = "admin@agtrmerkezi.com"
-    DEFAULT_ADMIN_PASSWORD: str = "ChangeThisPassword123!"
+    # SECRET_KEY must be set in .env file - no default for security
+    SECRET_KEY: str = ""
+
+    # Default Admin Credentials - must be set in .env file
+    DEFAULT_ADMIN_USERNAME: str = ""
+    DEFAULT_ADMIN_EMAIL: str = ""
+    DEFAULT_ADMIN_PASSWORD: str = ""
     
     # API Versiyonlama
     API_V1_PREFIX: str = "/api/v1"
@@ -43,14 +44,14 @@ class Settings(BaseSettings):
         """BASE_URL alias for compatibility"""
         return self.BASE_URL
     
-    # Veritabani ayarlari
+    # Veritabani ayarlari - DB_PASSWORD must be set in .env
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 3306
     DB_USER: str = "agtrmerkezi_user"
-    DB_PASSWORD: str = "ChangeThisDatabasePassword123!"
+    DB_PASSWORD: str = ""  # Required: Set in .env file
     DB_NAME: str = "agtrmerkezi"
-    DB_POOL_SIZE: int = 10
-    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 30
     DB_POOL_RECYCLE: int = 3600
     
     @property

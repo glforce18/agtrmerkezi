@@ -3,6 +3,7 @@ IP Geolocation Service
 Free IP geolocation using ip-api.com with caching
 """
 
+import json
 import logging
 from typing import Optional, Dict, Any
 from datetime import timedelta
@@ -69,7 +70,11 @@ class GeolocationService:
 
             if cached:
                 logger.debug(f"Geolocation cache hit for {ip}")
-                return eval(cached)  # Convert string back to dict
+                try:
+                    return json.loads(cached)
+                except json.JSONDecodeError:
+                    logger.error(f"Invalid cached geolocation data for {ip}")
+                    pass  # Will fetch fresh data
 
         # Fetch from API
         try:
@@ -88,7 +93,7 @@ class GeolocationService:
                             cache_key = GeolocationService._get_cache_key(ip)
                             await redis_manager.set(
                                 cache_key,
-                                str(data),
+                                json.dumps(data),
                                 ttl=GeolocationService.CACHE_TTL
                             )
 
@@ -134,7 +139,10 @@ class GeolocationService:
             cached = await redis_manager.get(cache_key)
 
             if cached:
-                results[ip] = eval(cached)
+                try:
+                    results[ip] = json.loads(cached)
+                except json.JSONDecodeError:
+                    uncached_ips.append(ip)
             else:
                 uncached_ips.append(ip)
 
@@ -159,7 +167,7 @@ class GeolocationService:
                                 cache_key = GeolocationService._get_cache_key(ip)
                                 await redis_manager.set(
                                     cache_key,
-                                    str(data),
+                                    json.dumps(data),
                                     ttl=GeolocationService.CACHE_TTL
                                 )
 

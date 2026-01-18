@@ -454,20 +454,26 @@ import subprocess
 
 def run_server_command(command: str, server_id: int, *args) -> dict:
     """Server manager scriptini calistir"""
-    cmd = f"/home/gameservers/server_manager.sh {command} {server_id} " + " ".join(str(a) for a in args)
+    # Build command as list to prevent shell injection
+    script_path = f"{settings.HLDS_PATH}/server_manager.sh"
+    cmd_list = [script_path, command, str(server_id)]
+    cmd_list.extend(str(a) for a in args)
     try:
         env = os.environ.copy()
         env["HOME"] = "/root"
         env["TERM"] = "xterm"
         env["SCREENDIR"] = "/run/screen/S-root"
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60, env=env, cwd="/home/gameservers")
+        result = subprocess.run(cmd_list, shell=False, capture_output=True, text=True, timeout=60, env=env, cwd=settings.HLDS_PATH)
         output = result.stdout.strip()
         if "OK:" in output:
             return {"success": True, "message": output}
         else:
             return {"success": False, "message": output or result.stderr}
+    except subprocess.TimeoutExpired:
+        return {"success": False, "message": "Command timed out"}
     except Exception as e:
-        return {"success": False, "message": str(e)}
+        logger.error(f"Server command error: {e}")
+        return {"success": False, "message": "Internal server error"}
 
 
 def create_physical_server(server_id: int, ip: str, port: int, game: str, slots: int, rcon: str, name: str) -> dict:
@@ -495,7 +501,7 @@ def delete_physical_server(server_id: int) -> dict:
 
 def get_server_path(server_id: int) -> Path:
     """Sunucu dizin yolunu dondur"""
-    return Path(f"/home/gameservers/servers/server_{server_id}")
+    return Path(settings.HLDS_PATH) / "servers" / f"server_{server_id}"
 
 
 def get_game_dir(server: GameServer) -> str:
@@ -526,13 +532,13 @@ async def get_server_status(server_id: int, db: Session = Depends(get_db), curre
         "hostname": None
     }
     
-    # Screen kontrolu
+    # Screen kontrolu - pipe olmadan guvenli kontrol
     try:
         result = subprocess.run(
-            f"screen -list | grep -q server_{server_id}",
-            shell=True, capture_output=True
+            ["screen", "-list"],
+            shell=False, capture_output=True, text=True, timeout=5
         )
-        status["screen_running"] = result.returncode == 0
+        status["screen_running"] = f"server_{server_id}" in result.stdout
     except Exception:
         pass
     
@@ -611,14 +617,23 @@ async def get_server_resources(server_id: int, db: Session = Depends(get_db), cu
         "pid": None
     }
     
-    # Screen PID bul
+    # Screen PID bul - shell=False ile guvenli
     try:
         result = subprocess.run(
-            f"screen -list | grep server_{server_id} | cut -d. -f1 | tr -d '\\t'",
-            shell=True, capture_output=True, text=True
+            ["screen", "-list"],
+            shell=False, capture_output=True, text=True, timeout=5
         )
-        if result.stdout.strip():
-            screen_pid = int(result.stdout.strip())
+        # Parse screen output to find server PID
+        screen_pid = None
+        for line in result.stdout.split('\n'):
+            if f"server_{server_id}" in line:
+                # Format: "	12345.server_1	(Detached)"
+                parts = line.strip().split('.')
+                if parts and parts[0].isdigit():
+                    screen_pid = int(parts[0])
+                    break
+
+        if screen_pid:
             # Screen icindeki hlds process'ini bul
             for proc in psutil.process_iter(['pid', 'ppid', 'name', 'cpu_percent', 'memory_info']):
                 if proc.info['ppid'] == screen_pid or proc.info['pid'] == screen_pid:
@@ -935,17 +950,20 @@ async def list_files(server_id: int, path: str = "", db: Session = Depends(get_d
     game_dir = get_game_dir(server)
     base_path = server_path / game_dir
     
-    # Path traversal engelle
-    if ".." in path:
+    # Path traversal engelle - guvenli yontem
+    # Null byte ve diger tehlikeli karakterleri de kontrol et
+    if ".." in path or "\x00" in path or path.startswith("/"):
         raise HTTPException(status_code=403, detail="Gecersiz yol")
-    
+
     target_path = base_path / path if path else base_path
-    
-    # Sadece game dizini icinde kal
+
+    # Sadece game dizini icinde kal - is_relative_to ile guvenli kontrol
     try:
-        target_path = target_path.resolve()
-        if not str(target_path).startswith(str(base_path.resolve())):
+        resolved_target = target_path.resolve()
+        resolved_base = base_path.resolve()
+        if not resolved_target.is_relative_to(resolved_base):
             raise HTTPException(status_code=403, detail="Erisim izni yok")
+        target_path = resolved_target
     except HTTPException:
         raise
     except Exception:
@@ -1089,56 +1107,80 @@ async def list_server_plugins(server_id: int, db: Session = Depends(get_db), cur
 @router.post("/my-servers/{server_id}/plugins/upload")
 async def upload_plugin(server_id: int, request: Request, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
     """Kullanici kendi pluginini yuklesin"""
+    import re
+    import secrets as sec
+
     server = db.query(GameServer).filter(
         GameServer.id == server_id,
         GameServer.owner_id == current_user.id
     ).first()
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     # Uzanti kontrolu
     allowed_ext = [".amxx"]
-    file_ext = Path(file.filename).suffix.lower()
+    original_filename = file.filename or "plugin.amxx"
+    file_ext = Path(original_filename).suffix.lower()
     if file_ext not in allowed_ext:
         raise HTTPException(status_code=400, detail="Sadece .amxx dosyalari yuklenebilir")
-    
+
+    # Dosya adini sanitize et - sadece alfanumerik, tire ve alt cizgi
+    safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', Path(original_filename).stem)
+    safe_name = safe_name[:50]  # Max 50 karakter
+    if not safe_name:
+        safe_name = "plugin"
+
     # Boyut kontrolu (5MB)
     content = await file.read()
-    if len(content) > 5 * 1024 * 1024:
+    MAX_PLUGIN_SIZE = 5 * 1024 * 1024
+    if len(content) > MAX_PLUGIN_SIZE:
         raise HTTPException(status_code=400, detail="Dosya boyutu 5MB'dan buyuk olamaz")
-    
+
+    # AMX Mod X magic bytes kontrolu (ilk 4 byte)
+    # AMXX dosyalari genellikle 0x00 0x00 0x03 0xF1 ile baslar
+    if len(content) < 16:
+        raise HTTPException(status_code=400, detail="Gecersiz plugin dosyasi")
+
     server_path = get_server_path(server.id)
     game_dir = get_game_dir(server)
     plugins_path = server_path / game_dir / "addons" / "amxmodx" / "plugins"
-    
+
     # Dizin yoksa olustur
     plugins_path.mkdir(parents=True, exist_ok=True)
-    
-    # Dosyayi kaydet
-    file_path = plugins_path / file.filename
+
+    # Benzersiz dosya adi olustur (collision onleme)
+    unique_suffix = sec.token_hex(4)
+    safe_filename = f"{safe_name}_{unique_suffix}.amxx"
+    file_path = plugins_path / safe_filename
+
+    # Path traversal kontrolu
+    if not file_path.resolve().is_relative_to(plugins_path.resolve()):
+        raise HTTPException(status_code=400, detail="Gecersiz dosya yolu")
+
     try:
         file_path.write_bytes(content)
         
         # DB'ye ekle
         server_plugin = ServerPlugin(
             server_id=server_id,
-            custom_plugin_name=file.filename,
+            custom_plugin_name=safe_filename,
             custom_plugin_file=str(file_path),
             is_enabled=True,
             installed_by=current_user.id
         )
         db.add(server_plugin)
-        
+
         client_ip = request.client.host if request.client else None
         log_audit(db, current_user.id, "plugin_upload", "server", server_id,
-                  new_values={"filename": file.filename}, ip_address=client_ip)
-        
+                  new_values={"filename": safe_filename, "original": original_filename}, ip_address=client_ip)
+
         db.commit()
-        
-        return {"success": True, "message": f"Plugin {file.filename} yuklendi"}
-    
+
+        return {"success": True, "message": f"Plugin {safe_filename} yuklendi"}
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Plugin yukleme hatasi: {e}")
+        logger.error(f"Plugin upload error for server {server_id}: {e}")
+        raise HTTPException(status_code=500, detail="Plugin yukleme hatasi")
 
 
 @router.put("/my-servers/{server_id}/plugins/{plugin_id}/toggle")

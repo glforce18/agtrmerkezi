@@ -218,8 +218,30 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if request.url.path.startswith(("/ws", "/api/health", "/api/ws")):
             return await call_next(request)
 
-        # Admin paneli ve media upload icin limit yok (zaten auth middleware koruyor)
-        if request.url.path.startswith(("/api/admin", "/api/media", "/api/smart-media", "/admin")):
+        # Admin paneli icin daha yuksek limit (DDoS korumasiz degildir)
+        # Media upload icin ozel rate limiting
+        is_admin_path = request.url.path.startswith(("/api/admin", "/admin"))
+        is_upload_path = request.url.path.startswith(("/api/media", "/api/smart-media"))
+
+        if is_upload_path:
+            # Upload endpointleri icin daha katı limit: 10 req/dk
+            async with self._lock:
+                upload_key = f"upload:{ip}"
+                now = time.time()
+                if upload_key not in self.minute_requests:
+                    self.minute_requests[upload_key] = []
+                self.minute_requests[upload_key] = [t for t in self.minute_requests[upload_key] if now - t < 60]
+                if len(self.minute_requests[upload_key]) >= 10:
+                    logger.warning(f"Upload rate limited: {ip}")
+                    return JSONResponse(
+                        status_code=429,
+                        content={"detail": "Too many upload requests", "retry_after": 60},
+                        headers={"Retry-After": "60"}
+                    )
+                self.minute_requests[upload_key].append(now)
+            return await call_next(request)
+
+        if is_admin_path:
             return await call_next(request)
 
         # Periodic aggressive cleanup (memory leak prevention)

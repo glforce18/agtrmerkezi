@@ -52,12 +52,33 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     chunkSizeWarningLimit: 1500,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor': ['vue', 'vue-router', 'pinia'],
-          'naive-ui': ['naive-ui'],
-          'utils': ['@vueuse/core', 'date-fns']
+        manualChunks(id) {
+          // Vendor chunk - core libraries
+          if (id.includes('node_modules/vue') ||
+              id.includes('node_modules/vue-router') ||
+              id.includes('node_modules/pinia')) {
+            return 'vendor'
+          }
+          // UI framework chunk
+          if (id.includes('node_modules/naive-ui')) {
+            return 'naive-ui'
+          }
+          // Utils chunk
+          if (id.includes('node_modules/@vueuse') ||
+              id.includes('node_modules/date-fns')) {
+            return 'utils'
+          }
+          // Admin views - separate chunk for better caching
+          if (id.includes('/views/admin/')) {
+            return 'admin'
+          }
+          // Other node_modules - separate chunk
+          if (id.includes('node_modules')) {
+            return 'vendor-misc'
+          }
         }
       }
     }

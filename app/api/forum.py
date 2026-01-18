@@ -61,27 +61,54 @@ def ensure_unique_slug(db: Session, slug: str) -> str:
 
 @router.get("/categories")
 async def get_categories(db: Session = Depends(get_db)):
-    """Aktif kategorileri getir"""
-    categories = db.query(ForumCategory).filter(
+    """Aktif kategorileri getir - Redis cache ile"""
+    import json
+    from app.core.redis_manager import redis_manager
+
+    cache_key = "forum:categories"
+    CACHE_TTL = 300  # 5 dakika
+
+    # Cache kontrol
+    try:
+        cached = await redis_manager.get(cache_key)
+        if cached:
+            return json.loads(cached)
+    except Exception:
+        pass  # Cache hatasi durumunda DB'den devam
+
+    # Tek sorguda topic count'lari al (N+1 sorunu cozumu)
+    from sqlalchemy import func as sqlfunc
+    categories_with_counts = db.query(
+        ForumCategory,
+        sqlfunc.count(ForumTopic.id).label('topic_count')
+    ).outerjoin(
+        ForumTopic, ForumTopic.category_id == ForumCategory.id
+    ).filter(
         ForumCategory.is_visible == True
+    ).group_by(
+        ForumCategory.id
     ).order_by(ForumCategory.display_order).all()
 
     result = []
-    for cat in categories:
-        topic_count = db.query(func.count(ForumTopic.id)).filter(
-            ForumTopic.category_id == cat.id
-        ).scalar() or 0
-
+    for cat, topic_count in categories_with_counts:
         result.append({
             "id": cat.id,
             "name": cat.name,
             "slug": cat.slug,
             "description": cat.description,
             "icon": cat.icon or "fas fa-folder",
-            "topic_count": topic_count
+            "topic_count": topic_count or 0
         })
 
-    return {"categories": result}
+    response = {"categories": result}
+
+    # Cache'e kaydet
+    try:
+        await redis_manager.set(cache_key, json.dumps(response), ttl=CACHE_TTL)
+    except Exception:
+        pass  # Cache yazma hatasi kritik degil
+
+    return response
 
 
 @router.get("/categories/{slug}")

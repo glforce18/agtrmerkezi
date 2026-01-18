@@ -6,6 +6,7 @@ Comprehensive session lifecycle and trusted device management
 import logging
 import hashlib
 import secrets
+import json
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from user_agents import parse
@@ -163,7 +164,7 @@ class SessionManager:
         # Store session
         ttl = SessionManager.REMEMBER_ME_TTL if remember_me else SessionManager.SESSION_TTL
         session_key = SessionManager._get_session_key(session_id)
-        await redis_manager.set(session_key, str(session_data), ttl=ttl)
+        await redis_manager.set(session_key, json.dumps(session_data), ttl=ttl)
 
         # Add to user's active sessions
         user_sessions_key = SessionManager._get_user_sessions_key(user_id)
@@ -181,7 +182,11 @@ class SessionManager:
         session_data = await redis_manager.get(session_key)
 
         if session_data:
-            return eval(session_data)  # Convert string back to dict
+            try:
+                return json.loads(session_data)
+            except json.JSONDecodeError:
+                logger.error(f"Invalid session data format for session: {session_id}")
+                return None
 
         return None
 
@@ -195,7 +200,7 @@ class SessionManager:
 
             session_key = SessionManager._get_session_key(session_id)
             ttl = SessionManager.REMEMBER_ME_TTL if session_data.get("remember_me") else SessionManager.SESSION_TTL
-            await redis_manager.set(session_key, str(session_data), ttl=ttl)
+            await redis_manager.set(session_key, json.dumps(session_data), ttl=ttl)
 
     @staticmethod
     async def delete_session(session_id: str):

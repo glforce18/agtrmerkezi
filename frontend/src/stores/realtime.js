@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
+// Memory management constants
+const MAX_SERVER_STATS_AGE = 5 * 60 * 1000 // 5 dakika
+const MAX_ACTIVITY_FEED_SIZE = 50
+const MAX_CHAT_MESSAGES_PER_ROOM = 100
+const MAX_NOTIFICATIONS = 20
+const CLEANUP_INTERVAL = 60 * 1000 // 1 dakika
+
 export const useRealtimeStore = defineStore('realtime', () => {
   // Dashboard stats
   const dashboardStats = ref({
@@ -32,6 +39,9 @@ export const useRealtimeStore = defineStore('realtime', () => {
     chat: false,
     serverStats: false
   })
+
+  // Cleanup timer reference
+  let cleanupTimer = null
 
   // Computed
   const onlineCount = computed(() => onlineUsers.value.length)
@@ -68,10 +78,34 @@ export const useRealtimeStore = defineStore('realtime', () => {
       ...stats,
       updated_at: Date.now()
     })
+
+    // Cleanup old entries if Map grows too large (> 100 servers)
+    if (serverStats.value.size > 100) {
+      cleanupStaleServerStats()
+    }
   }
 
   function getServerStats(serverId) {
     return serverStats.value.get(serverId) || null
+  }
+
+  // Memory cleanup: Remove stale server stats
+  function cleanupStaleServerStats() {
+    const now = Date.now()
+    const staleIds = []
+
+    serverStats.value.forEach((stats, serverId) => {
+      if (now - stats.updated_at > MAX_SERVER_STATS_AGE) {
+        staleIds.push(serverId)
+      }
+    })
+
+    staleIds.forEach(id => serverStats.value.delete(id))
+  }
+
+  // Clear specific server stats
+  function clearServerStats(serverId) {
+    serverStats.value.delete(serverId)
   }
 
   function addActivity(activity) {
@@ -81,9 +115,9 @@ export const useRealtimeStore = defineStore('realtime', () => {
       timestamp: activity.timestamp || Date.now()
     })
 
-    // Keep last 50 activities
-    if (activityFeed.value.length > 50) {
-      activityFeed.value = activityFeed.value.slice(0, 50)
+    // Keep last N activities (use constant)
+    if (activityFeed.value.length > MAX_ACTIVITY_FEED_SIZE) {
+      activityFeed.value = activityFeed.value.slice(0, MAX_ACTIVITY_FEED_SIZE)
     }
   }
 
@@ -99,9 +133,9 @@ export const useRealtimeStore = defineStore('realtime', () => {
       timestamp: message.timestamp || Date.now()
     })
 
-    // Keep last 100 messages per room
-    if (messages.length > 100) {
-      chatMessages.value.set(roomId, messages.slice(-100))
+    // Keep last N messages per room (use constant)
+    if (messages.length > MAX_CHAT_MESSAGES_PER_ROOM) {
+      chatMessages.value.set(roomId, messages.slice(-MAX_CHAT_MESSAGES_PER_ROOM))
     }
   }
 
@@ -121,9 +155,9 @@ export const useRealtimeStore = defineStore('realtime', () => {
       timestamp: notification.timestamp || Date.now()
     })
 
-    // Keep last 20 notifications
-    if (liveNotifications.value.length > 20) {
-      liveNotifications.value = liveNotifications.value.slice(0, 20)
+    // Keep last N notifications (use constant)
+    if (liveNotifications.value.length > MAX_NOTIFICATIONS) {
+      liveNotifications.value = liveNotifications.value.slice(0, MAX_NOTIFICATIONS)
     }
   }
 
@@ -146,7 +180,38 @@ export const useRealtimeStore = defineStore('realtime', () => {
     connectionStatus.value[endpoint] = status
   }
 
+  // Periodic cleanup for memory management
+  function startPeriodicCleanup() {
+    if (cleanupTimer) return // Already running
+
+    cleanupTimer = setInterval(() => {
+      cleanupStaleServerStats()
+
+      // Cleanup inactive chat rooms (no messages in 30 minutes)
+      const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000
+      chatMessages.value.forEach((messages, roomId) => {
+        if (messages.length === 0) {
+          chatMessages.value.delete(roomId)
+        } else {
+          const lastMessage = messages[messages.length - 1]
+          if (lastMessage.timestamp < thirtyMinutesAgo) {
+            chatMessages.value.delete(roomId)
+          }
+        }
+      })
+    }, CLEANUP_INTERVAL)
+  }
+
+  function stopPeriodicCleanup() {
+    if (cleanupTimer) {
+      clearInterval(cleanupTimer)
+      cleanupTimer = null
+    }
+  }
+
   function reset() {
+    stopPeriodicCleanup()
+
     dashboardStats.value = {
       total_online: 0,
       total_players: 0,
@@ -188,6 +253,8 @@ export const useRealtimeStore = defineStore('realtime', () => {
     removeOnlineUser,
     updateServerStats,
     getServerStats,
+    clearServerStats,
+    cleanupStaleServerStats,
     addActivity,
     addChatMessage,
     getChatMessages,
@@ -197,6 +264,8 @@ export const useRealtimeStore = defineStore('realtime', () => {
     markAllNotificationsRead,
     clearNotifications,
     setConnectionStatus,
+    startPeriodicCleanup,
+    stopPeriodicCleanup,
     reset
   }
 })
