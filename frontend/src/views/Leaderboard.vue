@@ -67,7 +67,7 @@
                 <n-avatar
                   round
                   :size="80"
-                  :src="filteredData[1].avatar"
+                  :src="getAvatarUrl(filteredData[1].avatar, filteredData[1].name)"
                   class="mb-3 ring-2 ring-slate-400 ring-offset-2 ring-offset-gray-900"
                 />
                 <h3 class="font-bold text-lg mb-1">{{ filteredData[1].name }}</h3>
@@ -90,7 +90,7 @@
                 <n-avatar
                   round
                   :size="96"
-                  :src="filteredData[0].avatar"
+                  :src="getAvatarUrl(filteredData[0].avatar, filteredData[0].name)"
                   class="mb-3 ring-2 ring-orange-500 ring-offset-4 ring-offset-gray-900"
                 />
                 <h3 class="font-bold text-xl mb-1">{{ filteredData[0].name }}</h3>
@@ -113,7 +113,7 @@
                 <n-avatar
                   round
                   :size="80"
-                  :src="filteredData[2].avatar"
+                  :src="getAvatarUrl(filteredData[2].avatar, filteredData[2].name)"
                   class="mb-3 ring-2 ring-amber-700 ring-offset-2 ring-offset-gray-900"
                 />
                 <h3 class="font-bold text-lg mb-1">{{ filteredData[2].name }}</h3>
@@ -382,6 +382,13 @@ const totalPages = computed(() => Math.ceil(filteredData.value.length / itemsPer
 const totalCompetitors = computed(() => currentData.value.length)
 const activeNow = computed(() => Math.floor(currentData.value.length * 0.65))
 const highestScore = computed(() => currentData.value.length > 0 ? currentData.value[0].score : 0)
+
+// Avatar helper
+const getAvatarUrl = (avatar, username) => {
+  if (!avatar) return `https://api.dicebear.com/7.x/initials/svg?seed=${username || 'user'}`
+  if (avatar.startsWith('http')) return avatar
+  return `/static/${avatar}`
+}
 </script>
 
 <style scoped>
