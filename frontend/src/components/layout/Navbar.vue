@@ -35,10 +35,10 @@
         <div class="flex items-center gap-2">
           <!-- Wallet (logged in) -->
           <div v-if="user" class="hidden md:flex items-center gap-2">
-            <n-tag type="success" :bordered="false">
+            <n-tag type="success" :bordered="false" class="cursor-pointer hover:opacity-80 transition-opacity" @click="openWallet('tl')">
               {{ formatCurrency(user.balance || 0) }} TL
             </n-tag>
-            <n-tag type="warning" :bordered="false">
+            <n-tag type="warning" :bordered="false" class="cursor-pointer hover:opacity-80 transition-opacity" @click="openWallet('armor')">
               <template #icon>
                 <n-icon><ShieldCheck /></n-icon>
               </template>
@@ -116,10 +116,10 @@
         <div class="container-main py-4">
           <!-- Mobile Wallet -->
           <div v-if="user" class="flex gap-2 mb-4 pb-4 border-b" :class="isDark ? 'border-zinc-800' : 'border-zinc-200'">
-            <n-tag type="success" :bordered="false" class="flex-1 justify-center">
+            <n-tag type="success" :bordered="false" class="flex-1 justify-center cursor-pointer" @click="openWallet('tl'); mobileMenuOpen = false">
               {{ formatCurrency(user.balance || 0) }} TL
             </n-tag>
-            <n-tag type="warning" :bordered="false" class="flex-1 justify-center">
+            <n-tag type="warning" :bordered="false" class="flex-1 justify-center cursor-pointer" @click="openWallet('armor'); mobileMenuOpen = false">
               {{ formatNumber(user.balance_coin || 0) }} Armor
             </n-tag>
           </div>
@@ -186,7 +186,7 @@ const navItems = [
   { path: '/leaderboard', label: 'Siralamalar', icon: Trophy },
   { path: '/forum', label: 'Forum', icon: MessageSquare },
   { path: '/jackpot', label: 'Jackpot', icon: Dice5 },
-  { path: '/shop', label: 'Premium', icon: ShoppingBag }
+  { path: '/shop', label: 'Sunucu Kirala', icon: ShoppingBag }
 ]
 
 const notifications = ref([
@@ -262,6 +262,11 @@ const formatNumber = (value) => {
 
 const toggleTheme = () => {
   themeStore.toggleTheme()
+}
+
+const openWallet = (type) => {
+  // type: 'tl' veya 'armor'
+  router.push({ path: '/wallet', query: { tab: type } })
 }
 
 const handleUserMenuSelect = async (key) => {

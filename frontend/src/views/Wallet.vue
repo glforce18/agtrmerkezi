@@ -248,7 +248,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, h } from 'vue'
+import { ref, computed, onMounted, watch, h } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { NTag } from 'naive-ui'
 import {
@@ -269,6 +270,7 @@ import {
   RefreshCw
 } from 'lucide-vue-next'
 
+const route = useRoute()
 const authStore = useAuthStore()
 
 // Auth headers helper
@@ -525,8 +527,24 @@ const fetchTransactions = async () => {
   }
 }
 
+// Handle tab query parameter from navbar
+const handleTabQuery = () => {
+  const tab = route.query.tab
+  if (tab === 'tl') {
+    showDepositModal.value = true
+  } else if (tab === 'armor') {
+    showConvertModal.value = true
+  }
+}
+
 onMounted(() => {
   fetchTransactions()
+  handleTabQuery()
+})
+
+// Watch for query changes
+watch(() => route.query.tab, () => {
+  handleTabQuery()
 })
 </script>
 
