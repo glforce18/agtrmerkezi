@@ -63,7 +63,7 @@
           <h1 class="title">
             <span class="title-gradient">Hesap Oluştur</span>
           </h1>
-          <p class="subtitle">CS 1.6 sunucu yonetimine hemen basla!</p>
+          <p class="subtitle">CS 1.6 sunucu yönetimine hemen başla!</p>
         </div>
 
         <!-- OAuth Buttons -->
@@ -232,7 +232,7 @@
                 <Check :size="14" class="checkbox-check" />
               </div>
               <span class="checkbox-label">
-                <router-link to="/terms" class="link">Kullanim Kosullari</router-link> ve
+                <router-link to="/terms" class="link">Kullanım Kosullari</router-link> ve
                 <router-link to="/privacy" class="link">Gizlilik Politikasi</router-link>'ni
                 okudum ve kabul ediyorum
               </span>
@@ -244,7 +244,7 @@
                 <Check :size="14" class="checkbox-check" />
               </div>
               <span class="checkbox-label muted">
-                Yeni özellikler ve promosyonlar hakkinda e-posta almak istiyorum
+                Yeni özellikler ve promosyonlar hakkında e-posta almak istiyorum
               </span>
             </label>
           </div>
@@ -447,7 +447,7 @@ const handleRegister = async () => {
   }
 
   if (!form.accept_terms) {
-    message.warning('Kullanim kosullarini kabul etmelisiniz')
+    message.warning('Kullanım kosullarini kabul etmelisiniz')
     triggerShake()
     return
   }

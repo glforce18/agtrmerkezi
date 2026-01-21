@@ -17,11 +17,11 @@
             </div>
             Cüzdan
           </h1>
-          <p class="text-gray-400">Bakiyeni yonet, TL yükle ve Armor'a donustur</p>
+          <p class="text-gray-400">Bakiyeni yönet, TL yükle ve Armor'a dönüştür</p>
         </div>
         <div class="hidden md:flex items-center gap-2 text-xs text-gray-500">
           <kbd class="kbd">D</kbd> TL Yükle
-          <kbd class="kbd">A</kbd> Donustur
+          <kbd class="kbd">A</kbd> Dönüştür
           <kbd class="kbd">E</kbd> Disa Aktar
         </div>
       </div>
@@ -119,7 +119,7 @@
             </div>
             <n-button block class="action-btn armor-btn">
               <template #icon><ArrowRightLeft class="w-4 h-4" /></template>
-              Donustur
+              Dönüştür
             </n-button>
           </div>
         </div>
@@ -139,7 +139,7 @@
               </div>
             </div>
             <div class="mb-4">
-              <span class="text-sm text-gray-400 block mb-1">Donusum Orani</span>
+              <span class="text-sm text-gray-400 block mb-1">Dönüşüm Orani</span>
               <div class="rate-display">
                 <div class="flex items-center gap-2">
                   <span class="text-2xl font-bold">1 TL</span>
@@ -183,7 +183,7 @@
                 <div class="flex items-center gap-2 mb-1">
                   <n-tag type="warning" size="small" class="featured-tag">
                     <template #icon><Star class="w-3 h-3" /></template>
-                    En Populer
+                    En Popüler
                   </n-tag>
                   <n-tag type="success" size="small">+{{ featuredPackage.bonus_percent }}% Bonus</n-tag>
                 </div>
@@ -281,7 +281,7 @@
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <div>
             <h2 class="text-xl font-bold">İşlem Gecmisi</h2>
-            <p class="text-gray-400 text-sm">Tum finansal işlemleriniz</p>
+            <p class="text-gray-400 text-sm">Tüm finansal işlemleriniz</p>
           </div>
           <div class="flex flex-wrap items-center gap-3">
             <!-- Date Range Filter -->
@@ -291,7 +291,7 @@
               clearable
               size="small"
               :shortcuts="dateShortcuts"
-              start-placeholder="Baslangic"
+              start-placeholder="Başlangıç"
               end-placeholder="Bitis"
               class="date-picker"
             />
@@ -347,7 +347,7 @@
                 <RefreshCw class="w-4 h-4 text-purple-400" />
               </div>
               <div>
-                <span class="tx-stat-label">Toplam Donusum</span>
+                <span class="tx-stat-label">Toplam Dönüşüm</span>
                 <span class="tx-stat-value text-purple-400">{{ formatNumber(totalConversions) }} Armor</span>
               </div>
             </div>
@@ -373,8 +373,8 @@
                 <span v-for="i in 3" :key="i" :style="{ '--delay': i * 0.2 + 's' }"></span>
               </div>
             </div>
-            <h3 class="text-xl font-semibold text-gray-400 mt-6 mb-2">Henuz işlem yok</h3>
-            <p class="text-gray-500 mb-6">Ilk işlemini yaparak basla!</p>
+            <h3 class="text-xl font-semibold text-gray-400 mt-6 mb-2">Henüz işlem yok</h3>
+            <p class="text-gray-500 mb-6">İlk işlemini yaparak başla!</p>
             <div class="empty-actions">
               <n-button type="primary" @click="showDepositModal = true">
                 <template #icon><Plus class="w-4 h-4" /></template>
@@ -382,7 +382,7 @@
               </n-button>
               <n-button @click="showConvertModal = true">
                 <template #icon><ArrowRightLeft class="w-4 h-4" /></template>
-                Donustur
+                Dönüştür
               </n-button>
             </div>
           </div>
@@ -404,7 +404,7 @@
             <div class="icon-ring"></div>
           </div>
           <h2 class="text-xl font-bold">TL Yükle</h2>
-          <p class="text-gray-400 text-sm">Hesabınıza guvenle TL yükleyin</p>
+          <p class="text-gray-400 text-sm">Hesabınıza güvenle TL yükleyin</p>
           <button class="modal-close" @click="showDepositModal = false">
             <X class="w-5 h-5" />
           </button>
@@ -470,7 +470,7 @@
               <span>{{ formatCurrency(depositAmount) }} TL</span>
             </div>
             <div class="summary-row">
-              <span>İşlem Ucreti</span>
+              <span>İşlem Ücreti</span>
               <span class="text-green-400">Ücretsiz</span>
             </div>
             <div class="summary-divider"></div>
@@ -492,7 +492,7 @@
             :loading="depositing"
           >
             <template #icon><Lock class="w-4 h-4" /></template>
-            Guvenli Ödeme
+            Güvenli Ödeme
           </n-button>
         </div>
       </div>
@@ -511,8 +511,8 @@
             <ArrowRightLeft class="w-8 h-8 text-orange-400" />
             <div class="icon-ring orange"></div>
           </div>
-          <h2 class="text-xl font-bold">TL'yi Armor'a Donustur</h2>
-          <p class="text-gray-400 text-sm">Anlik donusum, sabit kur</p>
+          <h2 class="text-xl font-bold">TL'yi Armor'a Dönüştür</h2>
+          <p class="text-gray-400 text-sm">Anlik dönüşüm, sabit kur</p>
           <button class="modal-close" @click="showConvertModal = false">
             <X class="w-5 h-5" />
           </button>
@@ -598,7 +598,7 @@
             :loading="converting"
           >
             <template #icon><RefreshCw class="w-4 h-4" /></template>
-            Donustur
+            Dönüştür
           </n-button>
         </div>
       </div>
@@ -745,15 +745,15 @@ const quickPercentages = [
   { value: 25, label: '25%' },
   { value: 50, label: '50%' },
   { value: 75, label: '75%' },
-  { value: 100, label: 'Tumu' }
+  { value: 100, label: 'Tümü' }
 ]
 
 // Transaction filter buttons
 const transactionFilters = [
-  { value: null, label: 'Tumu', icon: Layers, colorClass: 'filter-all' },
+  { value: null, label: 'Tümü', icon: Layers, colorClass: 'filter-all' },
   { value: 'deposit', label: 'Yüklemeler', icon: ArrowDownLeft, colorClass: 'filter-deposit' },
   { value: 'purchase', label: 'Satın Almalar', icon: ShoppingCart, colorClass: 'filter-purchase' },
-  { value: 'convert', label: 'Donusumler', icon: RefreshCw, colorClass: 'filter-convert' }
+  { value: 'convert', label: 'Dönüşümler', icon: RefreshCw, colorClass: 'filter-convert' }
 ]
 
 // Balance trend (mock data - would come from API in real app)
@@ -915,7 +915,7 @@ const txColumns = [
       const config = {
         deposit: { icon: ArrowDownLeft, label: 'TL Yükleme', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
         withdraw: { icon: ArrowUpRight, label: 'Cekim', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
-        convert: { icon: RefreshCw, label: 'Donusum', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        convert: { icon: RefreshCw, label: 'Dönüşüm', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
         purchase: { icon: ShoppingCart, label: 'Satın Alma', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' }
       }
       const cfg = config[row.type] || { icon: Receipt, label: row.type, color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20' }
@@ -972,9 +972,9 @@ const getRowClassName = (row, index) => {
 
 // Armor Packages
 const armorPackages = ref([
-  { id: 1, name: 'Baslangic', tl_amount: 10, armor_amount: 1000, bonus_percent: 0, is_featured: false },
+  { id: 1, name: 'Başlangıç', tl_amount: 10, armor_amount: 1000, bonus_percent: 0, is_featured: false },
   { id: 2, name: 'Standart', tl_amount: 25, armor_amount: 2500, bonus_percent: 5, is_featured: false },
-  { id: 3, name: 'Populer', tl_amount: 50, armor_amount: 5000, bonus_percent: 10, is_featured: true },
+  { id: 3, name: 'Popüler', tl_amount: 50, armor_amount: 5000, bonus_percent: 10, is_featured: true },
   { id: 4, name: 'Premium', tl_amount: 100, armor_amount: 10000, bonus_percent: 15, is_featured: false },
   { id: 5, name: 'Elite', tl_amount: 250, armor_amount: 25000, bonus_percent: 20, is_featured: false },
   { id: 6, name: 'Legend', tl_amount: 500, armor_amount: 50000, bonus_percent: 25, is_featured: false }
@@ -1107,7 +1107,7 @@ const buyPackage = async (pkg) => {
 
   window.$dialog?.warning({
     title: 'Paket Satın Al',
-    content: `${pkg.tl_amount} TL karsiliginda ${formatNumber(pkg.armor_amount + (pkg.armor_amount * pkg.bonus_percent / 100))} Armor satın almak istiyor musunuz?`,
+    content: `${pkg.tl_amount} TL karşılığında ${formatNumber(pkg.armor_amount + (pkg.armor_amount * pkg.bonus_percent / 100))} Armor satın almak istiyor musunuz?`,
     positiveText: 'Satın Al',
     negativeText: 'İptal',
     onPositiveClick: async () => {
@@ -1124,10 +1124,10 @@ const buyPackage = async (pkg) => {
           fetchTransactions()
         } else {
           const error = await response.json()
-          showError('İşlem Başarısız', error.detail || 'Bir hata olustu')
+          showError('İşlem Başarısız', error.detail || 'Bir hata oluştu')
         }
       } catch (e) {
-        showError('Hata', 'Bir hata olustu')
+        showError('Hata', 'Bir hata oluştu')
       }
     }
   })
@@ -1159,10 +1159,10 @@ const processDeposit = async () => {
       }
     } else {
       const error = await response.json()
-      showError('Yükleme Başarısız', error.detail || 'Bir hata olustu')
+      showError('Yükleme Başarısız', error.detail || 'Bir hata oluştu')
     }
   } catch (e) {
-    showError('Hata', 'Bir hata olustu')
+    showError('Hata', 'Bir hata oluştu')
   } finally {
     depositing.value = false
   }
@@ -1181,16 +1181,16 @@ const processConversion = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      showSuccess('Donusum Başarılı!', `${formatNumber(data.armor_added)} Armor hesabınıza eklendi`)
+      showSuccess('Dönüşüm Başarılı!', `${formatNumber(data.armor_added)} Armor hesabınıza eklendi`)
       showConvertModal.value = false
       authStore.fetchUser()
       fetchTransactions()
     } else {
       const error = await response.json()
-      showError('Donusum Başarısız', error.detail || 'Bir hata olustu')
+      showError('Dönüşüm Başarısız', error.detail || 'Bir hata oluştu')
     }
   } catch (e) {
-    showError('Hata', 'Bir hata olustu')
+    showError('Hata', 'Bir hata oluştu')
   } finally {
     converting.value = false
   }

@@ -55,7 +55,7 @@
             <n-select
               v-model:value="filters.gameType"
               :options="gameTypeOptions"
-              placeholder="Tum Modlar"
+              placeholder="Tüm Modlar"
               clearable
               size="small"
               class="filter-select"
@@ -68,7 +68,7 @@
             <n-select
               v-model:value="filters.map"
               :options="mapOptions"
-              placeholder="Tum Haritalar"
+              placeholder="Tüm Haritalar"
               clearable
               filterable
               size="small"
@@ -82,7 +82,7 @@
             <n-select
               v-model:value="filters.playerCount"
               :options="playerCountOptions"
-              placeholder="Tum Sunucular"
+              placeholder="Tüm Sunucular"
               clearable
               size="small"
               class="filter-select"
@@ -95,7 +95,7 @@
             <n-select
               v-model:value="filters.region"
               :options="regionOptions"
-              placeholder="Tum Bolgeler"
+              placeholder="Tüm Bölgeler"
               clearable
               size="small"
               class="filter-select"
@@ -215,7 +215,7 @@
             {{ getRegionLabel(filters.region) }}
           </n-tag>
           <n-button text size="small" type="warning" @click="clearAllFilters">
-            Tumunu Temizle
+            Tümünü Temizle
           </n-button>
         </div>
       </section>
@@ -365,9 +365,9 @@
         <div class="empty-icon">
           <n-icon :component="SearchX" size="80" />
         </div>
-        <h3>Sunucu Bulunamadi</h3>
-        <p v-if="hasActiveFilters">Arama kriterlerinize uygun sunucu bulunamadi. Filtreleri degistirmeyi deneyin.</p>
-        <p v-else>Henuz aktif sunucu bulunmuyor.</p>
+        <h3>Sunucu Bulunamadı</h3>
+        <p v-if="hasActiveFilters">Arama kriterlerinize uygun sunucu bulunamadı. Filtreleri değiştirmeyi deneyin.</p>
+        <p v-else>Henüz aktif sunucu bulunmuyor.</p>
         <n-button v-if="hasActiveFilters" type="primary" @click="clearAllFilters">
           Filtreleri Temizle
         </n-button>

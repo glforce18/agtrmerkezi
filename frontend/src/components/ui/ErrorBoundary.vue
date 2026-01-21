@@ -4,7 +4,7 @@
       <div class="error-icon">
         <AlertTriangleIcon :size="48" />
       </div>
-      <h2 class="error-title">Bir hata olustu</h2>
+      <h2 class="error-title">Bir hata oluştu</h2>
       <p class="error-message">{{ errorMessage }}</p>
       <div class="error-actions">
         <button class="retry-btn" @click="retry">
@@ -33,7 +33,7 @@ const errorMessage = ref('')
 
 onErrorCaptured((err) => {
   hasError.value = true
-  errorMessage.value = err?.message || 'Beklenmeyen bir hata olustu'
+  errorMessage.value = err?.message || 'Beklenmeyen bir hata oluştu'
   return false
 })
 

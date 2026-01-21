@@ -5,7 +5,7 @@
       <header class="page-header">
         <div class="header-content">
           <div class="header-title">
-            <h1>Ödeme Yonetimi</h1>
+            <h1>Ödeme Yönetimi</h1>
             <p class="header-subtitle">
               <span class="pulse-dot"></span>
               {{ pendingCount }} bekleyen ödeme
@@ -157,7 +157,7 @@
             <div class="filter-group">
               <label>Ödeme Yontemi</label>
               <select v-model="filterMethod" class="filter-select" @change="fetchPayments">
-                <option value="">Tum Yontemler</option>
+                <option value="">Tüm Yontemler</option>
                 <option value="bank">Banka Havalesi</option>
                 <option value="papara">Papara</option>
                 <option value="crypto">Kripto</option>
@@ -165,7 +165,7 @@
             </div>
 
             <div class="filter-group">
-              <label>Baslangic Tarihi</label>
+              <label>Başlangıç Tarihi</label>
               <input
                 type="date"
                 v-model="filterDateFrom"
@@ -326,7 +326,7 @@
             <div class="empty-icon">
               <Receipt :size="64" />
             </div>
-            <h3>Ödeme Bulunamadi</h3>
+            <h3>Ödeme Bulunamadı</h3>
             <p>Secilen kriterlere uygun ödeme kaydina rastlanmadi.</p>
             <button class="btn btn-outline" @click="resetFilters">
               <RotateCcw :size="16" />
@@ -492,7 +492,7 @@
                     />
                     <div class="proof-overlay">
                       <ZoomIn :size="24" />
-                      <span>Buyutmek için tikla</span>
+                      <span>Buyutmek için tıkla</span>
                     </div>
                   </div>
                 </div>
@@ -550,8 +550,8 @@
               <div class="modal-body">
                 <div class="reject-info">
                   <p>
-                    <strong>{{ paymentToReject?.username }}</strong> kullanıcısinin
-                    <strong>{{ formatCurrency(paymentToReject?.amount) }}</strong> tutarindaki
+                    <strong>{{ paymentToReject?.username }}</strong> kullanıcısının
+                    <strong>{{ formatCurrency(paymentToReject?.amount) }}</strong> tutarındaki
                     ödemesini reddetmek uzeresiniz.
                   </p>
                 </div>
@@ -562,7 +562,7 @@
                     id="rejectReason"
                     v-model="rejectReason"
                     rows="4"
-                    placeholder="Red sebebini aciklayin..."
+                    placeholder="Red sebebini açıklayin..."
                     class="form-textarea"
                   ></textarea>
                 </div>
@@ -613,12 +613,12 @@
                     <Check :size="48" />
                   </div>
                   <p>
-                    <strong>{{ paymentToApprove?.username }}</strong> kullanıcısinin
-                    <strong>{{ formatCurrency(paymentToApprove?.amount) }}</strong> tutarindaki
+                    <strong>{{ paymentToApprove?.username }}</strong> kullanıcısının
+                    <strong>{{ formatCurrency(paymentToApprove?.amount) }}</strong> tutarındaki
                     ödemesini onaylamak istiyor musunuz?
                   </p>
                   <p class="confirm-warning">
-                    Bu işlem geri alinamaz ve kullanıcınin bakiyesine yansitilacaktir.
+                    Bu işlem geri alınamaz ve kullanıcının bakiyesine yansıtılacaktır.
                   </p>
                 </div>
               </div>
@@ -670,7 +670,7 @@
                       id="bulkRejectReason"
                       v-model="bulkRejectReason"
                       rows="3"
-                      placeholder="Red sebebini aciklayin..."
+                      placeholder="Red sebebini açıklayin..."
                       class="form-textarea"
                     ></textarea>
                   </div>
@@ -686,7 +686,7 @@
                   :disabled="bulkAction === 'reject' && !bulkRejectReason.trim()"
                 >
                   <component :is="bulkAction === 'approve' ? Check : X" :size="18" />
-                  {{ bulkAction === 'approve' ? 'Tumu Onayla' : 'Tumu Reddet' }}
+                  {{ bulkAction === 'approve' ? 'Tümü Onayla' : 'Tümü Reddet' }}
                 </button>
               </div>
             </div>
@@ -823,7 +823,7 @@ const quickRejectReasons = [
   'Tutar uyusmuyor',
   'Gönderen bilgisi hatali',
   'Geçersiz işlem',
-  'Supheli işlem'
+  'Şüpheli işlem'
 ]
 
 let searchTimeout = null
@@ -900,7 +900,7 @@ const fetchPayments = async () => {
     }
   } catch (error) {
     // Error handled
-    showToast('Ödemeler yüklenirken hata olustu', 'error')
+    showToast('Ödemeler yüklenirken hata oluştu', 'error')
   }
   loading.value = false
 }
@@ -1120,7 +1120,7 @@ const executeApprove = async () => {
       stats.approvedCount++
       closeApproveModal()
       closeModal()
-      showToast('Ödeme basariyla onaylandı', 'success')
+      showToast('Ödeme başarıyla onaylandı', 'success')
       fetchPayments()
       fetchStats()
     } else {
@@ -1129,7 +1129,7 @@ const executeApprove = async () => {
     }
   } catch (error) {
     // Error handled
-    showToast('Bir hata olustu', 'error')
+    showToast('Bir hata oluştu', 'error')
   }
 }
 
@@ -1147,7 +1147,7 @@ const closeRejectModal = () => {
 
 const confirmReject = async () => {
   if (!rejectReason.value.trim()) {
-    showToast('Lütfen bir red sebebi yazin', 'warning')
+    showToast('Lütfen bir red sebebi yazın', 'warning')
     return
   }
 
@@ -1173,7 +1173,7 @@ const confirmReject = async () => {
     }
   } catch (error) {
     // Error handled
-    showToast('Bir hata olustu', 'error')
+    showToast('Bir hata oluştu', 'error')
   }
 }
 
@@ -1248,7 +1248,7 @@ const exportPayments = () => {
   params.append('token', authStore.token)
 
   window.open(`/api/admin/payments/export?${params}`, '_blank')
-  showToast('Rapor indirme basladı', 'info')
+  showToast('Rapor indirme başladı', 'info')
 }
 
 // Image Viewer

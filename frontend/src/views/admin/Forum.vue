@@ -7,7 +7,7 @@
           <div class="header-info">
             <h1 class="page-title">
               <MessageSquare :size="28" class="title-icon" />
-              Forum Yonetimi
+              Forum Yönetimi
             </h1>
             <p class="page-subtitle">Kategoriler, konular ve moderasyon araclari</p>
           </div>
@@ -114,7 +114,7 @@
             <div class="panel-header">
               <div class="panel-title">
                 <h2>Kategoriler</h2>
-                <p>Surukle birak ile siralamayı degistirin</p>
+                <p>Sürükle bırak ile sıralamayı değiştirin</p>
               </div>
               <div class="panel-actions">
                 <div class="search-box">
@@ -138,11 +138,11 @@
               <div class="empty-icon">
                 <FolderOpen :size="64" />
               </div>
-              <h3>Kategori Bulunamadi</h3>
-              <p>Henuz kategori oluşturulmamiş veya arama kriterinize uygun sonuc yok.</p>
+              <h3>Kategori Bulunamadı</h3>
+              <p>Henüz kategori oluşturulmamış veya arama kriterinize uygun sonuç yok.</p>
               <button class="btn btn-primary" @click="openCategoryModal()">
                 <Plus :size="18" />
-                Ilk Kategoriyi Oluştur
+                İlk Kategoriyi Oluştur
               </button>
             </div>
 
@@ -236,7 +236,7 @@
             <div class="panel-header">
               <div class="panel-title">
                 <h2>Konular</h2>
-                <p>Tum forumdaki konulari yonetin</p>
+                <p>Tüm forumdaki konuları yönetin</p>
               </div>
             </div>
 
@@ -258,16 +258,16 @@
                 </div>
 
                 <select v-model="topicFilter.category" class="filter-select" @change="fetchTopics">
-                  <option value="">Tum Kategoriler</option>
+                  <option value="">Tüm Kategoriler</option>
                   <option v-for="cat in categories" :key="cat.id" :value="cat.id">
                     {{ cat.icon }} {{ cat.name }}
                   </option>
                 </select>
 
                 <select v-model="topicFilter.status" class="filter-select" @change="fetchTopics">
-                  <option value="">Tum Durumlar</option>
-                  <option value="open">Acik</option>
-                  <option value="closed">Kapali</option>
+                  <option value="">Tüm Durumlar</option>
+                  <option value="open">Açık</option>
+                  <option value="closed">Kapalı</option>
                   <option value="pinned">Sabitlenmis</option>
                 </select>
               </div>
@@ -332,7 +332,7 @@
               <div class="empty-icon">
                 <MessageSquare :size="64" />
               </div>
-              <h3>Konu Bulunamadi</h3>
+              <h3>Konu Bulunamadı</h3>
               <p>Arama veya filtre kriterlerinize uygun konu yok.</p>
             </div>
 
@@ -718,7 +718,7 @@
                     <textarea
                       v-model="categoryForm.description"
                       rows="3"
-                      placeholder="Kategori hakkinda kisa bir açıklama..."
+                      placeholder="Kategori hakkında kisa bir açıklama..."
                       class="form-textarea"
                     ></textarea>
                   </div>
@@ -732,7 +732,7 @@
                       <input
                         v-model="categoryForm.icon"
                         type="text"
-                        placeholder="Emoji secin"
+                        placeholder="Emoji seçin"
                         class="form-input icon-input"
                         @focus="showIconPicker = true"
                       />
@@ -777,7 +777,7 @@
                   <div class="form-group">
                     <label>
                       <Hash :size="16" />
-                      Siralama
+                      Sıralama
                     </label>
                     <input
                       v-model.number="categoryForm.display_order"
@@ -847,7 +847,7 @@
                 <div class="form-group">
                   <label>Hedef Kategori</label>
                   <select v-model="targetCategoryId" class="form-select">
-                    <option value="" disabled>Kategori secin...</option>
+                    <option value="" disabled>Kategori seçin...</option>
                     <option
                       v-for="cat in categories"
                       :key="cat.id"
@@ -1164,7 +1164,7 @@ const getTopicStatusClass = (topic) => {
 const getTopicStatusLabel = (topic) => {
   if (topic.is_pinned) return 'Sabit'
   if (topic.is_locked) return 'Kilitli'
-  return 'Acik'
+  return 'Açık'
 }
 
 // Toast helpers
@@ -1374,7 +1374,7 @@ const saveCategory = async () => {
       fetchStats()
     } else {
       const data = await res.json()
-      showToast(data.detail || 'Bir hata olustu', 'error')
+      showToast(data.detail || 'Bir hata oluştu', 'error')
     }
   } catch (e) {
     // Error handled
@@ -1386,7 +1386,7 @@ const saveCategory = async () => {
 // Delete Category
 const confirmDeleteCategory = (category) => {
   deleteModalTitle.value = 'Kategoriyi Sil'
-  deleteModalMessage.value = `"${category.name}" kategorisini silmek istediginize emin misiniz? İçindeki tum konular da silinecektir!`
+  deleteModalMessage.value = `"${category.name}" kategorisini silmek istediğinize emin misiniz? İçindeki tum konular da silinecektir!`
   deleteCallback.value = () => deleteCategory(category.id)
   showDeleteModal.value = true
 }
@@ -1451,10 +1451,10 @@ const onDrop = async (event, targetIndex) => {
         orders: newCategories.map(c => ({ id: c.id, order: c.display_order }))
       })
     })
-    showToast('Siralama kaydedildi', 'success')
+    showToast('Sıralama kaydedildi', 'success')
   } catch (e) {
     // Error handled
-    showToast('Siralama kaydedilemedi', 'error')
+    showToast('Sıralama kaydedilemedi', 'error')
     fetchCategories()
   }
 }
@@ -1492,7 +1492,7 @@ const togglePin = async (topic) => {
     })
     if (res.ok) {
       topic.is_pinned = !topic.is_pinned
-      showToast(topic.is_pinned ? 'Konu sabitlendi' : 'Sabitleme kaldırildi', 'success')
+      showToast(topic.is_pinned ? 'Konu sabitlendi' : 'Sabitleme kaldırıldı', 'success')
     }
   } catch (e) {
     // Error handled
@@ -1519,7 +1519,7 @@ const toggleLock = async (topic) => {
 
 const confirmDeleteTopic = (topic) => {
   deleteModalTitle.value = 'Konuyu Sil'
-  deleteModalMessage.value = `"${topic.title}" konusunu silmek istediginize emin misiniz?`
+  deleteModalMessage.value = `"${topic.title}" konusunu silmek istediğinize emin misiniz?`
   deleteCallback.value = () => deleteTopic(topic.id)
   showDeleteModal.value = true
 }
@@ -1617,7 +1617,7 @@ const bulkLockTopics = async () => {
 
 const bulkDeleteTopics = () => {
   deleteModalTitle.value = 'Toplu Silme'
-  deleteModalMessage.value = `${selectedTopics.value.length} konuyu silmek istediginize emin misiniz?`
+  deleteModalMessage.value = `${selectedTopics.value.length} konuyu silmek istediğinize emin misiniz?`
   deleteCallback.value = async () => {
     try {
       await fetch('/api/admin/forum/topics/bulk', {

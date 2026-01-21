@@ -6,7 +6,7 @@
         <div class="header-content">
           <div class="header-title-group">
             <h1 class="header-title">Medya Merkezi</h1>
-            <p class="header-subtitle">Gorselleri ve bannerlari tek bir yerden yonetin</p>
+            <p class="header-subtitle">Görselleri ve bannerlari tek bir yerden yönetin</p>
           </div>
           <div class="header-actions">
             <button class="btn-icon" @click="toggleTheme" title="Tema Degistir">
@@ -15,7 +15,7 @@
             </button>
             <button class="btn-primary" @click="showUploadModal = true">
               <Upload :size="18" />
-              <span>Gorsel Yükle</span>
+              <span>Görsel Yükle</span>
             </button>
           </div>
         </div>
@@ -38,7 +38,7 @@
           @click="activeTab = 'banners'"
         >
           <LayoutTemplate :size="20" />
-          <span>Banner Yonetimi</span>
+          <span>Banner Yönetimi</span>
           <span class="tab-badge">{{ banners.length }}</span>
         </button>
       </nav>
@@ -95,7 +95,7 @@
             <!-- Bulk Actions -->
             <Transition name="fade">
               <div v-if="selectedImages.length > 0" class="bulk-actions">
-                <span class="selected-count">{{ selectedImages.length }} secili</span>
+                <span class="selected-count">{{ selectedImages.length }} seçili</span>
                 <button class="bulk-btn" @click="bulkCopyUrls" title="URL Kopyala">
                   <Link2 :size="16" />
                 </button>
@@ -116,7 +116,7 @@
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="Gorsel ara..."
+                placeholder="Görsel ara..."
                 class="search-input"
               />
               <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
@@ -137,7 +137,7 @@
           >
             <div class="drop-zone-content">
               <Upload :size="64" class="drop-icon" />
-              <h3>Gorselleri Birakin</h3>
+              <h3>Görselleri Birakin</h3>
               <p>Dosyalari buraya birakin</p>
             </div>
           </div>
@@ -282,12 +282,12 @@
             <div class="empty-icon">
               <ImageIcon :size="64" />
             </div>
-            <h3>Gorsel Bulunamadi</h3>
-            <p v-if="searchQuery">Arama kriterlerinize uygun gorsel yok</p>
-            <p v-else>Henuz gorsel yüklenmemis</p>
+            <h3>Görsel Bulunamadı</h3>
+            <p v-if="searchQuery">Arama kriterlerinize uygun görsel yok</p>
+            <p v-else>Henüz görsel yüklenmemis</p>
             <button class="btn-primary" @click="showUploadModal = true">
               <Upload :size="18" />
-              <span>Ilk Gorseli Yükle</span>
+              <span>İlk Görseli Yükle</span>
             </button>
           </div>
         </div>
@@ -380,7 +380,7 @@
           <div class="section-header">
             <h2 class="section-title">
               <Layers :size="20" />
-              Tum Bannerlar
+              Tüm Bannerlar
             </h2>
             <button class="btn-primary" @click="openBannerModal()">
               <Plus :size="18" />
@@ -392,7 +392,7 @@
               <thead>
                 <tr>
                   <th>Onizleme</th>
-                  <th>Baslik</th>
+                  <th>Başlık</th>
                   <th>Pozisyon</th>
                   <th>Tarih Araligi</th>
                   <th>Link</th>
@@ -419,7 +419,7 @@
                     <td>
                       <div class="date-range">
                         <span v-if="banner.start_date || banner.end_date">
-                          {{ formatDate(banner.start_date) || 'Baslangic yok' }}
+                          {{ formatDate(banner.start_date) || 'Başlangıç yok' }}
                           <ArrowRight :size="12" />
                           {{ formatDate(banner.end_date) || 'Bitis yok' }}
                         </span>
@@ -469,10 +469,10 @@
             </table>
             <div v-if="banners.length === 0" class="empty-table">
               <LayoutTemplate :size="48" />
-              <p>Henuz banner eklenmemis</p>
+              <p>Henüz banner eklenmemis</p>
               <button class="btn-primary" @click="openBannerModal()">
                 <Plus :size="18" />
-                <span>Ilk Banneri Oluştur</span>
+                <span>İlk Banneri Oluştur</span>
               </button>
             </div>
           </div>
@@ -485,7 +485,7 @@
           <div v-if="showUploadModal" class="modal-backdrop" @click.self="showUploadModal = false">
             <div class="modal upload-modal">
               <div class="modal-header">
-                <h2>Gorsel Yükle</h2>
+                <h2>Görsel Yükle</h2>
                 <button class="modal-close" @click="showUploadModal = false">
                   <X :size="24" />
                 </button>
@@ -512,7 +512,7 @@
                     <div class="dropzone-icon">
                       <CloudUpload :size="48" />
                     </div>
-                    <h3>Gorselleri surukleyin veya tiklayin</h3>
+                    <h3>Görselleri sürükleyin veya tıklayin</h3>
                     <p>PNG, JPG, GIF, SVG, WEBP (max 10MB)</p>
                   </div>
                 </div>
@@ -612,7 +612,7 @@
                 </div>
               </div>
               <div class="preview-sidebar">
-                <h3>Gorsel Bilgileri</h3>
+                <h3>Görsel Bilgileri</h3>
                 <div class="info-group">
                   <label>Ad</label>
                   <span>{{ previewImage.name }}</span>
@@ -666,7 +666,7 @@
           <div v-if="editingImage" class="modal-backdrop" @click.self="editingImage = null">
             <div class="modal edit-modal">
               <div class="modal-header">
-                <h2>Gorseli Düzenle</h2>
+                <h2>Görseli Düzenle</h2>
                 <button class="modal-close" @click="editingImage = null">
                   <X :size="24" />
                 </button>
@@ -676,12 +676,12 @@
                   <img :src="getImageUrl(editingImage)" :alt="editingImage.name" />
                 </div>
                 <div class="form-group">
-                  <label>Gorsel Adi</label>
+                  <label>Görsel Adi</label>
                   <input v-model="editingImage.name" type="text" />
                 </div>
                 <div class="form-group">
                   <label>Alt Text (SEO)</label>
-                  <input v-model="editingImage.alt_text" type="text" placeholder="Gorsel açıklamasi" />
+                  <input v-model="editingImage.alt_text" type="text" placeholder="Görsel açıklamasi" />
                 </div>
                 <div class="form-group">
                   <label>Kategori</label>
@@ -729,12 +729,12 @@
               </div>
               <div class="modal-body">
                 <div class="form-group">
-                  <label>Baslik *</label>
+                  <label>Başlık *</label>
                   <input v-model="bannerForm.title" type="text" placeholder="Banner basligi" />
                 </div>
 
                 <div class="form-group">
-                  <label>Gorsel *</label>
+                  <label>Görsel *</label>
                   <div class="image-selector">
                     <div v-if="bannerForm.image_url" class="selected-image">
                       <img :src="bannerForm.image_url" />
@@ -744,7 +744,7 @@
                     </div>
                     <div v-else class="image-placeholder" @click="showImagePicker = true">
                       <ImageIcon :size="32" />
-                      <span>Gorsel Sec</span>
+                      <span>Görsel Sec</span>
                     </div>
                     <div class="image-input-group">
                       <input
@@ -775,7 +775,7 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Link Ayarlari</label>
+                  <label>Link Ayarları</label>
                   <div class="link-options">
                     <label class="checkbox-option">
                       <input type="checkbox" v-model="bannerForm.open_new_tab" />
@@ -790,7 +790,7 @@
 
                 <div class="form-row">
                   <div class="form-group">
-                    <label>Baslangic Tarihi</label>
+                    <label>Başlangıç Tarihi</label>
                     <input v-model="bannerForm.start_date" type="datetime-local" />
                   </div>
                   <div class="form-group">
@@ -851,7 +851,7 @@
                   <div class="info-item">
                     <Calendar :size="16" />
                     <span v-if="previewingBanner.start_date || previewingBanner.end_date">
-                      {{ formatDate(previewingBanner.start_date) || 'Baslangic yok' }} -
+                      {{ formatDate(previewingBanner.start_date) || 'Başlangıç yok' }} -
                       {{ formatDate(previewingBanner.end_date) || 'Bitis yok' }}
                     </span>
                     <span v-else>Surekli</span>
@@ -869,7 +869,7 @@
           <div v-if="showImagePicker" class="modal-backdrop" @click.self="showImagePicker = false">
             <div class="modal picker-modal">
               <div class="modal-header">
-                <h2>Gorsel Sec</h2>
+                <h2>Görsel Sec</h2>
                 <button class="modal-close" @click="showImagePicker = false">
                   <X :size="24" />
                 </button>
@@ -877,7 +877,7 @@
               <div class="modal-body">
                 <div class="picker-search">
                   <Search :size="18" />
-                  <input v-model="pickerSearch" type="text" placeholder="Gorsel ara..." />
+                  <input v-model="pickerSearch" type="text" placeholder="Görsel ara..." />
                 </div>
                 <div class="picker-grid">
                   <div
@@ -1044,7 +1044,7 @@ const pickerSelected = ref(null)
 // ============================================
 
 const categories = [
-  { value: 'all', label: 'Tumu', icon: Grid3x3 },
+  { value: 'all', label: 'Tümü', icon: Grid3x3 },
   { value: 'logo', label: 'Logolar', icon: Star },
   { value: 'icon', label: 'Ikonlar', icon: Flag },
   { value: 'banner', label: 'Bannerlar', icon: LayoutTemplate },
@@ -1225,7 +1225,7 @@ const bulkCopyUrls = () => {
 }
 
 const bulkDelete = async () => {
-  if (!confirm(`${selectedImages.value.length} gorseli silmek istediginize emin misiniz?`)) return
+  if (!confirm(`${selectedImages.value.length} görseli silmek istediğinize emin misiniz?`)) return
 
   for (const id of selectedImages.value) {
     try {
@@ -1240,7 +1240,7 @@ const bulkDelete = async () => {
 
   selectedImages.value = []
   fetchImages()
-  showToast('Gorseller silindi!')
+  showToast('Görseller silindi!')
 }
 
 // ============================================
@@ -1328,7 +1328,7 @@ const uploadFiles = async () => {
   showUploadModal.value = false
   uploadQueue.value = []
   fetchImages()
-  showToast('Gorseller yüklendi!')
+  showToast('Görseller yüklendi!')
 }
 
 // ============================================
@@ -1369,16 +1369,16 @@ const saveImage = async () => {
     if (response.ok) {
       editingImage.value = null
       fetchImages()
-      showToast('Gorsel güncellendi!')
+      showToast('Görsel güncellendi!')
     }
   } catch (e) {
     // Error handled
-    showToast('Hata olustu!', 'error')
+    showToast('Hata oluştu!', 'error')
   }
 }
 
 const deleteImage = async (image) => {
-  if (!confirm(`"${image.name}" gorselini silmek istediginize emin misiniz?`)) return
+  if (!confirm(`"${image.name}" görselini silmek istediğinize emin misiniz?`)) return
 
   try {
     const response = await fetch(`/api/admin/media/${image.id}`, {
@@ -1390,11 +1390,11 @@ const deleteImage = async (image) => {
       previewImage.value = null
       editingImage.value = null
       fetchImages()
-      showToast('Gorsel silindi!')
+      showToast('Görsel silindi!')
     }
   } catch (e) {
     // Error handled
-    showToast('Hata olustu!', 'error')
+    showToast('Hata oluştu!', 'error')
   }
 }
 
@@ -1515,12 +1515,12 @@ const saveBanner = async () => {
     }
   } catch (e) {
     // Error handled
-    showToast('Hata olustu!', 'error')
+    showToast('Hata oluştu!', 'error')
   }
 }
 
 const deleteBanner = async (banner) => {
-  if (!confirm('Bu banneri silmek istediginize emin misiniz?')) return
+  if (!confirm('Bu banneri silmek istediğinize emin misiniz?')) return
 
   try {
     const response = await fetch(`/api/admin/banners/${banner.id}`, {
@@ -1533,7 +1533,7 @@ const deleteBanner = async (banner) => {
     }
   } catch (e) {
     // Error handled
-    showToast('Hata olustu!', 'error')
+    showToast('Hata oluştu!', 'error')
   }
 }
 

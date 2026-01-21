@@ -88,8 +88,8 @@ const items = computed(() => {
     { id: 'home', type: 'page', title: 'Ana Sayfa', emoji: '🏠', action: () => router.push('/'), keywords: ['home', 'ana'] },
     { id: 'servers', type: 'page', title: 'Sunucular', emoji: '🖥️', action: () => router.push('/servers'), keywords: ['server', 'sunucu'] },
     { id: 'forum', type: 'page', title: 'Forum', emoji: '💬', action: () => router.push('/forum'), keywords: ['forum', 'tartisma'] },
-    { id: 'shop', type: 'page', title: 'Mağaza', emoji: '🛒', action: () => router.push('/shop'), keywords: ['shop', 'mağaza', 'satin'] },
-    { id: 'leaderboard', type: 'page', title: 'Sıralama', emoji: '🏆', action: () => router.push('/leaderboard'), keywords: ['leaderboard', 'siralama', 'top'] },
+    { id: 'shop', type: 'page', title: 'Mağaza', emoji: '🛒', action: () => router.push('/shop'), keywords: ['shop', 'mağaza', 'satın'] },
+    { id: 'leaderboard', type: 'page', title: 'Sıralama', emoji: '🏆', action: () => router.push('/leaderboard'), keywords: ['leaderboard', 'sıralama', 'top'] },
     { id: 'support', type: 'page', title: 'Destek', emoji: '🆘', action: () => router.push('/support'), keywords: ['support', 'destek', 'yardim'] },
   ]
 
@@ -116,7 +116,7 @@ const items = computed(() => {
   // Admin pages
   if (authStore.isAdmin) {
     baseItems.push(
-      { id: 'admin', type: 'admin', title: 'Admin Panel', emoji: '⚙️', action: () => router.push('/admin'), keywords: ['admin', 'yonetim'] },
+      { id: 'admin', type: 'admin', title: 'Admin Panel', emoji: '⚙️', action: () => router.push('/admin'), keywords: ['admin', 'yönetim'] },
       { id: 'admin-users', type: 'admin', title: 'Kullanıcı Yönetimi', emoji: '👥', action: () => router.push('/admin/users'), keywords: ['users', 'kullanıcı'] },
       { id: 'admin-servers', type: 'admin', title: 'Sunucu Yönetimi', emoji: '🖥️', action: () => router.push('/admin/servers'), keywords: ['server', 'sunucu'] },
       { id: 'admin-payments', type: 'admin', title: 'Ödeme Yönetimi', emoji: '💳', action: () => router.push('/admin/payments'), keywords: ['payment', 'ödeme'] },

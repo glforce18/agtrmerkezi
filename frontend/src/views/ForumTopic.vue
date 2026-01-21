@@ -158,7 +158,7 @@
                 class="tag-hot"
               >
                 <template #icon><FlameIcon class="w-3 h-3" /></template>
-                Populer
+                Popüler
               </n-tag>
             </div>
 
@@ -583,7 +583,7 @@
                   </button>
                   <n-button text size="tiny" @click="quoteReply(reply)" class="reply-action-btn">
                     <template #icon><QuoteIcon class="w-3 h-3" /></template>
-                    Alintila
+                    Alıntıla
                   </n-button>
                   <n-button text size="tiny" @click="replyToUser(reply)" class="reply-action-btn">
                     <template #icon><AtSignIcon class="w-3 h-3" /></template>
@@ -659,8 +659,8 @@
                   <HelpCircleIcon class="w-4 h-4 cursor-help" />
                 </template>
                 <div class="text-xs">
-                  **kalin**, *italik*, `kod`, ```kod blogu```<br/>
-                  > alinti, - liste, [link](url)
+                  **kalın**, *italik*, `kod`, ```kod blogu```<br/>
+                  > alıntı, - liste, [link](url)
                 </div>
               </n-tooltip>
             </div>
@@ -730,7 +730,7 @@
                   ref="editorRef"
                   v-model:value="newReply"
                   type="textarea"
-                  placeholder="Yanıtinizi yazin... Markdown kullanabilirsiniz."
+                  placeholder="Yanıtinizi yazın... Markdown kullanabilirsiniz."
                   :rows="8"
                   @input="handleTyping"
                   @focus="handleEditorFocus"
@@ -866,7 +866,7 @@
         </div>
 
         <div class="share-divider">
-          <span>veya sosyal medyada paylas</span>
+          <span>veya sosyal medyada paylaş</span>
         </div>
 
         <div class="social-share-grid">
@@ -909,7 +909,7 @@
     <!-- Delete Confirmation Modal -->
     <n-modal v-model:show="showDeleteModal" preset="dialog" type="error" title="Gönderiyi Sil">
       <template #default>
-        Bu gönderiyi silmek istediginizden emin misiniz? Bu işlem geri alinamaz.
+        Bu gönderiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
       </template>
       <template #action>
         <div class="flex gap-3">
@@ -1039,7 +1039,7 @@ const categoryColors = {
 // Topic Data
 const topic = ref({
   id: 1,
-  title: 'Yeni güncelleme hakkinda dusunceleriniz?',
+  title: 'Yeni güncelleme hakkında dusunceleriniz?',
   content: `Merhaba arkadaşlar,
 
 Yeni güncelleme ile birlikte gelen özellikleri denedim. Özellikle sunucu performansinda ciddi bir **iyilesme** var. Sizin dusunceleriniz neler?
@@ -1109,7 +1109,7 @@ const replies = ref([
     authorJoined: 'Mar 2023',
     authorOnline: true,
     created: '1 saat önce',
-    content: 'Kesinlikle katiliyorum! Yeni admin paneli gercekten çok kullanisli. Özellikle **sunucu metriklerini** canli olarak gorebilmek harika.\n\n```bash\n# Sunucu durumunu kontrol et\nserverstatus --live\n```',
+    content: 'Kesinlikle katıliyorum! Yeni admin paneli gercekten çok kullanisli. Özellikle **sunucu metriklerini** canli olarak gorebilmek harika.\n\n```bash\n# Sunucu durumunu kontrol et\nserverstatus --live\n```',
     likes: 5,
     hasLiked: false,
     isEdited: false,
@@ -1136,7 +1136,7 @@ const replies = ref([
     quotedPost: {
       id: 1,
       author: 'AdminUser',
-      content: 'Kesinlikle katiliyorum! Yeni admin paneli gercekten çok kullanisli.'
+      content: 'Kesinlikle katıliyorum! Yeni admin paneli gercekten çok kullanisli.'
     },
     reactions: [
       { emoji: '🔥', count: 2, hasReacted: true },
@@ -1155,7 +1155,7 @@ const replies = ref([
     authorJoined: 'Ara 2024',
     authorOnline: true,
     created: '30 dakika önce',
-    content: 'Yeni basladim ama ben de çok memnunum. Dokumantasyon da çok iyi, kurulumu çok kolay yaptim. 😊',
+    content: 'Yeni başladım ama ben de çok memnunum. Dokümantasyon da çok iyi, kurulumu çok kolay yaptım. 😊',
     likes: 3,
     hasLiked: false,
     isEdited: false,
@@ -1181,10 +1181,10 @@ const sortOptions = [
 
 // Editor tools
 const editorTools = [
-  { action: 'bold', icon: BoldIcon, label: 'Kalin (Ctrl+B)' },
+  { action: 'bold', icon: BoldIcon, label: 'Kalın (Ctrl+B)' },
   { action: 'italic', icon: ItalicIcon, label: 'Italik (Ctrl+I)' },
   { action: 'code', icon: CodeIcon, label: 'Kod' },
-  { action: 'quote', icon: QuoteIcon, label: 'Alinti' },
+  { action: 'quote', icon: QuoteIcon, label: 'Alıntı' },
   { action: 'list', icon: ListIcon, label: 'Liste' },
   { action: 'link', icon: Link2Icon, label: 'Link' },
   { action: 'image', icon: ImageIcon, label: 'Resim' }
@@ -1209,7 +1209,7 @@ const reportReasons = [
   { label: 'Hakaret veya kufur', value: 'abuse', icon: AlertTriangleIcon },
   { label: 'Yaniltici bilgi', value: 'misleading', icon: AlertTriangleIcon },
   { label: 'Telif hakki ihlali', value: 'copyright', icon: CopyrightIcon },
-  { label: 'Diger', value: 'other', icon: OtherIcon }
+  { label: 'Diğer', value: 'other', icon: OtherIcon }
 ]
 
 const reportForm = ref({
@@ -1254,7 +1254,7 @@ const renderedContent = computed(() => {
 })
 
 const previewContent = computed(() => {
-  return renderMarkdown(newReply.value || '*Onizleme için bir seyler yazin...*')
+  return renderMarkdown(newReply.value || '*Onizleme için bir seyler yazın...*')
 })
 
 const shareUrl = computed(() => {
@@ -1379,7 +1379,7 @@ function likeTopic() {
       }, 600)
     }
 
-    window.$message?.success(hasLikedTopic.value ? 'Begenildi' : 'Begeni kaldırildi')
+    window.$message?.success(hasLikedTopic.value ? 'Begenildi' : 'Begeni kaldırıldı')
   }
 }
 
@@ -1388,13 +1388,13 @@ function likeReply(replyId) {
   if (reply) {
     reply.hasLiked = !reply.hasLiked
     reply.likes += reply.hasLiked ? 1 : -1
-    window.$message?.success(reply.hasLiked ? 'Begenildi' : 'Begeni kaldırildi')
+    window.$message?.success(reply.hasLiked ? 'Begenildi' : 'Begeni kaldırıldı')
   }
 }
 
 function bookmarkTopic() {
   hasBookmarked.value = !hasBookmarked.value
-  window.$message?.success(hasBookmarked.value ? 'Yer isaretlerine eklendi' : 'Yer isaretlerinden kaldırildi')
+  window.$message?.success(hasBookmarked.value ? 'Yer işaretlerine eklendi' : 'Yer işaretlerinden kaldırıldı')
 }
 
 function quoteReply(reply) {
@@ -1402,7 +1402,7 @@ function quoteReply(reply) {
   const quoteText = `> **${reply.author}** yazdi:\n> ${reply.content.replace(/\n/g, '\n> ')}\n\n`
   newReply.value = quoteText + newReply.value
   scrollToReplyForm()
-  window.$message?.info('Alinti eklendi')
+  window.$message?.info('Alıntı eklendi')
 }
 
 function replyToUser(reply) {
@@ -1474,11 +1474,11 @@ function reportReply(reply) {
 
 function submitReport() {
   if (reportForm.value.reason) {
-    window.$message?.success('Bildiriminiz alindi')
+    window.$message?.success('Bildiriminiz alındı')
     showReportModal.value = false
     reportForm.value = { reason: null, description: '' }
   } else {
-    window.$message?.error('Lütfen bir neden secin')
+    window.$message?.error('Lütfen bir neden seçin')
   }
 }
 
@@ -1550,7 +1550,7 @@ function applyFormat(action) {
 
   switch (action) {
     case 'bold':
-      replacement = `**${selectedText || 'kalin metin'}**`
+      replacement = `**${selectedText || 'kalın metin'}**`
       cursorOffset = selectedText ? 0 : -2
       break
     case 'italic':
@@ -1563,7 +1563,7 @@ function applyFormat(action) {
         : `\`${selectedText || 'kod'}\``
       break
     case 'quote':
-      replacement = `> ${selectedText || 'alinti'}`
+      replacement = `> ${selectedText || 'alıntı'}`
       break
     case 'list':
       replacement = `- ${selectedText || 'liste ogesi'}`
@@ -1672,7 +1672,7 @@ async function submitReply() {
       }
     })
   } catch (error) {
-    window.$message?.error('Bir hata olustu')
+    window.$message?.error('Bir hata oluştu')
   } finally {
     isSubmitting.value = false
   }

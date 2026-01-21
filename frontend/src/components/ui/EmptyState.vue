@@ -37,7 +37,7 @@ const props = defineProps({
   },
   description: {
     type: String,
-    default: 'Henuz içerik eklenmemis.'
+    default: 'Henüz içerik eklenmemis.'
   },
   icon: {
     type: [Object, String],

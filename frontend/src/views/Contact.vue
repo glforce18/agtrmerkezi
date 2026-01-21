@@ -48,7 +48,7 @@
                   <option value="support">Teknik Destek</option>
                   <option value="billing">Ödeme/Fatura</option>
                   <option value="partnership">Is Birligi</option>
-                  <option value="other">Diger</option>
+                  <option value="other">Diğer</option>
                 </select>
               </div>
 
@@ -59,7 +59,7 @@
                 <textarea
                   v-model="form.message"
                   class="textarea textarea-bordered bg-base-200 h-32"
-                  placeholder="Mesajinizi yazin..."
+                  placeholder="Mesajinizi yazın..."
                   required
                 ></textarea>
               </div>
@@ -125,7 +125,7 @@
                 </div>
                 <div class="flex justify-between">
                   <span class="opacity-60">Pazar</span>
-                  <span class="text-error">Kapali</span>
+                  <span class="text-error">Kapalı</span>
                 </div>
               </div>
             </div>

@@ -4,7 +4,7 @@
       <!-- Header -->
       <div class="page-header">
         <div>
-          <h1 class="page-title">Tema Ayarlari</h1>
+          <h1 class="page-title">Tema Ayarları</h1>
           <p class="page-desc">Site renkleri, fontlar ve görünümu özelllestirin</p>
         </div>
         <button class="btn-primary" @click="saveTheme">
@@ -26,7 +26,7 @@
               </div>
             </div>
             <div class="color-item">
-              <label>Ikincil Renk (Secondary)</label>
+              <label>İkincil Renk (Secondary)</label>
               <div class="color-input">
                 <input type="color" v-model="theme.secondaryColor" />
                 <input type="text" v-model="theme.secondaryColor" />
@@ -40,7 +40,7 @@
               </div>
             </div>
             <div class="color-item">
-              <label>Basari Rengi</label>
+              <label>Başarı Rengi</label>
               <div class="color-input">
                 <input type="color" v-model="theme.successColor" />
                 <input type="text" v-model="theme.successColor" />
@@ -54,7 +54,7 @@
               </div>
             </div>
             <div class="color-item">
-              <label>Uyari Rengi</label>
+              <label>Uyarı Rengi</label>
               <div class="color-input">
                 <input type="color" v-model="theme.warningColor" />
                 <input type="text" v-model="theme.warningColor" />
@@ -100,7 +100,7 @@
 
         <!-- Light Theme Colors -->
         <div class="theme-section">
-          <h2>Acik Tema</h2>
+          <h2>Açık Tema</h2>
           <div class="color-grid">
             <div class="color-item">
               <label>Arkaplan (Primary)</label>
@@ -139,10 +139,10 @@
           <div class="preview-container" :style="previewStyle">
             <div class="preview-card">
               <h3>Ornek Kart</h3>
-              <p>Bu bir ornek metin. Tema ayarlarinizin nasil gorunecegini buradan gorebilirsiniz.</p>
+              <p>Bu bir ornek metin. Tema ayarlarınizin nasıl gorunecegini buradan gorebilirsiniz.</p>
               <div class="preview-buttons">
                 <button class="preview-btn primary">Ana Buton</button>
-                <button class="preview-btn secondary">Ikincil Buton</button>
+                <button class="preview-btn secondary">İkincil Buton</button>
               </div>
             </div>
           </div>
@@ -163,7 +163,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label>Baslik Fontu</label>
+              <label>Başlık Fontu</label>
               <select v-model="theme.fontDisplay">
                 <option value="Orbitron">Orbitron</option>
                 <option value="Rajdhani">Rajdhani</option>
@@ -282,7 +282,7 @@ const saveTheme = async () => {
     })
 
     if (response.ok) {
-      alert('Tema ayarlari kaydedildi!')
+      alert('Tema ayarları kaydedildi!')
       // Apply theme changes
       applyTheme()
     }
@@ -292,7 +292,7 @@ const saveTheme = async () => {
 }
 
 const resetTheme = () => {
-  if (!confirm('Tema ayarlarini varsayilana sifirlamak istediginize emin misiniz?')) return
+  if (!confirm('Tema ayarlarıni varsayilana sifirlamak istediğinize emin misiniz?')) return
 
   Object.assign(theme, {
     primaryColor: '#f97316',

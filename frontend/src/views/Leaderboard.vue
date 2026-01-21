@@ -52,7 +52,7 @@
               </div>
             </div>
             <div v-if="searchQuery && filteredData.length === 0" class="search-no-results">
-              Sonuc bulunamadı
+              Sonuç bulunamadı
             </div>
           </div>
 
@@ -73,7 +73,7 @@
 
           <!-- Sort -->
           <div class="filter-group">
-            <label class="filter-label">Siralama</label>
+            <label class="filter-label">Sıralama</label>
             <n-select
               v-model:value="sortBy"
               :options="sortOptions"
@@ -335,7 +335,7 @@
                     <n-tag type="primary" size="small">{{ item.servers }} sunucu</n-tag>
                   </td>
                   <td>
-                    <n-tag type="info" size="small">{{ item.posts }} paylasim</n-tag>
+                    <n-tag type="info" size="small">{{ item.posts }} paylaşım</n-tag>
                   </td>
                 </template>
                 <td class="score-col">
@@ -422,14 +422,14 @@
             </div>
           </div>
           <div class="preview-footer">
-            <span class="last-seen">Son gorulme: 5 dakika önce</span>
+            <span class="last-seen">Son görülme: 5 dakika önce</span>
           </div>
         </div>
       </Transition>
     </Teleport>
 
     <!-- Share Modal -->
-    <n-modal v-model:show="shareModal.visible" preset="card" title="Siralamani Paylas" class="share-modal">
+    <n-modal v-model:show="shareModal.visible" preset="card" title="Sıralamani Paylas" class="share-modal">
       <div class="share-content">
         <div class="share-preview glass-morphism">
           <div class="share-rank">#{{ shareModal.data?.position }}</div>
@@ -509,8 +509,8 @@ const shareModal = ref({
 
 // Category tabs config
 const categoryTabs = [
-  { value: 'players', label: 'En Iyi Oyuncular', icon: TrophyIcon, count: 10 },
-  { value: 'servers', label: 'Populer Sunucular', icon: ServerIcon, count: 3 },
+  { value: 'players', label: 'En İyi Oyuncular', icon: TrophyIcon, count: 10 },
+  { value: 'servers', label: 'Popüler Sunucular', icon: ServerIcon, count: 3 },
   { value: 'users', label: 'Aktif Kullanıcılar', icon: UsersIcon, count: 3 }
 ]
 
@@ -522,7 +522,7 @@ const timeOptions = [
 ]
 
 const sortOptions = [
-  { label: 'Siralama', value: 'rank' },
+  { label: 'Sıralama', value: 'rank' },
   { label: 'Skor', value: 'score' },
   { label: 'Kills', value: 'kills' },
   { label: 'Isabet', value: 'accuracy' }
@@ -693,10 +693,10 @@ const getCategoryIcon = () => {
 
 const getCategoryTitle = () => {
   switch (activeCategory.value) {
-    case 'players': return 'Oyuncu Siralamasi'
-    case 'servers': return 'Sunucu Siralamasi'
-    case 'users': return 'Kullanıcı Siralamasi'
-    default: return 'Siralama'
+    case 'players': return 'Oyuncu Sıralamasi'
+    case 'servers': return 'Sunucu Sıralamasi'
+    case 'users': return 'Kullanıcı Sıralamasi'
+    default: return 'Sıralama'
   }
 }
 

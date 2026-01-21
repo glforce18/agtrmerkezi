@@ -121,7 +121,7 @@
                 </div>
                 <div class="stat-content">
                   <span class="stat-value">{{ user?.achievements_count || 0 }}</span>
-                  <span class="stat-label">Basari</span>
+                  <span class="stat-label">Başarı</span>
                 </div>
               </div>
             </div>
@@ -392,7 +392,7 @@
                   <div class="section-icon">
                     <AwardIcon class="w-5 h-5" />
                   </div>
-                  <h3 class="section-title">Basari Rozetleri</h3>
+                  <h3 class="section-title">Başarı Rozetleri</h3>
                 </div>
                 <div class="badges-grid">
                   <div
@@ -406,7 +406,7 @@
                   </div>
                 </div>
                 <n-button quaternary block class="mt-4" @click="showAllAchievements = true">
-                  Tum Basarilari Gor
+                  Tüm Başarıları Gor
                 </n-button>
               </div>
             </div>
@@ -530,7 +530,7 @@
               <div class="section-icon">
                 <ShieldCheckIcon class="w-5 h-5" />
               </div>
-              <h3 class="section-title">Iki Faktorlu Doğrulama (2FA)</h3>
+              <h3 class="section-title">İki Faktörlü Doğrulama (2FA)</h3>
               <n-tag
                 :type="user?.two_factor_enabled ? 'success' : 'warning'"
                 size="medium"
@@ -542,14 +542,14 @@
             </div>
 
             <p class="text-gray-400 mb-6">
-              Iki faktorlu doğrulama, hesabınıza ek bir guvenlik katmani ekler.
+              İki faktörlü doğrulama, hesabınıza ek bir güvenlik katmanı ekler.
             </p>
 
             <!-- 2FA Not Enabled -->
             <div v-if="!user?.two_factor_enabled && !show2FASetup">
               <n-button type="primary" size="large" @click="start2FASetup" class="btn-save">
                 <template #icon><ShieldCheckIcon class="w-4 h-4" /></template>
-                2FA'yi Etkinlestir
+                2FA'yi Etkinleştir
               </n-button>
             </div>
 
@@ -630,9 +630,9 @@
                 <div class="success-icon-wrapper">
                   <CheckCircleIcon class="w-12 h-12 text-green-500" />
                 </div>
-                <h4 class="text-xl font-semibold mt-4 mb-2">2FA Basariyla Etkinlestirildi!</h4>
+                <h4 class="text-xl font-semibold mt-4 mb-2">2FA Başarıyla Etkinleştirildi!</h4>
                 <p class="text-gray-400 mb-6">
-                  Bu yedek kodlari guvenli bir yerde saklayin.
+                  Bu yedek kodlari güvenli bir yerde saklayın.
                 </p>
                 <div class="backup-codes">
                   <div v-for="code in backupCodes" :key="code" class="backup-code">
@@ -678,7 +678,7 @@
               </div>
               <h3 class="section-title">Aktif Oturumlar</h3>
               <n-button type="error" ghost size="small" class="ml-auto" @click="revokeAllSessions">
-                Tum Oturumlari Sonlandir
+                Tüm Oturumları Sonlandır
               </n-button>
             </div>
 
@@ -739,7 +739,7 @@
                   <MailIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>E-posta Bildirimleri</h4>
-                    <p>Onemli güncellemeler için e-posta alin</p>
+                    <p>Önemli güncellemeler için e-posta alın</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.email_notifications" :disabled="!hasEmail" />
@@ -750,7 +750,7 @@
                   <ServerIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>Sunucu Uyarilari</h4>
-                    <p>Sunucu durumu değişikliklerinde bildirim alin</p>
+                    <p>Sunucu durumu değişikliklerinde bildirim alın</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.server_alerts" />
@@ -760,8 +760,8 @@
                 <div class="toggle-info">
                   <ShieldIcon class="w-5 h-5 text-gray-400" />
                   <div>
-                    <h4>Guvenlik Bildirimleri</h4>
-                    <p>Supheli aktivitelerde e-posta alin</p>
+                    <h4>Güvenlik Bildirimleri</h4>
+                    <p>Şüpheli aktivitelerde e-posta alın</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.security_alerts" :disabled="!hasEmail" />
@@ -786,7 +786,7 @@
               <div class="section-icon">
                 <EyeOffIcon class="w-5 h-5" />
               </div>
-              <h3 class="section-title">Gizlilik Ayarlari</h3>
+              <h3 class="section-title">Gizlilik Ayarları</h3>
             </div>
 
             <div class="toggle-list">
@@ -795,7 +795,7 @@
                   <UsersIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>Profil Gorunurlugu</h4>
-                    <p>Profilinizi herkese acik veya gizli yapin</p>
+                    <p>Profilinizi herkese açık veya gizli yapin</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.public_profile" />
@@ -806,7 +806,7 @@
                   <CircleDotIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>Online Durumu</h4>
-                    <p>Diger kullanıcılarin online durumunuzu gormesine izin verin</p>
+                    <p>Diğer kullanıcılarin online durumunuzu gormesine izin verin</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.show_online_status" />
@@ -840,7 +840,7 @@
           <div class="flex justify-end">
             <n-button type="primary" size="large" @click="saveSettings" :loading="savingSettings" class="btn-save">
               <template #icon><SaveIcon class="w-4 h-4" /></template>
-              Ayarlari Kaydet
+              Ayarları Kaydet
             </n-button>
           </div>
 
@@ -852,13 +852,13 @@
               </div>
               <h3 class="section-title text-red-500">Tehlikeli Bolge</h3>
             </div>
-            <p class="text-gray-400 mb-6">Bu işlemler geri alinamaz. Dikkatli olun.</p>
+            <p class="text-gray-400 mb-6">Bu işlemler geri alınamaz. Dikkatli olun.</p>
 
             <div class="danger-actions">
               <div class="danger-action-item">
                 <div>
                   <h4 class="font-medium">Hesabi Dondur</h4>
-                  <p class="text-sm text-gray-400">Hesabınızi gecici olarak devre disi birakin</p>
+                  <p class="text-sm text-gray-400">Hesabınızı gecici olarak devre disi birakin</p>
                 </div>
                 <n-button type="warning" ghost @click="freezeAccount">
                   <template #icon><PauseCircleIcon class="w-4 h-4" /></template>
@@ -869,7 +869,7 @@
               <div class="danger-action-item">
                 <div>
                   <h4 class="font-medium">Hesabi Sil</h4>
-                  <p class="text-sm text-gray-400">Hesabınızi ve tum verilerinizi kalici olarak silin</p>
+                  <p class="text-sm text-gray-400">Hesabınızı ve tum verilerinizi kalıcı olarak silin</p>
                 </div>
                 <n-button type="error" ghost @click="showDeleteConfirm = true">
                   <template #icon><Trash2Icon class="w-4 h-4" /></template>
@@ -932,7 +932,7 @@
     <!-- 2FA Backup Codes Modal -->
     <n-modal v-model:show="show2FABackupCodes" preset="card" title="Yedek Kodlar" class="modal-glass">
       <p class="text-gray-400 mb-6">
-        Bu kodlari guvenli bir yerde saklayin.
+        Bu kodlari güvenli bir yerde saklayın.
       </p>
       <div class="backup-codes">
         <div v-for="code in backupCodes" :key="code" class="backup-code">
@@ -954,11 +954,11 @@
     <n-modal v-model:show="showDeleteConfirm" preset="card" title="Hesabi Sil" class="modal-glass">
       <n-alert type="error" :bordered="false" class="mb-6">
         <template #icon><AlertTriangleIcon class="w-5 h-5" /></template>
-        Bu işlem geri alinamaz! Tum verileriniz kalici olarak silinecektir.
+        Bu işlem geri alınamaz! Tüm verileriniz kalıcı olarak silinecektir.
       </n-alert>
       <p class="text-gray-400 mb-4">
-        Hesabınızi silmek istediginizi onaylamak için asagiya
-        <strong style="color: var(--text-primary)">"HESABIMI SIL"</strong> yazin.
+        Hesabınızı silmek istediğinizi onaylamak için aşağıya
+        <strong style="color: var(--text-primary)">"HESABIMI SIL"</strong> yazın.
       </p>
       <n-input v-model:value="deleteConfirmText" placeholder="HESABIMI SIL" class="modern-input" />
       <template #footer>
@@ -971,7 +971,7 @@
             @click="deleteAccount"
           >
             <template #icon><Trash2Icon class="w-4 h-4" /></template>
-            Hesabi Kalici Olarak Sil
+            Hesabi Kalıcı Olarak Sil
           </n-button>
         </div>
       </template>
@@ -988,7 +988,7 @@
         >
           <div class="upload-content">
             <UploadCloudIcon class="w-12 h-12 text-orange-500 mb-4" />
-            <p class="text-gray-300">Fotografinizi surukleyin veya tiklayin</p>
+            <p class="text-gray-300">Fotografinizi sürükleyin veya tıklayin</p>
             <p class="text-sm text-gray-500 mt-2">PNG, JPG (max. 5MB)</p>
           </div>
         </n-upload>
@@ -1006,7 +1006,7 @@
         >
           <div class="upload-content">
             <ImageIcon class="w-12 h-12 text-orange-500 mb-4" />
-            <p class="text-gray-300">Kapak fotografinizi surukleyin veya tiklayin</p>
+            <p class="text-gray-300">Kapak fotografinizi sürükleyin veya tıklayin</p>
             <p class="text-sm text-gray-500 mt-2">PNG, JPG (min. 1920x400, max. 10MB)</p>
           </div>
         </n-upload>
@@ -1014,7 +1014,7 @@
     </n-modal>
 
     <!-- All Achievements Modal -->
-    <n-modal v-model:show="showAllAchievements" preset="card" title="Tum Basarilar" class="modal-glass modal-lg">
+    <n-modal v-model:show="showAllAchievements" preset="card" title="Tüm Başarılar" class="modal-glass modal-lg">
       <div class="achievements-modal-grid">
         <div
           v-for="badge in allAchievements"
@@ -1153,8 +1153,8 @@ const profileCompleteness = computed(() => {
 
 const getCompletenessMessage = () => {
   const percent = profileCompleteness.value
-  if (percent < 25) return 'Profilinizi tamamlayin!'
-  if (percent < 50) return 'Iyi bir baslangic!'
+  if (percent < 25) return 'Profilinizi tamamlayın!'
+  if (percent < 50) return 'İyi bir başlangıç!'
   if (percent < 75) return 'Neredeyse tamam!'
   if (percent < 100) return 'Son bir adım!'
   return 'Profil tamamlandı!'
@@ -1175,7 +1175,7 @@ const isValidEmail = (email) => {
 const activeTab = ref('profile')
 const tabs = computed(() => [
   { name: 'profile', label: 'Profil', icon: UserIcon },
-  { name: 'security', label: 'Guvenlik', icon: ShieldCheckIcon },
+  { name: 'security', label: 'Güvenlik', icon: ShieldCheckIcon },
   { name: 'settings', label: 'Ayarlar', icon: SettingsIcon },
   { name: 'activity', label: 'Aktivite', icon: ActivityIcon, count: activities.value.length }
 ])
@@ -1298,8 +1298,8 @@ const activities = ref([
   {
     id: 1,
     type: 'success',
-    title: 'Şifre degistirildi',
-    description: 'Hesap şifreniz basariyla güncellendi',
+    title: 'Şifre değiştirildi',
+    description: 'Hesap şifreniz başarıyla güncellendi',
     created_at: new Date(Date.now() - 1000 * 60 * 30),
     metadata: { IP: '192.168.1.100' }
   },
@@ -1322,7 +1322,7 @@ const activities = ref([
     id: 4,
     type: 'success',
     title: 'Sunucu oluşturuldu',
-    description: 'Yeni CS2 sunucusu basariyla kuruldu',
+    description: 'Yeni CS2 sunucusu başarıyla kuruldu',
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24)
   }
 ])
@@ -1340,26 +1340,26 @@ const backupCodes = ref([
 
 // Achievements
 const achievements = ref([
-  { id: 1, name: 'Ilk Adim', icon: RocketIcon, unlocked: true },
+  { id: 1, name: 'İlk Adim', icon: RocketIcon, unlocked: true },
   { id: 2, name: 'Sunucu Ustaşı', icon: ServerIcon, unlocked: true },
-  { id: 3, name: 'Topluluk Yildizi', icon: StarIcon, unlocked: true },
-  { id: 4, name: 'Guvenlik Uzman', icon: ShieldIcon, unlocked: false },
+  { id: 3, name: 'Topluluk Yıldızı', icon: StarIcon, unlocked: true },
+  { id: 4, name: 'Güvenlik Uzman', icon: ShieldIcon, unlocked: false },
   { id: 5, name: 'Sadik Üye', icon: HeartIcon, unlocked: true },
   { id: 6, name: 'Hiz Seytani', icon: ZapIcon, unlocked: false },
-  { id: 7, name: 'Hedef Avcisi', icon: TargetIcon, unlocked: false },
+  { id: 7, name: 'Hedef Avcısı', icon: TargetIcon, unlocked: false },
   { id: 8, name: 'Alev Savasci', icon: FlameIcon, unlocked: true }
 ])
 
 const allAchievements = ref([
-  { id: 1, name: 'Ilk Adim', description: 'Hesabınızi oluştürün', icon: RocketIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30) },
+  { id: 1, name: 'İlk Adim', description: 'Hesabınızı oluştürün', icon: RocketIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30) },
   { id: 2, name: 'Sunucu Ustaşı', description: '5 sunucu oluştürün', icon: ServerIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15) },
-  { id: 3, name: 'Topluluk Yildizi', description: 'Forumda 50 gönderi paylasim', icon: StarIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7) },
-  { id: 4, name: 'Guvenlik Uzmani', description: '2FA\'yi etkinlestirin', icon: ShieldIcon, unlocked: false, progress: 0 },
+  { id: 3, name: 'Topluluk Yıldızı', description: 'Forumda 50 gönderi paylaşım', icon: StarIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7) },
+  { id: 4, name: 'Güvenlik Uzmanı', description: '2FA\'yi etkinleştirin', icon: ShieldIcon, unlocked: false, progress: 0 },
   { id: 5, name: 'Sadik Üye', description: '1 yillik üyelik', icon: HeartIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5) },
-  { id: 6, name: 'Hiz Seytani', description: '10 hizli işlem tamamlayin', icon: ZapIcon, unlocked: false, progress: 40 },
-  { id: 7, name: 'Hedef Avcisi', description: 'Tum gorevleri tamamlayin', icon: TargetIcon, unlocked: false, progress: 75 },
+  { id: 6, name: 'Hiz Seytani', description: '10 hizli işlem tamamlayın', icon: ZapIcon, unlocked: false, progress: 40 },
+  { id: 7, name: 'Hedef Avcısı', description: 'Tüm görevleri tamamlayın', icon: TargetIcon, unlocked: false, progress: 75 },
   { id: 8, name: 'Alev Savasci', description: '100 oyun saati', icon: FlameIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3) },
-  { id: 9, name: 'Bilge', description: 'Tum kilavuzlari okuyun', icon: BookIcon, unlocked: false, progress: 20 }
+  { id: 9, name: 'Bilge', description: 'Tüm kılavuzları okuyun', icon: BookIcon, unlocked: false, progress: 20 }
 ])
 
 // Connected accounts
@@ -1395,7 +1395,7 @@ const updateProfile = async () => {
   try {
     await new Promise(resolve => setTimeout(resolve, 1000))
     authStore.updateUser(profileForm)
-    window.$message?.success('Profil basariyla güncellendi')
+    window.$message?.success('Profil başarıyla güncellendi')
   } catch (error) {
     window.$message?.error('Profil güncellenemedi')
   } finally {
@@ -1410,13 +1410,13 @@ const changePassword = async () => {
     return
   }
   if (passwordStrength.value < 60) {
-    window.$message?.warning('Lütfen daha guclu bir şifre secin')
+    window.$message?.warning('Lütfen daha guclu bir şifre seçin')
     return
   }
   savingPassword.value = true
   try {
     await new Promise(resolve => setTimeout(resolve, 1000))
-    window.$message?.success('Şifre basariyla güncellendi')
+    window.$message?.success('Şifre başarıyla güncellendi')
     passwordForm.current_password = ''
     passwordForm.new_password = ''
     passwordForm.confirm_password = ''
@@ -1460,13 +1460,13 @@ const finish2FASetup = () => {
   show2FASetup.value = false
   twoFAStep.value = 1
   twoFACode.value = ''
-  window.$message?.success('2FA basariyla etkinlestirildi!')
+  window.$message?.success('2FA başarıyla etkinleştirildi!')
 }
 
 const disable2FA = () => {
   window.$dialog?.warning({
     title: 'Uyari',
-    content: '2FA\'yi devre disi birakmak istediginizden emin misiniz?',
+    content: '2FA\'yi devre disi birakmak istediğinizden emin misiniz?',
     positiveText: 'Evet, Devre Disi Birak',
     negativeText: 'İptal',
     onPositiveClick: () => {
@@ -1490,26 +1490,26 @@ const downloadBackupCodes = () => {
 // Session methods
 const revokeSession = (sessionId) => {
   window.$dialog?.warning({
-    title: 'Oturumu Sonlandir',
-    content: 'Bu oturumu sonlandirmak istediginizden emin misiniz?',
+    title: 'Oturumu Sonlandır',
+    content: 'Bu oturumu sonlandırmak istediğinizden emin misiniz?',
     positiveText: 'Evet',
     negativeText: 'İptal',
     onPositiveClick: () => {
       sessions.value = sessions.value.filter(s => s.id !== sessionId)
-      window.$message?.success('Oturum sonlandirildi')
+      window.$message?.success('Oturum sonlandırildi')
     }
   })
 }
 
 const revokeAllSessions = () => {
   window.$dialog?.warning({
-    title: 'Tum Oturumlari Sonlandir',
-    content: 'Mevcut oturum haric tum oturumlari sonlandirmak istediginizden emin misiniz?',
+    title: 'Tüm Oturumları Sonlandır',
+    content: 'Mevcut oturum hariç tum oturumları sonlandırmak istediğinizden emin misiniz?',
     positiveText: 'Evet',
     negativeText: 'İptal',
     onPositiveClick: () => {
       sessions.value = sessions.value.filter(s => s.is_current)
-      window.$message?.success('Tum oturumlar sonlandirildi')
+      window.$message?.success('Tüm oturumlar sonlandırildi')
     }
   })
 }
@@ -1531,7 +1531,7 @@ const saveSettings = async () => {
 const freezeAccount = () => {
   window.$dialog?.warning({
     title: 'Hesabi Dondur',
-    content: 'Hesabınızi dondurmak istediginizden emin misiniz?',
+    content: 'Hesabınızı dondurmak istediğinizden emin misiniz?',
     positiveText: 'Evet, Dondur',
     negativeText: 'İptal',
     onPositiveClick: () => {
@@ -1561,7 +1561,7 @@ const connectAccount = (provider) => {
 const disconnectAccount = (provider) => {
   window.$dialog?.warning({
     title: 'Hesap Bağlantısini Kes',
-    content: 'Bu hesabin bağlantısini kesmek istediginizden emin misiniz?',
+    content: 'Bu hesabin bağlantısini kesmek istediğinizden emin misiniz?',
     positiveText: 'Evet',
     negativeText: 'İptal',
     onPositiveClick: () => {

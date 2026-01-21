@@ -272,7 +272,7 @@
               <path d="M14.83 14.83a4 4 0 1 1 0-5.66"/>
             </svg>
           </span>
-          <span>&copy; {{ currentYear }} AGTR Merkezi. Tum haklari saklidir.</span>
+          <span>&copy; {{ currentYear }} AGTR Merkezi. Tüm hakları saklıdır.</span>
         </div>
 
         <div class="footer-meta">
@@ -357,10 +357,10 @@ const subscribeNewsletter = async () => {
   try {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500))
-    newsletterSuccess.value = 'Basariyla abone oldunuz!'
+    newsletterSuccess.value = 'Başarıyla abone oldunuz!'
     newsletterEmail.value = ''
   } catch (error) {
-    newsletterError.value = 'Bir hata olustu, tekrar deneyin'
+    newsletterError.value = 'Bir hata oluştu, tekrar deneyin'
   } finally {
     isSubscribing.value = false
   }
@@ -453,24 +453,24 @@ const quickLinks = [
   { path: '/', label: 'Ana Sayfa' },
   { path: '/servers', label: 'Sunucular' },
   { path: '/forum', label: 'Forum' },
-  { path: '/leaderboard', label: 'Siralamalar' },
+  { path: '/leaderboard', label: 'Sıralamalar' },
   { path: '/shop', label: 'Premium' }
 ]
 
 // Resource Links
 const resourceLinks = [
-  { path: '/docs', label: 'Dokumantasyon' },
+  { path: '/docs', label: 'Dokümantasyon' },
   { path: '/faq', label: 'Sikca Sorulan Sorular' },
   { path: '/support', label: 'Destek Merkezi' },
-  { path: '/api', label: 'API Dokumanlari' },
+  { path: '/api', label: 'API Dokümanları' },
   { path: '/downloads', label: 'İndirmeler' }
 ]
 
 // Legal Links
 const legalLinks = [
-  { path: '/terms', label: 'Kullanim Kosullari' },
+  { path: '/terms', label: 'Kullanım Kosullari' },
   { path: '/privacy', label: 'Gizlilik Politikasi' },
-  { path: '/cookies', label: 'Cerez Politikasi' },
+  { path: '/cookies', label: 'Çerez Politikasi' },
   { path: '/contact', label: 'İletişim' }
 ]
 

@@ -6,9 +6,9 @@
         <div class="header-left">
           <h1 class="page-title">
             <Package :size="28" class="title-icon" />
-            Paket Yonetimi
+            Paket Yönetimi
           </h1>
-          <p class="subtitle">Sunucu paketlerini yonet ve fiyatlandirmayi düzenle</p>
+          <p class="subtitle">Sunucu paketlerini yönet ve fiyatlandırmayı düzenle</p>
         </div>
         <div class="header-actions">
           <button class="btn-secondary" @click="togglePreviewMode">
@@ -79,18 +79,18 @@
         </div>
         <div class="filter-group">
           <select v-model="filterGame" class="filter-select">
-            <option value="">Tum Oyunlar</option>
+            <option value="">Tüm Oyunlar</option>
             <option value="hldm">Half-Life</option>
             <option value="ag">Adrenaline Gamer</option>
             <option value="cs16">Counter-Strike 1.6</option>
           </select>
           <select v-model="filterStatus" class="filter-select">
-            <option value="">Tum Durumlar</option>
+            <option value="">Tüm Durumlar</option>
             <option value="active">Aktif</option>
             <option value="inactive">Pasif</option>
           </select>
           <select v-model="sortBy" class="filter-select">
-            <option value="display_order">Siralama</option>
+            <option value="display_order">Sıralama</option>
             <option value="price_asc">Fiyat (Artan)</option>
             <option value="price_desc">Fiyat (Azalan)</option>
             <option value="name">Ada Gore</option>
@@ -226,7 +226,7 @@
                   </span>
                   <span v-if="pkg.is_popular" class="popular-tag">
                     <Star :size="12" />
-                    Populer
+                    Popüler
                   </span>
                   <span v-if="pkg.discount_percent" class="discount-tag">
                     -{{ pkg.discount_percent }}%
@@ -327,11 +327,11 @@
             <div class="empty-icon">
               <Package :size="64" />
             </div>
-            <h3>Paket Bulunamadi</h3>
-            <p>Arama kriterlerinize uygun paket yok veya henuz paket oluşturmadiniz.</p>
+            <h3>Paket Bulunamadı</h3>
+            <p>Arama kriterlerinize uygun paket yok veya henüz paket oluşturmadiniz.</p>
             <button class="btn-primary" @click="openCreateModal">
               <Plus :size="18" />
-              Ilk Paketinizi Oluştürün
+              İlk Paketinizi Oluştürün
             </button>
           </div>
         </div>
@@ -426,7 +426,7 @@
                     </h4>
                     <div class="form-grid">
                       <div class="form-group">
-                        <label>Aylik Fiyat (TL) *</label>
+                        <label>Aylık Fiyat (TL) *</label>
                         <div class="input-with-icon">
                           <input
                             v-model.number="form.price_monthly"
@@ -513,7 +513,7 @@
                           <Star :size="16" />
                         </div>
                         <div class="status-text">
-                          <span class="status-label">Populer</span>
+                          <span class="status-label">Popüler</span>
                           <span class="status-desc">Özel rozetle vurgula</span>
                         </div>
                       </label>
@@ -668,8 +668,8 @@
                 <AlertTriangle :size="48" />
               </div>
               <h3>Paketi Sil</h3>
-              <p>"<strong>{{ deletingPackage?.name }}</strong>" paketini silmek istediginize emin misiniz?</p>
-              <p class="warning-text">Bu işlem geri alinamaz!</p>
+              <p>"<strong>{{ deletingPackage?.name }}</strong>" paketini silmek istediğinize emin misiniz?</p>
+              <p class="warning-text">Bu işlem geri alınamaz!</p>
               <div class="confirm-actions">
                 <button class="btn-secondary" @click="showDeleteModal = false">
                   İptal
@@ -889,7 +889,7 @@ const fetchPackages = async () => {
     }
   } catch (e) {
     // Error handled
-    showToast('Paketler yüklenirken hata olustu', 'error')
+    showToast('Paketler yüklenirken hata oluştu', 'error')
   }
   loading.value = false
 }
@@ -980,7 +980,7 @@ const savePackage = async () => {
       showToast(data.detail || 'Kaydetme başarısız', 'error')
     }
   } catch (e) {
-    showToast('Bir hata olustu', 'error')
+    showToast('Bir hata oluştu', 'error')
   }
   saving.value = false
 }
@@ -1009,7 +1009,7 @@ const deletePackage = async () => {
       showToast(data.detail || 'Silme başarısız', 'error')
     }
   } catch (e) {
-    showToast('Bir hata olustu', 'error')
+    showToast('Bir hata oluştu', 'error')
   }
   deleting.value = false
 }
@@ -1023,7 +1023,7 @@ const toggleActive = async (pkg) => {
     })
     if (res.ok) {
       pkg.is_active = !pkg.is_active
-      showToast(pkg.is_active ? 'Paket aktiflestirildi' : 'Paket pasif yapıldı', 'success')
+      showToast(pkg.is_active ? 'Paket aktifleştirildi' : 'Paket pasif yapıldı', 'success')
     }
   } catch (e) {
     // Error handled
@@ -1106,10 +1106,10 @@ const onDrop = async () => {
           })
         }
       }
-      showToast('Siralama güncellendi', 'success')
+      showToast('Sıralama güncellendi', 'success')
     } catch (e) {
       // Error handled
-      showToast('Siralama güncellenemedi', 'error')
+      showToast('Sıralama güncellenemedi', 'error')
     }
   }
 

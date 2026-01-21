@@ -115,13 +115,13 @@ const routes = [
     path: '/admin/settings',
     name: 'admin-settings',
     component: () => import('@/views/admin/Settings.vue'),
-    meta: { title: 'Sistem Ayarlari', requiresAuth: true, requiresAdmin: true }
+    meta: { title: 'Sistem Ayarları', requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/admin/media',
     name: 'admin-media',
     component: () => import('@/views/admin/Media.vue'),
-    meta: { title: 'Gorsel Yonetimi', requiresAuth: true, requiresAdmin: true }
+    meta: { title: 'Görsel Yönetimi', requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/admin/pages',
@@ -133,13 +133,13 @@ const routes = [
     path: '/admin/banners',
     name: 'admin-banners',
     component: () => import('@/views/admin/Banners.vue'),
-    meta: { title: 'Banner Yonetimi', requiresAuth: true, requiresAdmin: true }
+    meta: { title: 'Banner Yönetimi', requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/admin/theme',
     name: 'admin-theme',
     component: () => import('@/views/admin/Theme.vue'),
-    meta: { title: 'Tema Ayarlari', requiresAuth: true, requiresAdmin: true }
+    meta: { title: 'Tema Ayarları', requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/admin/forum',

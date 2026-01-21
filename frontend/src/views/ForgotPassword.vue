@@ -43,13 +43,13 @@
               {{ email }} adresine şifre sifirlama linki gönderdik.
             </p>
             <router-link to="/login" class="btn btn-outline btn-primary">
-              Giriş Sayfasina Don
+              Giriş Sayfasına Don
             </router-link>
           </div>
 
           <div class="text-center mt-6">
             <router-link to="/login" class="link link-primary text-sm">
-              Giriş sayfasina don
+              Giriş sayfasına don
             </router-link>
           </div>
         </div>

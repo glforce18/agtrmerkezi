@@ -16,33 +16,33 @@
             <li>Hesap bilgileri (kullanıcı adı, e-posta, şifre hash)</li>
             <li>Oyun istatistikleri ve aktivite kayıtlari</li>
             <li>IP adresi ve tarayici bilgileri</li>
-            <li>Cerez verileri</li>
+            <li>Çerez verileri</li>
           </ul>
 
-          <h2>Veri Kullanimi</h2>
+          <h2>Veri Kullanımi</h2>
           <p>Toplanan veriler su amaclarla kullanilir:</p>
           <ul>
-            <li>Hesap yonetimi ve guvenlik</li>
+            <li>Hesap yönetimi ve güvenlik</li>
             <li>Oyun istatistiklerinin hesaplanmasi</li>
             <li>Platform iyilestirmeleri</li>
             <li>Destek hizmetleri</li>
           </ul>
 
-          <h2>Veri Paylasimi</h2>
+          <h2>Veri Paylaşımi</h2>
           <p>
-            Kisisel verileriniz ucuncu taraflarla paylasilmaz. Sadece yasal zorunluluk durumunda
-            yetkili makamlarla paylasim yapilabilir.
+            Kişisel verileriniz üçüncü taraflarla paylaşılmaz. Sadece yasal zorunluluk durumunda
+            yetkili makamlarla paylaşım yapılabilir.
           </p>
 
-          <h2>Cerezler</h2>
+          <h2>Çerezler</h2>
           <p>
-            Sitemiz oturum yonetimi ve kullanıcı tercihlerini hatirlamak için cerez kullanir.
-            Tarayici ayarlarindan cerezleri devre disi birakabilirsiniz.
+            Sitemiz oturum yönetimi ve kullanıcı tercihlerini hatırlamak için çerez kullanir.
+            Tarayici ayarlarından çerezleri devre disi birakabilirsiniz.
           </p>
 
-          <h2>Veri Guvenligi</h2>
+          <h2>Veri Güvenliği</h2>
           <p>
-            Verileriniz şifrelenmis olarak saklanir. Duzenli guvenlik taramalari yapilir.
+            Verileriniz şifrelenmis olarak saklanır. Düzenli güvenlik taramaları yapılır.
           </p>
 
           <h2>Haklariniz</h2>

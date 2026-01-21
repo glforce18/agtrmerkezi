@@ -144,7 +144,7 @@
                     class="notification-mark-read"
                     @click="markAllAsRead"
                   >
-                    Tumu okundu
+                    Tümü okundu
                   </button>
                 </div>
                 <div class="notification-list" v-if="notifications.length > 0">
@@ -170,7 +170,7 @@
                 </div>
                 <div class="notification-footer">
                   <router-link to="/notifications" class="notification-view-all">
-                    Tum bildirimleri gor
+                    Tüm bildirimleri gor
                   </router-link>
                 </div>
               </div>
@@ -455,7 +455,7 @@ const logoSubtitle = computed(() => settingsStore.settings.logo_subtitle || 'MER
 const navItems = [
   { path: '/', label: 'Ana Sayfa', icon: Home },
   { path: '/servers', label: 'Sunucular', icon: Server },
-  { path: '/leaderboard', label: 'Siralamalar', icon: Trophy },
+  { path: '/leaderboard', label: 'Sıralamalar', icon: Trophy },
   { path: '/forum', label: 'Forum', icon: MessageSquare },
   { path: '/jackpot', label: 'Jackpot', icon: Dice5 },
   { path: '/shop', label: 'Sunucu Kirala', icon: ShoppingBag }
@@ -463,7 +463,7 @@ const navItems = [
 
 // Notifications
 const notifications = ref([
-  { id: 1, title: 'Sunucu Basladı', message: 'AGTR Public #1 basariyla basladi.', read: false, time: '2 dakika önce' },
+  { id: 1, title: 'Sunucu Başladı', message: 'AGTR Public #1 başarıyla başladı.', read: false, time: '2 dakika önce' },
   { id: 2, title: 'Yeni Güncelleme', message: 'v8.0 yayinlandi!', read: false, time: '1 saat önce' }
 ])
 

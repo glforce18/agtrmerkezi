@@ -55,7 +55,7 @@
                   <label>Sayfa</label>
                   <select v-model="formData.page_slug">
                     <option value="home">Ana Sayfa</option>
-                    <option value="about">Hakkinda</option>
+                    <option value="about">Hakkında</option>
                     <option value="contact">İletişim</option>
                     <option value="servers">Sunucular</option>
                     <option value="jackpot">Jackpot</option>
@@ -76,13 +76,13 @@
               </div>
 
               <div class="form-group">
-                <label>Baslik</label>
+                <label>Başlık</label>
                 <input v-model="formData.title" placeholder="İçerik basligi" />
               </div>
 
               <div class="form-group">
-                <label>Alt Baslik</label>
-                <input v-model="formData.subtitle" placeholder="Alt baslik (opsiyonel)" />
+                <label>Alt Başlık</label>
+                <input v-model="formData.subtitle" placeholder="Alt başlık (opsiyonel)" />
               </div>
 
               <div class="form-group">
@@ -92,11 +92,11 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label>Gorsel URL</label>
+                  <label>Görsel URL</label>
                   <input v-model="formData.image_url" placeholder="/images/..." />
                 </div>
                 <div class="form-group">
-                  <label>Arkaplan Gorsel</label>
+                  <label>Arkaplan Görsel</label>
                   <input v-model="formData.background_image_url" placeholder="/images/..." />
                 </div>
               </div>
@@ -104,7 +104,7 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>CTA Buton Metni</label>
-                  <input v-model="formData.cta_text" placeholder="Hemen Basla" />
+                  <input v-model="formData.cta_text" placeholder="Hemen Başla" />
                 </div>
                 <div class="form-group">
                   <label>CTA Link</label>

@@ -6,7 +6,7 @@
         <div class="header-left">
           <div class="welcome-text">
             <h1>Kontrol Merkezi</h1>
-            <p>Sistem durumunu izleyin ve yonetin</p>
+            <p>Sistem durumunu izleyin ve yönetin</p>
           </div>
         </div>
         <div class="header-right">
@@ -125,7 +125,7 @@
             <div class="metrics-grid">
               <div class="metric-item">
                 <div class="metric-header">
-                  <span class="metric-label">CPU Kullanimi</span>
+                  <span class="metric-label">CPU Kullanımi</span>
                   <span class="metric-value">{{ metrics.cpu }}%</span>
                 </div>
                 <n-progress
@@ -139,7 +139,7 @@
               </div>
               <div class="metric-item">
                 <div class="metric-header">
-                  <span class="metric-label">RAM Kullanimi</span>
+                  <span class="metric-label">RAM Kullanımi</span>
                   <span class="metric-value">{{ metrics.ram }}%</span>
                 </div>
                 <n-progress
@@ -153,7 +153,7 @@
               </div>
               <div class="metric-item">
                 <div class="metric-header">
-                  <span class="metric-label">Disk Kullanimi</span>
+                  <span class="metric-label">Disk Kullanımi</span>
                   <span class="metric-value">{{ metrics.disk }}%</span>
                 </div>
                 <n-progress
@@ -261,7 +261,7 @@
               </div>
               <div v-else-if="activities.length === 0" class="empty-state">
                 <Inbox :size="40" />
-                <span>Henuz aktivite yok</span>
+                <span>Henüz aktivite yok</span>
               </div>
               <transition-group v-else name="activity-list" tag="div" class="activity-list">
                 <div
@@ -297,7 +297,7 @@
           <div class="card-header">
             <h3><Wallet :size="18" /> Bekleyen Ödemeler</h3>
             <router-link to="/admin/payments?status=pending" class="see-all">
-              Tumunu Gor <ArrowRight :size="14" />
+              Tümünü Gör <ArrowRight :size="14" />
             </router-link>
           </div>
           <div class="card-body">
@@ -373,7 +373,7 @@
         <div class="card-header">
           <h3><Server :size="18" /> Sunucu Durumu Ozeti</h3>
           <router-link to="/admin/servers" class="see-all">
-            Tum Sunucular <ArrowRight :size="14" />
+            Tüm Sunucular <ArrowRight :size="14" />
           </router-link>
         </div>
         <div class="card-body">
@@ -453,7 +453,7 @@
             <n-input
               v-model:value="rejectReason"
               type="textarea"
-              placeholder="Lütfen red sebebini aciklayin..."
+              placeholder="Lütfen red sebebini açıklayin..."
               :rows="3"
             />
           </n-form-item>
@@ -650,7 +650,7 @@ const gameDistribution = ref([
   { type: 'cs2', name: 'Counter-Strike 2', count: 0, percentage: 0, color: '#f97316' },
   { type: 'csgo', name: 'CS:GO', count: 0, percentage: 0, color: '#3b82f6' },
   { type: 'minecraft', name: 'Minecraft', count: 0, percentage: 0, color: '#10b981' },
-  { type: 'other', name: 'Diger', count: 0, percentage: 0, color: '#8b5cf6' }
+  { type: 'other', name: 'Diğer', count: 0, percentage: 0, color: '#8b5cf6' }
 ])
 
 // Reject Modal
@@ -910,7 +910,7 @@ const refreshAll = async () => {
 const handleApprove = async (payment) => {
   dialog.warning({
     title: 'Ödeme Onayı',
-    content: `${payment.username} kullanıcısinin ${formatCurrency(payment.amount)} tutarindaki ödemesini onaylamak istiyor musunuz?`,
+    content: `${payment.username} kullanıcısının ${formatCurrency(payment.amount)} tutarındaki ödemesini onaylamak istiyor musunuz?`,
     positiveText: 'Onayla',
     negativeText: 'İptal',
     onPositiveClick: async () => {

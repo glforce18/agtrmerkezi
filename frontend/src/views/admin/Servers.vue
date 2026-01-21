@@ -7,9 +7,9 @@
           <div class="title-section">
             <h1 class="page-title">
               <Server :size="28" class="title-icon" />
-              Sunucu Yonetimi
+              Sunucu Yönetimi
             </h1>
-            <p class="page-subtitle">Tum sunuculari tek panelden yonetin ve izleyin</p>
+            <p class="page-subtitle">Tüm sunuculari tek panelden yönetin ve izleyin</p>
           </div>
           <div class="header-actions">
             <button class="btn btn-ghost" @click="refreshServers" :disabled="refreshing">
@@ -86,7 +86,7 @@
           <div class="filter-item">
             <Gamepad2 :size="16" class="filter-icon" />
             <select v-model="filterGame" class="filter-select" @change="applyFilters">
-              <option value="">Tum Oyunlar</option>
+              <option value="">Tüm Oyunlar</option>
               <option value="hldm">Half-Life</option>
               <option value="ag">Half-Life AG</option>
               <option value="cs16">Counter-Strike 1.6</option>
@@ -96,7 +96,7 @@
           <div class="filter-item">
             <Activity :size="16" class="filter-icon" />
             <select v-model="filterStatus" class="filter-select" @change="applyFilters">
-              <option value="">Tum Durumlar</option>
+              <option value="">Tüm Durumlar</option>
               <option value="online">Online</option>
               <option value="offline">Offline</option>
             </select>
@@ -136,11 +136,11 @@
         <div class="empty-icon">
           <ServerOff :size="64" />
         </div>
-        <h3 class="empty-title">Sunucu Bulunamadi</h3>
+        <h3 class="empty-title">Sunucu Bulunamadı</h3>
         <p class="empty-description">
           {{ searchQuery || filterGame || filterStatus
-            ? 'Arama kriterlerine uygun sunucu bulunamadi.'
-            : 'Henuz kayıtli sunucu bulunmuyor.' }}
+            ? 'Arama kriterlerine uygun sunucu bulunamadı.'
+            : 'Henüz kayıtli sunucu bulunmuyor.' }}
         </p>
         <button v-if="searchQuery || filterGame || filterStatus" class="btn btn-secondary" @click="clearAllFilters">
           <RotateCcw :size="16" />
@@ -540,7 +540,7 @@
                 <div v-if="selectedServer.is_online && selectedServer.resources" class="modal-resources">
                   <h4 class="section-title">
                     <Activity :size="16" />
-                    Kaynak Kullanimi
+                    Kaynak Kullanımi
                   </h4>
                   <div class="resource-grid">
                     <div class="resource-card">
@@ -666,8 +666,8 @@
               </div>
               <h3 class="confirm-title">Sunucuyu Sil</h3>
               <p class="confirm-message">
-                <strong>{{ deleteTarget.name }}</strong> sunucusunu silmek istediginize emin misiniz?
-                Bu işlem geri alinamaz!
+                <strong>{{ deleteTarget.name }}</strong> sunucusunu silmek istediğinize emin misiniz?
+                Bu işlem geri alınamaz!
               </p>
               <div class="confirm-actions">
                 <button class="btn btn-ghost" @click="cancelDelete">İptal</button>
@@ -833,7 +833,7 @@ const fetchServers = async () => {
     totalPages.value = data.pagination?.pages || Math.ceil(totalServers.value / perPage) || 1
   } catch (error) {
     // Error handled
-    showToast('Sunucular yüklenirken hata olustu', 'error')
+    showToast('Sunucular yüklenirken hata oluştu', 'error')
   }
   loading.value = false
 }
@@ -944,7 +944,7 @@ const startServer = async (server) => {
     await fetchServers()
   } catch (error) {
     // Error handled
-    showToast('Sunucu başlatilirken hata olustu', 'error')
+    showToast('Sunucu başlatilirken hata oluştu', 'error')
   }
   actionLoading[server.id] = false
 }
@@ -957,7 +957,7 @@ const stopServer = async (server) => {
     await fetchServers()
   } catch (error) {
     // Error handled
-    showToast('Sunucu durdurulurken hata olustu', 'error')
+    showToast('Sunucu durdurulurken hata oluştu', 'error')
   }
   actionLoading[server.id] = false
 }
@@ -970,7 +970,7 @@ const restartServer = async (server) => {
     await fetchServers()
   } catch (error) {
     // Error handled
-    showToast('Sunucu yeniden başlatilirken hata olustu', 'error')
+    showToast('Sunucu yeniden başlatilirken hata oluştu', 'error')
   }
   actionLoading[server.id] = false
 }
@@ -995,7 +995,7 @@ const executeDelete = async () => {
     deleteTarget.value = null
   } catch (error) {
     // Error handled
-    showToast('Sunucu silinirken hata olustu', 'error')
+    showToast('Sunucu silinirken hata oluştu', 'error')
   }
   deleteLoading.value = false
 }

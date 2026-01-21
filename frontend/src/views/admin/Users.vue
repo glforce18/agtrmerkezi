@@ -73,7 +73,7 @@
         <div class="action-buttons">
           <Transition name="fade">
             <div v-if="selectedUsers.length > 0" class="bulk-actions">
-              <span class="selected-count">{{ selectedUsers.length }} secili</span>
+              <span class="selected-count">{{ selectedUsers.length }} seçili</span>
               <button class="bulk-btn warning" @click="bulkChangeRole">
                 <Shield :size="16" />
                 Rol Degistir
@@ -102,7 +102,7 @@
           <div class="filter-item">
             <label>Rol</label>
             <select v-model="filterRole" @change="applyFilters">
-              <option value="">Tum Roller</option>
+              <option value="">Tüm Roller</option>
               <option value="user">Kullanıcı</option>
               <option value="moderatör">Moderatör</option>
               <option value="admin">Admin</option>
@@ -112,7 +112,7 @@
           <div class="filter-item">
             <label>Durum</label>
             <select v-model="filterStatus" @change="applyFilters">
-              <option value="">Tum Durumlar</option>
+              <option value="">Tüm Durumlar</option>
               <option value="active">Aktif</option>
               <option value="inactive">Pasif</option>
               <option value="banned">Yasaklı</option>
@@ -121,7 +121,7 @@
           <div class="filter-item">
             <label>Kayıt Tarihi</label>
             <select v-model="filterDate" @change="applyFilters">
-              <option value="">Tum Zamanlar</option>
+              <option value="">Tüm Zamanlar</option>
               <option value="today">Bugun</option>
               <option value="week">Bu Hafta</option>
               <option value="month">Bu Ay</option>
@@ -263,7 +263,7 @@
 
         <div v-if="users.length === 0 && !loading" class="empty-state">
           <Users :size="48" />
-          <h3>Kullanıcı Bulunamadi</h3>
+          <h3>Kullanıcı Bulunamadı</h3>
           <p>Arama kriterlerinize uygun kullanıcı yok.</p>
         </div>
       </div>
@@ -343,7 +343,7 @@
 
         <div v-if="users.length === 0 && !loading" class="empty-state">
           <Users :size="48" />
-          <h3>Kullanıcı Bulunamadi</h3>
+          <h3>Kullanıcı Bulunamadı</h3>
           <p>Arama kriterlerinize uygun kullanıcı yok.</p>
         </div>
       </div>
@@ -562,7 +562,7 @@
                 <Shield :size="32" />
               </div>
               <h3>Toplu Rol Degisikligi</h3>
-              <p>{{ selectedUsers.length }} kullanıcı için yeni rol secin</p>
+              <p>{{ selectedUsers.length }} kullanıcı için yeni rol seçin</p>
               <select v-model="bulkRole" class="modal-select">
                 <option value="user">Kullanıcı</option>
                 <option value="moderatör">Moderatör</option>
@@ -886,7 +886,7 @@ const saveUser = async () => {
     })
 
     if (response.ok) {
-      showNotification('Kullanıcı basariyla güncellendi', 'success')
+      showNotification('Kullanıcı başarıyla güncellendi', 'success')
 
       const index = users.value.findIndex(u => u.id === selectedUser.value.id)
       if (index !== -1) {
@@ -942,7 +942,7 @@ const executeConfirm = async () => {
 const confirmBan = (user) => {
   showConfirmDialog(
     'Kullanıcıyi Yasakla',
-    `${user.username} kullanıcısini yasaklamak istediginize emin misiniz?`,
+    `${user.username} kullanıcısini yasaklamak istediğinize emin misiniz?`,
     'danger',
     'Yasakla',
     () => banUser(user)
@@ -952,7 +952,7 @@ const confirmBan = (user) => {
 const confirmUnban = (user) => {
   showConfirmDialog(
     'Yasagi Kaldır',
-    `${user.username} kullanıcısinin yasagini kaldırmak istediginize emin misiniz?`,
+    `${user.username} kullanıcısının yasagini kaldırmak istediğinize emin misiniz?`,
     'primary',
     'Kaldır',
     () => unbanUser(user)
@@ -987,7 +987,7 @@ const unbanUser = async (user) => {
     })
     if (response.ok) {
       user.status = 'active'
-      showNotification(`${user.username} yasagi kaldırildi`, 'success')
+      showNotification(`${user.username} yasagi kaldırıldı`, 'success')
       fetchStats()
     } else {
       showNotification('İşlem başarısız', 'error')
@@ -1014,7 +1014,7 @@ const executeBulkRoleChange = async () => {
       })
     })
     if (response.ok) {
-      showNotification(`${selectedUsers.value.length} kullanıcınin rolu degistirildi`, 'success')
+      showNotification(`${selectedUsers.value.length} kullanıcının rolu değiştirildi`, 'success')
       selectedUsers.value = []
       showRoleModal.value = false
       fetchUsers()
@@ -1029,7 +1029,7 @@ const executeBulkRoleChange = async () => {
 const bulkBan = () => {
   showConfirmDialog(
     'Toplu Yasaklama',
-    `${selectedUsers.value.length} kullanıcıyi yasaklamak istediginize emin misiniz?`,
+    `${selectedUsers.value.length} kullanıcıyı yasaklamak istediğinize emin misiniz?`,
     'danger',
     'Yasakla',
     async () => {
@@ -1058,7 +1058,7 @@ const bulkBan = () => {
 const bulkDelete = () => {
   showConfirmDialog(
     'Toplu Silme',
-    `${selectedUsers.value.length} kullanıcıyi silmek istediginize emin misiniz? Bu işlem geri alinamaz!`,
+    `${selectedUsers.value.length} kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!`,
     'danger',
     'Sil',
     async () => {

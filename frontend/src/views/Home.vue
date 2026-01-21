@@ -75,9 +75,9 @@
           </div>
           <h2 class="section-title">
             <Server class="section-icon" />
-            Populer Sunucular
+            Popüler Sunucular
           </h2>
-          <p class="section-subtitle">Toplulugumuzun en aktif sunucularinda oyna</p>
+          <p class="section-subtitle">Topluluğumuzun en aktif sunucularında oyna</p>
         </div>
 
         <div class="servers-grid grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -141,7 +141,7 @@
         <div class="text-center mt-10">
           <router-link to="/servers">
             <n-button size="large" class="view-all-btn">
-              Tum Sunuculari Gor
+              Tüm Sunuculari Gor
               <template #icon><ArrowRight class="w-5 h-5" /></template>
             </n-button>
           </router-link>
@@ -161,7 +161,7 @@
                 <h3>Son Forum Konulari</h3>
               </div>
               <router-link to="/forum" class="panel-link">
-                Tumunu Gor <ArrowRight class="w-4 h-4" />
+                Tümünü Gör <ArrowRight class="w-4 h-4" />
               </router-link>
             </div>
 
@@ -202,10 +202,10 @@
             <div class="panel-header">
               <div class="panel-title">
                 <Trophy class="w-6 h-6 text-yellow-500" />
-                <h3>En Iyi Oyuncular</h3>
+                <h3>En İyi Oyuncular</h3>
               </div>
               <router-link to="/leaderboard" class="panel-link">
-                Tum Siralama <ArrowRight class="w-4 h-4" />
+                Tüm Sıralama <ArrowRight class="w-4 h-4" />
               </router-link>
             </div>
 
@@ -264,7 +264,7 @@
             <Calendar class="section-icon" />
             Turnuvalar & Etkinlikler
           </h2>
-          <p class="section-subtitle">Heyecan verici turnuvalara katil ve odulleri kazan</p>
+          <p class="section-subtitle">Heyecan verici turnuvalara katıl ve ödülleri kazan</p>
         </div>
 
         <div class="tournaments-grid grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -310,7 +310,7 @@
             <div class="tournament-actions">
               <n-button type="primary" block>
                 <template #icon><Zap class="w-4 h-4" /></template>
-                Hemen Katil
+                Hemen Katıl
               </n-button>
             </div>
 
@@ -364,11 +364,11 @@
       </div>
       <div class="container-main relative z-10 text-center">
         <h2 class="cta-title mb-6">
-          Toplulugumuza <span class="text-gradient">Katil</span>
+          Toplulugumuza <span class="text-gradient">Katıl</span>
         </h2>
         <p class="cta-description mb-10 max-w-2xl mx-auto">
-          Binlerce CS 1.6 oyuncusuyla tanismayi, turnuvalara katilmayi ve
-          en iyi sunucularda oynamayi mi bekliyorsun? Hemen ücretsiz kayıt ol!
+          Binlerce CS 1.6 oyuncusuyla tanismayi, turnuvalara katılmayi ve
+          en iyi sunucularda oynamayı mi bekliyorsun? Hemen ücretsiz kayıt ol!
         </p>
         <div class="cta-buttons-final flex flex-wrap justify-center gap-6">
           <router-link to="/register">
@@ -380,7 +380,7 @@
           <a :href="discordUrl" target="_blank" rel="noopener">
             <button class="btn-discord">
               <MessageCircle class="w-5 h-5" />
-              Discord'a Katil
+              Discord'a Katıl
             </button>
           </a>
         </div>
@@ -395,7 +395,7 @@
             </div>
           </div>
           <p class="social-text">
-            <span class="social-count">25,000+</span> oyuncu aramiza katildi
+            <span class="social-count">25,000+</span> oyuncu aramiza katıldi
           </p>
         </div>
       </div>
@@ -460,7 +460,7 @@ const statsSection = ref(null)
 // Typing animation
 const typingPhrases = [
   'Counter-Strike 1.6 Turkiye Toplulugu',
-  'En Iyi CS 1.6 Sunuculari',
+  'En İyi CS 1.6 Sunuculari',
   'Turnuvalar ve Etkinlikler',
   'Binlerce Aktif Oyuncu'
 ]
@@ -498,11 +498,11 @@ const getParticleStyle = (index) => {
 
 // Data
 const latestTopics = ref([
-  { id: 1, title: 'CS 1.6 En Iyi Ayarlar 2024', author: 'ProGamer', replies: 47, views: 1230, category: 'Rehberler' },
+  { id: 1, title: 'CS 1.6 En İyi Ayarlar 2024', author: 'ProGamer', replies: 47, views: 1230, category: 'Rehberler' },
   { id: 2, title: 'Yeni Aim Map Koleksiyonu', author: 'MapMaker', replies: 23, views: 856, category: 'Maplar' },
-  { id: 3, title: 'Turnuva Kayıtlari Basladi!', author: 'Admin159', replies: 89, views: 2341, category: 'Duyurular' },
-  { id: 4, title: 'En Iyi AWP Taktikleri', author: 'Sniper', replies: 34, views: 945, category: 'Taktikler' },
-  { id: 5, title: 'Yeni Baslayanlara CS 1.6 Rehberi', author: 'Mentor', replies: 56, views: 1567, category: 'Rehberler' }
+  { id: 3, title: 'Turnuva Kayıtlari Başladı!', author: 'Admin159', replies: 89, views: 2341, category: 'Duyurular' },
+  { id: 4, title: 'En İyi AWP Taktikleri', author: 'Sniper', replies: 34, views: 945, category: 'Taktikler' },
+  { id: 5, title: 'Yeni Başlayanlara CS 1.6 Rehberi', author: 'Mentor', replies: 56, views: 1567, category: 'Rehberler' }
 ])
 
 const topPlayers = ref([
@@ -526,7 +526,7 @@ const activeEvents = ref([
   {
     id: 1,
     title: '5v5 CS 1.6 Sampiyonasi',
-    description: 'Aylik sampiyonluk turnuvasi. En iyi takimlar karsi karsiya!',
+    description: 'Aylık şampiyonluk turnuvası. En iyi takımlar karşı karşıya!',
     date: '25 Ocak 2024',
     participants: 12,
     maxParticipants: 16,

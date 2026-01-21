@@ -106,7 +106,7 @@
           @click="viewMode = 'table'"
         >
           <Table2 :size="18" />
-          Karsilastirma
+          Karşılaştırma
         </button>
       </div>
 
@@ -123,7 +123,7 @@
         <div class="error-icon">
           <AlertTriangle :size="56" />
         </div>
-        <h3>Bir Hata Olustu</h3>
+        <h3>Bir Hata Oluştu</h3>
         <p>{{ error }}</p>
         <button @click="fetchPackages" class="retry-btn">
           <RefreshCw :size="18" />
@@ -149,7 +149,7 @@
           <!-- Featured Badge -->
           <div v-if="pkg.slug.includes('pro')" class="featured-badge">
             <Crown :size="14" />
-            <span>En Populer</span>
+            <span>En Popüler</span>
           </div>
 
           <!-- Spotlight Effect -->
@@ -313,8 +313,8 @@
         <div class="empty-icon">
           <Package :size="64" />
         </div>
-        <h3>Paket Bulunamadi</h3>
-        <p>Bu kategoride henuz paket bulunmuyor</p>
+        <h3>Paket Bulunamadı</h3>
+        <p>Bu kategoride henüz paket bulunmuyor</p>
       </div>
 
       <!-- Rate Info Card -->
@@ -473,7 +473,7 @@
                     </div>
                     <div v-if="opt.months === 12" class="best-badge">
                       <Star :size="12" />
-                      En Iyi Fiyat
+                      En İyi Fiyat
                     </div>
                     <div class="duration-check">
                       <Check :size="16" />
@@ -483,7 +483,7 @@
 
                 <!-- Visual Price Comparison Chart -->
                 <div class="price-chart" v-if="selectedPkg">
-                  <div class="chart-title">Fiyat Karsilastirmasi</div>
+                  <div class="chart-title">Fiyat Karşılaştırmasi</div>
                   <div class="chart-bars">
                     <div
                       v-for="opt in durationOptions"
@@ -544,7 +544,7 @@
                   <span>{{ duration }} Ay</span>
                 </div>
                 <div class="summary-item">
-                  <span>Aylik Ucret</span>
+                  <span>Aylık Ücret</span>
                   <span>{{ formatCurrency(selectedPkg?.price_monthly) }} TL</span>
                 </div>
                 <div v-if="getDiscount() > 0" class="summary-item discount">
@@ -645,7 +645,7 @@
               </div>
             </div>
             <h2>Tebrikler!</h2>
-            <p>Sunucunuz basariyla oluşturuldu</p>
+            <p>Sunucunuz başarıyla oluşturuldu</p>
             <div class="success-details" v-if="purchaseResult">
               <div class="detail-item">
                 <span>Sunucu Adi:</span>
@@ -756,7 +756,7 @@ const animatedArmorBalance = ref(0)
 
 // Game types
 const gameTypes = [
-  { value: 'all', label: 'Tumu', icon: Package },
+  { value: 'all', label: 'Tümü', icon: Package },
   { value: 'ag', label: 'Adrenaline Gamer', icon: Gamepad2 },
   { value: 'cs16', label: 'CS 1.6', icon: Crosshair },
   { value: 'hldm', label: 'HLDM', icon: Target }
@@ -788,7 +788,7 @@ const testimonials = ref([
   {
     name: 'Can S.',
     role: 'CS 1.6 Oyuncusu',
-    text: 'Armor sistemi sayesinde çok avantajli fiyatlarla sunucu aldim. Memnuniyet %100.'
+    text: 'Armor sistemi sayesinde çok avantajlı fiyatlarla sunucu aldım. Memnuniyet %100.'
   }
 ])
 
@@ -1072,7 +1072,7 @@ const confirmPurchase = async () => {
       alert(data.detail || 'Satin alma başarısız')
     }
   } catch (e) {
-    alert('Bir hata olustu: ' + e.message)
+    alert('Bir hata oluştu: ' + e.message)
   } finally {
     purchasing.value = false
   }

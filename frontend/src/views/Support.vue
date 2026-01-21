@@ -26,7 +26,7 @@
             </svg>
           </div>
           <h3 class="font-bold text-lg mb-2">Sunucu Yardimi</h3>
-          <p class="opacity-60 text-sm">Sunucu kurulumu, ayarlari ve yonetimi</p>
+          <p class="opacity-60 text-sm">Sunucu kurulumu, ayarları ve yönetimi</p>
         </div>
 
         <div class="glass-card p-6 text-center hover:border-secondary/50 transition-colors cursor-pointer">
@@ -46,7 +46,7 @@
             </svg>
           </div>
           <h3 class="font-bold text-lg mb-2">Hesap Yardimi</h3>
-          <p class="opacity-60 text-sm">Hesap ayarlari, guvenlik ve profil</p>
+          <p class="opacity-60 text-sm">Hesap ayarları, güvenlik ve profil</p>
         </div>
       </div>
 
@@ -99,28 +99,28 @@ const openFAQ = ref(null)
 
 const faqs = [
   {
-    question: 'Sunucu nasil kiralarim?',
-    answer: 'Mağaza sayfasindan uygun paketi secip ödeme yaparak sunucunuzu aninda aktif edebilirsiniz. Sunucu panelinden tum ayarlari yapabilirsiniz.'
+    question: 'Sunucu nasıl kiralarim?',
+    answer: 'Mağaza sayfasından uygun paketi seçip ödeme yaparak sunucunuzu anında aktif edebilirsiniz. Sunucu panelinden tüm ayarları yapabilirsiniz.'
   },
   {
     question: 'Hangi ödeme yontemlerini kabul ediyorsunuz?',
     answer: 'Kredi karti, banka karti, havale/EFT ve papara ile ödeme yapabilirsiniz.'
   },
   {
-    question: 'Sunucuma eklenti nasil yüklerim?',
-    answer: 'Sunucu panelindeki "Eklentiler" sekmesinden populer eklentileri tek tikla yükleyebilir veya kendi eklentilerinizi FTP ile yükleyebilirsiniz.'
+    question: 'Sunucuma eklenti nasıl yüklerim?',
+    answer: 'Sunucu panelindeki "Eklentiler" sekmesinden popüler eklentileri tek tıkla yükleyebilir veya kendi eklentilerinizi FTP ile yükleyebilirsiniz.'
   },
   {
-    question: 'Sunucu IP adresimi nasil ogrenirim?',
+    question: 'Sunucu IP adresimi nasıl öğrenirim?',
     answer: 'Sunucu panelinin ust kisminda IP adresiniz görüntülenir. Ayrica "IP Kopyala" butonu ile panoya kopyalayabilirsiniz.'
   },
   {
-    question: 'RCON şifremi unuttum ne yapmaliyim?',
-    answer: 'Sunucu panelindeki "Ayarlar" sekmesinden RCON şifrenizi degistirebilirsiniz.'
+    question: 'RCON şifremi unuttum ne yapmalıyım?',
+    answer: 'Sunucu panelindeki "Ayarlar" sekmesinden RCON şifrenizi değiştirebilirsiniz.'
   },
   {
     question: 'Iade politikaniz nedir?',
-    answer: 'Ilk 7 gun içinde kullanilmamis hizmetler için tam iade yapilir. Aktif kullanilan sunucular için iade yapilmaz.'
+    answer: 'İlk 7 gun içinde kullanılmamış hizmetler için tam iade yapılır. Aktif kullanılan sunucular için iade yapılmaz.'
   }
 ]
 

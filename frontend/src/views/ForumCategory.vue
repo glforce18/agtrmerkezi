@@ -314,7 +314,7 @@
                   <Transition name="badge-pop">
                     <div v-if="topic.isHot" class="badge badge-hot">
                       <FlameIcon class="w-3 h-3" />
-                      <span>Populer</span>
+                      <span>Popüler</span>
                     </div>
                   </Transition>
                 </div>
@@ -394,7 +394,7 @@
                 <template v-else>
                   <div class="no-reply">
                     <MessageSquareIcon class="w-5 h-5 text-gray-500" />
-                    <span>Henuz yanıt yok</span>
+                    <span>Henüz yanıt yok</span>
                   </div>
                 </template>
 
@@ -448,15 +448,15 @@
               </div>
             </div>
 
-            <h3 class="empty-title">Henuz Konu Yok</h3>
+            <h3 class="empty-title">Henüz Konu Yok</h3>
             <p class="empty-description">
-              Bu kategoride henuz bir konu acilmamis. Ilk konuyu acarak tartismayi başlatin!
+              Bu kategoride henüz bir konu açılmamış. İlk konuyu açarak tartışmayı başlatin!
             </p>
 
             <div class="empty-actions">
               <n-button type="primary" size="large" class="empty-cta" @click="showNewTopicModal = true">
                 <template #icon><PlusCircleIcon class="w-5 h-5" /></template>
-                Ilk Konuyu Ac
+                İlk Konuyu Ac
               </n-button>
               <n-button quaternary size="large" @click="router.push('/forum')">
                 <template #icon><ArrowLeftIcon class="w-5 h-5" /></template>
@@ -465,7 +465,7 @@
             </div>
 
             <div class="empty-suggestions">
-              <p class="suggestions-title">Populer Kategoriler</p>
+              <p class="suggestions-title">Popüler Kategoriler</p>
               <div class="suggestions-list">
                 <button class="suggestion-chip" v-for="cat in popularCategories" :key="cat.id" @click="router.push(`/forum/category/${cat.id}`)">
                   <component :is="cat.icon" class="w-4 h-4" />
@@ -543,7 +543,7 @@
           </div>
           <div>
             <h2 class="modal-title">Yeni Konu Oluştur</h2>
-            <p class="modal-subtitle">Topluluga paylasmak istediginiz konuyu yazin</p>
+            <p class="modal-subtitle">Topluluğa paylaşmak istediğiniz konuyu yazın</p>
           </div>
           <button class="modal-close" @click="showNewTopicModal = false">
             <XIcon class="w-5 h-5" />
@@ -580,7 +580,7 @@
               <input
                 v-model="newTopic.title"
                 type="text"
-                placeholder="Dikkat cekici bir baslik girin..."
+                placeholder="Dikkat çekici bir başlık girin..."
                 class="form-input"
                 :class="{ error: titleError }"
               />
@@ -599,7 +599,7 @@
             <div class="textarea-wrapper">
               <textarea
                 v-model="newTopic.content"
-                placeholder="Konu iceriginizi detayli bir sekilde aciklayin..."
+                placeholder="Konu iceriginizi detayli bir sekilde açıklayin..."
                 class="form-textarea"
                 :class="{ error: contentError }"
                 rows="8"
@@ -677,7 +677,7 @@
             <span><ThumbsUpIcon class="w-3.5 h-3.5" /> {{ previewTooltip.topic?.likes }}</span>
           </div>
           <div class="preview-footer">
-            <span>Tiklayarak konuyu görüntüleyin</span>
+            <span>Tıklayarak konuyu görüntüleyin</span>
             <ArrowRightIcon class="w-4 h-4" />
           </div>
         </div>
@@ -797,7 +797,7 @@ const getHeaders = () => {
 // Sort options with icons
 const sortOptions = [
   { label: 'En Yeni', value: 'latest', icon: CalendarIcon },
-  { label: 'Populer', value: 'popular', icon: TrendingUpIcon },
+  { label: 'Popüler', value: 'popular', icon: TrendingUpIcon },
   { label: 'En Çok Yanıt', value: 'mostReplies', icon: MessageSquareIcon },
   { label: 'En Eski', value: 'oldest', icon: ClockIcon }
 ]
@@ -810,7 +810,7 @@ const currentSortOption = computed(() => {
 const category = ref({
   id: 1,
   name: 'Genel Tartisma',
-  description: 'CS 1.6 hakkinda genel konular, sorular ve paylasimlar için acik tartisma alani',
+  description: 'CS 1.6 hakkında genel konular, sorular ve paylaşımlar için açık tartışma alanı',
   icon: MessageSquareIcon,
   gradient: 'primary-secondary'
 })
@@ -874,7 +874,7 @@ const getCategoryGradient = (gradient) => {
 const topics = ref([
   {
     id: 1,
-    title: 'Yeni güncelleme hakkinda dusunceleriniz?',
+    title: 'Yeni güncelleme hakkında dusunceleriniz?',
     author: 'Player123',
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
     authorOnline: true,
@@ -886,7 +886,7 @@ const topics = ref([
     isLocked: false,
     isHot: true,
     type: 'discussion',
-    preview: 'Yeni güncelleme ile gelen değişiklikler hakkinda goruslerinizi paylasalim. Özellikle silah dengesi ve harita değişiklikleri...',
+    preview: 'Yeni güncelleme ile gelen değişiklikler hakkında görüşlerinizi paylaşalım. Özellikle silah dengesi ve harita değişiklikleri...',
     lastReply: {
       author: 'AdminUser',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=a1',
@@ -907,7 +907,7 @@ const topics = ref([
     isLocked: false,
     isHot: false,
     type: 'question',
-    preview: 'Klasiklerin disinda oynamasi keyifli map onerilerinizi bekliyorum. AWP haritalari, aim haritalari dahil...',
+    preview: 'Klasiklerin dışında oynaması keyifli map önerilerinizi bekliyorum. AWP haritalari, aim haritalari dahil...',
     lastReply: {
       author: 'MapMaster',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=a2',
@@ -928,12 +928,12 @@ const topics = ref([
     isLocked: true,
     isHot: false,
     type: 'announcement',
-    preview: 'Forum kurallari ve topluluk rehberi. Tum üyelerimizin okumasi zorunludur. Kurallara uymayan içerikler silinecektir.',
+    preview: 'Forum kurallari ve topluluk rehberi. Tüm üyelerimizin okuması zorunludur. Kurallara uymayan içerikler silinecektir.',
     lastReply: null
   },
   {
     id: 4,
-    title: 'AWP kullanim taktikleri',
+    title: 'AWP kullanım taktikleri',
     author: 'SniperKing',
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
     authorOnline: false,
@@ -945,7 +945,7 @@ const topics = ref([
     isLocked: false,
     isHot: true,
     type: 'discussion',
-    preview: 'AWP ile profesyonel seviyede oynamak için bilmeniz gereken taktikler, pozisyonlar ve ipuclari...',
+    preview: 'AWP ile profesyonel seviyede oynamak için bilmeniz gereken taktikler, pozisyonlar ve ipuçları...',
     lastReply: {
       author: 'NewbieCS',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=a4',
@@ -954,7 +954,7 @@ const topics = ref([
   },
   {
     id: 5,
-    title: 'Yeni baslayanlar için rehber',
+    title: 'Yeni başlayanlar için rehber',
     author: 'GuideWriter',
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
     authorOnline: true,
@@ -966,7 +966,7 @@ const topics = ref([
     isLocked: false,
     isHot: false,
     type: 'discussion',
-    preview: 'CS 1.6\'ya yeni baslayanlar için kapsamli bir rehber hazirladim. Temel ayarlar, silah seçimi, takim çalışmasi...',
+    preview: 'CS 1.6\'ya yeni başlayanlar için kapsamlı bir rehber hazırladım. Temel ayarlar, silah seçimi, takım çalışması...',
     lastReply: {
       author: 'Newbie2024',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=a5',
@@ -1142,11 +1142,11 @@ const validateForm = () => {
   contentError.value = ''
 
   if (!newTopic.title || newTopic.title.trim().length < 5) {
-    titleError.value = 'Baslik en az 5 karakter olmalıdir'
+    titleError.value = 'Başlık en az 5 karakter olmalıdir'
     return false
   }
   if (newTopic.title.length > 100) {
-    titleError.value = 'Baslik 100 karakterden uzun olamaz'
+    titleError.value = 'Başlık 100 karakterden uzun olamaz'
     return false
   }
   if (!newTopic.content || newTopic.content.trim().length < 20) {
@@ -1184,14 +1184,14 @@ const createTopic = async () => {
       newTopic.content = ''
       newTopic.tags = []
       newTopic.type = 'discussion'
-      window.$message?.success('Konu basariyla oluşturuldu')
+      window.$message?.success('Konu başarıyla oluşturuldu')
       router.go(0)
     } else {
       const error = await response.json()
       window.$message?.error(error.detail || 'Konu oluşturulamadı')
     }
   } catch (error) {
-    window.$message?.error('Bir hata olustu, lütfen tekrar deneyin')
+    window.$message?.error('Bir hata oluştu, lütfen tekrar deneyin')
   } finally {
     isCreating.value = false
   }

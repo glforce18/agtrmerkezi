@@ -4,8 +4,8 @@
       <!-- Header -->
       <div class="page-header">
         <div>
-          <h1 class="page-title">Banner Yonetimi</h1>
-          <p class="page-desc">Site bannerlarini ve reklamlari yonetin</p>
+          <h1 class="page-title">Banner Yönetimi</h1>
+          <p class="page-desc">Site bannerlarını ve reklamları yönetin</p>
         </div>
         <button class="btn-primary" @click="showAddModal = true">
           <Plus :size="18" />
@@ -50,13 +50,13 @@
 
       <!-- All Banners -->
       <div class="all-banners">
-        <h2>Tum Bannerlar</h2>
+        <h2>Tüm Bannerlar</h2>
         <div class="banners-table">
           <table>
             <thead>
               <tr>
                 <th>Onizleme</th>
-                <th>Baslik</th>
+                <th>Başlık</th>
                 <th>Konum</th>
                 <th>Link</th>
                 <th>Durum</th>
@@ -100,12 +100,12 @@
             </div>
             <div class="modal-body">
               <div class="form-group">
-                <label>Baslik</label>
+                <label>Başlık</label>
                 <input v-model="formData.title" placeholder="Banner basligi" />
               </div>
 
               <div class="form-group">
-                <label>Gorsel URL</label>
+                <label>Görsel URL</label>
                 <div class="image-input">
                   <input v-model="formData.image_url" placeholder="/images/banners/..." />
                   <button class="browse-btn" @click="openMediaPicker">
@@ -135,7 +135,7 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label>Baslangic Tarihi</label>
+                  <label>Başlangıç Tarihi</label>
                   <input type="datetime-local" v-model="formData.start_date" />
                 </div>
                 <div class="form-group">
@@ -301,7 +301,7 @@ const saveBanner = async () => {
 }
 
 const removeBanner = async (banner) => {
-  if (!confirm('Bu banneri silmek istediginize emin misiniz?')) return
+  if (!confirm('Bu banneri silmek istediğinize emin misiniz?')) return
 
   try {
     const response = await fetch(`/api/admin/banners/${banner.id}`, {
