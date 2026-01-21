@@ -7,7 +7,7 @@
             <span class="text-gradient-orange">Şifremi Unuttum</span>
           </h1>
           <p class="opacity-60">
-            E-posta adresinizi girin, size şifre sifirlama linki gönderelim.
+            E-posta adresinizi girin, size şifre sıfırlama linki gönderelim.
           </p>
         </div>
 
@@ -28,7 +28,7 @@
 
             <button type="submit" class="btn-gaming w-full" :disabled="loading">
               <span v-if="loading" class="loading loading-spinner loading-sm"></span>
-              <span v-else>Sifirlama Linki Gönder</span>
+              <span v-else>Sıfırlama Linki Gönder</span>
             </button>
           </form>
 
@@ -40,7 +40,7 @@
             </div>
             <h3 class="text-xl font-bold mb-2">E-posta Gönderildi!</h3>
             <p class="opacity-60 mb-4">
-              {{ email }} adresine şifre sifirlama linki gönderdik.
+              {{ email }} adresine şifre sıfırlama linki gönderdik.
             </p>
             <router-link to="/login" class="btn btn-outline btn-primary">
               Giriş Sayfasına Don

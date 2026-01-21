@@ -306,7 +306,7 @@
                 </svg>
               </div>
               <h3>İki Faktörlü Doğrulama</h3>
-              <p>Authenticator uygulamanizdan 6 haneli kodu girin</p>
+              <p>Authenticator uygulamanızdan 6 haneli kodu girin</p>
             </div>
 
             <div class="otp-container">

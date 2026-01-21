@@ -1386,7 +1386,7 @@ const saveCategory = async () => {
 // Delete Category
 const confirmDeleteCategory = (category) => {
   deleteModalTitle.value = 'Kategoriyi Sil'
-  deleteModalMessage.value = `"${category.name}" kategorisini silmek istediğinize emin misiniz? İçindeki tum konular da silinecektir!`
+  deleteModalMessage.value = `"${category.name}" kategorisini silmek istediğinize emin misiniz? İçindeki tüm konular da silinecektir!`
   deleteCallback.value = () => deleteCategory(category.id)
   showDeleteModal.value = true
 }

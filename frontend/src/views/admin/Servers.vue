@@ -9,7 +9,7 @@
               <Server :size="28" class="title-icon" />
               Sunucu Yönetimi
             </h1>
-            <p class="page-subtitle">Tüm sunuculari tek panelden yönetin ve izleyin</p>
+            <p class="page-subtitle">Tüm sunucuları tek panelden yönetin ve izleyin</p>
           </div>
           <div class="header-actions">
             <button class="btn btn-ghost" @click="refreshServers" :disabled="refreshing">

@@ -141,7 +141,7 @@
         <div class="text-center mt-10">
           <router-link to="/servers">
             <n-button size="large" class="view-all-btn">
-              Tüm Sunuculari Gor
+              Tüm Sunucuları Gör
               <template #icon><ArrowRight class="w-5 h-5" /></template>
             </n-button>
           </router-link>
@@ -367,8 +367,8 @@
           Toplulugumuza <span class="text-gradient">Katıl</span>
         </h2>
         <p class="cta-description mb-10 max-w-2xl mx-auto">
-          Binlerce CS 1.6 oyuncusuyla tanismayi, turnuvalara katılmayi ve
-          en iyi sunucularda oynamayı mi bekliyorsun? Hemen ücretsiz kayıt ol!
+          Binlerce CS 1.6 oyuncusuyla tanışmayı, turnuvalara katılmayi ve
+          en iyi sunucularda oynamayı mı bekliyorsun? Hemen ücretsiz kayıt ol!
         </p>
         <div class="cta-buttons-final flex flex-wrap justify-center gap-6">
           <router-link to="/register">
@@ -460,7 +460,7 @@ const statsSection = ref(null)
 // Typing animation
 const typingPhrases = [
   'Counter-Strike 1.6 Turkiye Toplulugu',
-  'En İyi CS 1.6 Sunuculari',
+  'En İyi CS 1.6 Sunucuları',
   'Turnuvalar ve Etkinlikler',
   'Binlerce Aktif Oyuncu'
 ]
@@ -472,7 +472,7 @@ const typingSpeed = ref(100)
 // Animated counters
 const animatedOnline = ref(0)
 const animatedStats = ref([
-  { icon: markRaw(Users), value: 25000, animated: 0, suffix: '+', label: 'Kayıtli Üye', color: '#f97316', barWidth: '85%' },
+  { icon: markRaw(Users), value: 25000, animated: 0, suffix: '+', label: 'Kayıtlı Üye', color: '#f97316', barWidth: '85%' },
   { icon: markRaw(Server), value: 150, animated: 0, suffix: '+', label: 'Aktif Sunucu', color: '#06b6d4', barWidth: '75%' },
   { icon: markRaw(MessageSquare), value: 50000, animated: 0, suffix: '+', label: 'Forum Konusu', color: '#8b5cf6', barWidth: '90%' },
   { icon: markRaw(Trophy), value: 12, animated: 0, suffix: '', label: 'Aktif Turnuva', color: '#eab308', barWidth: '60%' }
@@ -500,7 +500,7 @@ const getParticleStyle = (index) => {
 const latestTopics = ref([
   { id: 1, title: 'CS 1.6 En İyi Ayarlar 2024', author: 'ProGamer', replies: 47, views: 1230, category: 'Rehberler' },
   { id: 2, title: 'Yeni Aim Map Koleksiyonu', author: 'MapMaker', replies: 23, views: 856, category: 'Maplar' },
-  { id: 3, title: 'Turnuva Kayıtlari Başladı!', author: 'Admin159', replies: 89, views: 2341, category: 'Duyurular' },
+  { id: 3, title: 'Turnuva Kayıtları Başladı!', author: 'Admin159', replies: 89, views: 2341, category: 'Duyurular' },
   { id: 4, title: 'En İyi AWP Taktikleri', author: 'Sniper', replies: 34, views: 945, category: 'Taktikler' },
   { id: 5, title: 'Yeni Başlayanlara CS 1.6 Rehberi', author: 'Mentor', replies: 56, views: 1567, category: 'Rehberler' }
 ])
@@ -555,7 +555,7 @@ const communityHighlights = ref([
   {
     icon: markRaw(TrendingUp),
     title: 'En Aktif Forum',
-    description: 'Strateji bolumu bu hafta en çok ziyaret edilen forum.',
+    description: 'Strateji bölümü bu hafta en çok ziyaret edilen forum.',
     stat: '2.3K',
     statLabel: 'mesaj',
     gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)'

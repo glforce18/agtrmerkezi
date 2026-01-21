@@ -406,7 +406,7 @@
                   </div>
                 </div>
                 <n-button quaternary block class="mt-4" @click="showAllAchievements = true">
-                  Tüm Başarıları Gor
+                  Tüm Başarıları Gör
                 </n-button>
               </div>
             </div>
@@ -607,7 +607,7 @@
               <!-- Step 2: Verify -->
               <div v-else-if="twoFAStep === 2" class="wizard-content text-center">
                 <p class="text-gray-400 mb-6">
-                  Uygulamanizda gorunen 6 haneli kodu girin.
+                  Uygulamanızda görünen 6 haneli kodu girin.
                 </p>
                 <div class="otp-container">
                   <n-input
@@ -660,7 +660,7 @@
               <div class="flex flex-wrap gap-3">
                 <n-button @click="show2FABackupCodes = true">
                   <template #icon><KeyIcon class="w-4 h-4" /></template>
-                  Yedek Kodlari Gor
+                  Yedek Kodlari Gör
                 </n-button>
                 <n-button type="error" ghost @click="disable2FA">
                   <template #icon><XCircleIcon class="w-4 h-4" /></template>
@@ -817,7 +817,7 @@
                   <ActivityIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>Aktivite Gecmisi</h4>
-                    <p>Aktivite gecmisinizi profilinizde gösterin</p>
+                    <p>Aktivite geçmişinizi profilinizde gösterin</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.show_activity" />
@@ -828,7 +828,7 @@
                   <ServerIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>Sunucu Listesi</h4>
-                    <p>Sunucularinizi profilinizde gösterin</p>
+                    <p>Sunucularınızı profilinizde gösterin</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.show_servers" />

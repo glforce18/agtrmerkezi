@@ -292,7 +292,7 @@ const saveTheme = async () => {
 }
 
 const resetTheme = () => {
-  if (!confirm('Tema ayarlarıni varsayilana sifirlamak istediğinize emin misiniz?')) return
+  if (!confirm('Tema ayarlarıni varsayilana sıfırlamak istediğinize emin misiniz?')) return
 
   Object.assign(theme, {
     primaryColor: '#f97316',

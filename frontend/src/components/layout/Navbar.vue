@@ -228,7 +228,7 @@
                   </button>
                   <button class="user-dropdown-item" @click="navigateTo('/servers')">
                     <n-icon :component="Server" size="18" />
-                    <span>Sunucularim</span>
+                    <span>Sunucularım</span>
                   </button>
                   <button
                     v-if="['admin', 'superadmin'].includes(user.role)"
