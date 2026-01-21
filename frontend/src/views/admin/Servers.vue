@@ -832,7 +832,7 @@ const fetchServers = async () => {
     totalServers.value = data.pagination?.total || data.total || servers.value.length
     totalPages.value = data.pagination?.pages || Math.ceil(totalServers.value / perPage) || 1
   } catch (error) {
-    console.error('Fetch servers error:', error)
+    // Error handled
     showToast('Sunucular yuklenirken hata olustu', 'error')
   }
   loading.value = false
@@ -943,7 +943,7 @@ const startServer = async (server) => {
     showToast(`${server.name} baslatiliyor...`, 'success')
     await fetchServers()
   } catch (error) {
-    console.error('Start server error:', error)
+    // Error handled
     showToast('Sunucu baslatilirken hata olustu', 'error')
   }
   actionLoading[server.id] = false
@@ -956,7 +956,7 @@ const stopServer = async (server) => {
     showToast(`${server.name} durduruluyor...`, 'success')
     await fetchServers()
   } catch (error) {
-    console.error('Stop server error:', error)
+    // Error handled
     showToast('Sunucu durdurulurken hata olustu', 'error')
   }
   actionLoading[server.id] = false
@@ -969,7 +969,7 @@ const restartServer = async (server) => {
     showToast(`${server.name} yeniden baslatiliyor...`, 'success')
     await fetchServers()
   } catch (error) {
-    console.error('Restart server error:', error)
+    // Error handled
     showToast('Sunucu yeniden baslatilirken hata olustu', 'error')
   }
   actionLoading[server.id] = false
@@ -994,7 +994,7 @@ const executeDelete = async () => {
     showToast(`${deleteTarget.value.name} silindi`, 'success')
     deleteTarget.value = null
   } catch (error) {
-    console.error('Delete server error:', error)
+    // Error handled
     showToast('Sunucu silinirken hata olustu', 'error')
   }
   deleteLoading.value = false

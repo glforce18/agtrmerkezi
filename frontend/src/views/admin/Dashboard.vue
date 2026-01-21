@@ -802,7 +802,7 @@ const fetchDashboardData = async () => {
 
     lastUpdateTime.value = new Date().toLocaleTimeString('tr-TR')
   } catch (error) {
-    console.error('Dashboard fetch error:', error)
+    // Error handled
   }
 }
 
@@ -838,7 +838,7 @@ const fetchPendingPayments = async () => {
       rejecting: false
     }))
   } catch (error) {
-    console.error('Pending payments fetch error:', error)
+    // Error handled
   }
   loadingPayments.value = false
 }

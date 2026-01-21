@@ -15,7 +15,6 @@ export function useSound() {
 
   function loadSound(name) {
     if (!sounds[name]) {
-      console.warn(`Sound "${name}" not found`)
       return null
     }
 
@@ -34,8 +33,8 @@ export function useSound() {
     const audio = loadSound(name)
     if (audio) {
       audio.currentTime = 0
-      audio.play().catch(err => {
-        console.warn('Sound play failed:', err)
+      audio.play().catch(() => {
+        // Sound play failed - browser autoplay policy
       })
     }
   }

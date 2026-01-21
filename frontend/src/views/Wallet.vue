@@ -1213,7 +1213,7 @@ const fetchTransactions = async () => {
       }))
     }
   } catch (e) {
-    console.error('Fetch transactions error:', e)
+    // Error handled
     transactions.value = []
   }
 }

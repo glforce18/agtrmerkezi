@@ -1208,7 +1208,7 @@ const fetchCategories = async () => {
       stats.value.categories = categories.value.length
     }
   } catch (e) {
-    console.error('Categories fetch error:', e)
+    // Error handled
     showToast('Kategoriler yuklenemedi', 'error')
   }
   loading.value = false
@@ -1233,7 +1233,7 @@ const fetchTopics = async () => {
       totalTopics.value = data.total || topics.value.length
     }
   } catch (e) {
-    console.error('Topics fetch error:', e)
+    // Error handled
     showToast('Konular yuklenemedi', 'error')
   }
   loadingTopics.value = false
@@ -1257,7 +1257,7 @@ const fetchStats = async () => {
       animateStats()
     }
   } catch (e) {
-    console.error('Stats fetch error:', e)
+    // Error handled
   }
 }
 
@@ -1272,7 +1272,7 @@ const fetchReports = async () => {
       reports.value = data.reports || data || []
     }
   } catch (e) {
-    console.error('Reports fetch error:', e)
+    // Error handled
   }
   loadingReports.value = false
 }
@@ -1377,7 +1377,7 @@ const saveCategory = async () => {
       showToast(data.detail || 'Bir hata olustu', 'error')
     }
   } catch (e) {
-    console.error('Save category error:', e)
+    // Error handled
     showToast('Baglanti hatasi', 'error')
   }
   saving.value = false
@@ -1405,7 +1405,7 @@ const deleteCategory = async (id) => {
       showToast('Silme islemi basarisiz', 'error')
     }
   } catch (e) {
-    console.error('Delete category error:', e)
+    // Error handled
     showToast('Baglanti hatasi', 'error')
   }
 }
@@ -1453,7 +1453,7 @@ const onDrop = async (event, targetIndex) => {
     })
     showToast('Siralama kaydedildi', 'success')
   } catch (e) {
-    console.error('Reorder error:', e)
+    // Error handled
     showToast('Siralama kaydedilemedi', 'error')
     fetchCategories()
   }
@@ -1495,7 +1495,7 @@ const togglePin = async (topic) => {
       showToast(topic.is_pinned ? 'Konu sabitlendi' : 'Sabitleme kaldirildi', 'success')
     }
   } catch (e) {
-    console.error('Toggle pin error:', e)
+    // Error handled
     showToast('Islem basarisiz', 'error')
   }
 }
@@ -1512,7 +1512,7 @@ const toggleLock = async (topic) => {
       showToast(topic.is_locked ? 'Konu kilitlendi' : 'Kilit acildi', 'success')
     }
   } catch (e) {
-    console.error('Toggle lock error:', e)
+    // Error handled
     showToast('Islem basarisiz', 'error')
   }
 }
@@ -1537,7 +1537,7 @@ const deleteTopic = async (id) => {
       fetchStats()
     }
   } catch (e) {
-    console.error('Delete topic error:', e)
+    // Error handled
     showToast('Silme basarisiz', 'error')
   }
 }
@@ -1573,7 +1573,7 @@ const executeMoveTopics = async () => {
       showToast('Tasima basarisiz', 'error')
     }
   } catch (e) {
-    console.error('Move topics error:', e)
+    // Error handled
     showToast('Baglanti hatasi', 'error')
   }
 }

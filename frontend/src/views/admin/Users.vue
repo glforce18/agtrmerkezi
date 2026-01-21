@@ -763,8 +763,7 @@ const fetchUsers = async () => {
     } else {
       showNotification('Kullanicilar yuklenemedi', 'error')
     }
-  } catch (error) {
-    console.error('Fetch users error:', error)
+  } catch {
     showNotification('Baglanti hatasi', 'error')
   } finally {
     loading.value = false
@@ -781,8 +780,8 @@ const fetchStats = async () => {
       stats.banned = data.banned || 0
       stats.newToday = data.new_today || 0
     }
-  } catch (error) {
-    console.error('Fetch stats error:', error)
+  } catch {
+    // Stats fetch error
   }
 }
 
@@ -910,8 +909,7 @@ const saveUser = async () => {
       const error = await response.json()
       showNotification(error.detail || 'Guncelleme basarisiz', 'error')
     }
-  } catch (error) {
-    console.error('Save user error:', error)
+  } catch {
     showNotification('Baglanti hatasi', 'error')
   } finally {
     saving.value = false

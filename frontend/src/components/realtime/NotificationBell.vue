@@ -116,7 +116,7 @@ async function fetchNotifications() {
       unreadCount.value = data.unread_count || 0
     }
   } catch (e) {
-    console.error('Notification fetch error:', e)
+    // Error handled
   } finally {
     loading.value = false
   }
@@ -140,7 +140,7 @@ async function markAsRead(notificationId) {
       unreadCount.value = Math.max(0, unreadCount.value - 1)
     }
   } catch (e) {
-    console.error('Mark read error:', e)
+    // Error handled
   }
 }
 
@@ -162,7 +162,7 @@ async function markAllAsRead() {
       unreadCount.value = 0
     }
   } catch (e) {
-    console.error('Mark all read error:', e)
+    // Error handled
   } finally {
     loading.value = false
   }
@@ -187,7 +187,7 @@ async function deleteNotification(notificationId) {
       notifications.value = notifications.value.filter(n => n.id !== notificationId)
     }
   } catch (e) {
-    console.error('Delete notification error:', e)
+    // Error handled
   }
 }
 
@@ -210,7 +210,7 @@ async function clearAllNotifications() {
       unreadCount.value = 0
     }
   } catch (e) {
-    console.error('Clear all error:', e)
+    // Error handled
   } finally {
     loading.value = false
   }

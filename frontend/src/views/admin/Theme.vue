@@ -287,7 +287,7 @@ const saveTheme = async () => {
       applyTheme()
     }
   } catch (e) {
-    console.error('Save error:', e)
+    // Error handled
   }
 }
 

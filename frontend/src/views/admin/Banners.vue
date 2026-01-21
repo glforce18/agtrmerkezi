@@ -274,7 +274,7 @@ const fetchBanners = async () => {
       banners.value = data.banners || data || []
     }
   } catch (e) {
-    console.error('Fetch banners error:', e)
+    // Error handled
   }
 }
 
@@ -296,7 +296,7 @@ const saveBanner = async () => {
       fetchBanners()
     }
   } catch (e) {
-    console.error('Save error:', e)
+    // Error handled
   }
 }
 
@@ -312,7 +312,7 @@ const removeBanner = async (banner) => {
       banners.value = banners.value.filter(b => b.id !== banner.id)
     }
   } catch (e) {
-    console.error('Delete error:', e)
+    // Error handled
   }
 }
 

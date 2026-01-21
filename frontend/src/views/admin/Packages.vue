@@ -888,7 +888,7 @@ const fetchPackages = async () => {
       packages.value = data.packages || data || []
     }
   } catch (e) {
-    console.error('Fetch error:', e)
+    // Error handled
     showToast('Paketler yuklenirken hata olustu', 'error')
   }
   loading.value = false
@@ -1026,7 +1026,7 @@ const toggleActive = async (pkg) => {
       showToast(pkg.is_active ? 'Paket aktiflestirildi' : 'Paket pasif yapildi', 'success')
     }
   } catch (e) {
-    console.error('Toggle error:', e)
+    // Error handled
     showToast('Durum degistirilemedi', 'error')
   }
 }
@@ -1108,7 +1108,7 @@ const onDrop = async () => {
       }
       showToast('Siralama guncellendi', 'success')
     } catch (e) {
-      console.error('Reorder error:', e)
+      // Error handled
       showToast('Siralama guncellenemedi', 'error')
     }
   }

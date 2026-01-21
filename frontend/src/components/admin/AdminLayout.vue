@@ -109,8 +109,8 @@ const fetchPendingCount = async () => {
       // API returns: { payments: { pending: X, ... } }
       pendingPayments.value = data.payments?.pending || 0
     }
-  } catch (e) {
-    console.error('Pending count fetch error:', e)
+  } catch {
+    // Pending count fetch error
   }
 }
 

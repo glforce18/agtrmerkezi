@@ -195,7 +195,7 @@ const fetchPages = async () => {
       pages.value = data.pages || []
     }
   } catch (e) {
-    console.error('Fetch pages error:', e)
+    // Error handled
   }
   loading.value = false
 }
@@ -262,7 +262,7 @@ const savePage = async () => {
       fetchPages()
     }
   } catch (e) {
-    console.error('Save error:', e)
+    // Error handled
   }
 }
 

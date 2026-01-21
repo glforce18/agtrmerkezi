@@ -899,7 +899,7 @@ const fetchPayments = async () => {
       totalPages.value = data.pagination?.pages || 1
     }
   } catch (error) {
-    console.error('Fetch payments error:', error)
+    // Error handled
     showToast('Odemeler yuklenirken hata olustu', 'error')
   }
   loading.value = false
@@ -919,7 +919,7 @@ const fetchStats = async () => {
       pendingCount.value = data.payments?.pending || 0
     }
   } catch (error) {
-    console.error('Stats fetch error:', error)
+    // Error handled
   }
 }
 
@@ -1128,7 +1128,7 @@ const executeApprove = async () => {
       showToast(data.detail || 'Onaylama basarisiz', 'error')
     }
   } catch (error) {
-    console.error('Approve payment error:', error)
+    // Error handled
     showToast('Bir hata olustu', 'error')
   }
 }
@@ -1172,7 +1172,7 @@ const confirmReject = async () => {
       showToast(data.detail || 'Reddetme basarisiz', 'error')
     }
   } catch (error) {
-    console.error('Reject payment error:', error)
+    // Error handled
     showToast('Bir hata olustu', 'error')
   }
 }
@@ -1224,7 +1224,7 @@ const executeBulkAction = async () => {
         }
       }
     } catch (error) {
-      console.error(`Bulk ${action} error for id ${id}:`, error)
+      // Error handled
     }
   }
 

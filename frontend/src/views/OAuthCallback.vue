@@ -50,7 +50,6 @@ onMounted(async () => {
       throw new Error('Invalid user data received')
     }
   } catch (err) {
-    console.error('OAuth callback error:', err)
     error.value = err.response?.data?.detail || err.message || 'Giriş işlemi başarısız'
     localStorage.removeItem('access_token')
     setTimeout(() => router.push('/login?error=fetch_failed'), 2000)

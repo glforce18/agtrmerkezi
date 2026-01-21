@@ -1234,7 +1234,7 @@ const bulkDelete = async () => {
         headers: getHeaders()
       })
     } catch (e) {
-      console.error('Delete error:', e)
+      // Error handled
     }
   }
 
@@ -1320,7 +1320,7 @@ const uploadFiles = async () => {
         item.progress = 100
       }
     } catch (e) {
-      console.error('Upload error:', e)
+      // Error handled
     }
   }
 
@@ -1345,7 +1345,7 @@ const fetchImages = async () => {
       images.value = data.images || data || []
     }
   } catch (e) {
-    console.error('Fetch images error:', e)
+    // Error handled
     // Fallback data
     images.value = [
       { id: 1, name: 'agtr-logo-main', file_path: '/static/images/logos/agtr-logo-main.png', category: 'logo', file_size: 1302574, width: 512, height: 512 },
@@ -1372,7 +1372,7 @@ const saveImage = async () => {
       showToast('Gorsel guncellendi!')
     }
   } catch (e) {
-    console.error('Update error:', e)
+    // Error handled
     showToast('Hata olustu!', 'error')
   }
 }
@@ -1393,7 +1393,7 @@ const deleteImage = async (image) => {
       showToast('Gorsel silindi!')
     }
   } catch (e) {
-    console.error('Delete error:', e)
+    // Error handled
     showToast('Hata olustu!', 'error')
   }
 }
@@ -1466,7 +1466,7 @@ const toggleBannerStatus = async (banner) => {
     })
     showToast(banner.is_active ? 'Banner aktif edildi!' : 'Banner pasif edildi!')
   } catch (e) {
-    console.error('Toggle error:', e)
+    // Error handled
     banner.is_active = !banner.is_active
   }
 }
@@ -1481,7 +1481,7 @@ const fetchBanners = async () => {
       banners.value = data.banners || data || []
     }
   } catch (e) {
-    console.error('Fetch banners error:', e)
+    // Error handled
     banners.value = [
       {
         id: 1,
@@ -1514,7 +1514,7 @@ const saveBanner = async () => {
       showToast(editingBanner.value ? 'Banner guncellendi!' : 'Banner olusturuldu!')
     }
   } catch (e) {
-    console.error('Save banner error:', e)
+    // Error handled
     showToast('Hata olustu!', 'error')
   }
 }
@@ -1532,7 +1532,7 @@ const deleteBanner = async (banner) => {
       showToast('Banner silindi!')
     }
   } catch (e) {
-    console.error('Delete banner error:', e)
+    // Error handled
     showToast('Hata olustu!', 'error')
   }
 }

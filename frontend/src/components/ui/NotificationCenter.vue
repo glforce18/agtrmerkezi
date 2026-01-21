@@ -208,7 +208,7 @@ const markAllAsRead = async () => {
       notifications.value.forEach(n => n.read = true)
     }
   } catch (error) {
-    console.error('Failed to mark all as read:', error)
+    // Error handled
   }
 }
 
@@ -227,7 +227,7 @@ const handleNotificationClick = async (notification) => {
           notification.read = true
         }
       } catch (error) {
-        console.error('Failed to mark notification as read:', error)
+        // Error handled
       }
     }
   }
@@ -253,7 +253,7 @@ const deleteNotification = async (id) => {
       notifications.value = notifications.value.filter(n => n.id !== id)
     }
   } catch (error) {
-    console.error('Failed to delete notification:', error)
+    // Error handled
   }
 }
 
@@ -286,7 +286,7 @@ const loadNotifications = async () => {
       }))
     }
   } catch (error) {
-    console.error('Failed to load notifications:', error)
+    // Error handled
   } finally {
     loading.value = false
   }

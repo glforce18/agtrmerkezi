@@ -675,7 +675,7 @@ const fetchSettings = async () => {
       Object.assign(settings, data)
     }
   } catch (error) {
-    console.error('Fetch settings error:', error)
+    // Error handled
   }
 }
 
@@ -695,7 +695,7 @@ const saveSettings = async () => {
       alert(data.detail || 'Kaydetme başarısız')
     }
   } catch (error) {
-    console.error('Save settings error:', error)
+    // Error handled
     alert('Bir hata oluştu')
   }
   saving.value = false
@@ -714,7 +714,7 @@ const testEmail = async () => {
       alert('E-posta gönderilemedi')
     }
   } catch (error) {
-    console.error('Test email error:', error)
+    // Error handled
     alert('Bir hata oluştu')
   }
 }
@@ -767,7 +767,7 @@ const uploadLogo = async (type) => {
         alert(errorData.detail || 'Yükleme başarısız')
       }
     } catch (error) {
-      console.error('Upload error:', error)
+      // Error handled
       alert('Yükleme sırasında hata oluştu')
     }
   }
@@ -822,7 +822,7 @@ const handleLogoDrop = async (event, type) => {
       alert(errorData.detail || 'Yükleme başarısız')
     }
   } catch (error) {
-    console.error('Upload error:', error)
+    // Error handled
     alert('Yükleme sırasında hata oluştu')
   }
 }

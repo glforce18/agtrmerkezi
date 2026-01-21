@@ -314,8 +314,8 @@ async function refreshData() {
       servers.value = data.servers
       updateCharts()
     }
-  } catch (error) {
-    console.error('Failed to fetch monitoring data:', error)
+  } catch {
+    // Monitoring data fetch failed
   } finally {
     isLoading.value = false
   }
@@ -349,7 +349,6 @@ function updateCharts() {
 function initCharts() {
   // Check if Chart.js is available
   if (typeof Chart === 'undefined') {
-    console.warn('Chart.js not loaded')
     return
   }
 
