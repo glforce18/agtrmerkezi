@@ -261,7 +261,7 @@
                   <select class="select select-bordered select-sm bg-base-200">
                     <option value="all">All Roles</option>
                     <option value="admin">Admin</option>
-                    <option value="moderator">Moderator</option>
+                    <option value="moderatör">Moderatör</option>
                     <option value="user">User</option>
                   </select>
                   <select class="select select-bordered select-sm bg-base-200">
@@ -321,7 +321,7 @@
                       <td>
                         <select class="select select-xs bg-base-200" v-model="user.role">
                           <option value="admin">Admin</option>
-                          <option value="moderator">Moderator</option>
+                          <option value="moderatör">Moderatör</option>
                           <option value="user">User</option>
                         </select>
                       </td>
@@ -1405,7 +1405,7 @@ const users = ref([
     username: 'ProGamer',
     email: 'progamer@example.com',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-    role: 'moderator',
+    role: 'moderatör',
     serverCount: 3,
     isActive: true,
     twoFactorEnabled: true,

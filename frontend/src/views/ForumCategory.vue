@@ -41,7 +41,7 @@
             <div class="online-dot"></div>
             <UsersIcon class="w-4 h-4" />
             <span class="online-count">{{ onlineUsers }}</span>
-            <span class="online-label">cevrimici</span>
+            <span class="online-label">çevrimiçi</span>
           </div>
         </nav>
       </Transition>
@@ -165,14 +165,14 @@
                 <button
                   @click="viewMode = 'list'"
                   :class="['view-btn', { active: viewMode === 'list' }]"
-                  title="Liste Gorunumu"
+                  title="Liste Görünümu"
                 >
                   <ListIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="viewMode = 'compact'"
                   :class="['view-btn', { active: viewMode === 'compact' }]"
-                  title="Kompakt Gorunum"
+                  title="Kompakt Görünüm"
                 >
                   <LayoutGridIcon class="w-4 h-4" />
                 </button>
@@ -361,15 +361,15 @@
 
                 <!-- Topic Stats -->
                 <div class="topic-stats">
-                  <div class="stat" title="Yanitlar">
+                  <div class="stat" title="Yanıtlar">
                     <MessageSquareIcon class="w-4 h-4" />
                     <span class="stat-value">{{ topic.replies }}</span>
-                    <span v-if="viewMode === 'list'" class="stat-label">Yanit</span>
+                    <span v-if="viewMode === 'list'" class="stat-label">Yanıt</span>
                   </div>
-                  <div class="stat" title="Goruntulenme">
+                  <div class="stat" title="Görüntülenme">
                     <EyeIcon class="w-4 h-4" />
                     <span class="stat-value">{{ formatNumber(topic.views) }}</span>
-                    <span v-if="viewMode === 'list'" class="stat-label">Goruntulenme</span>
+                    <span v-if="viewMode === 'list'" class="stat-label">Görüntülenme</span>
                   </div>
                   <div class="stat" title="Begeni">
                     <ThumbsUpIcon class="w-4 h-4" />
@@ -383,7 +383,7 @@
               <div v-if="viewMode === 'list'" class="topic-last-reply">
                 <template v-if="topic.lastReply">
                   <div class="last-reply-header">
-                    <span class="last-reply-label">Son Yanit</span>
+                    <span class="last-reply-label">Son Yanıt</span>
                     <span class="last-reply-time">{{ topic.lastReply.time }}</span>
                   </div>
                   <div class="last-reply-author">
@@ -394,7 +394,7 @@
                 <template v-else>
                   <div class="no-reply">
                     <MessageSquareIcon class="w-5 h-5 text-gray-500" />
-                    <span>Henuz yanit yok</span>
+                    <span>Henuz yanıt yok</span>
                   </div>
                 </template>
 
@@ -422,7 +422,7 @@
             <div class="spinner-ring"></div>
             <div class="spinner-ring"></div>
           </div>
-          <span>Daha fazla konu yukleniyor...</span>
+          <span>Daha fazla konu yükleniyor...</span>
         </div>
       </Transition>
 
@@ -450,7 +450,7 @@
 
             <h3 class="empty-title">Henuz Konu Yok</h3>
             <p class="empty-description">
-              Bu kategoride henuz bir konu acilmamis. Ilk konuyu acarak tartismayi baslatin!
+              Bu kategoride henuz bir konu acilmamis. Ilk konuyu acarak tartismayi başlatin!
             </p>
 
             <div class="empty-actions">
@@ -487,7 +487,7 @@
               @click="changePage(currentPage - 1)"
             >
               <ChevronLeftIcon class="w-5 h-5" />
-              <span>Onceki</span>
+              <span>Önceki</span>
             </button>
 
             <div class="pagination-numbers">
@@ -521,7 +521,7 @@
               <span class="info-separator">/</span>
               <span class="total-count">{{ filteredTopics.length }}</span>
             </div>
-            <span class="info-text">konu gosteriliyor</span>
+            <span class="info-text">konu gösteriliyor</span>
             <div class="page-progress">
               <div class="progress-fill" :style="{ width: `${(currentPage / totalPages) * 100}%` }"></div>
             </div>
@@ -542,7 +542,7 @@
             <EditIcon class="w-6 h-6 text-orange-500" />
           </div>
           <div>
-            <h2 class="modal-title">Yeni Konu Olustur</h2>
+            <h2 class="modal-title">Yeni Konu Oluştur</h2>
             <p class="modal-subtitle">Topluluga paylasmak istediginiz konuyu yazin</p>
           </div>
           <button class="modal-close" @click="showNewTopicModal = false">
@@ -594,7 +594,7 @@
           <div class="form-group">
             <label class="form-label">
               <FileTextIcon class="w-4 h-4" />
-              Icerik
+              İçerik
             </label>
             <div class="textarea-wrapper">
               <textarea
@@ -640,7 +640,7 @@
 
         <div class="modal-footer">
           <n-button quaternary size="large" @click="showNewTopicModal = false">
-            Iptal
+            İptal
           </n-button>
           <n-button
             type="primary"
@@ -649,7 +649,7 @@
             @click="createTopic"
           >
             <template #icon><SendIcon class="w-5 h-5" /></template>
-            Konuyu Olustur
+            Konuyu Oluştur
           </n-button>
         </div>
       </div>
@@ -677,7 +677,7 @@
             <span><ThumbsUpIcon class="w-3.5 h-3.5" /> {{ previewTooltip.topic?.likes }}</span>
           </div>
           <div class="preview-footer">
-            <span>Tiklayarak konuyu goruntuleyin</span>
+            <span>Tiklayarak konuyu görüntüleyin</span>
             <ArrowRightIcon class="w-4 h-4" />
           </div>
         </div>
@@ -798,7 +798,7 @@ const getHeaders = () => {
 const sortOptions = [
   { label: 'En Yeni', value: 'latest', icon: CalendarIcon },
   { label: 'Populer', value: 'popular', icon: TrendingUpIcon },
-  { label: 'En Cok Yanit', value: 'mostReplies', icon: MessageSquareIcon },
+  { label: 'En Çok Yanıt', value: 'mostReplies', icon: MessageSquareIcon },
   { label: 'En Eski', value: 'oldest', icon: ClockIcon }
 ]
 
@@ -810,7 +810,7 @@ const currentSortOption = computed(() => {
 const category = ref({
   id: 1,
   name: 'Genel Tartisma',
-  description: 'CS 1.6 hakkinda genel konular, sorular ve paylasimlar icin acik tartisma alani',
+  description: 'CS 1.6 hakkinda genel konular, sorular ve paylasimlar için acik tartisma alani',
   icon: MessageSquareIcon,
   gradient: 'primary-secondary'
 })
@@ -818,9 +818,9 @@ const category = ref({
 // Category stats computed
 const categoryStats = computed(() => [
   { label: 'Konu', value: topics.value.length, icon: FileTextIcon },
-  { label: 'Gonderi', value: totalPosts.value, icon: MessageSquareIcon },
-  { label: 'Uye', value: 156, icon: UserIcon },
-  { label: 'Goruntulenme', value: totalViews.value, icon: EyeIcon }
+  { label: 'Gönderi', value: totalPosts.value, icon: MessageSquareIcon },
+  { label: 'Üye', value: 156, icon: UserIcon },
+  { label: 'Görüntülenme', value: totalViews.value, icon: EyeIcon }
 ])
 
 // Popular categories for empty state
@@ -874,11 +874,11 @@ const getCategoryGradient = (gradient) => {
 const topics = ref([
   {
     id: 1,
-    title: 'Yeni guncelleme hakkinda dusunceleriniz?',
+    title: 'Yeni güncelleme hakkinda dusunceleriniz?',
     author: 'Player123',
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
     authorOnline: true,
-    created: '2 saat once',
+    created: '2 saat önce',
     replies: 45,
     views: 234,
     likes: 12,
@@ -886,11 +886,11 @@ const topics = ref([
     isLocked: false,
     isHot: true,
     type: 'discussion',
-    preview: 'Yeni guncelleme ile gelen degisiklikler hakkinda goruslerinizi paylasalim. Ozellikle silah dengesi ve harita degisiklikleri...',
+    preview: 'Yeni güncelleme ile gelen değişiklikler hakkinda goruslerinizi paylasalim. Özellikle silah dengesi ve harita değişiklikleri...',
     lastReply: {
       author: 'AdminUser',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=a1',
-      time: '5 dakika once'
+      time: '5 dakika önce'
     }
   },
   {
@@ -899,7 +899,7 @@ const topics = ref([
     author: 'ProGamer',
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
     authorOnline: false,
-    created: '5 saat once',
+    created: '5 saat önce',
     replies: 28,
     views: 156,
     likes: 8,
@@ -911,16 +911,16 @@ const topics = ref([
     lastReply: {
       author: 'MapMaster',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=a2',
-      time: '1 saat once'
+      time: '1 saat önce'
     }
   },
   {
     id: 3,
-    title: '[DUYURU] Forum Kurallari - Lutfen Okuyun',
+    title: '[DUYURU] Forum Kurallari - Lütfen Okuyun',
     author: 'AdminUser',
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
     authorOnline: true,
-    created: '1 hafta once',
+    created: '1 hafta önce',
     replies: 0,
     views: 489,
     likes: 23,
@@ -928,7 +928,7 @@ const topics = ref([
     isLocked: true,
     isHot: false,
     type: 'announcement',
-    preview: 'Forum kurallari ve topluluk rehberi. Tum uyelerimizin okumasi zorunludur. Kurallara uymayan icerikler silinecektir.',
+    preview: 'Forum kurallari ve topluluk rehberi. Tum üyelerimizin okumasi zorunludur. Kurallara uymayan içerikler silinecektir.',
     lastReply: null
   },
   {
@@ -937,7 +937,7 @@ const topics = ref([
     author: 'SniperKing',
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
     authorOnline: false,
-    created: '1 gun once',
+    created: '1 gün önce',
     replies: 67,
     views: 423,
     likes: 31,
@@ -945,20 +945,20 @@ const topics = ref([
     isLocked: false,
     isHot: true,
     type: 'discussion',
-    preview: 'AWP ile profesyonel seviyede oynamak icin bilmeniz gereken taktikler, pozisyonlar ve ipuclari...',
+    preview: 'AWP ile profesyonel seviyede oynamak için bilmeniz gereken taktikler, pozisyonlar ve ipuclari...',
     lastReply: {
       author: 'NewbieCS',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=a4',
-      time: '30 dakika once'
+      time: '30 dakika önce'
     }
   },
   {
     id: 5,
-    title: 'Yeni baslayanlar icin rehber',
+    title: 'Yeni baslayanlar için rehber',
     author: 'GuideWriter',
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
     authorOnline: true,
-    created: '3 gun once',
+    created: '3 gün önce',
     replies: 34,
     views: 567,
     likes: 45,
@@ -966,11 +966,11 @@ const topics = ref([
     isLocked: false,
     isHot: false,
     type: 'discussion',
-    preview: 'CS 1.6\'ya yeni baslayanlar icin kapsamli bir rehber hazirladim. Temel ayarlar, silah secimi, takim calismasi...',
+    preview: 'CS 1.6\'ya yeni baslayanlar için kapsamli bir rehber hazirladim. Temel ayarlar, silah seçimi, takim çalışmasi...',
     lastReply: {
       author: 'Newbie2024',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=a5',
-      time: '2 saat once'
+      time: '2 saat önce'
     }
   },
   {
@@ -979,7 +979,7 @@ const topics = ref([
     author: 'CompetitivePlayer',
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=6',
     authorOnline: false,
-    created: '4 gun once',
+    created: '4 gün önce',
     replies: 12,
     views: 189,
     likes: 5,
@@ -991,7 +991,7 @@ const topics = ref([
     lastReply: {
       author: 'ClanLeader',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=a6',
-      time: '5 saat once'
+      time: '5 saat önce'
     }
   }
 ])
@@ -1142,7 +1142,7 @@ const validateForm = () => {
   contentError.value = ''
 
   if (!newTopic.title || newTopic.title.trim().length < 5) {
-    titleError.value = 'Baslik en az 5 karakter olmalidir'
+    titleError.value = 'Baslik en az 5 karakter olmalıdir'
     return false
   }
   if (newTopic.title.length > 100) {
@@ -1150,11 +1150,11 @@ const validateForm = () => {
     return false
   }
   if (!newTopic.content || newTopic.content.trim().length < 20) {
-    contentError.value = 'Icerik en az 20 karakter olmalidir'
+    contentError.value = 'İçerik en az 20 karakter olmalıdir'
     return false
   }
   if (newTopic.content.length > 5000) {
-    contentError.value = 'Icerik 5000 karakterden uzun olamaz'
+    contentError.value = 'İçerik 5000 karakterden uzun olamaz'
     return false
   }
   return true
@@ -1184,14 +1184,14 @@ const createTopic = async () => {
       newTopic.content = ''
       newTopic.tags = []
       newTopic.type = 'discussion'
-      window.$message?.success('Konu basariyla olusturuldu')
+      window.$message?.success('Konu basariyla oluşturuldu')
       router.go(0)
     } else {
       const error = await response.json()
-      window.$message?.error(error.detail || 'Konu olusturulamadi')
+      window.$message?.error(error.detail || 'Konu oluşturulamadı')
     }
   } catch (error) {
-    window.$message?.error('Bir hata olustu, lutfen tekrar deneyin')
+    window.$message?.error('Bir hata olustu, lütfen tekrar deneyin')
   } finally {
     isCreating.value = false
   }

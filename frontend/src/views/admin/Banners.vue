@@ -60,7 +60,7 @@
                 <th>Konum</th>
                 <th>Link</th>
                 <th>Durum</th>
-                <th>Islemler</th>
+                <th>İşlemler</th>
               </tr>
             </thead>
             <tbody>
@@ -93,7 +93,7 @@
         <div v-if="showAddModal || editingBanner" class="modal-overlay" @click.self="closeModal">
           <div class="modal-content">
             <div class="modal-header">
-              <h3>{{ editingBanner ? 'Banner Duzenle' : 'Yeni Banner' }}</h3>
+              <h3>{{ editingBanner ? 'Banner Düzenle' : 'Yeni Banner' }}</h3>
               <button class="close-btn" @click="closeModal">
                 <X :size="20" />
               </button>
@@ -152,7 +152,7 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button class="btn-secondary" @click="closeModal">Iptal</button>
+              <button class="btn-secondary" @click="closeModal">İptal</button>
               <button class="btn-primary" @click="saveBanner">
                 <Save :size="18" />
                 Kaydet

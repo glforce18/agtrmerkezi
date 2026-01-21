@@ -90,7 +90,7 @@
             <div class="server-header">
               <div class="server-status" :class="server.online ? 'status-online' : 'status-offline'">
                 <span class="status-dot"></span>
-                {{ server.online ? 'Cevrimici' : 'Cevrimdisi' }}
+                {{ server.online ? 'Çevrimiçi' : 'Çevrimdışı' }}
               </div>
               <n-tag :type="getModeType(server.mode)" size="small" round>
                 {{ server.mode }}
@@ -132,7 +132,7 @@
               </div>
               <n-button size="small" type="primary" @click="connectServer(server)">
                 <template #icon><Play class="w-4 h-4" /></template>
-                Baglan
+                Bağlan
               </n-button>
             </div>
           </div>
@@ -289,7 +289,7 @@
                 </div>
                 <div class="info-item">
                   <Users class="w-4 h-4" />
-                  <span>{{ event.participants }} Katilimci</span>
+                  <span>{{ event.participants }} Katılımcı</span>
                 </div>
               </div>
 
@@ -303,7 +303,7 @@
                 <div class="progress-bar">
                   <div class="progress-fill" :style="{ width: `${(event.participants / event.maxParticipants) * 100}%` }"></div>
                 </div>
-                <span class="progress-text">{{ event.participants }}/{{ event.maxParticipants }} kayit</span>
+                <span class="progress-text">{{ event.participants }}/{{ event.maxParticipants }} kayıt</span>
               </div>
             </div>
 
@@ -368,13 +368,13 @@
         </h2>
         <p class="cta-description mb-10 max-w-2xl mx-auto">
           Binlerce CS 1.6 oyuncusuyla tanismayi, turnuvalara katilmayi ve
-          en iyi sunucularda oynamayi mi bekliyorsun? Hemen ucretsiz kayit ol!
+          en iyi sunucularda oynamayi mi bekliyorsun? Hemen ücretsiz kayıt ol!
         </p>
         <div class="cta-buttons-final flex flex-wrap justify-center gap-6">
           <router-link to="/register">
             <button class="btn-primary-cta">
               <UserPlus class="w-6 h-6" />
-              Ucretsiz Kayit Ol
+              Ücretsiz Kayıt Ol
             </button>
           </router-link>
           <a :href="discordUrl" target="_blank" rel="noopener">
@@ -472,7 +472,7 @@ const typingSpeed = ref(100)
 // Animated counters
 const animatedOnline = ref(0)
 const animatedStats = ref([
-  { icon: markRaw(Users), value: 25000, animated: 0, suffix: '+', label: 'Kayitli Uye', color: '#f97316', barWidth: '85%' },
+  { icon: markRaw(Users), value: 25000, animated: 0, suffix: '+', label: 'Kayıtli Üye', color: '#f97316', barWidth: '85%' },
   { icon: markRaw(Server), value: 150, animated: 0, suffix: '+', label: 'Aktif Sunucu', color: '#06b6d4', barWidth: '75%' },
   { icon: markRaw(MessageSquare), value: 50000, animated: 0, suffix: '+', label: 'Forum Konusu', color: '#8b5cf6', barWidth: '90%' },
   { icon: markRaw(Trophy), value: 12, animated: 0, suffix: '', label: 'Aktif Turnuva', color: '#eab308', barWidth: '60%' }
@@ -500,7 +500,7 @@ const getParticleStyle = (index) => {
 const latestTopics = ref([
   { id: 1, title: 'CS 1.6 En Iyi Ayarlar 2024', author: 'ProGamer', replies: 47, views: 1230, category: 'Rehberler' },
   { id: 2, title: 'Yeni Aim Map Koleksiyonu', author: 'MapMaker', replies: 23, views: 856, category: 'Maplar' },
-  { id: 3, title: 'Turnuva Kayitlari Basladi!', author: 'Admin159', replies: 89, views: 2341, category: 'Duyurular' },
+  { id: 3, title: 'Turnuva Kayıtlari Basladi!', author: 'Admin159', replies: 89, views: 2341, category: 'Duyurular' },
   { id: 4, title: 'En Iyi AWP Taktikleri', author: 'Sniper', replies: 34, views: 945, category: 'Taktikler' },
   { id: 5, title: 'Yeni Baslayanlara CS 1.6 Rehberi', author: 'Mentor', replies: 56, views: 1567, category: 'Rehberler' }
 ])
@@ -535,7 +535,7 @@ const activeEvents = ref([
   {
     id: 2,
     title: 'AWP Only Kupasi',
-    description: 'Sadece AWP kullanarak yeteneklerini goster. En iyi sniper kim?',
+    description: 'Sadece AWP kullanarak yeteneklerini göster. En iyi sniper kim?',
     date: '28 Ocak 2024',
     participants: 28,
     maxParticipants: 32,
@@ -555,7 +555,7 @@ const communityHighlights = ref([
   {
     icon: markRaw(TrendingUp),
     title: 'En Aktif Forum',
-    description: 'Strateji bolumu bu hafta en cok ziyaret edilen forum.',
+    description: 'Strateji bolumu bu hafta en çok ziyaret edilen forum.',
     stat: '2.3K',
     statLabel: 'mesaj',
     gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)'

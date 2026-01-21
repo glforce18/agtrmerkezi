@@ -13,8 +13,8 @@
 
           <h2>Toplanan Veriler</h2>
           <ul>
-            <li>Hesap bilgileri (kullanici adi, e-posta, sifre hash)</li>
-            <li>Oyun istatistikleri ve aktivite kayitlari</li>
+            <li>Hesap bilgileri (kullanıcı adı, e-posta, şifre hash)</li>
+            <li>Oyun istatistikleri ve aktivite kayıtlari</li>
             <li>IP adresi ve tarayici bilgileri</li>
             <li>Cerez verileri</li>
           </ul>
@@ -36,29 +36,29 @@
 
           <h2>Cerezler</h2>
           <p>
-            Sitemiz oturum yonetimi ve kullanici tercihlerini hatirlamak icin cerez kullanir.
+            Sitemiz oturum yonetimi ve kullanıcı tercihlerini hatirlamak için cerez kullanir.
             Tarayici ayarlarindan cerezleri devre disi birakabilirsiniz.
           </p>
 
           <h2>Veri Guvenligi</h2>
           <p>
-            Verileriniz sifrelenmis olarak saklanir. Duzenli guvenlik taramalari yapilir.
+            Verileriniz şifrelenmis olarak saklanir. Duzenli guvenlik taramalari yapilir.
           </p>
 
           <h2>Haklariniz</h2>
           <ul>
             <li>Verilerinize erisim talep edebilirsiniz</li>
             <li>Verilerinizin silinmesini isteyebilirsiniz</li>
-            <li>Veri tasinabilirligi talebinde bulunabilirsiniz</li>
+            <li>Veri taşınabilirligi talebinde bulunabilirsiniz</li>
           </ul>
 
-          <h2>Iletisim</h2>
+          <h2>İletişim</h2>
           <p>
-            Gizlilik ile ilgili sorulariniz icin <router-link to="/contact" class="link link-primary">iletisim sayfamizi</router-link> kullanabilirsiniz.
+            Gizlilik ile ilgili sorulariniz için <router-link to="/contact" class="link link-primary">iletişim sayfamizi</router-link> kullanabilirsiniz.
           </p>
 
           <p class="text-sm opacity-60 mt-8">
-            Son guncelleme: 17 Ocak 2026
+            Son güncelleme: 17 Ocak 2026
           </p>
         </div>
       </div>

@@ -12,7 +12,7 @@
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <h1 class="text-lg font-bold flex items-center gap-2">
           <Package :size="20" class="text-orange-500" />
-          Magaza
+          Mağaza
         </h1>
 
         <!-- Compact Balance Display -->
@@ -28,7 +28,7 @@
 
           <router-link to="/wallet" class="flex items-center gap-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm text-gray-400 hover:text-white hover:border-orange-500 transition-all">
             <Plus :size="14" />
-            Yukle
+            Yükle
           </router-link>
         </div>
       </div>
@@ -98,7 +98,7 @@
           @click="viewMode = 'grid'"
         >
           <LayoutGrid :size="18" />
-          Kart Gorunumu
+          Kart Görünümu
         </button>
         <button
           class="view-toggle-btn"
@@ -115,7 +115,7 @@
         <div class="loading-spinner">
           <Loader2 :size="48" class="spinner-icon" />
         </div>
-        <p class="loading-text">Paketler yukleniyor...</p>
+        <p class="loading-text">Paketler yükleniyor...</p>
       </div>
 
       <!-- Error State -->
@@ -197,7 +197,7 @@
                 <div class="original-price" v-if="pkg.original_price && pkg.original_price > pkg.price_monthly">
                   <span class="strikethrough">{{ formatCurrency(pkg.original_price) }} TL</span>
                   <span class="discount-badge">
-                    %{{ Math.round((1 - pkg.price_monthly / pkg.original_price) * 100) }} Indirim
+                    %{{ Math.round((1 - pkg.price_monthly / pkg.original_price) * 100) }} İndirim
                   </span>
                 </div>
                 <div class="alt-price">
@@ -236,13 +236,13 @@
                   <span>{{ getFeatureLabel(feature) }}</span>
                 </div>
                 <div v-if="pkg.features.length > 5" class="more-features">
-                  +{{ pkg.features.length - 5 }} daha fazla ozellik
+                  +{{ pkg.features.length - 5 }} daha fazla özellik
                 </div>
               </div>
 
               <!-- Purchase Button -->
               <button class="purchase-btn" @click="selectPackage(pkg)">
-                <span class="btn-text">Satin Al</span>
+                <span class="btn-text">Satın Al</span>
                 <ShoppingCart :size="18" />
                 <div class="btn-shine"></div>
               </button>
@@ -256,7 +256,7 @@
         <table class="comparison-table">
           <thead>
             <tr>
-              <th class="feature-col">Ozellikler</th>
+              <th class="feature-col">Özellikler</th>
               <th
                 v-for="pkg in filteredPackages"
                 :key="pkg.id"
@@ -300,7 +300,7 @@
               <td></td>
               <td v-for="pkg in filteredPackages" :key="pkg.id + '-action'">
                 <button class="table-purchase-btn" @click="selectPackage(pkg)">
-                  Satin Al
+                  Satın Al
                 </button>
               </td>
             </tr>
@@ -323,11 +323,11 @@
           <Shield :size="28" />
         </div>
         <div class="rate-content">
-          <h4>Armor ile Odemede Avantaj</h4>
-          <p><strong>1 TL = {{ ARMOR_RATE }} Armor</strong> - Armor ile odeme yaparak ekstra avantajlardan yararlanin</p>
+          <h4>Armor ile Ödemede Avantaj</h4>
+          <p><strong>1 TL = {{ ARMOR_RATE }} Armor</strong> - Armor ile ödeme yaparak ekstra avantajlardan yararlanin</p>
         </div>
         <router-link to="/wallet" class="rate-cta">
-          Armor Yukle
+          Armor Yükle
           <ArrowRight :size="16" />
         </router-link>
       </div>
@@ -391,7 +391,7 @@
               <div class="step-line" :class="{ active: modalStep > 2 }"></div>
               <div class="step" :class="{ active: modalStep >= 3 }">
                 <div class="step-number">3</div>
-                <span class="step-label">Odeme</span>
+                <span class="step-label">Ödeme</span>
               </div>
             </div>
 
@@ -548,7 +548,7 @@
                   <span>{{ formatCurrency(selectedPkg?.price_monthly) }} TL</span>
                 </div>
                 <div v-if="getDiscount() > 0" class="summary-item discount">
-                  <span>Indirim (%{{ getDiscount() }})</span>
+                  <span>İndirim (%{{ getDiscount() }})</span>
                   <span>-{{ formatCurrency(getDiscountAmount()) }} TL</span>
                 </div>
                 <div class="summary-divider"></div>
@@ -598,7 +598,7 @@
                 </div>
                 <router-link to="/wallet" class="warning-cta" @click="closeModal">
                   <Wallet :size="18" />
-                  Bakiye Yukle
+                  Bakiye Yükle
                   <ArrowRight :size="16" />
                 </router-link>
               </div>
@@ -616,7 +616,7 @@
                   <Loader2 v-if="purchasing" :size="18" class="spin" />
                   <template v-else>
                     <ShoppingCart :size="18" />
-                    Satin Al
+                    Satın Al
                   </template>
                 </button>
               </div>
@@ -645,7 +645,7 @@
               </div>
             </div>
             <h2>Tebrikler!</h2>
-            <p>Sunucunuz basariyla olusturuldu</p>
+            <p>Sunucunuz basariyla oluşturuldu</p>
             <div class="success-details" v-if="purchaseResult">
               <div class="detail-item">
                 <span>Sunucu Adi:</span>
@@ -783,12 +783,12 @@ const testimonials = ref([
   {
     name: 'Mehmet K.',
     role: 'Klan Lideri',
-    text: 'Klanmiz icin en iyi secim oldu. Dusuk ping, yuksek performans. Kesinlikle tavsiye ederim.'
+    text: 'Klanmiz için en iyi seçim oldu. Dusuk ping, yuksek performans. Kesinlikle tavsiye ederim.'
   },
   {
     name: 'Can S.',
     role: 'CS 1.6 Oyuncusu',
-    text: 'Armor sistemi sayesinde cok avantajli fiyatlarla sunucu aldim. Memnuniyet %100.'
+    text: 'Armor sistemi sayesinde çok avantajli fiyatlarla sunucu aldim. Memnuniyet %100.'
   }
 ])
 
@@ -895,7 +895,7 @@ const getFeatureLabel = (feature) => {
     anticheat: 'Anti-Cheat',
     amvp: 'AMVP Sistemi',
     statsme: 'StatsMe',
-    custom_domain: 'Ozel Domain',
+    custom_domain: 'Özel Domain',
     priority_support: 'Oncelikli Destek',
     ddos_protection: 'DDoS Koruma',
     '247_support': '7/24 Destek',
@@ -1032,7 +1032,7 @@ const fetchPackages = async () => {
 
   try {
     const res = await fetch('/api/servers/packages')
-    if (!res.ok) throw new Error('Paketler yuklenemedi')
+    if (!res.ok) throw new Error('Paketler yüklenemedi')
 
     const data = await res.json()
     packages.value = data.packages || []
@@ -1069,7 +1069,7 @@ const confirmPurchase = async () => {
       showSuccessModal.value = true
       await authStore.fetchUser()
     } else {
-      alert(data.detail || 'Satin alma basarisiz')
+      alert(data.detail || 'Satin alma başarısız')
     }
   } catch (e) {
     alert('Bir hata olustu: ' + e.message)

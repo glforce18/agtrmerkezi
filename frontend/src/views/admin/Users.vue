@@ -9,7 +9,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ stats.total }}</span>
-            <span class="stat-label">Toplam Kullanici</span>
+            <span class="stat-label">Toplam Kullanıcı</span>
           </div>
         </div>
         <div class="stat-card">
@@ -27,7 +27,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ stats.banned }}</span>
-            <span class="stat-label">Yasakli</span>
+            <span class="stat-label">Yasaklı</span>
           </div>
         </div>
         <div class="stat-card">
@@ -49,7 +49,7 @@
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Kullanici ara..."
+              placeholder="Kullanıcı ara..."
               @input="debouncedSearch"
             />
             <button v-if="searchQuery" class="clear-btn" @click="clearSearch">
@@ -103,8 +103,8 @@
             <label>Rol</label>
             <select v-model="filterRole" @change="applyFilters">
               <option value="">Tum Roller</option>
-              <option value="user">Kullanici</option>
-              <option value="moderator">Moderator</option>
+              <option value="user">Kullanıcı</option>
+              <option value="moderatör">Moderatör</option>
               <option value="admin">Admin</option>
               <option value="superadmin">Super Admin</option>
             </select>
@@ -115,11 +115,11 @@
               <option value="">Tum Durumlar</option>
               <option value="active">Aktif</option>
               <option value="inactive">Pasif</option>
-              <option value="banned">Yasakli</option>
+              <option value="banned">Yasaklı</option>
             </select>
           </div>
           <div class="filter-item">
-            <label>Kayit Tarihi</label>
+            <label>Kayıt Tarihi</label>
             <select v-model="filterDate" @change="applyFilters">
               <option value="">Tum Zamanlar</option>
               <option value="today">Bugun</option>
@@ -141,27 +141,27 @@
           <button
             :class="{ active: viewMode === 'table' }"
             @click="viewMode = 'table'"
-            title="Tablo Gorunumu"
+            title="Tablo Görünümu"
           >
             <List :size="18" />
           </button>
           <button
             :class="{ active: viewMode === 'cards' }"
             @click="viewMode = 'cards'"
-            title="Kart Gorunumu"
+            title="Kart Görünümu"
           >
             <LayoutGrid :size="18" />
           </button>
         </div>
         <div class="results-info">
-          <span>{{ totalUsers }} kullanicidan {{ users.length }} gosteriliyor</span>
+          <span>{{ totalUsers }} kullanıcıdan {{ users.length }} gösteriliyor</span>
         </div>
       </div>
 
       <!-- Loading State -->
       <div v-if="loading" class="loading-state">
         <div class="loader"></div>
-        <span>Kullanicilar yukleniyor...</span>
+        <span>Kullanıcılar yükleniyor...</span>
       </div>
 
       <!-- Table View -->
@@ -177,12 +177,12 @@
                   @change="toggleSelectAll"
                 />
               </th>
-              <th>Kullanici</th>
+              <th>Kullanıcı</th>
               <th>Bakiye</th>
               <th>Rol</th>
               <th>Durum</th>
-              <th>Kayit Tarihi</th>
-              <th class="actions-col">Islemler</th>
+              <th>Kayıt Tarihi</th>
+              <th class="actions-col">İşlemler</th>
             </tr>
           </thead>
           <tbody>
@@ -232,10 +232,10 @@
                 </td>
                 <td class="actions-col">
                   <div class="row-actions">
-                    <button class="row-action-btn view" @click="viewUser(user)" title="Goruntule">
+                    <button class="row-action-btn view" @click="viewUser(user)" title="Görüntüle">
                       <Eye :size="16" />
                     </button>
-                    <button class="row-action-btn edit" @click="openEditUser(user)" title="Duzenle">
+                    <button class="row-action-btn edit" @click="openEditUser(user)" title="Düzenle">
                       <Edit2 :size="16" />
                     </button>
                     <button
@@ -250,7 +250,7 @@
                       v-else
                       class="row-action-btn unban"
                       @click="confirmUnban(user)"
-                      title="Yasagi Kaldir"
+                      title="Yasagi Kaldır"
                     >
                       <UserCheck :size="16" />
                     </button>
@@ -263,8 +263,8 @@
 
         <div v-if="users.length === 0 && !loading" class="empty-state">
           <Users :size="48" />
-          <h3>Kullanici Bulunamadi</h3>
-          <p>Arama kriterlerinize uygun kullanici yok.</p>
+          <h3>Kullanıcı Bulunamadi</h3>
+          <p>Arama kriterlerinize uygun kullanıcı yok.</p>
         </div>
       </div>
 
@@ -317,11 +317,11 @@
             <div class="card-actions">
               <button class="card-action view" @click="viewUser(user)">
                 <Eye :size="16" />
-                <span>Goruntule</span>
+                <span>Görüntüle</span>
               </button>
               <button class="card-action edit" @click="openEditUser(user)">
                 <Edit2 :size="16" />
-                <span>Duzenle</span>
+                <span>Düzenle</span>
               </button>
               <button
                 v-if="user.status !== 'banned'"
@@ -343,8 +343,8 @@
 
         <div v-if="users.length === 0 && !loading" class="empty-state">
           <Users :size="48" />
-          <h3>Kullanici Bulunamadi</h3>
-          <p>Arama kriterlerinize uygun kullanici yok.</p>
+          <h3>Kullanıcı Bulunamadi</h3>
+          <p>Arama kriterlerinize uygun kullanıcı yok.</p>
         </div>
       </div>
 
@@ -415,7 +415,7 @@
           <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
             <div class="modal-container">
               <div class="modal-header">
-                <h2>{{ editMode ? 'Kullanici Duzenle' : 'Kullanici Detayi' }}</h2>
+                <h2>{{ editMode ? 'Kullanıcı Düzenle' : 'Kullanıcı Detayi' }}</h2>
                 <button class="modal-close" @click="closeModal">
                   <X :size="20" />
                 </button>
@@ -446,7 +446,7 @@
                   <div class="modal-stat">
                     <Calendar :size="18" />
                     <div>
-                      <label>Kayit Tarihi</label>
+                      <label>Kayıt Tarihi</label>
                       <span>{{ formatDate(selectedUser.created_at) }}</span>
                     </div>
                   </div>
@@ -486,8 +486,8 @@
                   <div class="edit-row">
                     <label>Rol</label>
                     <select v-model="editForm.role" class="modal-select">
-                      <option value="user">Kullanici</option>
-                      <option value="moderator">Moderator</option>
+                      <option value="user">Kullanıcı</option>
+                      <option value="moderatör">Moderatör</option>
                       <option value="admin">Admin</option>
                       <option value="superadmin">Super Admin</option>
                     </select>
@@ -497,21 +497,21 @@
                     <select v-model="editForm.status" class="modal-select">
                       <option value="active">Aktif</option>
                       <option value="inactive">Pasif</option>
-                      <option value="banned">Yasakli</option>
+                      <option value="banned">Yasaklı</option>
                     </select>
                   </div>
                 </div>
               </div>
 
               <div class="modal-footer">
-                <button class="modal-btn secondary" @click="closeModal">Iptal</button>
+                <button class="modal-btn secondary" @click="closeModal">İptal</button>
                 <button
                   v-if="!editMode"
                   class="modal-btn primary"
                   @click="editMode = true"
                 >
                   <Edit2 :size="16" />
-                  Duzenle
+                  Düzenle
                 </button>
                 <button
                   v-else
@@ -539,7 +539,7 @@
               <h3>{{ confirmTitle }}</h3>
               <p>{{ confirmMessage }}</p>
               <div class="confirm-actions">
-                <button class="modal-btn secondary" @click="closeConfirm">Iptal</button>
+                <button class="modal-btn secondary" @click="closeConfirm">İptal</button>
                 <button
                   class="modal-btn"
                   :class="confirmType"
@@ -562,14 +562,14 @@
                 <Shield :size="32" />
               </div>
               <h3>Toplu Rol Degisikligi</h3>
-              <p>{{ selectedUsers.length }} kullanici icin yeni rol secin</p>
+              <p>{{ selectedUsers.length }} kullanıcı için yeni rol secin</p>
               <select v-model="bulkRole" class="modal-select">
-                <option value="user">Kullanici</option>
-                <option value="moderator">Moderator</option>
+                <option value="user">Kullanıcı</option>
+                <option value="moderatör">Moderatör</option>
                 <option value="admin">Admin</option>
               </select>
               <div class="confirm-actions">
-                <button class="modal-btn secondary" @click="showRoleModal = false">Iptal</button>
+                <button class="modal-btn secondary" @click="showRoleModal = false">İptal</button>
                 <button class="modal-btn primary" @click="executeBulkRoleChange">
                   Uygula
                 </button>
@@ -707,7 +707,7 @@ const getAvatar = (username) => `https://api.dicebear.com/7.x/initials/svg?seed=
 
 const getRoleLabel = (role) => {
   const r = typeof role === 'string' ? role : role?.value || 'user'
-  const labels = { admin: 'Admin', moderator: 'Moderator', user: 'Kullanici', superadmin: 'Super Admin' }
+  const labels = { admin: 'Admin', moderatör: 'Moderatör', user: 'Kullanıcı', superadmin: 'Super Admin' }
   return labels[r] || r
 }
 
@@ -717,7 +717,7 @@ const getRoleClass = (role) => {
 }
 
 const getStatusLabel = (status) => {
-  const labels = { active: 'Aktif', inactive: 'Pasif', banned: 'Yasakli' }
+  const labels = { active: 'Aktif', inactive: 'Pasif', banned: 'Yasaklı' }
   return labels[status] || status
 }
 
@@ -761,10 +761,10 @@ const fetchUsers = async () => {
         stats.newToday = data.stats.new_today || 0
       }
     } else {
-      showNotification('Kullanicilar yuklenemedi', 'error')
+      showNotification('Kullanıcılar yüklenemedi', 'error')
     }
   } catch {
-    showNotification('Baglanti hatasi', 'error')
+    showNotification('Bağlantı hatası', 'error')
   } finally {
     loading.value = false
   }
@@ -886,7 +886,7 @@ const saveUser = async () => {
     })
 
     if (response.ok) {
-      showNotification('Kullanici basariyla guncellendi', 'success')
+      showNotification('Kullanıcı basariyla güncellendi', 'success')
 
       const index = users.value.findIndex(u => u.id === selectedUser.value.id)
       if (index !== -1) {
@@ -907,10 +907,10 @@ const saveUser = async () => {
       fetchStats()
     } else {
       const error = await response.json()
-      showNotification(error.detail || 'Guncelleme basarisiz', 'error')
+      showNotification(error.detail || 'Güncelleme başarısız', 'error')
     }
   } catch {
-    showNotification('Baglanti hatasi', 'error')
+    showNotification('Bağlantı hatası', 'error')
   } finally {
     saving.value = false
   }
@@ -941,8 +941,8 @@ const executeConfirm = async () => {
 
 const confirmBan = (user) => {
   showConfirmDialog(
-    'Kullaniciyi Yasakla',
-    `${user.username} kullanicisini yasaklamak istediginize emin misiniz?`,
+    'Kullanıcıyi Yasakla',
+    `${user.username} kullanıcısini yasaklamak istediginize emin misiniz?`,
     'danger',
     'Yasakla',
     () => banUser(user)
@@ -951,10 +951,10 @@ const confirmBan = (user) => {
 
 const confirmUnban = (user) => {
   showConfirmDialog(
-    'Yasagi Kaldir',
-    `${user.username} kullanicisinin yasagini kaldirmak istediginize emin misiniz?`,
+    'Yasagi Kaldır',
+    `${user.username} kullanıcısinin yasagini kaldırmak istediginize emin misiniz?`,
     'primary',
-    'Kaldir',
+    'Kaldır',
     () => unbanUser(user)
   )
 }
@@ -971,10 +971,10 @@ const banUser = async (user) => {
       showNotification(`${user.username} yasaklandi`, 'success')
       fetchStats()
     } else {
-      showNotification('Islem basarisiz', 'error')
+      showNotification('İşlem başarısız', 'error')
     }
   } catch (error) {
-    showNotification('Baglanti hatasi', 'error')
+    showNotification('Bağlantı hatası', 'error')
   }
 }
 
@@ -987,13 +987,13 @@ const unbanUser = async (user) => {
     })
     if (response.ok) {
       user.status = 'active'
-      showNotification(`${user.username} yasagi kaldirildi`, 'success')
+      showNotification(`${user.username} yasagi kaldırildi`, 'success')
       fetchStats()
     } else {
-      showNotification('Islem basarisiz', 'error')
+      showNotification('İşlem başarısız', 'error')
     }
   } catch (error) {
-    showNotification('Baglanti hatasi', 'error')
+    showNotification('Bağlantı hatası', 'error')
   }
 }
 
@@ -1014,22 +1014,22 @@ const executeBulkRoleChange = async () => {
       })
     })
     if (response.ok) {
-      showNotification(`${selectedUsers.value.length} kullanicinin rolu degistirildi`, 'success')
+      showNotification(`${selectedUsers.value.length} kullanıcınin rolu degistirildi`, 'success')
       selectedUsers.value = []
       showRoleModal.value = false
       fetchUsers()
     } else {
-      showNotification('Islem basarisiz', 'error')
+      showNotification('İşlem başarısız', 'error')
     }
   } catch (error) {
-    showNotification('Baglanti hatasi', 'error')
+    showNotification('Bağlantı hatası', 'error')
   }
 }
 
 const bulkBan = () => {
   showConfirmDialog(
     'Toplu Yasaklama',
-    `${selectedUsers.value.length} kullaniciyi yasaklamak istediginize emin misiniz?`,
+    `${selectedUsers.value.length} kullanıcıyi yasaklamak istediginize emin misiniz?`,
     'danger',
     'Yasakla',
     async () => {
@@ -1043,13 +1043,13 @@ const bulkBan = () => {
           })
         })
         if (response.ok) {
-          showNotification(`${selectedUsers.value.length} kullanici yasaklandi`, 'success')
+          showNotification(`${selectedUsers.value.length} kullanıcı yasaklandi`, 'success')
           selectedUsers.value = []
           fetchUsers()
           fetchStats()
         }
       } catch (error) {
-        showNotification('Baglanti hatasi', 'error')
+        showNotification('Bağlantı hatası', 'error')
       }
     }
   )
@@ -1058,7 +1058,7 @@ const bulkBan = () => {
 const bulkDelete = () => {
   showConfirmDialog(
     'Toplu Silme',
-    `${selectedUsers.value.length} kullaniciyi silmek istediginize emin misiniz? Bu islem geri alinamaz!`,
+    `${selectedUsers.value.length} kullanıcıyi silmek istediginize emin misiniz? Bu işlem geri alinamaz!`,
     'danger',
     'Sil',
     async () => {
@@ -1071,13 +1071,13 @@ const bulkDelete = () => {
           })
         })
         if (response.ok) {
-          showNotification(`${selectedUsers.value.length} kullanici silindi`, 'success')
+          showNotification(`${selectedUsers.value.length} kullanıcı silindi`, 'success')
           selectedUsers.value = []
           fetchUsers()
           fetchStats()
         }
       } catch (error) {
-        showNotification('Baglanti hatasi', 'error')
+        showNotification('Bağlantı hatası', 'error')
       }
     }
   )
@@ -1658,7 +1658,7 @@ watch(users, () => {
   color: #818cf8;
 }
 
-.role-badge.role-moderator {
+.role-badge.role-moderatör {
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
 }

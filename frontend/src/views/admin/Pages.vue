@@ -4,12 +4,12 @@
       <!-- Header -->
       <div class="page-header">
         <div>
-          <h1 class="page-title">Sayfa Icerikleri</h1>
-          <p class="page-desc">Site sayfalarinin iceriklerini duzenleyin</p>
+          <h1 class="page-title">Sayfa İçerikleri</h1>
+          <p class="page-desc">Site sayfalarinin içeriklerini düzenleyin</p>
         </div>
         <button class="btn-primary" @click="showAddModal = true">
           <Plus :size="18" />
-          Yeni Icerik Ekle
+          Yeni İçerik Ekle
         </button>
       </div>
 
@@ -44,7 +44,7 @@
         <div v-if="showAddModal || editingPage" class="modal-overlay" @click.self="closeModal">
           <div class="modal-content">
             <div class="modal-header">
-              <h3>{{ editingPage ? 'Icerik Duzenle' : 'Yeni Icerik Ekle' }}</h3>
+              <h3>{{ editingPage ? 'İçerik Düzenle' : 'Yeni İçerik Ekle' }}</h3>
               <button class="close-btn" @click="closeModal">
                 <X :size="20" />
               </button>
@@ -56,7 +56,7 @@
                   <select v-model="formData.page_slug">
                     <option value="home">Ana Sayfa</option>
                     <option value="about">Hakkinda</option>
-                    <option value="contact">Iletisim</option>
+                    <option value="contact">İletişim</option>
                     <option value="servers">Sunucular</option>
                     <option value="jackpot">Jackpot</option>
                     <option value="forum">Forum</option>
@@ -66,9 +66,9 @@
                   <label>Bolum</label>
                   <select v-model="formData.section_slug">
                     <option value="hero">Hero</option>
-                    <option value="features">Ozellikler</option>
+                    <option value="features">Özellikler</option>
                     <option value="cta">CTA</option>
-                    <option value="stats">Istatistikler</option>
+                    <option value="stats">İstatistikler</option>
                     <option value="testimonials">Yorumlar</option>
                     <option value="footer">Footer</option>
                   </select>
@@ -77,7 +77,7 @@
 
               <div class="form-group">
                 <label>Baslik</label>
-                <input v-model="formData.title" placeholder="Icerik basligi" />
+                <input v-model="formData.title" placeholder="İçerik basligi" />
               </div>
 
               <div class="form-group">
@@ -86,8 +86,8 @@
               </div>
 
               <div class="form-group">
-                <label>Icerik</label>
-                <textarea v-model="formData.content" rows="6" placeholder="HTML veya Markdown icerik"></textarea>
+                <label>İçerik</label>
+                <textarea v-model="formData.content" rows="6" placeholder="HTML veya Markdown içerik"></textarea>
               </div>
 
               <div class="form-row">
@@ -127,7 +127,7 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button class="btn-secondary" @click="closeModal">Iptal</button>
+              <button class="btn-secondary" @click="closeModal">İptal</button>
               <button class="btn-primary" @click="savePage">
                 <Save :size="18" />
                 Kaydet

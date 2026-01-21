@@ -950,7 +950,7 @@ const popularPlugins = ref([
 const showBanModal = ref(false)
 const banList = ref([
   { id: 1, playerName: 'Cheater123', steamId: 'STEAM_0:1:12345678', reason: 'Aimbot', permanent: true, duration: '-', bannedBy: 'Admin' },
-  { id: 2, playerName: 'Toxic_Player', steamId: 'STEAM_0:0:87654321', reason: 'Hakaret', permanent: false, duration: '7 gün', bannedBy: 'Moderator' },
+  { id: 2, playerName: 'Toxic_Player', steamId: 'STEAM_0:0:87654321', reason: 'Hakaret', permanent: false, duration: '7 gün', bannedBy: 'Moderatör' },
 ])
 
 const newBan = reactive({
@@ -1212,7 +1212,7 @@ const unbanPlayer = (ban) => {
 
 const addBan = () => {
   if (!newBan.playerName || !newBan.steamId || !newBan.reason) {
-    window.$message?.warning('Lütfen tüm alanları doldurun')
+    window.$message?.warning('Lütfen tüm alanları doldürün')
     return
   }
   banList.value.push({
@@ -1248,7 +1248,7 @@ const deleteTask = (task) => {
 
 const addTask = () => {
   if (!newTask.name || !newTask.schedule) {
-    window.$message?.warning('Lütfen tüm alanları doldurun')
+    window.$message?.warning('Lütfen tüm alanları doldürün')
     return
   }
   scheduledTasks.value.push({

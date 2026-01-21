@@ -48,7 +48,7 @@
       <section class="status-section">
         <div class="section-header">
           <h2><Cpu :size="20" /> Sistem Durumu</h2>
-          <span class="status-time">Son guncelleme: {{ lastUpdateTime }}</span>
+          <span class="status-time">Son güncelleme: {{ lastUpdateTime }}</span>
         </div>
         <div class="status-grid">
           <div
@@ -192,7 +192,7 @@
                   :key="index"
                   class="chart-bar"
                   :style="{ height: value + '%' }"
-                  :title="value + ' islem'"
+                  :title="value + ' işlem'"
                 ></div>
               </div>
             </div>
@@ -202,13 +202,13 @@
         <!-- Quick Actions -->
         <section class="quick-actions-section card">
           <div class="card-header">
-            <h3><Zap :size="18" /> Hizli Islemler</h3>
+            <h3><Zap :size="18" /> Hızlı İşlemler</h3>
           </div>
           <div class="card-body">
             <div class="actions-grid">
               <router-link to="/admin/users" class="action-btn">
                 <div class="action-icon blue"><Users :size="20" /></div>
-                <span>Kullanicilar</span>
+                <span>Kullanıcılar</span>
               </router-link>
               <router-link to="/admin/servers" class="action-btn">
                 <div class="action-icon green"><Server :size="20" /></div>
@@ -216,7 +216,7 @@
               </router-link>
               <router-link to="/admin/payments" class="action-btn">
                 <div class="action-icon orange"><CreditCard :size="20" /></div>
-                <span>Odemeler</span>
+                <span>Ödemeler</span>
               </router-link>
               <router-link to="/admin/packages" class="action-btn">
                 <div class="action-icon purple"><Package :size="20" /></div>
@@ -257,7 +257,7 @@
             <n-scrollbar style="max-height: 400px">
               <div v-if="loadingActivities" class="loading-state">
                 <n-spin size="small" />
-                <span>Yukleniyor...</span>
+                <span>Yükleniyor...</span>
               </div>
               <div v-else-if="activities.length === 0" class="empty-state">
                 <Inbox :size="40" />
@@ -295,7 +295,7 @@
         <!-- Pending Payments -->
         <section class="payments-section card">
           <div class="card-header">
-            <h3><Wallet :size="18" /> Bekleyen Odemeler</h3>
+            <h3><Wallet :size="18" /> Bekleyen Ödemeler</h3>
             <router-link to="/admin/payments?status=pending" class="see-all">
               Tumunu Gor <ArrowRight :size="14" />
             </router-link>
@@ -304,11 +304,11 @@
             <n-scrollbar style="max-height: 400px">
               <div v-if="loadingPayments" class="loading-state">
                 <n-spin size="small" />
-                <span>Yukleniyor...</span>
+                <span>Yükleniyor...</span>
               </div>
               <div v-else-if="pendingPayments.length === 0" class="empty-state success">
                 <CheckCircle :size="40" />
-                <span>Bekleyen odeme yok</span>
+                <span>Bekleyen ödeme yok</span>
               </div>
               <div v-else class="payments-list">
                 <div
@@ -384,7 +384,7 @@
               </div>
               <div class="stat-details">
                 <span class="stat-number">{{ serverStats.running }}</span>
-                <span class="stat-desc">Calisiyor</span>
+                <span class="stat-desc">Çalışıyor</span>
               </div>
             </div>
             <div class="server-stat">
@@ -446,21 +446,21 @@
     </div>
 
     <!-- Reject Payment Modal -->
-    <n-modal v-model:show="showRejectModal" preset="dialog" title="Odeme Reddi">
+    <n-modal v-model:show="showRejectModal" preset="dialog" title="Ödeme Reddi">
       <template #default>
         <n-form>
           <n-form-item label="Red Sebebi">
             <n-input
               v-model:value="rejectReason"
               type="textarea"
-              placeholder="Lutfen red sebebini aciklayin..."
+              placeholder="Lütfen red sebebini aciklayin..."
               :rows="3"
             />
           </n-form-item>
         </n-form>
       </template>
       <template #action>
-        <n-button @click="showRejectModal = false">Iptal</n-button>
+        <n-button @click="showRejectModal = false">İptal</n-button>
         <n-button type="error" @click="confirmReject" :loading="rejectingPayment">
           Reddet
         </n-button>
@@ -575,7 +575,7 @@ const alerts = ref([])
 const mainStats = ref([
   {
     id: 'users',
-    label: 'Toplam Kullanici',
+    label: 'Toplam Kullanıcı',
     value: '0',
     icon: Users,
     bgIcon: Users,
@@ -604,7 +604,7 @@ const mainStats = ref([
   },
   {
     id: 'pending',
-    label: 'Bekleyen Odeme',
+    label: 'Bekleyen Ödeme',
     value: '0',
     icon: CreditCard,
     bgIcon: CreditCard,
@@ -733,7 +733,7 @@ const checkSystemHealth = async () => {
     const latency = Date.now() - startTime
 
     systemServices.value[0].status = response.status === 'healthy' ? 'online' : 'warning'
-    systemServices.value[0].statusText = response.status === 'healthy' ? 'Calisiyor' : 'Uyari'
+    systemServices.value[0].statusText = response.status === 'healthy' ? 'Çalışıyor' : 'Uyari'
     systemServices.value[0].latency = latency
 
     // Database check is part of health
@@ -744,13 +744,13 @@ const checkSystemHealth = async () => {
     systemServices.value[0].status = 'offline'
     systemServices.value[0].statusText = 'Erisim Yok'
     systemServices.value[1].status = 'offline'
-    systemServices.value[1].statusText = 'Baglanti Yok'
+    systemServices.value[1].statusText = 'Bağlantı Yok'
 
     alerts.value.unshift({
       id: Date.now(),
       type: 'error',
-      title: 'API Hatasi',
-      message: 'API servisi ile baglanti kurulamadi'
+      title: 'API Hatası',
+      message: 'API servisi ile bağlantı kurulamadı'
     })
   }
 
@@ -761,7 +761,7 @@ const checkSystemHealth = async () => {
 
   // Jackpot Manager - assume online if API is healthy
   systemServices.value[3].status = systemServices.value[0].status === 'online' ? 'online' : 'offline'
-  systemServices.value[3].statusText = systemServices.value[0].status === 'online' ? 'Calisiyor' : 'Durdu'
+  systemServices.value[3].statusText = systemServices.value[0].status === 'online' ? 'Çalışıyor' : 'Durdu'
 }
 
 const fetchDashboardData = async () => {
@@ -794,8 +794,8 @@ const fetchDashboardData = async () => {
         alerts.value.push({
           id: 'pending-payments',
           type: 'warning',
-          title: 'Bekleyen Odemeler',
-          message: `${data.payments.pending} adet odeme onay bekliyor`
+          title: 'Bekleyen Ödemeler',
+          message: `${data.payments.pending} adet ödeme onay bekliyor`
         })
       }
     }
@@ -902,26 +902,26 @@ const refreshAll = async () => {
     fetchMetrics()
   ])
 
-  message.success('Veriler guncellendi')
+  message.success('Veriler güncellendi')
   refreshing.value = false
 }
 
 // Payment Actions
 const handleApprove = async (payment) => {
   dialog.warning({
-    title: 'Odeme Onayi',
-    content: `${payment.username} kullanicisinin ${formatCurrency(payment.amount)} tutarindaki odemesini onaylamak istiyor musunuz?`,
+    title: 'Ödeme Onayı',
+    content: `${payment.username} kullanıcısinin ${formatCurrency(payment.amount)} tutarindaki ödemesini onaylamak istiyor musunuz?`,
     positiveText: 'Onayla',
-    negativeText: 'Iptal',
+    negativeText: 'İptal',
     onPositiveClick: async () => {
       payment.approving = true
       try {
         await adminApi.approvePayment(payment.id)
         pendingPayments.value = pendingPayments.value.filter(p => p.id !== payment.id)
         mainStats.value[3].value = (parseInt(mainStats.value[3].value) - 1).toString()
-        message.success('Odeme onaylandi')
+        message.success('Ödeme onaylandı')
       } catch (error) {
-        message.error('Odeme onaylanamadi: ' + (error.message || 'Bilinmeyen hata'))
+        message.error('Ödeme onaylanamadı: ' + (error.message || 'Bilinmeyen hata'))
       }
       payment.approving = false
     }
@@ -936,7 +936,7 @@ const handleReject = (payment) => {
 
 const confirmReject = async () => {
   if (!rejectReason.value.trim()) {
-    message.warning('Lutfen red sebebini girin')
+    message.warning('Lütfen red sebebini girin')
     return
   }
 
@@ -945,10 +945,10 @@ const confirmReject = async () => {
     await adminApi.rejectPayment(selectedPaymentForReject.value.id, rejectReason.value)
     pendingPayments.value = pendingPayments.value.filter(p => p.id !== selectedPaymentForReject.value.id)
     mainStats.value[3].value = (parseInt(mainStats.value[3].value) - 1).toString()
-    message.success('Odeme reddedildi')
+    message.success('Ödeme reddedildi')
     showRejectModal.value = false
   } catch (error) {
-    message.error('Odeme reddedilemedi: ' + (error.message || 'Bilinmeyen hata'))
+    message.error('Ödeme reddedilemedi: ' + (error.message || 'Bilinmeyen hata'))
   }
   rejectingPayment.value = false
 }

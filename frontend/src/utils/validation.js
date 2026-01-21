@@ -19,14 +19,14 @@ export const rules = {
 
   minLength: (min) => (value, fieldName = 'Alan') => {
     if (!value || value.length < min) {
-      return `${fieldName} en az ${min} karakter olmali`
+      return `${fieldName} en az ${min} karakter olmalı`
     }
     return null
   },
 
   maxLength: (max) => (value, fieldName = 'Alan') => {
     if (value && value.length > max) {
-      return `${fieldName} en fazla ${max} karakter olmali`
+      return `${fieldName} en fazla ${max} karakter olmalı`
     }
     return null
   },
@@ -35,7 +35,7 @@ export const rules = {
     if (!value) return null
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(value)) {
-      return 'Gecerli bir e-posta adresi girin'
+      return 'Geçerli bir e-posta adresi girin'
     }
     return null
   },
@@ -43,13 +43,13 @@ export const rules = {
   username: (value) => {
     if (!value) return null
     if (value.length < 3) {
-      return 'Kullanici adi en az 3 karakter olmali'
+      return 'Kullanıcı adı en az 3 karakter olmalı'
     }
     if (value.length > 32) {
-      return 'Kullanici adi en fazla 32 karakter olmali'
+      return 'Kullanıcı adı en fazla 32 karakter olmalı'
     }
     if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-      return 'Kullanici adi sadece harf, rakam ve alt cizgi icermeli'
+      return 'Kullanıcı adı sadece harf, rakam ve alt çizgi içermeli'
     }
     return null
   },
@@ -57,23 +57,23 @@ export const rules = {
   password: (value) => {
     if (!value) return null
     if (value.length < 8) {
-      return 'Sifre en az 8 karakter olmali'
+      return 'Şifre en az 8 karakter olmalı'
     }
     if (!/[A-Z]/.test(value)) {
-      return 'Sifre en az 1 buyuk harf icermeli'
+      return 'Şifre en az 1 büyük harf içermeli'
     }
     if (!/[a-z]/.test(value)) {
-      return 'Sifre en az 1 kucuk harf icermeli'
+      return 'Şifre en az 1 küçük harf içermeli'
     }
     if (!/[0-9]/.test(value)) {
-      return 'Sifre en az 1 rakam icermeli'
+      return 'Şifre en az 1 rakam içermeli'
     }
     return null
   },
 
   passwordMatch: (confirmValue) => (value) => {
     if (value !== confirmValue) {
-      return 'Sifreler eslesmiyor'
+      return 'Şifreler eşleşmiyor'
     }
     return null
   },
@@ -81,7 +81,7 @@ export const rules = {
   numeric: (value, fieldName = 'Alan') => {
     if (value === null || value === undefined || value === '') return null
     if (isNaN(Number(value))) {
-      return `${fieldName} sayisal olmali`
+      return `${fieldName} sayısal olmalı`
     }
     return null
   },
@@ -89,7 +89,7 @@ export const rules = {
   min: (minValue) => (value, fieldName = 'Alan') => {
     if (value === null || value === undefined || value === '') return null
     if (Number(value) < minValue) {
-      return `${fieldName} en az ${minValue} olmali`
+      return `${fieldName} en az ${minValue} olmalı`
     }
     return null
   },
@@ -97,7 +97,7 @@ export const rules = {
   max: (maxValue) => (value, fieldName = 'Alan') => {
     if (value === null || value === undefined || value === '') return null
     if (Number(value) > maxValue) {
-      return `${fieldName} en fazla ${maxValue} olmali`
+      return `${fieldName} en fazla ${maxValue} olmalı`
     }
     return null
   },
@@ -108,7 +108,7 @@ export const rules = {
       new URL(value)
       return null
     } catch {
-      return 'Gecerli bir URL girin'
+      return 'Geçerli bir URL girin'
     }
   },
 
@@ -116,7 +116,7 @@ export const rules = {
     if (!value) return null
     const phoneRegex = /^(\+90|0)?[1-9][0-9]{9}$/
     if (!phoneRegex.test(value.replace(/\s/g, ''))) {
-      return 'Gecerli bir telefon numarasi girin'
+      return 'Geçerli bir telefon numarası girin'
     }
     return null
   },
@@ -129,7 +129,7 @@ export const rules = {
     const steamId64Regex = /^7656119\d{10}$/
 
     if (!steamIdRegex.test(value) && !steamId64Regex.test(value)) {
-      return 'Gecerli bir Steam ID girin'
+      return 'Geçerli bir Steam ID girin'
     }
     return null
   },
@@ -138,7 +138,7 @@ export const rules = {
     if (!value) return null
     const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
     if (!ipRegex.test(value)) {
-      return 'Gecerli bir IP adresi girin'
+      return 'Geçerli bir IP adresi girin'
     }
     return null
   },
@@ -147,7 +147,7 @@ export const rules = {
     if (!value) return null
     const port = Number(value)
     if (isNaN(port) || port < 1 || port > 65535) {
-      return 'Gecerli bir port numarasi girin (1-65535)'
+      return 'Geçerli bir port numarası girin (1-65535)'
     }
     return null
   }
@@ -260,18 +260,18 @@ export function useFormValidation(initialValues, validationSchema) {
 export const schemas = {
   login: {
     username: {
-      label: 'Kullanici adi',
+      label: 'Kullanıcı adı',
       validators: [rules.required]
     },
     password: {
-      label: 'Sifre',
+      label: 'Şifre',
       validators: [rules.required]
     }
   },
 
   register: {
     username: {
-      label: 'Kullanici adi',
+      label: 'Kullanıcı adı',
       validators: [rules.required, rules.username]
     },
     email: {
@@ -279,14 +279,14 @@ export const schemas = {
       validators: [rules.required, rules.email]
     },
     password: {
-      label: 'Sifre',
+      label: 'Şifre',
       validators: [rules.required, rules.password]
     }
   },
 
   serverConfig: {
     name: {
-      label: 'Sunucu adi',
+      label: 'Sunucu adı',
       validators: [rules.required, rules.minLength(3), rules.maxLength(64)]
     },
     ip: {

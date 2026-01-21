@@ -89,7 +89,7 @@
               <BaseInput
                 v-model="form.username"
                 label="Kullanıcı Adı"
-                placeholder="kullaniciadi"
+                placeholder="kullanıcıadi"
                 :error="errors.username"
                 required
               />

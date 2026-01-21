@@ -160,7 +160,7 @@
                     <div class="notification-item-content">
                       <div class="notification-item-title">{{ n.title }}</div>
                       <div class="notification-item-message">{{ n.message }}</div>
-                      <div class="notification-item-time">{{ n.time || '2 dakika once' }}</div>
+                      <div class="notification-item-time">{{ n.time || '2 dakika önce' }}</div>
                     </div>
                   </div>
                 </div>
@@ -242,7 +242,7 @@
                 <div class="user-dropdown-divider"></div>
                 <button class="user-dropdown-item user-dropdown-item-logout" @click="handleLogout">
                   <n-icon :component="LogOut" size="18" />
-                  <span>Cikis Yap</span>
+                  <span>Çıkış Yap</span>
                 </button>
               </div>
             </n-popover>
@@ -251,7 +251,7 @@
           <!-- Login Button -->
           <router-link v-else to="/login" class="login-btn">
             <n-icon :component="LogIn" size="18" />
-            <span class="hidden sm:inline">Giris Yap</span>
+            <span class="hidden sm:inline">Giriş Yap</span>
           </router-link>
         </div>
       </div>
@@ -325,7 +325,7 @@
           </div>
           <button class="mobile-logout-btn" @click="handleLogout">
             <n-icon :component="LogOut" size="20" />
-            <span>Cikis Yap</span>
+            <span>Çıkış Yap</span>
           </button>
         </div>
 
@@ -333,7 +333,7 @@
         <div v-else class="mobile-login">
           <router-link to="/login" class="mobile-login-btn" @click="mobileMenuOpen = false">
             <n-icon :component="LogIn" size="20" />
-            <span>Giris Yap</span>
+            <span>Giriş Yap</span>
           </router-link>
         </div>
       </div>
@@ -463,8 +463,8 @@ const navItems = [
 
 // Notifications
 const notifications = ref([
-  { id: 1, title: 'Sunucu Basladi', message: 'AGTR Public #1 basariyla basladi.', read: false, time: '2 dakika once' },
-  { id: 2, title: 'Yeni Guncelleme', message: 'v8.0 yayinlandi!', read: false, time: '1 saat once' }
+  { id: 1, title: 'Sunucu Basladı', message: 'AGTR Public #1 basariyla basladi.', read: false, time: '2 dakika önce' },
+  { id: 2, title: 'Yeni Güncelleme', message: 'v8.0 yayinlandi!', read: false, time: '1 saat önce' }
 ])
 
 // Scroll handling
@@ -519,12 +519,12 @@ const getInitials = (name) => {
 
 const getRoleLabel = (role) => {
   const roles = {
-    user: 'Uye',
-    vip: 'VIP Uye',
+    user: 'Üye',
+    vip: 'VIP Üye',
     admin: 'Admin',
     superadmin: 'Super Admin'
   }
-  return roles[role] || 'Uye'
+  return roles[role] || 'Üye'
 }
 
 const formatCurrency = (value) => {

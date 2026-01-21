@@ -73,7 +73,7 @@ const routes = [
     path: '/wallet',
     name: 'wallet',
     component: () => import('@/views/Wallet.vue'),
-    meta: { title: 'Cuzdan', requiresAuth: true }
+    meta: { title: 'Cüzdan', requiresAuth: true }
   },
   {
     path: '/profile/:id?',
@@ -127,7 +127,7 @@ const routes = [
     path: '/admin/pages',
     name: 'admin-pages',
     component: () => import('@/views/admin/Pages.vue'),
-    meta: { title: 'Sayfa Icerikleri', requiresAuth: true, requiresAdmin: true }
+    meta: { title: 'Sayfa İçerikleri', requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/admin/banners',

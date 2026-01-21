@@ -35,8 +35,8 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
           </div>
-          <h3 class="font-bold text-lg mb-2">Odeme & Fatura</h3>
-          <p class="opacity-60 text-sm">Odeme yontemleri, faturalar ve iadeler</p>
+          <h3 class="font-bold text-lg mb-2">Ödeme & Fatura</h3>
+          <p class="opacity-60 text-sm">Ödeme yontemleri, faturalar ve iadeler</p>
         </div>
 
         <div class="glass-card p-6 text-center hover:border-accent/50 transition-colors cursor-pointer">
@@ -100,27 +100,27 @@ const openFAQ = ref(null)
 const faqs = [
   {
     question: 'Sunucu nasil kiralarim?',
-    answer: 'Magaza sayfasindan uygun paketi secip odeme yaparak sunucunuzu aninda aktif edebilirsiniz. Sunucu panelinden tum ayarlari yapabilirsiniz.'
+    answer: 'Mağaza sayfasindan uygun paketi secip ödeme yaparak sunucunuzu aninda aktif edebilirsiniz. Sunucu panelinden tum ayarlari yapabilirsiniz.'
   },
   {
-    question: 'Hangi odeme yontemlerini kabul ediyorsunuz?',
-    answer: 'Kredi karti, banka karti, havale/EFT ve papara ile odeme yapabilirsiniz.'
+    question: 'Hangi ödeme yontemlerini kabul ediyorsunuz?',
+    answer: 'Kredi karti, banka karti, havale/EFT ve papara ile ödeme yapabilirsiniz.'
   },
   {
-    question: 'Sunucuma eklenti nasil yuklerim?',
-    answer: 'Sunucu panelindeki "Eklentiler" sekmesinden populer eklentileri tek tikla yukleyebilir veya kendi eklentilerinizi FTP ile yukleyebilirsiniz.'
+    question: 'Sunucuma eklenti nasil yüklerim?',
+    answer: 'Sunucu panelindeki "Eklentiler" sekmesinden populer eklentileri tek tikla yükleyebilir veya kendi eklentilerinizi FTP ile yükleyebilirsiniz.'
   },
   {
     question: 'Sunucu IP adresimi nasil ogrenirim?',
-    answer: 'Sunucu panelinin ust kisminda IP adresiniz goruntulenir. Ayrica "IP Kopyala" butonu ile panoya kopyalayabilirsiniz.'
+    answer: 'Sunucu panelinin ust kisminda IP adresiniz görüntülenir. Ayrica "IP Kopyala" butonu ile panoya kopyalayabilirsiniz.'
   },
   {
-    question: 'RCON sifremi unuttum ne yapmaliyim?',
-    answer: 'Sunucu panelindeki "Ayarlar" sekmesinden RCON sifrenizi degistirebilirsiniz.'
+    question: 'RCON şifremi unuttum ne yapmaliyim?',
+    answer: 'Sunucu panelindeki "Ayarlar" sekmesinden RCON şifrenizi degistirebilirsiniz.'
   },
   {
     question: 'Iade politikaniz nedir?',
-    answer: 'Ilk 7 gun icinde kullanilmamis hizmetler icin tam iade yapilir. Aktif kullanilan sunucular icin iade yapilmaz.'
+    answer: 'Ilk 7 gun içinde kullanilmamis hizmetler için tam iade yapilir. Aktif kullanilan sunucular için iade yapilmaz.'
   }
 ]
 

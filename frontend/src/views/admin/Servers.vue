@@ -108,7 +108,7 @@
             class="toggle-btn"
             :class="{ active: viewMode === 'grid' }"
             @click="viewMode = 'grid'"
-            title="Izgara Gorunum"
+            title="Izgara Görünüm"
           >
             <LayoutGrid :size="18" />
           </button>
@@ -116,7 +116,7 @@
             class="toggle-btn"
             :class="{ active: viewMode === 'list' }"
             @click="viewMode = 'list'"
-            title="Liste Gorunum"
+            title="Liste Görünüm"
           >
             <List :size="18" />
           </button>
@@ -128,7 +128,7 @@
         <div class="loading-spinner">
           <Loader2 :size="40" class="spin" />
         </div>
-        <p class="loading-text">Sunucular yukleniyor...</p>
+        <p class="loading-text">Sunucular yükleniyor...</p>
       </div>
 
       <!-- Empty State -->
@@ -140,7 +140,7 @@
         <p class="empty-description">
           {{ searchQuery || filterGame || filterStatus
             ? 'Arama kriterlerine uygun sunucu bulunamadi.'
-            : 'Henuz kayitli sunucu bulunmuyor.' }}
+            : 'Henuz kayıtli sunucu bulunmuyor.' }}
         </p>
         <button v-if="searchQuery || filterGame || filterStatus" class="btn btn-secondary" @click="clearAllFilters">
           <RotateCcw :size="16" />
@@ -262,7 +262,7 @@
                 class="action-btn start"
                 @click="startServer(server)"
                 :disabled="actionLoading[server.id]"
-                title="Baslat"
+                title="Başlat"
               >
                 <Play :size="16" />
               </button>
@@ -279,7 +279,7 @@
                 class="action-btn restart"
                 @click="restartServer(server)"
                 :disabled="actionLoading[server.id] || !server.is_online"
-                title="Yeniden Baslat"
+                title="Yeniden Başlat"
               >
                 <RotateCcw :size="16" />
               </button>
@@ -301,7 +301,7 @@
           <div class="col-players">Oyuncular</div>
           <div class="col-owner">Sahip</div>
           <div class="col-resources">Kaynaklar</div>
-          <div class="col-actions">Islemler</div>
+          <div class="col-actions">İşlemler</div>
         </div>
 
         <TransitionGroup name="list" appear>
@@ -385,7 +385,7 @@
                   class="icon-btn success"
                   @click="startServer(server)"
                   :disabled="actionLoading[server.id]"
-                  title="Baslat"
+                  title="Başlat"
                 >
                   <Play :size="15" />
                 </button>
@@ -402,7 +402,7 @@
                   class="icon-btn"
                   @click="restartServer(server)"
                   :disabled="actionLoading[server.id] || !server.is_online"
-                  title="Yeniden Baslat"
+                  title="Yeniden Başlat"
                 >
                   <RotateCcw :size="15" />
                 </button>
@@ -522,7 +522,7 @@
                   <div class="detail-card">
                     <Calendar :size="18" class="detail-icon" />
                     <div class="detail-content">
-                      <span class="detail-label">Olusturulma</span>
+                      <span class="detail-label">Oluşturulma</span>
                       <span class="detail-value">{{ formatDate(selectedServer.created_at) }}</span>
                     </div>
                   </div>
@@ -620,7 +620,7 @@
               <div class="modal-footer">
                 <button class="btn btn-ghost" @click="copyConnect">
                   <Copy :size="16" />
-                  Baglanti Kopyala
+                  Bağlantı Kopyala
                 </button>
                 <div class="footer-actions">
                   <button
@@ -630,7 +630,7 @@
                     :disabled="actionLoading[selectedServer.id]"
                   >
                     <Play :size="16" />
-                    Baslat
+                    Başlat
                   </button>
                   <button
                     v-else
@@ -647,7 +647,7 @@
                     :disabled="actionLoading[selectedServer.id] || !selectedServer.is_online"
                   >
                     <RotateCcw :size="16" />
-                    Yeniden Baslat
+                    Yeniden Başlat
                   </button>
                 </div>
               </div>
@@ -667,10 +667,10 @@
               <h3 class="confirm-title">Sunucuyu Sil</h3>
               <p class="confirm-message">
                 <strong>{{ deleteTarget.name }}</strong> sunucusunu silmek istediginize emin misiniz?
-                Bu islem geri alinamaz!
+                Bu işlem geri alinamaz!
               </p>
               <div class="confirm-actions">
-                <button class="btn btn-ghost" @click="cancelDelete">Iptal</button>
+                <button class="btn btn-ghost" @click="cancelDelete">İptal</button>
                 <button class="btn btn-danger" @click="executeDelete" :disabled="deleteLoading">
                   <Trash2 v-if="!deleteLoading" :size="16" />
                   <Loader2 v-else :size="16" class="spin" />
@@ -833,7 +833,7 @@ const fetchServers = async () => {
     totalPages.value = data.pagination?.pages || Math.ceil(totalServers.value / perPage) || 1
   } catch (error) {
     // Error handled
-    showToast('Sunucular yuklenirken hata olustu', 'error')
+    showToast('Sunucular yüklenirken hata olustu', 'error')
   }
   loading.value = false
 }
@@ -940,11 +940,11 @@ const startServer = async (server) => {
   actionLoading[server.id] = true
   try {
     await adminApi.restartServer(server.id) // Using restart as start since API uses same endpoint
-    showToast(`${server.name} baslatiliyor...`, 'success')
+    showToast(`${server.name} başlatılıyor...`, 'success')
     await fetchServers()
   } catch (error) {
     // Error handled
-    showToast('Sunucu baslatilirken hata olustu', 'error')
+    showToast('Sunucu başlatilirken hata olustu', 'error')
   }
   actionLoading[server.id] = false
 }
@@ -966,11 +966,11 @@ const restartServer = async (server) => {
   actionLoading[server.id] = true
   try {
     await adminApi.restartServer(server.id)
-    showToast(`${server.name} yeniden baslatiliyor...`, 'success')
+    showToast(`${server.name} yeniden başlatılıyor...`, 'success')
     await fetchServers()
   } catch (error) {
     // Error handled
-    showToast('Sunucu yeniden baslatilirken hata olustu', 'error')
+    showToast('Sunucu yeniden başlatilirken hata olustu', 'error')
   }
   actionLoading[server.id] = false
 }
@@ -1003,7 +1003,7 @@ const executeDelete = async () => {
 const copyConnect = () => {
   if (selectedServer.value) {
     navigator.clipboard.writeText(`connect ${selectedServer.value.ip}:${selectedServer.value.port}`)
-    showToast('Baglanti adresi kopyalandi!', 'success')
+    showToast('Bağlantı adresi kopyalandi!', 'success')
   }
 }
 

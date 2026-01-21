@@ -5,10 +5,10 @@
       <header class="page-header">
         <div class="header-content">
           <div class="header-title">
-            <h1>Odeme Yonetimi</h1>
+            <h1>Ödeme Yonetimi</h1>
             <p class="header-subtitle">
               <span class="pulse-dot"></span>
-              {{ pendingCount }} bekleyen odeme
+              {{ pendingCount }} bekleyen ödeme
             </p>
           </div>
           <div class="header-actions">
@@ -30,7 +30,7 @@
             </button>
             <button class="btn btn-outline" @click="exportPayments">
               <FileDown :size="18" />
-              <span>Rapor Indir</span>
+              <span>Rapor İndir</span>
             </button>
           </div>
         </div>
@@ -62,7 +62,7 @@
               <span class="stat-label">Bekleyen</span>
             </div>
             <div class="stat-badge warning" v-if="pendingCount > 0">
-              Islem Bekliyor
+              İşlem Bekliyor
             </div>
           </div>
 
@@ -107,7 +107,7 @@
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Kullanici adi, islem ID veya miktar ara..."
+              placeholder="Kullanıcı adı, işlem ID veya miktar ara..."
               class="search-input"
               @input="debouncedSearch"
             />
@@ -155,7 +155,7 @@
           <!-- Advanced Filters -->
           <div class="advanced-filters">
             <div class="filter-group">
-              <label>Odeme Yontemi</label>
+              <label>Ödeme Yontemi</label>
               <select v-model="filterMethod" class="filter-select" @change="fetchPayments">
                 <option value="">Tum Yontemler</option>
                 <option value="bank">Banka Havalesi</option>
@@ -199,7 +199,7 @@
           <div v-if="loading" class="loading-overlay">
             <div class="loader">
               <Loader2 :size="40" class="spin" />
-              <span>Odemeler yukleniyor...</span>
+              <span>Ödemeler yükleniyor...</span>
             </div>
           </div>
 
@@ -222,7 +222,7 @@
                   ID
                   <component :is="getSortIcon('id')" :size="14" />
                 </th>
-                <th>Kullanici</th>
+                <th>Kullanıcı</th>
                 <th class="sortable" @click="toggleSort('amount')">
                   Tutar
                   <component :is="getSortIcon('amount')" :size="14" />
@@ -233,7 +233,7 @@
                   Tarih
                   <component :is="getSortIcon('created_at')" :size="14" />
                 </th>
-                <th class="actions-col">Islemler</th>
+                <th class="actions-col">İşlemler</th>
               </tr>
             </thead>
             <tbody>
@@ -326,8 +326,8 @@
             <div class="empty-icon">
               <Receipt :size="64" />
             </div>
-            <h3>Odeme Bulunamadi</h3>
-            <p>Secilen kriterlere uygun odeme kaydina rastlanmadi.</p>
+            <h3>Ödeme Bulunamadi</h3>
+            <p>Secilen kriterlere uygun ödeme kaydina rastlanmadi.</p>
             <button class="btn btn-outline" @click="resetFilters">
               <RotateCcw :size="16" />
               Filtreleri Sifirla
@@ -338,7 +338,7 @@
         <!-- Pagination -->
         <div v-if="totalPages > 1" class="pagination">
           <div class="pagination-info">
-            {{ (currentPage - 1) * perPage + 1 }} - {{ Math.min(currentPage * perPage, totalPayments) }} / {{ totalPayments }} kayit
+            {{ (currentPage - 1) * perPage + 1 }} - {{ Math.min(currentPage * perPage, totalPayments) }} / {{ totalPayments }} kayıt
           </div>
           <div class="pagination-controls">
             <button
@@ -404,7 +404,7 @@
             <div class="preview-stats">
               <div class="preview-stat">
                 <span class="preview-stat-value">{{ userPreview.data?.total_payments || 0 }}</span>
-                <span class="preview-stat-label">Toplam Odeme</span>
+                <span class="preview-stat-label">Toplam Ödeme</span>
               </div>
               <div class="preview-stat">
                 <span class="preview-stat-value">{{ formatCurrency(userPreview.data?.total_spent || 0) }}</span>
@@ -423,7 +423,7 @@
               <div class="modal-header">
                 <div class="modal-title">
                   <Receipt :size="24" />
-                  <h2>Odeme Detayi #{{ selectedPayment.id }}</h2>
+                  <h2>Ödeme Detayi #{{ selectedPayment.id }}</h2>
                 </div>
                 <button class="modal-close" @click="closeModal">
                   <X :size="20" />
@@ -442,7 +442,7 @@
 
                 <!-- User Info -->
                 <div class="detail-section">
-                  <h4>Kullanici Bilgileri</h4>
+                  <h4>Kullanıcı Bilgileri</h4>
                   <div class="detail-card user-detail-card">
                     <img :src="getUserAvatar(selectedPayment.username)" class="detail-user-avatar" />
                     <div class="detail-user-info">
@@ -454,10 +454,10 @@
 
                 <!-- Payment Details Grid -->
                 <div class="detail-section">
-                  <h4>Odeme Bilgileri</h4>
+                  <h4>Ödeme Bilgileri</h4>
                   <div class="detail-grid">
                     <div class="detail-item">
-                      <span class="detail-label">Odeme Yontemi</span>
+                      <span class="detail-label">Ödeme Yontemi</span>
                       <span class="detail-value">
                         <span class="method-badge" :class="selectedPayment.method">
                           <component :is="getMethodIcon(selectedPayment.method)" :size="14" />
@@ -466,11 +466,11 @@
                       </span>
                     </div>
                     <div class="detail-item">
-                      <span class="detail-label">Olusturulma Tarihi</span>
+                      <span class="detail-label">Oluşturulma Tarihi</span>
                       <span class="detail-value">{{ formatFullDate(selectedPayment.created_at) }}</span>
                     </div>
                     <div class="detail-item">
-                      <span class="detail-label">Islem Tarihi</span>
+                      <span class="detail-label">İşlem Tarihi</span>
                       <span class="detail-value">{{ formatFullDate(selectedPayment.processed_at) || '-' }}</span>
                     </div>
                     <div class="detail-item">
@@ -492,14 +492,14 @@
                     />
                     <div class="proof-overlay">
                       <ZoomIn :size="24" />
-                      <span>Buyutmek icin tikla</span>
+                      <span>Buyutmek için tikla</span>
                     </div>
                   </div>
                 </div>
 
                 <!-- Note -->
                 <div v-if="selectedPayment.note" class="detail-section">
-                  <h4>Kullanici Notu</h4>
+                  <h4>Kullanıcı Notu</h4>
                   <div class="note-card">
                     <MessageSquare :size="18" />
                     <p>{{ selectedPayment.note }}</p>
@@ -540,7 +540,7 @@
               <div class="modal-header">
                 <div class="modal-title danger">
                   <AlertTriangle :size="24" />
-                  <h2>Odemeyi Reddet</h2>
+                  <h2>Ödemeyi Reddet</h2>
                 </div>
                 <button class="modal-close" @click="closeRejectModal">
                   <X :size="20" />
@@ -550,9 +550,9 @@
               <div class="modal-body">
                 <div class="reject-info">
                   <p>
-                    <strong>{{ paymentToReject?.username }}</strong> kullanicisinin
+                    <strong>{{ paymentToReject?.username }}</strong> kullanıcısinin
                     <strong>{{ formatCurrency(paymentToReject?.amount) }}</strong> tutarindaki
-                    odemesini reddetmek uzeresiniz.
+                    ödemesini reddetmek uzeresiniz.
                   </p>
                 </div>
 
@@ -568,7 +568,7 @@
                 </div>
 
                 <div class="quick-reasons">
-                  <span class="quick-label">Hizli Secim:</span>
+                  <span class="quick-label">Hızlı Seçim:</span>
                   <button
                     v-for="reason in quickRejectReasons"
                     :key="reason"
@@ -581,7 +581,7 @@
               </div>
 
               <div class="modal-footer">
-                <button class="btn btn-ghost" @click="closeRejectModal">Iptal</button>
+                <button class="btn btn-ghost" @click="closeRejectModal">İptal</button>
                 <button class="btn btn-danger" @click="confirmReject" :disabled="!rejectReason.trim()">
                   <X :size="18" />
                   Reddet
@@ -600,7 +600,7 @@
               <div class="modal-header">
                 <div class="modal-title success">
                   <CheckCircle :size="24" />
-                  <h2>Odemeyi Onayla</h2>
+                  <h2>Ödemeyi Onayla</h2>
                 </div>
                 <button class="modal-close" @click="closeApproveModal">
                   <X :size="20" />
@@ -613,18 +613,18 @@
                     <Check :size="48" />
                   </div>
                   <p>
-                    <strong>{{ paymentToApprove?.username }}</strong> kullanicisinin
+                    <strong>{{ paymentToApprove?.username }}</strong> kullanıcısinin
                     <strong>{{ formatCurrency(paymentToApprove?.amount) }}</strong> tutarindaki
-                    odemesini onaylamak istiyor musunuz?
+                    ödemesini onaylamak istiyor musunuz?
                   </p>
                   <p class="confirm-warning">
-                    Bu islem geri alinamaz ve kullanicinin bakiyesine yansitilacaktir.
+                    Bu işlem geri alinamaz ve kullanıcınin bakiyesine yansitilacaktir.
                   </p>
                 </div>
               </div>
 
               <div class="modal-footer">
-                <button class="btn btn-ghost" @click="closeApproveModal">Iptal</button>
+                <button class="btn btn-ghost" @click="closeApproveModal">İptal</button>
                 <button class="btn btn-success" @click="executeApprove">
                   <Check :size="18" />
                   Onayla
@@ -656,7 +656,7 @@
                     <component :is="bulkAction === 'approve' ? Check : X" :size="48" />
                   </div>
                   <p>
-                    <strong>{{ selectedPayments.length }}</strong> adet odemeyi
+                    <strong>{{ selectedPayments.length }}</strong> adet ödemeyi
                     {{ bulkAction === 'approve' ? 'onaylamak' : 'reddetmek' }} istiyor musunuz?
                   </p>
                   <div class="bulk-total">
@@ -678,7 +678,7 @@
               </div>
 
               <div class="modal-footer">
-                <button class="btn btn-ghost" @click="closeBulkModal">Iptal</button>
+                <button class="btn btn-ghost" @click="closeBulkModal">İptal</button>
                 <button
                   class="btn"
                   :class="bulkAction === 'approve' ? 'btn-success' : 'btn-danger'"
@@ -821,9 +821,9 @@ const toasts = ref([])
 const quickRejectReasons = [
   'Dekont okunamiyor',
   'Tutar uyusmuyor',
-  'Gonderen bilgisi hatali',
-  'Gecersiz islem',
-  'Supheli islem'
+  'Gönderen bilgisi hatali',
+  'Geçersiz işlem',
+  'Supheli işlem'
 ]
 
 let searchTimeout = null
@@ -900,7 +900,7 @@ const fetchPayments = async () => {
     }
   } catch (error) {
     // Error handled
-    showToast('Odemeler yuklenirken hata olustu', 'error')
+    showToast('Ödemeler yüklenirken hata olustu', 'error')
   }
   loading.value = false
 }
@@ -1050,7 +1050,7 @@ const getMethodIcon = (method) => {
 const getStatusLabel = (status) => {
   const labels = {
     pending: 'Bekliyor',
-    completed: 'Onaylandi',
+    completed: 'Onaylandı',
     failed: 'Reddedildi'
   }
   return labels[status] || status
@@ -1120,12 +1120,12 @@ const executeApprove = async () => {
       stats.approvedCount++
       closeApproveModal()
       closeModal()
-      showToast('Odeme basariyla onaylandi', 'success')
+      showToast('Ödeme basariyla onaylandı', 'success')
       fetchPayments()
       fetchStats()
     } else {
       const data = await response.json()
-      showToast(data.detail || 'Onaylama basarisiz', 'error')
+      showToast(data.detail || 'Onaylama başarısız', 'error')
     }
   } catch (error) {
     // Error handled
@@ -1147,7 +1147,7 @@ const closeRejectModal = () => {
 
 const confirmReject = async () => {
   if (!rejectReason.value.trim()) {
-    showToast('Lutfen bir red sebebi yazin', 'warning')
+    showToast('Lütfen bir red sebebi yazin', 'warning')
     return
   }
 
@@ -1164,12 +1164,12 @@ const confirmReject = async () => {
       stats.rejectedCount++
       closeRejectModal()
       closeModal()
-      showToast('Odeme reddedildi', 'success')
+      showToast('Ödeme reddedildi', 'success')
       fetchPayments()
       fetchStats()
     } else {
       const data = await response.json()
-      showToast(data.detail || 'Reddetme basarisiz', 'error')
+      showToast(data.detail || 'Reddetme başarısız', 'error')
     }
   } catch (error) {
     // Error handled
@@ -1231,8 +1231,8 @@ const executeBulkAction = async () => {
   closeBulkModal()
   selectedPayments.value = []
 
-  const actionText = action === 'approve' ? 'onaylandi' : 'reddedildi'
-  showToast(`${successCount}/${ids.length} odeme ${actionText}`, 'success')
+  const actionText = action === 'approve' ? 'onaylandı' : 'reddedildi'
+  showToast(`${successCount}/${ids.length} ödeme ${actionText}`, 'success')
 
   fetchPayments()
   fetchStats()
@@ -1248,7 +1248,7 @@ const exportPayments = () => {
   params.append('token', authStore.token)
 
   window.open(`/api/admin/payments/export?${params}`, '_blank')
-  showToast('Rapor indirme basladi', 'info')
+  showToast('Rapor indirme basladı', 'info')
 }
 
 // Image Viewer

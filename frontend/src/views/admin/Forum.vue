@@ -63,7 +63,7 @@
             </div>
             <div class="stat-content">
               <span class="stat-value">{{ animatedStats.activeUsers }}</span>
-              <span class="stat-label">Aktif Kullanici</span>
+              <span class="stat-label">Aktif Kullanıcı</span>
             </div>
             <div class="stat-decoration"></div>
           </div>
@@ -131,7 +131,7 @@
 
             <div v-if="loading" class="loading-state">
               <Loader2 :size="40" class="spin" />
-              <span>Yukleniyor...</span>
+              <span>Yükleniyor...</span>
             </div>
 
             <div v-else-if="filteredCategories.length === 0" class="empty-state">
@@ -139,10 +139,10 @@
                 <FolderOpen :size="64" />
               </div>
               <h3>Kategori Bulunamadi</h3>
-              <p>Henuz kategori olusturulmamiş veya arama kriterinize uygun sonuc yok.</p>
+              <p>Henuz kategori oluşturulmamiş veya arama kriterinize uygun sonuc yok.</p>
               <button class="btn btn-primary" @click="openCategoryModal()">
                 <Plus :size="18" />
-                Ilk Kategoriyi Olustur
+                Ilk Kategoriyi Oluştur
               </button>
             </div>
 
@@ -179,12 +179,12 @@
                         <span v-if="category.is_locked" class="badge badge-locked" title="Kilitli">
                           <Lock :size="12" />
                         </span>
-                        <span v-if="category.is_private" class="badge badge-private" title="Ozel">
+                        <span v-if="category.is_private" class="badge badge-private" title="Özel">
                           <Eye :size="12" />
                         </span>
                       </div>
                     </div>
-                    <p class="category-description">{{ category.description || 'Aciklama yok' }}</p>
+                    <p class="category-description">{{ category.description || 'Açıklama yok' }}</p>
                     <div class="category-meta">
                       <span class="meta-item">
                         <MessageSquare :size="14" />
@@ -205,7 +205,7 @@
                     <button
                       class="action-btn edit"
                       @click.stop="openCategoryModal(category)"
-                      title="Duzenle"
+                      title="Düzenle"
                     >
                       <Pencil :size="16" />
                     </button>
@@ -277,14 +277,14 @@
                   <button
                     :class="{ active: topicViewMode === 'table' }"
                     @click="topicViewMode = 'table'"
-                    title="Tablo Gorunumu"
+                    title="Tablo Görünümu"
                   >
                     <List :size="18" />
                   </button>
                   <button
                     :class="{ active: topicViewMode === 'cards' }"
                     @click="topicViewMode = 'cards'"
-                    title="Kart Gorunumu"
+                    title="Kart Görünümu"
                   >
                     <LayoutGrid :size="18" />
                   </button>
@@ -310,7 +310,7 @@
                   </button>
                   <button class="bulk-btn" @click="showMoveModal = true">
                     <ArrowRightLeft :size="16" />
-                    Tasi
+                    Taşı
                   </button>
                   <button class="bulk-btn danger" @click="bulkDeleteTopics">
                     <Trash2 :size="16" />
@@ -325,7 +325,7 @@
 
             <div v-if="loadingTopics" class="loading-state">
               <Loader2 :size="40" class="spin" />
-              <span>Konular yukleniyor...</span>
+              <span>Konular yükleniyor...</span>
             </div>
 
             <div v-else-if="topics.length === 0" class="empty-state">
@@ -352,10 +352,10 @@
                     <th class="col-topic">Konu</th>
                     <th class="col-category">Kategori</th>
                     <th class="col-author">Yazar</th>
-                    <th class="col-stats">Istatistikler</th>
+                    <th class="col-stats">İstatistikler</th>
                     <th class="col-status">Durum</th>
                     <th class="col-date">Tarih</th>
-                    <th class="col-actions">Islemler</th>
+                    <th class="col-actions">İşlemler</th>
                   </tr>
                 </thead>
                 <TransitionGroup name="table-row" tag="tbody">
@@ -430,7 +430,7 @@
                           class="quick-action"
                           :class="{ active: topic.is_pinned }"
                           @click="togglePin(topic)"
-                          :title="topic.is_pinned ? 'Sabitlemeyi Kaldir' : 'Sabitle'"
+                          :title="topic.is_pinned ? 'Sabitlemeyi Kaldır' : 'Sabitle'"
                         >
                           <Pin :size="16" />
                         </button>
@@ -445,7 +445,7 @@
                         <button
                           class="quick-action"
                           @click="openMoveTopicModal(topic)"
-                          title="Tasi"
+                          title="Taşı"
                         >
                           <ArrowRightLeft :size="16" />
                         </button>
@@ -508,11 +508,11 @@
                   <div class="card-stats">
                     <span class="stat">
                       <MessageCircle :size="14" />
-                      {{ topic.reply_count || 0 }} yanit
+                      {{ topic.reply_count || 0 }} yanıt
                     </span>
                     <span class="stat">
                       <Eye :size="14" />
-                      {{ topic.view_count || 0 }} goruntuleme
+                      {{ topic.view_count || 0 }} görüntüleme
                     </span>
                   </div>
 
@@ -583,14 +583,14 @@
           <div v-if="activeTab === 'reports'" key="reports" class="reports-panel">
             <div class="panel-header">
               <div class="panel-title">
-                <h2>Raporlanan Icerikler</h2>
-                <p>Kullanicilarin raporladigi icerikler</p>
+                <h2>Raporlanan İçerikler</h2>
+                <p>Kullanıcılarin raporladigi içerikler</p>
               </div>
             </div>
 
             <div v-if="loadingReports" class="loading-state">
               <Loader2 :size="40" class="spin" />
-              <span>Raporlar yukleniyor...</span>
+              <span>Raporlar yükleniyor...</span>
             </div>
 
             <div v-else-if="reports.length === 0" class="empty-state success">
@@ -641,7 +641,7 @@
                   <div class="report-actions">
                     <button class="report-btn view" @click="viewReportedContent(report)">
                       <Eye :size="16" />
-                      Goruntule
+                      Görüntüle
                     </button>
                     <button class="report-btn approve" @click="dismissReport(report)">
                       <Check :size="16" />
@@ -671,7 +671,7 @@
               <div class="modal-header">
                 <h2>
                   <component :is="editingCategory ? Pencil : Plus" :size="20" />
-                  {{ editingCategory ? 'Kategori Duzenle' : 'Yeni Kategori' }}
+                  {{ editingCategory ? 'Kategori Düzenle' : 'Yeni Kategori' }}
                 </h2>
                 <button class="modal-close" @click="closeCategoryModal">
                   <X :size="20" />
@@ -713,12 +713,12 @@
                   <div class="form-group full-width">
                     <label>
                       <FileText :size="16" />
-                      Aciklama
+                      Açıklama
                     </label>
                     <textarea
                       v-model="categoryForm.description"
                       rows="3"
-                      placeholder="Kategori hakkinda kisa bir aciklama..."
+                      placeholder="Kategori hakkinda kisa bir açıklama..."
                       class="form-textarea"
                     ></textarea>
                   </div>
@@ -799,7 +799,7 @@
                       </label>
                       <label class="checkbox-label">
                         <input v-model="categoryForm.is_private" type="checkbox" />
-                        <span class="checkbox-text">Ozel (Sadece yetkililere gorunur)</span>
+                        <span class="checkbox-text">Özel (Sadece yetkililere gorunur)</span>
                       </label>
                     </div>
                   </div>
@@ -808,7 +808,7 @@
 
               <div class="modal-footer">
                 <button class="btn btn-secondary" @click="closeCategoryModal">
-                  Iptal
+                  İptal
                 </button>
                 <button
                   class="btn btn-primary"
@@ -817,7 +817,7 @@
                 >
                   <Loader2 v-if="saving" :size="16" class="spin" />
                   <Save v-else :size="16" />
-                  <span>{{ editingCategory ? 'Guncelle' : 'Olustur' }}</span>
+                  <span>{{ editingCategory ? 'Güncelle' : 'Oluştur' }}</span>
                 </button>
               </div>
             </div>
@@ -833,7 +833,7 @@
               <div class="modal-header">
                 <h2>
                   <ArrowRightLeft :size="20" />
-                  Konuyu Tasi
+                  Konuyu Taşı
                 </h2>
                 <button class="modal-close" @click="showMoveModal = false">
                   <X :size="20" />
@@ -842,7 +842,7 @@
 
               <div class="modal-body">
                 <p class="modal-info">
-                  {{ movingTopic ? `"${movingTopic.title}" konusu` : `${selectedTopics.length} konu` }} tasiniyor
+                  {{ movingTopic ? `"${movingTopic.title}" konusu` : `${selectedTopics.length} konu` }} taşıniyor
                 </p>
                 <div class="form-group">
                   <label>Hedef Kategori</label>
@@ -862,7 +862,7 @@
 
               <div class="modal-footer">
                 <button class="btn btn-secondary" @click="showMoveModal = false">
-                  Iptal
+                  İptal
                 </button>
                 <button
                   class="btn btn-primary"
@@ -870,7 +870,7 @@
                   :disabled="!targetCategoryId"
                 >
                   <ArrowRightLeft :size="16" />
-                  Tasi
+                  Taşı
                 </button>
               </div>
             </div>
@@ -890,7 +890,7 @@
               <p>{{ deleteModalMessage }}</p>
               <div class="confirm-actions">
                 <button class="btn btn-secondary" @click="showDeleteModal = false">
-                  Iptal
+                  İptal
                 </button>
                 <button class="btn btn-danger" @click="executeDelete">
                   <Trash2 :size="16" />
@@ -1138,7 +1138,7 @@ const getDefaultIcon = (name) => {
   if (lower.includes('duyuru')) return '📢'
   if (lower.includes('oyun') || lower.includes('game')) return '🎮'
   if (lower.includes('destek') || lower.includes('yardim')) return '❓'
-  if (lower.includes('proje') || lower.includes('goster')) return '🎨'
+  if (lower.includes('proje') || lower.includes('göster')) return '🎨'
   if (lower.includes('oneri')) return '💡'
   return '📁'
 }
@@ -1209,7 +1209,7 @@ const fetchCategories = async () => {
     }
   } catch (e) {
     // Error handled
-    showToast('Kategoriler yuklenemedi', 'error')
+    showToast('Kategoriler yüklenemedi', 'error')
   }
   loading.value = false
 }
@@ -1234,7 +1234,7 @@ const fetchTopics = async () => {
     }
   } catch (e) {
     // Error handled
-    showToast('Konular yuklenemedi', 'error')
+    showToast('Konular yüklenemedi', 'error')
   }
   loadingTopics.value = false
 }
@@ -1283,7 +1283,7 @@ const refreshData = async () => {
   if (activeTab.value === 'topics') await fetchTopics()
   if (activeTab.value === 'reports') await fetchReports()
   refreshing.value = false
-  showToast('Veriler guncellendi', 'success')
+  showToast('Veriler güncellendi', 'success')
 }
 
 // Debounced search
@@ -1366,7 +1366,7 @@ const saveCategory = async () => {
 
     if (res.ok) {
       showToast(
-        editingCategory.value ? 'Kategori guncellendi' : 'Kategori olusturuldu',
+        editingCategory.value ? 'Kategori güncellendi' : 'Kategori oluşturuldu',
         'success'
       )
       closeCategoryModal()
@@ -1378,7 +1378,7 @@ const saveCategory = async () => {
     }
   } catch (e) {
     // Error handled
-    showToast('Baglanti hatasi', 'error')
+    showToast('Bağlantı hatası', 'error')
   }
   saving.value = false
 }
@@ -1386,7 +1386,7 @@ const saveCategory = async () => {
 // Delete Category
 const confirmDeleteCategory = (category) => {
   deleteModalTitle.value = 'Kategoriyi Sil'
-  deleteModalMessage.value = `"${category.name}" kategorisini silmek istediginize emin misiniz? Icindeki tum konular da silinecektir!`
+  deleteModalMessage.value = `"${category.name}" kategorisini silmek istediginize emin misiniz? İçindeki tum konular da silinecektir!`
   deleteCallback.value = () => deleteCategory(category.id)
   showDeleteModal.value = true
 }
@@ -1402,11 +1402,11 @@ const deleteCategory = async (id) => {
       fetchCategories()
       fetchStats()
     } else {
-      showToast('Silme islemi basarisiz', 'error')
+      showToast('Silme işlemi başarısız', 'error')
     }
   } catch (e) {
     // Error handled
-    showToast('Baglanti hatasi', 'error')
+    showToast('Bağlantı hatası', 'error')
   }
 }
 
@@ -1492,11 +1492,11 @@ const togglePin = async (topic) => {
     })
     if (res.ok) {
       topic.is_pinned = !topic.is_pinned
-      showToast(topic.is_pinned ? 'Konu sabitlendi' : 'Sabitleme kaldirildi', 'success')
+      showToast(topic.is_pinned ? 'Konu sabitlendi' : 'Sabitleme kaldırildi', 'success')
     }
   } catch (e) {
     // Error handled
-    showToast('Islem basarisiz', 'error')
+    showToast('İşlem başarısız', 'error')
   }
 }
 
@@ -1513,7 +1513,7 @@ const toggleLock = async (topic) => {
     }
   } catch (e) {
     // Error handled
-    showToast('Islem basarisiz', 'error')
+    showToast('İşlem başarısız', 'error')
   }
 }
 
@@ -1538,7 +1538,7 @@ const deleteTopic = async (id) => {
     }
   } catch (e) {
     // Error handled
-    showToast('Silme basarisiz', 'error')
+    showToast('Silme başarısız', 'error')
   }
 }
 
@@ -1570,11 +1570,11 @@ const executeMoveTopics = async () => {
       fetchTopics()
       fetchCategories()
     } else {
-      showToast('Tasima basarisiz', 'error')
+      showToast('Taşıma başarısız', 'error')
     }
   } catch (e) {
     // Error handled
-    showToast('Baglanti hatasi', 'error')
+    showToast('Bağlantı hatası', 'error')
   }
 }
 
@@ -1593,7 +1593,7 @@ const bulkPinTopics = async () => {
     selectedTopics.value = []
     fetchTopics()
   } catch (e) {
-    showToast('Islem basarisiz', 'error')
+    showToast('İşlem başarısız', 'error')
   }
 }
 
@@ -1611,7 +1611,7 @@ const bulkLockTopics = async () => {
     selectedTopics.value = []
     fetchTopics()
   } catch (e) {
-    showToast('Islem basarisiz', 'error')
+    showToast('İşlem başarısız', 'error')
   }
 }
 
@@ -1630,7 +1630,7 @@ const bulkDeleteTopics = () => {
       fetchTopics()
       fetchStats()
     } catch (e) {
-      showToast('Silme basarisiz', 'error')
+      showToast('Silme başarısız', 'error')
     }
   }
   showDeleteModal.value = true
@@ -1660,7 +1660,7 @@ const dismissReport = async (report) => {
     stats.value.reported--
     showToast('Rapor reddedildi', 'success')
   } catch (e) {
-    showToast('Islem basarisiz', 'error')
+    showToast('İşlem başarısız', 'error')
   }
 }
 
@@ -1672,9 +1672,9 @@ const warnAuthor = async (report) => {
     })
     reports.value = reports.value.filter(r => r.id !== report.id)
     stats.value.reported--
-    showToast('Kullanici uyarildi', 'success')
+    showToast('Kullanıcı uyarildi', 'success')
   } catch (e) {
-    showToast('Islem basarisiz', 'error')
+    showToast('İşlem başarısız', 'error')
   }
 }
 
@@ -1686,10 +1686,10 @@ const deleteReportedContent = async (report) => {
     })
     reports.value = reports.value.filter(r => r.id !== report.id)
     stats.value.reported--
-    showToast('Icerik silindi', 'success')
+    showToast('İçerik silindi', 'success')
     fetchStats()
   } catch (e) {
-    showToast('Silme basarisiz', 'error')
+    showToast('Silme başarısız', 'error')
   }
 }
 

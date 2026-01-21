@@ -78,7 +78,7 @@
               </svg>
             </div>
             <div class="feature-text">
-              <h3>Hizli Sunucular</h3>
+              <h3>Hızlı Sunucular</h3>
               <p>Dusuk ping, yuksek performans</p>
             </div>
           </div>
@@ -110,7 +110,7 @@
               <span class="counter">{{ animatedStats.users }}</span>
               <span class="stat-plus">K+</span>
             </div>
-            <div class="stat-label">Kullanici</div>
+            <div class="stat-label">Kullanıcı</div>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
@@ -143,8 +143,8 @@
         <!-- Glass Card -->
         <div class="glass-card">
           <div class="card-header">
-            <h2>Giris Yap</h2>
-            <p>Hesabiniza erisim saglayin</p>
+            <h2>Giriş Yap</h2>
+            <p>Hesabınıza erisim sağlayin</p>
           </div>
 
           <!-- OAuth Buttons -->
@@ -159,7 +159,7 @@
                 <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0z"/>
                 </svg>
-                <span>Steam ile Giris Yap</span>
+                <span>Steam ile Giriş Yap</span>
               </div>
               <div class="btn-shine"></div>
             </button>
@@ -174,13 +174,13 @@
                 <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
                 </svg>
-                <span>Discord ile Giris Yap</span>
+                <span>Discord ile Giriş Yap</span>
               </div>
               <div class="btn-shine"></div>
             </button>
           </div>
 
-          <p class="oauth-hint">Onerilen giris yontemi</p>
+          <p class="oauth-hint">Önerilen giriş yöntemi</p>
 
           <!-- Divider -->
           <div class="divider">
@@ -199,12 +199,12 @@
                 id="login-username"
                 type="text"
                 v-model="form.username"
-                placeholder="Kullanici Adi"
+                placeholder="Kullanıcı Adı"
                 @focus="focusedInput = 'username'"
                 @blur="focusedInput = null"
                 @keydown.tab.exact="focusedInput = 'password'"
                 autocomplete="username"
-                aria-label="Kullanici Adi"
+                aria-label="Kullanıcı Adı"
                 aria-required="true"
               />
               <div class="input-glow"></div>
@@ -220,11 +220,11 @@
                 id="login-password"
                 :type="showPassword ? 'text' : 'password'"
                 v-model="form.password"
-                placeholder="Sifre"
+                placeholder="Şifre"
                 @focus="focusedInput = 'password'"
                 @blur="focusedInput = null"
                 autocomplete="current-password"
-                aria-label="Sifre"
+                aria-label="Şifre"
                 aria-required="true"
               />
               <button
@@ -232,7 +232,7 @@
                 class="password-toggle"
                 @click="showPassword = !showPassword"
                 tabindex="-1"
-                :aria-label="showPassword ? 'Sifreyi gizle' : 'Sifreyi goster'"
+                :aria-label="showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'"
               >
                 <svg v-if="!showPassword" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
@@ -252,7 +252,7 @@
                 <span class="checkbox-label">Beni Hatirla</span>
               </label>
               <router-link to="/forgot-password" class="forgot-link">
-                Sifremi Unuttum
+                Şifremi Unuttum
               </router-link>
             </div>
 
@@ -273,7 +273,7 @@
               :disabled="loading || !form.username || !form.password"
               :class="{ 'loading': loading }"
             >
-              <span v-if="!loading">Giris Yap</span>
+              <span v-if="!loading">Giriş Yap</span>
               <div v-else class="spinner">
                 <div class="spinner-ring"></div>
               </div>
@@ -283,7 +283,7 @@
           <!-- Register Link -->
           <div class="register-link">
             <p>Hesabin yok mu?</p>
-            <router-link to="/register">Kayit Ol</router-link>
+            <router-link to="/register">Kayıt Ol</router-link>
           </div>
         </div>
 
@@ -305,7 +305,7 @@
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
                 </svg>
               </div>
-              <h3>Iki Faktorlu Dogrulama</h3>
+              <h3>Iki Faktorlu Doğrulama</h3>
               <p>Authenticator uygulamanizdan 6 haneli kodu girin</p>
             </div>
 
@@ -331,14 +331,14 @@
 
             <div class="modal-actions">
               <button class="modal-btn cancel" @click="show2FAModal = false">
-                Iptal
+                İptal
               </button>
               <button
                 class="modal-btn confirm"
                 :disabled="verifying2FA || twoFactorCode.length !== 6"
                 @click="handle2FAVerify"
               >
-                <span v-if="!verifying2FA">Dogrula</span>
+                <span v-if="!verifying2FA">Doğrula</span>
                 <div v-else class="spinner small">
                   <div class="spinner-ring"></div>
                 </div>
@@ -551,14 +551,14 @@ const showToast = (message, type = 'success') => {
 // Login handlers
 const handleLogin = async () => {
   if (!form.username || !form.password) {
-    errorMessage.value = 'Kullanici adi ve sifre gerekli'
+    errorMessage.value = 'Kullanıcı adı ve şifre gerekli'
     return
   }
 
   // Rate limiting check
   const rateCheck = loginRateLimiter.check('login')
   if (!rateCheck.allowed) {
-    errorMessage.value = `Cok fazla deneme. ${rateCheck.resetIn} saniye sonra tekrar deneyin.`
+    errorMessage.value = `Çok fazla deneme. ${rateCheck.resetIn} saniye sonra tekrar deneyin.`
     return
   }
 
@@ -579,11 +579,11 @@ const handleLogin = async () => {
         otpInputs.value[0]?.focus()
       })
     } else {
-      showToast('Giris basarili!')
+      showToast('Giriş başarılı!')
       router.push('/dashboard')
     }
   } catch (error) {
-    errorMessage.value = error.response?.data?.detail || error.message || 'Giris basarisiz'
+    errorMessage.value = error.response?.data?.detail || error.message || 'Giriş başarısız'
     showToast(errorMessage.value, 'error')
   } finally {
     loading.value = false
@@ -605,10 +605,10 @@ const handle2FAVerify = async () => {
     })
 
     show2FAModal.value = false
-    showToast('Giris basarili!')
+    showToast('Giriş başarılı!')
     router.push('/dashboard')
   } catch (error) {
-    showToast(error.response?.data?.detail || 'Dogrulama basarisiz', 'error')
+    showToast(error.response?.data?.detail || 'Doğrulama başarısız', 'error')
   } finally {
     verifying2FA.value = false
   }

@@ -33,11 +33,11 @@ import {
 const props = defineProps({
   title: {
     type: String,
-    default: 'Veri bulunamadi'
+    default: 'Veri bulunamadı'
   },
   description: {
     type: String,
-    default: 'Henuz icerik eklenmemis.'
+    default: 'Henuz içerik eklenmemis.'
   },
   icon: {
     type: [Object, String],

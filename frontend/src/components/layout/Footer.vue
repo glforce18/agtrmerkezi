@@ -62,7 +62,7 @@
             </svg>
           </div>
           <h3 class="newsletter-title">Bulten Aboneligi</h3>
-          <p class="newsletter-desc">Yeni guncellemeler ve kampanyalardan haberdar olun</p>
+          <p class="newsletter-desc">Yeni güncellemeler ve kampanyalardan haberdar olun</p>
           <form @submit.prevent="subscribeNewsletter" class="newsletter-form">
             <div class="input-wrapper">
               <input
@@ -84,7 +84,7 @@
 
         <!-- Server Stats Section -->
         <div class="stats-section glass-card">
-          <h3 class="stats-title">Canli Istatistikler</h3>
+          <h3 class="stats-title">Canli İstatistikler</h3>
           <div class="stats-grid">
             <div class="stat-item">
               <div class="stat-icon servers">
@@ -143,7 +143,7 @@
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
               </svg>
             </span>
-            Hizli Linkler
+            Hızlı Linkler
           </h4>
           <ul class="links-list">
             <li v-for="link in quickLinks" :key="link.path" class="link-item">
@@ -221,7 +221,7 @@
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
               </svg>
             </span>
-            Dil Secimi
+            Dil Seçimi
           </h4>
           <n-dropdown
             trigger="click"
@@ -278,7 +278,7 @@
         <div class="footer-meta">
           <a href="/changelog" class="version-link">
             <span class="version-badge">v7.0.0</span>
-            <span class="changelog-text">Degisiklik Notlari</span>
+            <span class="changelog-text">Değişiklik Notlari</span>
           </a>
         </div>
       </div>
@@ -342,13 +342,13 @@ const subscribeNewsletter = async () => {
   newsletterSuccess.value = ''
 
   if (!newsletterEmail.value) {
-    newsletterError.value = 'Lutfen e-posta adresinizi girin'
+    newsletterError.value = 'Lütfen e-posta adresinizi girin'
     return
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(newsletterEmail.value)) {
-    newsletterError.value = 'Gecerli bir e-posta adresi girin'
+    newsletterError.value = 'Geçerli bir e-posta adresi girin'
     return
   }
 
@@ -463,7 +463,7 @@ const resourceLinks = [
   { path: '/faq', label: 'Sikca Sorulan Sorular' },
   { path: '/support', label: 'Destek Merkezi' },
   { path: '/api', label: 'API Dokumanlari' },
-  { path: '/downloads', label: 'Indirmeler' }
+  { path: '/downloads', label: 'İndirmeler' }
 ]
 
 // Legal Links
@@ -471,7 +471,7 @@ const legalLinks = [
   { path: '/terms', label: 'Kullanim Kosullari' },
   { path: '/privacy', label: 'Gizlilik Politikasi' },
   { path: '/cookies', label: 'Cerez Politikasi' },
-  { path: '/contact', label: 'Iletisim' }
+  { path: '/contact', label: 'İletişim' }
 ]
 
 // Partners (mock data)

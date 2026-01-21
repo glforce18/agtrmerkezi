@@ -137,14 +137,14 @@ export function formatStatus(status) {
     active: 'Aktif',
     inactive: 'Pasif',
     pending: 'Bekliyor',
-    completed: 'Tamamlandi',
-    failed: 'Basarisiz',
-    banned: 'Yasakli',
-    online: 'Cevrimici',
-    offline: 'Cevrimdisi',
-    starting: 'Baslatiliyor',
+    completed: 'Tamamlandı',
+    failed: 'Başarısız',
+    banned: 'Yasaklı',
+    online: 'Çevrimiçi',
+    offline: 'Çevrimdışı',
+    starting: 'Başlatılıyor',
     stopping: 'Durduruluyor',
-    running: 'Calisiyor',
+    running: 'Çalışıyor',
     stopped: 'Durduruldu',
     error: 'Hata'
   }
@@ -156,9 +156,9 @@ export function formatStatus(status) {
  */
 export function formatRole(role) {
   const roleMap = {
-    user: 'Kullanici',
-    admin: 'Yonetici',
-    moderator: 'Moderator',
+    user: 'Kullanıcı',
+    admin: 'Yönetici',
+    moderatör: 'Moderatör',
     vip: 'VIP',
     premium: 'Premium'
   }

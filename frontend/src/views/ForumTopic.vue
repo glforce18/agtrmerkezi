@@ -64,7 +64,7 @@
                 <MessageSquareIcon class="w-5 h-5" />
               </button>
             </template>
-            Yanitla
+            Yanıtla
           </n-tooltip>
 
           <n-tooltip trigger="hover" placement="top">
@@ -170,11 +170,11 @@
             <div class="flex flex-wrap items-center gap-4 text-sm">
               <div class="stat-chip">
                 <MessageSquareIcon class="w-4 h-4 text-orange-400" />
-                <span>{{ replies.length }} Yanit</span>
+                <span>{{ replies.length }} Yanıt</span>
               </div>
               <div class="stat-chip">
                 <EyeIcon class="w-4 h-4 text-purple-400" />
-                <span>{{ topic?.views }} Goruntulenme</span>
+                <span>{{ topic?.views }} Görüntülenme</span>
               </div>
               <div class="stat-chip">
                 <HeartIcon class="w-4 h-4 text-pink-400" />
@@ -286,7 +286,7 @@
                   <div class="author-stat-item">
                     <MessageCircleIcon class="w-4 h-4 text-orange-400" />
                     <span class="stat-value">{{ topic?.authorPosts }}</span>
-                    <span class="stat-label">Gonderi</span>
+                    <span class="stat-label">Gönderi</span>
                   </div>
                   <div class="author-stat-item">
                     <ThumbsUpIcon class="w-4 h-4 text-pink-400" />
@@ -295,7 +295,7 @@
                   </div>
                   <div class="author-stat-item full-width">
                     <CalendarIcon class="w-4 h-4 text-cyan-400" />
-                    <span class="stat-label">Uyelik: {{ topic?.authorJoined }}</span>
+                    <span class="stat-label">Üyelik: {{ topic?.authorJoined }}</span>
                   </div>
                 </div>
               </div>
@@ -308,7 +308,7 @@
               <span class="text-sm text-gray-500 flex items-center gap-2">
                 <ClockIcon class="w-4 h-4" />
                 {{ topic?.created }}
-                <span v-if="topic?.isEdited" class="text-orange-400">(duzenlendi)</span>
+                <span v-if="topic?.isEdited" class="text-orange-400">(düzenlendi)</span>
               </span>
 
               <!-- Post Actions Menu -->
@@ -400,7 +400,7 @@
                 </button>
                 <n-button size="small" @click="scrollToReplyForm" class="action-button">
                   <template #icon><ReplyIcon class="w-4 h-4" /></template>
-                  Yanitla
+                  Yanıtla
                 </n-button>
                 <n-button size="small" @click="showShareModal = true" class="action-button">
                   <template #icon><Share2Icon class="w-4 h-4" /></template>
@@ -435,7 +435,7 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-bold flex items-center gap-2">
             <MessageSquareIcon class="w-5 h-5 text-orange-400" />
-            Yanitlar ({{ replies.length }})
+            Yanıtlar ({{ replies.length }})
           </h2>
           <n-select
             v-model:value="sortOrder"
@@ -509,7 +509,7 @@
                       <ClockIcon class="w-3 h-3" />
                       {{ reply.created }}
                     </span>
-                    <span v-if="reply.isEdited" class="text-xs text-orange-400">(duzenlendi)</span>
+                    <span v-if="reply.isEdited" class="text-xs text-orange-400">(düzenlendi)</span>
                   </div>
 
                   <!-- Reply Actions Menu -->
@@ -587,7 +587,7 @@
                   </n-button>
                   <n-button text size="tiny" @click="replyToUser(reply)" class="reply-action-btn">
                     <template #icon><AtSignIcon class="w-3 h-3" /></template>
-                    Yanitla
+                    Yanıtla
                   </n-button>
                   <n-button text size="tiny" type="error" @click="reportReply(reply)" class="reply-action-btn">
                     <template #icon><FlagIcon class="w-3 h-3" /></template>
@@ -633,7 +633,7 @@
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-2 text-sm text-gray-400">
                   <QuoteIcon class="w-4 h-4 text-orange-400" />
-                  <span><strong>{{ quotedReply.author }}</strong> kullanicisina yanit veriyorsunuz:</span>
+                  <span><strong>{{ quotedReply.author }}</strong> kullanıcısina yanıt veriyorsunuz:</span>
                 </div>
                 <div class="quote-content text-sm">
                   {{ quotedReply.content.substring(0, 200) }}{{ quotedReply.content.length > 200 ? '...' : '' }}
@@ -650,7 +650,7 @@
           <div class="flex items-center justify-between mb-4">
             <h3 class="font-bold text-lg flex items-center gap-2">
               <EditIcon class="w-5 h-5 text-orange-400" />
-              Yanit Yaz
+              Yanıt Yaz
             </h3>
             <div class="flex items-center gap-2 text-sm text-gray-500">
               <span>Markdown desteklenir</span>
@@ -730,7 +730,7 @@
                   ref="editorRef"
                   v-model:value="newReply"
                   type="textarea"
-                  placeholder="Yanitinizi yazin... Markdown kullanabilirsiniz."
+                  placeholder="Yanıtinizi yazin... Markdown kullanabilirsiniz."
                   :rows="8"
                   @input="handleTyping"
                   @focus="handleEditorFocus"
@@ -781,7 +781,7 @@
                   class="submit-btn"
                 >
                   <template #icon><SendIcon class="w-4 h-4" /></template>
-                  Yanitla
+                  Yanıtla
                 </n-button>
               </div>
             </div>
@@ -796,13 +796,13 @@
         </div>
         <h3 class="text-2xl font-bold mb-3">Bu Konu Kilitli</h3>
         <p class="text-gray-400 max-w-md mx-auto">
-          Bu konuya yeni yanit ekleyemezsiniz. Daha fazla bilgi icin moderatorlerle iletisime gecin.
+          Bu konuya yeni yanıt ekleyemezsiniz. Daha fazla bilgi için moderatörlerle iletişime gecin.
         </p>
       </div>
     </div>
 
     <!-- Report Modal -->
-    <n-modal v-model:show="showReportModal" preset="card" title="Icerik Bildir" class="max-w-lg report-modal">
+    <n-modal v-model:show="showReportModal" preset="card" title="İçerik Bildir" class="max-w-lg report-modal">
       <div class="report-modal-content">
         <div class="report-icon-container mb-4">
           <FlagIcon class="w-8 h-8 text-red-400" />
@@ -823,7 +823,7 @@
               </div>
             </n-radio-group>
           </n-form-item>
-          <n-form-item label="Ek Aciklama" path="description">
+          <n-form-item label="Ek Açıklama" path="description">
             <n-input
               v-model:value="reportForm.description"
               type="textarea"
@@ -835,7 +835,7 @@
       </div>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <n-button @click="showReportModal = false">Iptal</n-button>
+          <n-button @click="showReportModal = false">İptal</n-button>
           <n-button type="error" @click="submitReport">
             <template #icon><FlagIcon class="w-4 h-4" /></template>
             Bildir
@@ -853,7 +853,7 @@
           </div>
           <div class="share-preview-text">
             <h4 class="font-semibold text-[color:var(--text-primary)]">{{ topic?.title }}</h4>
-            <p class="text-xs text-gray-500">{{ replies.length }} yanit - {{ topic?.views }} goruntulenme</p>
+            <p class="text-xs text-gray-500">{{ replies.length }} yanıt - {{ topic?.views }} görüntülenme</p>
           </div>
         </div>
 
@@ -885,9 +885,9 @@
     </n-modal>
 
     <!-- Edit Post Modal -->
-    <n-modal v-model:show="showEditModal" preset="card" title="Gonderiyi Duzenle" class="max-w-2xl">
+    <n-modal v-model:show="showEditModal" preset="card" title="Gönderiyi Düzenle" class="max-w-2xl">
       <n-form class="space-y-4">
-        <n-form-item label="Icerik">
+        <n-form-item label="İçerik">
           <n-input
             v-model:value="editContent"
             type="textarea"
@@ -897,7 +897,7 @@
       </n-form>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <n-button @click="showEditModal = false">Iptal</n-button>
+          <n-button @click="showEditModal = false">İptal</n-button>
           <n-button type="primary" @click="saveEdit">
             <template #icon><SaveIcon class="w-4 h-4" /></template>
             Kaydet
@@ -907,13 +907,13 @@
     </n-modal>
 
     <!-- Delete Confirmation Modal -->
-    <n-modal v-model:show="showDeleteModal" preset="dialog" type="error" title="Gonderiyi Sil">
+    <n-modal v-model:show="showDeleteModal" preset="dialog" type="error" title="Gönderiyi Sil">
       <template #default>
-        Bu gonderiyi silmek istediginizden emin misiniz? Bu islem geri alinamaz.
+        Bu gönderiyi silmek istediginizden emin misiniz? Bu işlem geri alinamaz.
       </template>
       <template #action>
         <div class="flex gap-3">
-          <n-button @click="showDeleteModal = false">Iptal</n-button>
+          <n-button @click="showDeleteModal = false">İptal</n-button>
           <n-button type="error" @click="confirmDelete">
             <template #icon><Trash2Icon class="w-4 h-4" /></template>
             Sil
@@ -1039,18 +1039,18 @@ const categoryColors = {
 // Topic Data
 const topic = ref({
   id: 1,
-  title: 'Yeni guncelleme hakkinda dusunceleriniz?',
-  content: `Merhaba arkadaslar,
+  title: 'Yeni güncelleme hakkinda dusunceleriniz?',
+  content: `Merhaba arkadaşlar,
 
-Yeni guncelleme ile birlikte gelen ozellikleri denedim. Ozellikle sunucu performansinda ciddi bir **iyilesme** var. Sizin dusunceleriniz neler?
+Yeni güncelleme ile birlikte gelen özellikleri denedim. Özellikle sunucu performansinda ciddi bir **iyilesme** var. Sizin dusunceleriniz neler?
 
-Ben ozellikle su noktalari begendim:
+Ben özellikle su noktalari begendim:
 - Gelismis DDoS korumasi
 - Yeni admin paneli arayuzu
 - Otomatik yedekleme sistemi
 
 \`\`\`javascript
-// Ornek yapilandirma
+// Ornek yapılandırma
 const config = {
   ddosProtection: true,
   autoBackup: '24h',
@@ -1058,9 +1058,9 @@ const config = {
 };
 \`\`\`
 
-> Bu guncelleme gercekten cigir acici!
+> Bu güncelleme gercekten cigir acici!
 
-Sizce en iyi ozellik hangisi?`,
+Sizce en iyi özellik hangisi?`,
   author: 'Player123',
   authorId: 1,
   authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
@@ -1078,7 +1078,7 @@ Sizce en iyi ozellik hangisi?`,
   ],
   categoryId: 1,
   categoryName: 'Genel Tartisma',
-  created: '2 saat once',
+  created: '2 saat önce',
   views: 234,
   likes: 12,
   isPinned: true,
@@ -1102,14 +1102,14 @@ const replies = ref([
     author: 'AdminUser',
     authorId: 2,
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-    authorRole: 'Moderator',
+    authorRole: 'Moderatör',
     authorLevel: 38,
     authorXpProgress: 60,
     authorPosts: 856,
     authorJoined: 'Mar 2023',
     authorOnline: true,
-    created: '1 saat once',
-    content: 'Kesinlikle katiliyorum! Yeni admin paneli gercekten cok kullanisli. Ozellikle **sunucu metriklerini** canli olarak gorebilmek harika.\n\n```bash\n# Sunucu durumunu kontrol et\nserverstatus --live\n```',
+    created: '1 saat önce',
+    content: 'Kesinlikle katiliyorum! Yeni admin paneli gercekten çok kullanisli. Özellikle **sunucu metriklerini** canli olarak gorebilmek harika.\n\n```bash\n# Sunucu durumunu kontrol et\nserverstatus --live\n```',
     likes: 5,
     hasLiked: false,
     isEdited: false,
@@ -1122,21 +1122,21 @@ const replies = ref([
     author: 'ProGamer',
     authorId: 3,
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-    authorRole: 'VIP Uye',
+    authorRole: 'VIP Üye',
     authorLevel: 27,
     authorXpProgress: 45,
     authorPosts: 623,
     authorJoined: 'Haz 2023',
     authorOnline: false,
-    created: '45 dakika once',
-    content: 'DDoS korumasi sayesinde sunucum artik cok daha stabil calisiyor. Gecen hafta buyuk bir saldiri aldik ama hic kesinti olmadi. Harika bir guncelleme!',
+    created: '45 dakika önce',
+    content: 'DDoS korumasi sayesinde sunucum artik çok daha stabil çalışıyor. Gecen hafta büyük bir saldiri aldik ama hic kesinti olmadi. Harika bir güncelleme!',
     likes: 8,
     hasLiked: true,
     isEdited: true,
     quotedPost: {
       id: 1,
       author: 'AdminUser',
-      content: 'Kesinlikle katiliyorum! Yeni admin paneli gercekten cok kullanisli.'
+      content: 'Kesinlikle katiliyorum! Yeni admin paneli gercekten çok kullanisli.'
     },
     reactions: [
       { emoji: '🔥', count: 2, hasReacted: true },
@@ -1148,14 +1148,14 @@ const replies = ref([
     author: 'NewbieCS',
     authorId: 4,
     authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
-    authorRole: 'Yeni Uye',
+    authorRole: 'Yeni Üye',
     authorLevel: 5,
     authorXpProgress: 30,
     authorPosts: 42,
     authorJoined: 'Ara 2024',
     authorOnline: true,
-    created: '30 dakika once',
-    content: 'Yeni basladim ama ben de cok memnunum. Dokumantasyon da cok iyi, kurulumu cok kolay yaptim. 😊',
+    created: '30 dakika önce',
+    content: 'Yeni basladim ama ben de çok memnunum. Dokumantasyon da çok iyi, kurulumu çok kolay yaptim. 😊',
     likes: 3,
     hasLiked: false,
     isEdited: false,
@@ -1169,14 +1169,14 @@ const newReply = ref('')
 
 // Default badges for fallback
 const defaultBadges = [
-  { id: 1, name: 'Aktif Uye', icon: 'zap', color: 'linear-gradient(135deg, #f97316, #ea580c)' }
+  { id: 1, name: 'Aktif Üye', icon: 'zap', color: 'linear-gradient(135deg, #f97316, #ea580c)' }
 ]
 
 // Sort options
 const sortOptions = [
   { label: 'En Eski', value: 'oldest' },
   { label: 'En Yeni', value: 'newest' },
-  { label: 'En Cok Begenilen', value: 'likes' }
+  { label: 'En Çok Begenilen', value: 'likes' }
 ]
 
 // Editor tools
@@ -1227,12 +1227,12 @@ const socialShareOptions = [
 
 // Post action options
 const postActionOptions = [
-  { label: 'Duzenle', key: 'edit', icon: () => h(EditIcon, { class: 'w-4 h-4' }) },
+  { label: 'Düzenle', key: 'edit', icon: () => h(EditIcon, { class: 'w-4 h-4' }) },
   { label: 'Sil', key: 'delete', icon: () => h(Trash2Icon, { class: 'w-4 h-4' }) }
 ]
 
 const replyActionOptions = [
-  { label: 'Duzenle', key: 'edit' },
+  { label: 'Düzenle', key: 'edit' },
   { label: 'Sil', key: 'delete' }
 ]
 
@@ -1254,7 +1254,7 @@ const renderedContent = computed(() => {
 })
 
 const previewContent = computed(() => {
-  return renderMarkdown(newReply.value || '*Onizleme icin bir seyler yazin...*')
+  return renderMarkdown(newReply.value || '*Onizleme için bir seyler yazin...*')
 })
 
 const shareUrl = computed(() => {
@@ -1294,10 +1294,10 @@ function getRoleBadgeClass(role, size = 'normal') {
 
   const roleClasses = {
     'Admin': 'role-admin',
-    'Moderator': 'role-mod',
-    'VIP Uye': 'role-vip',
-    'Uye': 'role-member',
-    'Yeni Uye': 'role-newbie'
+    'Moderatör': 'role-mod',
+    'VIP Üye': 'role-vip',
+    'Üye': 'role-member',
+    'Yeni Üye': 'role-newbie'
   }
 
   return `${baseClass} ${roleClasses[role] || 'role-member'}`
@@ -1306,10 +1306,10 @@ function getRoleBadgeClass(role, size = 'normal') {
 function getRoleIcon(role) {
   const icons = {
     'Admin': CrownIcon,
-    'Moderator': ShieldIcon,
-    'VIP Uye': StarIcon,
-    'Uye': UserIcon,
-    'Yeni Uye': UsersIcon
+    'Moderatör': ShieldIcon,
+    'VIP Üye': StarIcon,
+    'Üye': UserIcon,
+    'Yeni Üye': UsersIcon
   }
   return icons[role] || UserIcon
 }
@@ -1379,7 +1379,7 @@ function likeTopic() {
       }, 600)
     }
 
-    window.$message?.success(hasLikedTopic.value ? 'Begenildi' : 'Begeni kaldirildi')
+    window.$message?.success(hasLikedTopic.value ? 'Begenildi' : 'Begeni kaldırildi')
   }
 }
 
@@ -1388,13 +1388,13 @@ function likeReply(replyId) {
   if (reply) {
     reply.hasLiked = !reply.hasLiked
     reply.likes += reply.hasLiked ? 1 : -1
-    window.$message?.success(reply.hasLiked ? 'Begenildi' : 'Begeni kaldirildi')
+    window.$message?.success(reply.hasLiked ? 'Begenildi' : 'Begeni kaldırildi')
   }
 }
 
 function bookmarkTopic() {
   hasBookmarked.value = !hasBookmarked.value
-  window.$message?.success(hasBookmarked.value ? 'Yer isaretlerine eklendi' : 'Yer isaretlerinden kaldirildi')
+  window.$message?.success(hasBookmarked.value ? 'Yer isaretlerine eklendi' : 'Yer isaretlerinden kaldırildi')
 }
 
 function quoteReply(reply) {
@@ -1428,7 +1428,7 @@ function scrollToReply(replyId) {
   // Copy link to clipboard
   const url = `${window.location.origin}${window.location.pathname}#reply-${replyId}`
   navigator.clipboard.writeText(url)
-  window.$message?.success('Yanit linki kopyalandi')
+  window.$message?.success('Yanıt linki kopyalandi')
 }
 
 function scrollToReplyForm() {
@@ -1478,7 +1478,7 @@ function submitReport() {
     showReportModal.value = false
     reportForm.value = { reason: null, description: '' }
   } else {
-    window.$message?.error('Lutfen bir neden secin')
+    window.$message?.error('Lütfen bir neden secin')
   }
 }
 
@@ -1516,7 +1516,7 @@ function saveEdit() {
         reply.isEdited = true
       }
     }
-    window.$message?.success('Gonderi guncellendi')
+    window.$message?.success('Gönderi güncellendi')
     showEditModal.value = false
     editingItem.value = null
     editContent.value = ''
@@ -1531,7 +1531,7 @@ function confirmDelete() {
         replies.value.splice(index, 1)
       }
     }
-    window.$message?.success('Gonderi silindi')
+    window.$message?.success('Gönderi silindi')
     showDeleteModal.value = false
     deletingItem.value = null
   }
@@ -1573,7 +1573,7 @@ function applyFormat(action) {
       cursorOffset = selectedText ? -1 : -4
       break
     case 'image':
-      replacement = `![${selectedText || 'resim aciklamasi'}](url)`
+      replacement = `![${selectedText || 'resim açıklamasi'}](url)`
       cursorOffset = selectedText ? -1 : -4
       break
   }
@@ -1621,7 +1621,7 @@ function loadDraft() {
   const draft = localStorage.getItem(`forum_draft_${topicId}`)
   if (draft) {
     newReply.value = draft
-    window.$message?.info('Taslak yuklendi')
+    window.$message?.info('Taslak yüklendi')
   }
 }
 
@@ -1639,13 +1639,13 @@ async function submitReply() {
       author: 'CurrentUser',
       authorId: currentUserId.value,
       authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=current',
-      authorRole: 'Uye',
+      authorRole: 'Üye',
       authorLevel: 15,
       authorXpProgress: 40,
       authorPosts: 15,
       authorJoined: 'Oca 2025',
       authorOnline: true,
-      created: 'Az once',
+      created: 'Az önce',
       content: newReply.value,
       likes: 0,
       hasLiked: false,
@@ -1662,7 +1662,7 @@ async function submitReply() {
     quotedReply.value = null
     localStorage.removeItem(`forum_draft_${topicId}`)
 
-    window.$message?.success('Yanitiniz gonderildi')
+    window.$message?.success('Yanıtiniz gönderildi')
 
     // Scroll to new reply
     nextTick(() => {

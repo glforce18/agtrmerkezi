@@ -8,13 +8,13 @@
             <Package :size="28" class="title-icon" />
             Paket Yonetimi
           </h1>
-          <p class="subtitle">Sunucu paketlerini yonet ve fiyatlandirmayi duzenle</p>
+          <p class="subtitle">Sunucu paketlerini yonet ve fiyatlandirmayi düzenle</p>
         </div>
         <div class="header-actions">
           <button class="btn-secondary" @click="togglePreviewMode">
             <Eye v-if="!previewMode" :size="18" />
             <EyeOff v-else :size="18" />
-            {{ previewMode ? 'Duzenle' : 'Onizleme' }}
+            {{ previewMode ? 'Düzenle' : 'Onizleme' }}
           </button>
           <button class="btn-primary" @click="openCreateModal">
             <Plus :size="18" />
@@ -49,7 +49,7 @@
           </div>
           <div class="stat-content">
             <span class="stat-value">{{ totalSales }}</span>
-            <span class="stat-label">Toplam Satis</span>
+            <span class="stat-label">Toplam Satış</span>
           </div>
         </div>
         <div class="stat-card">
@@ -103,21 +103,21 @@
         <div class="loading-spinner">
           <Loader2 :size="40" class="spin" />
         </div>
-        <span>Paketler yukleniyor...</span>
+        <span>Paketler yükleniyor...</span>
       </div>
 
       <!-- Preview Mode - User View -->
       <div v-else-if="previewMode" class="preview-mode">
         <div class="preview-header">
           <Monitor :size="20" />
-          <span>Kullanici Gorunumu Onizlemesi</span>
+          <span>Kullanıcı Görünümu Onizlemesi</span>
         </div>
         <div class="preview-container">
-          <div class="pricing-grid">
+          <div class="priçing-grid">
             <div
               v-for="(pkg, index) in sortedPackages"
               :key="pkg.id"
-              class="pricing-card"
+              class="priçing-card"
               :class="{
                 popular: pkg.is_popular,
                 inactive: !pkg.is_active
@@ -136,15 +136,15 @@
                 POPULER
               </div>
 
-              <div class="pricing-header">
+              <div class="priçing-header">
                 <span class="game-tag" :class="pkg.game_type">
                   {{ getGameLabel(pkg.game_type) }}
                 </span>
-                <h3 class="pricing-name">{{ pkg.name }}</h3>
-                <p class="pricing-desc">{{ pkg.description || 'Profesyonel oyun sunucusu paketi' }}</p>
+                <h3 class="priçing-name">{{ pkg.name }}</h3>
+                <p class="priçing-desc">{{ pkg.description || 'Profesyonel oyun sunucusu paketi' }}</p>
               </div>
 
-              <div class="pricing-price">
+              <div class="priçing-price">
                 <span v-if="pkg.discount_percent" class="original-price">
                   {{ pkg.price_monthly }} TL
                 </span>
@@ -155,7 +155,7 @@
                 </div>
               </div>
 
-              <div class="pricing-specs">
+              <div class="priçing-specs">
                 <div class="spec-item">
                   <Users :size="16" />
                   <span>{{ pkg.slots }} Oyuncu Slotu</span>
@@ -166,7 +166,7 @@
                 </div>
               </div>
 
-              <div class="pricing-features">
+              <div class="priçing-features">
                 <div
                   v-for="feature in (pkg.features || []).slice(0, 6)"
                   :key="feature"
@@ -176,13 +176,13 @@
                   <span>{{ getFeatureLabel(feature) }}</span>
                 </div>
                 <div v-if="(pkg.features || []).length > 6" class="feature-more">
-                  +{{ pkg.features.length - 6 }} ozellik daha
+                  +{{ pkg.features.length - 6 }} özellik daha
                 </div>
               </div>
 
-              <button class="pricing-btn" :class="{ popular: pkg.is_popular }">
+              <button class="priçing-btn" :class="{ popular: pkg.is_popular }">
                 <ShoppingCart :size="18" />
-                Satin Al
+                Satın Al
               </button>
             </div>
           </div>
@@ -247,7 +247,7 @@
               <!-- Package Info -->
               <div class="package-info">
                 <h3 class="package-name">{{ pkg.name }}</h3>
-                <p class="package-desc">{{ pkg.description || 'Aciklama yok' }}</p>
+                <p class="package-desc">{{ pkg.description || 'Açıklama yok' }}</p>
               </div>
 
               <!-- Package Specs -->
@@ -296,7 +296,7 @@
               <div class="stats-row">
                 <div class="mini-stat">
                   <ShoppingCart :size="14" />
-                  <span>{{ pkg.total_sales || 0 }} satis</span>
+                  <span>{{ pkg.total_sales || 0 }} satış</span>
                 </div>
                 <div class="mini-stat">
                   <TrendingUp :size="14" />
@@ -309,7 +309,7 @@
                 <button class="action-btn preview" @click="previewPackage(pkg)" title="Onizle">
                   <Eye :size="16" />
                 </button>
-                <button class="action-btn edit" @click="editPackage(pkg)" title="Duzenle">
+                <button class="action-btn edit" @click="editPackage(pkg)" title="Düzenle">
                   <Edit2 :size="16" />
                 </button>
                 <button class="action-btn duplicate" @click="duplicatePackage(pkg)" title="Kopyala">
@@ -328,10 +328,10 @@
               <Package :size="64" />
             </div>
             <h3>Paket Bulunamadi</h3>
-            <p>Arama kriterlerinize uygun paket yok veya henuz paket olusturmadiniz.</p>
+            <p>Arama kriterlerinize uygun paket yok veya henuz paket oluşturmadiniz.</p>
             <button class="btn-primary" @click="openCreateModal">
               <Plus :size="18" />
-              Ilk Paketinizi Olusturun
+              Ilk Paketinizi Oluştürün
             </button>
           </div>
         </div>
@@ -346,7 +346,7 @@
               <div class="modal-header">
                 <div class="modal-title">
                   <component :is="editingPackage ? Edit2 : Plus" :size="20" />
-                  <h3>{{ editingPackage ? 'Paketi Duzenle' : 'Yeni Paket Olustur' }}</h3>
+                  <h3>{{ editingPackage ? 'Paketi Düzenle' : 'Yeni Paket Oluştur' }}</h3>
                 </div>
                 <div class="modal-header-actions">
                   <button
@@ -409,16 +409,16 @@
                       </div>
                     </div>
                     <div class="form-group full">
-                      <label>Aciklama</label>
+                      <label>Açıklama</label>
                       <textarea
                         v-model="form.description"
                         rows="2"
-                        placeholder="Bu paket profesyonel oyuncular icin tasarlandi..."
+                        placeholder="Bu paket profesyonel oyuncular için tasarlandi..."
                       ></textarea>
                     </div>
                   </div>
 
-                  <!-- Pricing -->
+                  <!-- Priçing -->
                   <div class="form-section">
                     <h4 class="section-title">
                       <DollarSign :size="16" />
@@ -438,7 +438,7 @@
                         </div>
                       </div>
                       <div class="form-group">
-                        <label>Indirim Orani (%)</label>
+                        <label>İndirim Orani (%)</label>
                         <div class="input-with-icon">
                           <input
                             v-model.number="form.discount_percent"
@@ -450,7 +450,7 @@
                         </div>
                       </div>
                       <div class="form-group">
-                        <label>Goruntuleme Sirasi</label>
+                        <label>Görüntüleme Sirasi</label>
                         <input
                           v-model.number="form.display_order"
                           type="number"
@@ -460,7 +460,7 @@
                     </div>
                     <div v-if="form.discount_percent > 0" class="discount-preview">
                       <Tag :size="16" />
-                      <span>Indirimli Fiyat: <strong>{{ getDiscountedPrice(form) }} TL</strong></span>
+                      <span>İndirimli Fiyat: <strong>{{ getDiscountedPrice(form) }} TL</strong></span>
                     </div>
                   </div>
 
@@ -468,7 +468,7 @@
                   <div class="form-section">
                     <h4 class="section-title">
                       <ListChecks :size="16" />
-                      Ozellikler
+                      Özellikler
                     </h4>
                     <div class="features-grid">
                       <label
@@ -494,7 +494,7 @@
                   <div class="form-section">
                     <h4 class="section-title">
                       <Settings :size="16" />
-                      Durum ve Gorunum
+                      Durum ve Görünüm
                     </h4>
                     <div class="status-options">
                       <label class="status-checkbox" :class="{ active: form.is_active }">
@@ -504,7 +504,7 @@
                         </div>
                         <div class="status-text">
                           <span class="status-label">Aktif</span>
-                          <span class="status-desc">Kullanicilara goster</span>
+                          <span class="status-desc">Kullanıcılara göster</span>
                         </div>
                       </label>
                       <label class="status-checkbox" :class="{ active: form.is_popular }">
@@ -514,7 +514,7 @@
                         </div>
                         <div class="status-text">
                           <span class="status-label">Populer</span>
-                          <span class="status-desc">Ozel rozetle vurgula</span>
+                          <span class="status-desc">Özel rozetle vurgula</span>
                         </div>
                       </label>
                     </div>
@@ -525,7 +525,7 @@
                 <div v-if="showInlinePreview" class="inline-preview">
                   <div class="preview-label">Canli Onizleme</div>
                   <div class="preview-card-wrapper">
-                    <div class="pricing-card preview-card" :class="{ popular: form.is_popular }">
+                    <div class="priçing-card preview-card" :class="{ popular: form.is_popular }">
                       <div v-if="form.discount_percent" class="discount-badge">
                         <Percent :size="14" />
                         {{ form.discount_percent }}% INDIRIM
@@ -534,14 +534,14 @@
                         <Star :size="14" />
                         POPULER
                       </div>
-                      <div class="pricing-header">
+                      <div class="priçing-header">
                         <span class="game-tag" :class="form.game_type">
                           {{ getGameLabel(form.game_type) }}
                         </span>
-                        <h3 class="pricing-name">{{ form.name || 'Paket Adi' }}</h3>
-                        <p class="pricing-desc">{{ form.description || 'Paket aciklamasi' }}</p>
+                        <h3 class="priçing-name">{{ form.name || 'Paket Adi' }}</h3>
+                        <p class="priçing-desc">{{ form.description || 'Paket açıklamasi' }}</p>
                       </div>
-                      <div class="pricing-price">
+                      <div class="priçing-price">
                         <span v-if="form.discount_percent" class="original-price">
                           {{ form.price_monthly }} TL
                         </span>
@@ -551,13 +551,13 @@
                           <span class="period">/ ay</span>
                         </div>
                       </div>
-                      <div class="pricing-specs">
+                      <div class="priçing-specs">
                         <div class="spec-item">
                           <Users :size="16" />
                           <span>{{ form.slots }} Oyuncu Slotu</span>
                         </div>
                       </div>
-                      <div class="pricing-features">
+                      <div class="priçing-features">
                         <div
                           v-for="feature in form.features.slice(0, 4)"
                           :key="feature"
@@ -567,9 +567,9 @@
                           <span>{{ getFeatureLabel(feature) }}</span>
                         </div>
                       </div>
-                      <button class="pricing-btn" :class="{ popular: form.is_popular }">
+                      <button class="priçing-btn" :class="{ popular: form.is_popular }">
                         <ShoppingCart :size="18" />
-                        Satin Al
+                        Satın Al
                       </button>
                     </div>
                   </div>
@@ -580,12 +580,12 @@
               <div class="modal-footer">
                 <button class="btn-secondary" @click="closeModal">
                   <X :size="16" />
-                  Iptal
+                  İptal
                 </button>
                 <button class="btn-primary" @click="savePackage" :disabled="saving">
                   <Loader2 v-if="saving" :size="18" class="spin" />
                   <Save v-else :size="18" />
-                  <span>{{ editingPackage ? 'Guncelle' : 'Olustur' }}</span>
+                  <span>{{ editingPackage ? 'Güncelle' : 'Oluştur' }}</span>
                 </button>
               </div>
             </div>
@@ -602,7 +602,7 @@
                 <X :size="24" />
               </button>
               <div class="preview-modal-content">
-                <div class="pricing-card preview-full" :class="{ popular: previewingPackage?.is_popular }">
+                <div class="priçing-card preview-full" :class="{ popular: previewingPackage?.is_popular }">
                   <div v-if="previewingPackage?.discount_percent" class="discount-badge">
                     <Percent :size="14" />
                     {{ previewingPackage.discount_percent }}% INDIRIM
@@ -611,14 +611,14 @@
                     <Star :size="14" />
                     POPULER
                   </div>
-                  <div class="pricing-header">
+                  <div class="priçing-header">
                     <span class="game-tag" :class="previewingPackage?.game_type">
                       {{ getGameLabel(previewingPackage?.game_type) }}
                     </span>
-                    <h3 class="pricing-name">{{ previewingPackage?.name }}</h3>
-                    <p class="pricing-desc">{{ previewingPackage?.description || 'Profesyonel oyun sunucusu paketi' }}</p>
+                    <h3 class="priçing-name">{{ previewingPackage?.name }}</h3>
+                    <p class="priçing-desc">{{ previewingPackage?.description || 'Profesyonel oyun sunucusu paketi' }}</p>
                   </div>
-                  <div class="pricing-price">
+                  <div class="priçing-price">
                     <span v-if="previewingPackage?.discount_percent" class="original-price">
                       {{ previewingPackage?.price_monthly }} TL
                     </span>
@@ -628,7 +628,7 @@
                       <span class="period">/ ay</span>
                     </div>
                   </div>
-                  <div class="pricing-specs">
+                  <div class="priçing-specs">
                     <div class="spec-item">
                       <Users :size="16" />
                       <span>{{ previewingPackage?.slots }} Oyuncu Slotu</span>
@@ -638,7 +638,7 @@
                       <span>DDoS Koruma</span>
                     </div>
                   </div>
-                  <div class="pricing-features">
+                  <div class="priçing-features">
                     <div
                       v-for="feature in (previewingPackage?.features || [])"
                       :key="feature"
@@ -648,9 +648,9 @@
                       <span>{{ getFeatureLabel(feature) }}</span>
                     </div>
                   </div>
-                  <button class="pricing-btn" :class="{ popular: previewingPackage?.is_popular }">
+                  <button class="priçing-btn" :class="{ popular: previewingPackage?.is_popular }">
                     <ShoppingCart :size="18" />
-                    Satin Al
+                    Satın Al
                   </button>
                 </div>
               </div>
@@ -669,10 +669,10 @@
               </div>
               <h3>Paketi Sil</h3>
               <p>"<strong>{{ deletingPackage?.name }}</strong>" paketini silmek istediginize emin misiniz?</p>
-              <p class="warning-text">Bu islem geri alinamaz!</p>
+              <p class="warning-text">Bu işlem geri alinamaz!</p>
               <div class="confirm-actions">
                 <button class="btn-secondary" @click="showDeleteModal = false">
-                  Iptal
+                  İptal
                 </button>
                 <button class="btn-danger" @click="deletePackage" :disabled="deleting">
                   <Loader2 v-if="deleting" :size="16" class="spin" />
@@ -767,7 +767,7 @@ const availableFeatures = [
   { value: 'statsme', label: 'StatsMe' },
   { value: '247_support', label: '7/24 Destek' },
   { value: 'auto_backup', label: 'Otomatik Yedekleme' },
-  { value: 'custom_domain', label: 'Ozel Domain' },
+  { value: 'custom_domain', label: 'Özel Domain' },
   { value: 'priority_support', label: 'Oncelikli Destek' }
 ]
 
@@ -889,7 +889,7 @@ const fetchPackages = async () => {
     }
   } catch (e) {
     // Error handled
-    showToast('Paketler yuklenirken hata olustu', 'error')
+    showToast('Paketler yüklenirken hata olustu', 'error')
   }
   loading.value = false
 }
@@ -955,7 +955,7 @@ const closeModal = () => {
 
 const savePackage = async () => {
   if (!form.name || !form.slug || !form.price_monthly) {
-    showToast('Lutfen zorunlu alanlari doldurun', 'warning')
+    showToast('Lütfen zorunlu alanlari doldürün', 'warning')
     return
   }
 
@@ -974,10 +974,10 @@ const savePackage = async () => {
     if (res.ok) {
       await fetchPackages()
       closeModal()
-      showToast(editingPackage.value ? 'Paket guncellendi' : 'Paket olusturuldu', 'success')
+      showToast(editingPackage.value ? 'Paket güncellendi' : 'Paket oluşturuldu', 'success')
     } else {
       const data = await res.json()
-      showToast(data.detail || 'Kaydetme basarisiz', 'error')
+      showToast(data.detail || 'Kaydetme başarısız', 'error')
     }
   } catch (e) {
     showToast('Bir hata olustu', 'error')
@@ -1006,7 +1006,7 @@ const deletePackage = async () => {
       showToast('Paket silindi', 'success')
     } else {
       const data = await res.json()
-      showToast(data.detail || 'Silme basarisiz', 'error')
+      showToast(data.detail || 'Silme başarısız', 'error')
     }
   } catch (e) {
     showToast('Bir hata olustu', 'error')
@@ -1023,7 +1023,7 @@ const toggleActive = async (pkg) => {
     })
     if (res.ok) {
       pkg.is_active = !pkg.is_active
-      showToast(pkg.is_active ? 'Paket aktiflestirildi' : 'Paket pasif yapildi', 'success')
+      showToast(pkg.is_active ? 'Paket aktiflestirildi' : 'Paket pasif yapıldı', 'success')
     }
   } catch (e) {
     // Error handled
@@ -1106,10 +1106,10 @@ const onDrop = async () => {
           })
         }
       }
-      showToast('Siralama guncellendi', 'success')
+      showToast('Siralama güncellendi', 'success')
     } catch (e) {
       // Error handled
-      showToast('Siralama guncellenemedi', 'error')
+      showToast('Siralama güncellenemedi', 'error')
     }
   }
 
@@ -1867,8 +1867,8 @@ onMounted(fetchPackages)
   border: 1px solid var(--card-border);
 }
 
-/* Pricing Grid (User View) */
-.pricing-grid {
+/* Priçing Grid (User View) */
+.priçing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
@@ -1876,7 +1876,7 @@ onMounted(fetchPackages)
   margin: 0 auto;
 }
 
-.pricing-card {
+.priçing-card {
   background: linear-gradient(180deg, rgba(30, 30, 35, 0.9) 0%, rgba(20, 20, 24, 0.95) 100%);
   border: 1px solid var(--card-border);
   border-radius: 24px;
@@ -1887,7 +1887,7 @@ onMounted(fetchPackages)
   overflow: hidden;
 }
 
-.pricing-card::before {
+.priçing-card::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1899,27 +1899,27 @@ onMounted(fetchPackages)
   transition: opacity 0.3s;
 }
 
-.pricing-card:hover {
+.priçing-card:hover {
   border-color: var(--card-hover-border);
   transform: translateY(-8px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px rgba(249, 115, 22, 0.1);
 }
 
-.pricing-card:hover::before {
+.priçing-card:hover::before {
   opacity: 1;
 }
 
-.pricing-card.popular {
+.priçing-card.popular {
   border-color: rgba(249, 115, 22, 0.4);
   box-shadow: 0 0 40px rgba(249, 115, 22, 0.15);
 }
 
-.pricing-card.popular::before {
+.priçing-card.popular::before {
   opacity: 1;
   background: linear-gradient(90deg, var(--accent-orange), var(--accent-orange-light), var(--accent-orange));
 }
 
-.pricing-card.inactive {
+.priçing-card.inactive {
   opacity: 0.5;
   filter: grayscale(0.5);
 }
@@ -1963,8 +1963,8 @@ onMounted(fetchPackages)
   50% { transform: scale(1.05); }
 }
 
-/* Pricing Header */
-.pricing-header {
+/* Priçing Header */
+.priçing-header {
   text-align: center;
   margin-bottom: 24px;
   padding-top: 20px;
@@ -1994,22 +1994,22 @@ onMounted(fetchPackages)
   color: var(--accent-blue);
 }
 
-.pricing-name {
+.priçing-name {
   font-size: 24px;
   font-weight: 800;
   color: var(--text-primary);
   margin: 0 0 8px;
 }
 
-.pricing-desc {
+.priçing-desc {
   font-size: 14px;
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.5;
 }
 
-/* Pricing Price */
-.pricing-price {
+/* Priçing Price */
+.priçing-price {
   text-align: center;
   padding: 24px 0;
   margin-bottom: 24px;
@@ -2025,14 +2025,14 @@ onMounted(fetchPackages)
   margin-bottom: 4px;
 }
 
-.pricing-price .current-price {
+.priçing-price .current-price {
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 4px;
 }
 
-.pricing-price .amount {
+.priçing-price .amount {
   font-size: 48px;
   font-weight: 900;
   background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-orange-light) 100%);
@@ -2041,19 +2041,19 @@ onMounted(fetchPackages)
   background-clip: text;
 }
 
-.pricing-price .currency {
+.priçing-price .currency {
   font-size: 24px;
   font-weight: 700;
   color: var(--accent-orange);
 }
 
-.pricing-price .period {
+.priçing-price .period {
   font-size: 16px;
   color: var(--text-secondary);
 }
 
-/* Pricing Specs */
-.pricing-specs {
+/* Priçing Specs */
+.priçing-specs {
   display: flex;
   justify-content: center;
   gap: 24px;
@@ -2072,8 +2072,8 @@ onMounted(fetchPackages)
   color: var(--accent-orange);
 }
 
-/* Pricing Features */
-.pricing-features {
+/* Priçing Features */
+.priçing-features {
   margin-bottom: 24px;
 }
 
@@ -2104,8 +2104,8 @@ onMounted(fetchPackages)
   font-weight: 500;
 }
 
-/* Pricing Button */
-.pricing-btn {
+/* Priçing Button */
+.priçing-btn {
   width: 100%;
   display: flex;
   align-items: center;
@@ -2122,20 +2122,20 @@ onMounted(fetchPackages)
   transition: all 0.3s ease;
 }
 
-.pricing-btn:hover {
+.priçing-btn:hover {
   border-color: var(--accent-orange);
   background: rgba(249, 115, 22, 0.1);
   color: var(--accent-orange);
 }
 
-.pricing-btn.popular {
+.priçing-btn.popular {
   background: linear-gradient(135deg, var(--accent-orange) 0%, #ea580c 100%);
   border: none;
   color: white;
   box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
 }
 
-.pricing-btn.popular:hover {
+.priçing-btn.popular:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(249, 115, 22, 0.5);
 }
@@ -2785,7 +2785,7 @@ onMounted(fetchPackages)
     grid-template-columns: 1fr;
   }
 
-  .pricing-grid {
+  .priçing-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2817,11 +2817,11 @@ onMounted(fetchPackages)
     padding: 20px;
   }
 
-  .pricing-card {
+  .priçing-card {
     padding: 24px;
   }
 
-  .pricing-price .amount {
+  .priçing-price .amount {
     font-size: 36px;
   }
 }

@@ -68,7 +68,7 @@
               <!-- Verification Badge -->
               <div v-if="user?.verified" class="verification-badge">
                 <CheckCircleIcon class="w-4 h-4" />
-                <span>Dogrulanmis</span>
+                <span>Doğrulanmis</span>
               </div>
 
               <!-- Role Badge -->
@@ -101,7 +101,7 @@
                 </div>
                 <div class="stat-content">
                   <span class="stat-value">{{ user?.forum_posts || 0 }}</span>
-                  <span class="stat-label">Forum Gonderi</span>
+                  <span class="stat-label">Forum Gönderi</span>
                 </div>
               </div>
 
@@ -111,7 +111,7 @@
                 </div>
                 <div class="stat-content">
                   <span class="stat-value">{{ formatMemberSince(user?.created_at) }}</span>
-                  <span class="stat-label">Uye</span>
+                  <span class="stat-label">Üye</span>
                 </div>
               </div>
 
@@ -161,7 +161,7 @@
                 </svg>
                 <div class="progress-content">
                   <span class="progress-value">{{ profileCompleteness }}%</span>
-                  <span class="progress-label">Tamamlandi</span>
+                  <span class="progress-label">Tamamlandı</span>
                 </div>
               </div>
               <h4 class="text-sm font-medium mt-4 text-center">Profil Durumu</h4>
@@ -213,7 +213,7 @@
                       </div>
                       <n-input
                         v-model:value="profileForm.username"
-                        placeholder="Kullanici Adi"
+                        placeholder="Kullanıcı Adı"
                         class="modern-input"
                         :status="validationStatus.username"
                       />
@@ -294,10 +294,10 @@
                   </div>
 
                   <div class="flex justify-end gap-3 pt-2">
-                    <n-button quaternary size="large" class="btn-cancel">Iptal</n-button>
+                    <n-button quaternary size="large" class="btn-cancel">İptal</n-button>
                     <n-button type="primary" size="large" attr-type="submit" :loading="saving" class="btn-save">
                       <template #icon><SaveIcon class="w-4 h-4" /></template>
-                      Degisiklikleri Kaydet
+                      Değişiklikleri Kaydet
                     </n-button>
                   </div>
                 </n-form>
@@ -338,7 +338,7 @@
                       ghost
                       @click="disconnectAccount('steam')"
                     >
-                      Kaldir
+                      Kaldır
                     </n-button>
                     <n-button
                       v-else
@@ -372,7 +372,7 @@
                       ghost
                       @click="disconnectAccount('discord')"
                     >
-                      Kaldir
+                      Kaldır
                     </n-button>
                     <n-button
                       v-else
@@ -421,7 +421,7 @@
               <div class="section-icon">
                 <KeyIcon class="w-5 h-5" />
               </div>
-              <h3 class="section-title">Sifre Degistir</h3>
+              <h3 class="section-title">Şifre Degistir</h3>
             </div>
 
             <n-form @submit.prevent="changePassword" class="space-y-5">
@@ -433,7 +433,7 @@
                   v-model:value="passwordForm.current_password"
                   type="password"
                   show-password-on="click"
-                  placeholder="Mevcut Sifre"
+                  placeholder="Mevcut Şifre"
                   class="modern-input"
                 />
               </div>
@@ -447,7 +447,7 @@
                     v-model:value="passwordForm.new_password"
                     type="password"
                     show-password-on="click"
-                    placeholder="Yeni Sifre"
+                    placeholder="Yeni Şifre"
                     class="modern-input"
                     @input="checkPasswordStrength"
                   />
@@ -461,7 +461,7 @@
                     v-model:value="passwordForm.confirm_password"
                     type="password"
                     show-password-on="click"
-                    placeholder="Yeni Sifre (Tekrar)"
+                    placeholder="Yeni Şifre (Tekrar)"
                     class="modern-input"
                     :status="passwordForm.confirm_password && passwordForm.new_password !== passwordForm.confirm_password ? 'error' : undefined"
                   />
@@ -471,7 +471,7 @@
               <!-- Password Strength Meter -->
               <div v-if="passwordForm.new_password" class="password-strength-section">
                 <div class="strength-header">
-                  <span class="text-sm text-gray-400">Sifre Gucu</span>
+                  <span class="text-sm text-gray-400">Şifre Gucu</span>
                   <span class="strength-text" :class="strengthClass">{{ strengthText }}</span>
                 </div>
                 <div class="strength-bars">
@@ -489,11 +489,11 @@
                   </div>
                   <div class="requirement" :class="{ 'met': passwordChecks.hasUpper }">
                     <component :is="passwordChecks.hasUpper ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" />
-                    <span>Buyuk harf</span>
+                    <span>Büyük harf</span>
                   </div>
                   <div class="requirement" :class="{ 'met': passwordChecks.hasLower }">
                     <component :is="passwordChecks.hasLower ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" />
-                    <span>Kucuk harf</span>
+                    <span>Küçük harf</span>
                   </div>
                   <div class="requirement" :class="{ 'met': passwordChecks.hasNumber }">
                     <component :is="passwordChecks.hasNumber ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" />
@@ -501,7 +501,7 @@
                   </div>
                   <div class="requirement" :class="{ 'met': passwordChecks.hasSpecial }">
                     <component :is="passwordChecks.hasSpecial ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" />
-                    <span>Ozel karakter</span>
+                    <span>Özel karakter</span>
                   </div>
                 </div>
               </div>
@@ -509,7 +509,7 @@
               <div class="flex justify-end">
                 <n-button type="primary" size="large" attr-type="submit" :loading="savingPassword" class="btn-save">
                   <template #icon><LockIcon class="w-4 h-4" /></template>
-                  Sifreyi Guncelle
+                  Şifreyi Güncelle
                 </n-button>
               </div>
             </n-form>
@@ -520,7 +520,7 @@
             <n-alert type="info" :bordered="false">
               <template #icon><InfoIcon class="w-5 h-5" /></template>
               <template #header>OAuth Hesabi</template>
-              Steam veya Discord ile giris yaptiginiz icin sifre belirlemeniz gerekmemektedir.
+              Steam veya Discord ile giriş yaptiginiz için şifre belirlemeniz gerekmemektedir.
             </n-alert>
           </div>
 
@@ -530,7 +530,7 @@
               <div class="section-icon">
                 <ShieldCheckIcon class="w-5 h-5" />
               </div>
-              <h3 class="section-title">Iki Faktorlu Dogrulama (2FA)</h3>
+              <h3 class="section-title">Iki Faktorlu Doğrulama (2FA)</h3>
               <n-tag
                 :type="user?.two_factor_enabled ? 'success' : 'warning'"
                 size="medium"
@@ -542,7 +542,7 @@
             </div>
 
             <p class="text-gray-400 mb-6">
-              Iki faktorlu dogrulama, hesabiniza ek bir guvenlik katmani ekler.
+              Iki faktorlu doğrulama, hesabınıza ek bir guvenlik katmani ekler.
             </p>
 
             <!-- 2FA Not Enabled -->
@@ -570,7 +570,7 @@
                     <CheckIcon v-if="twoFAStep > 2" class="w-4 h-4" />
                     <span v-else>2</span>
                   </div>
-                  <span class="step-label">Dogrula</span>
+                  <span class="step-label">Doğrula</span>
                 </div>
                 <div class="step-line" :class="{ 'active': twoFAStep > 2 }"></div>
                 <div class="wizard-step" :class="{ 'active': twoFAStep >= 3 }">
@@ -593,10 +593,10 @@
                     </div>
                   </div>
                 </div>
-                <p class="text-sm text-gray-500 mt-4 mb-2">Manuel giris kodu:</p>
+                <p class="text-sm text-gray-500 mt-4 mb-2">Manuel giriş kodu:</p>
                 <code class="secret-code">{{ twoFASecret }}</code>
                 <div class="flex justify-center gap-3 mt-6">
-                  <n-button size="large" quaternary @click="cancel2FASetup">Iptal</n-button>
+                  <n-button size="large" quaternary @click="cancel2FASetup">İptal</n-button>
                   <n-button size="large" type="primary" @click="twoFAStep = 2" class="btn-save">
                     Devam Et
                     <template #icon><ArrowRightIcon class="w-4 h-4" /></template>
@@ -620,7 +620,7 @@
                 <div class="flex justify-center gap-3 mt-6">
                   <n-button size="large" quaternary @click="twoFAStep = 1">Geri</n-button>
                   <n-button size="large" type="primary" :loading="verifying2FA" @click="verify2FACode" class="btn-save">
-                    Dogrula
+                    Doğrula
                   </n-button>
                 </div>
               </div>
@@ -642,7 +642,7 @@
                 <div class="flex justify-center gap-3 mt-6">
                   <n-button size="large" @click="downloadBackupCodes">
                     <template #icon><DownloadIcon class="w-4 h-4" /></template>
-                    Kodlari Indir
+                    Kodlari İndir
                   </n-button>
                   <n-button size="large" type="primary" @click="finish2FASetup" class="btn-save">
                     Tamamla
@@ -655,7 +655,7 @@
             <div v-else-if="user?.two_factor_enabled" class="space-y-4">
               <n-alert type="success" :bordered="false">
                 <template #icon><ShieldCheckIcon class="w-5 h-5" /></template>
-                2FA hesabinizda aktif durumda!
+                2FA hesabınızda aktif durumda!
               </n-alert>
               <div class="flex flex-wrap gap-3">
                 <n-button @click="show2FABackupCodes = true">
@@ -739,7 +739,7 @@
                   <MailIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>E-posta Bildirimleri</h4>
-                    <p>Onemli guncellemeler icin e-posta alin</p>
+                    <p>Onemli güncellemeler için e-posta alin</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.email_notifications" :disabled="!hasEmail" />
@@ -750,7 +750,7 @@
                   <ServerIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>Sunucu Uyarilari</h4>
-                    <p>Sunucu durumu degisikliklerinde bildirim alin</p>
+                    <p>Sunucu durumu değişikliklerinde bildirim alin</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.server_alerts" />
@@ -806,7 +806,7 @@
                   <CircleDotIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>Online Durumu</h4>
-                    <p>Diger kullanicilarin online durumunuzu gormesine izin verin</p>
+                    <p>Diger kullanıcılarin online durumunuzu gormesine izin verin</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.show_online_status" />
@@ -817,7 +817,7 @@
                   <ActivityIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>Aktivite Gecmisi</h4>
-                    <p>Aktivite gecmisinizi profilinizde gosterin</p>
+                    <p>Aktivite gecmisinizi profilinizde gösterin</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.show_activity" />
@@ -828,7 +828,7 @@
                   <ServerIcon class="w-5 h-5 text-gray-400" />
                   <div>
                     <h4>Sunucu Listesi</h4>
-                    <p>Sunucularinizi profilinizde gosterin</p>
+                    <p>Sunucularinizi profilinizde gösterin</p>
                   </div>
                 </div>
                 <n-switch v-model:value="settings.show_servers" />
@@ -852,13 +852,13 @@
               </div>
               <h3 class="section-title text-red-500">Tehlikeli Bolge</h3>
             </div>
-            <p class="text-gray-400 mb-6">Bu islemler geri alinamaz. Dikkatli olun.</p>
+            <p class="text-gray-400 mb-6">Bu işlemler geri alinamaz. Dikkatli olun.</p>
 
             <div class="danger-actions">
               <div class="danger-action-item">
                 <div>
                   <h4 class="font-medium">Hesabi Dondur</h4>
-                  <p class="text-sm text-gray-400">Hesabinizi gecici olarak devre disi birakin</p>
+                  <p class="text-sm text-gray-400">Hesabınızi gecici olarak devre disi birakin</p>
                 </div>
                 <n-button type="warning" ghost @click="freezeAccount">
                   <template #icon><PauseCircleIcon class="w-4 h-4" /></template>
@@ -869,7 +869,7 @@
               <div class="danger-action-item">
                 <div>
                   <h4 class="font-medium">Hesabi Sil</h4>
-                  <p class="text-sm text-gray-400">Hesabinizi ve tum verilerinizi kalici olarak silin</p>
+                  <p class="text-sm text-gray-400">Hesabınızi ve tum verilerinizi kalici olarak silin</p>
                 </div>
                 <n-button type="error" ghost @click="showDeleteConfirm = true">
                   <template #icon><Trash2Icon class="w-4 h-4" /></template>
@@ -920,7 +920,7 @@
             <div class="flex justify-center mt-6">
               <n-button quaternary :loading="loadingMore" @click="loadMoreActivities">
                 <template #icon><RefreshCwIcon class="w-4 h-4" /></template>
-                Daha Fazla Yukle
+                Daha Fazla Yükle
               </n-button>
             </div>
           </div>
@@ -944,7 +944,7 @@
           <n-button quaternary @click="show2FABackupCodes = false">Kapat</n-button>
           <n-button type="primary" @click="downloadBackupCodes" class="btn-save">
             <template #icon><DownloadIcon class="w-4 h-4" /></template>
-            Indir
+            İndir
           </n-button>
         </div>
       </template>
@@ -954,16 +954,16 @@
     <n-modal v-model:show="showDeleteConfirm" preset="card" title="Hesabi Sil" class="modal-glass">
       <n-alert type="error" :bordered="false" class="mb-6">
         <template #icon><AlertTriangleIcon class="w-5 h-5" /></template>
-        Bu islem geri alinamaz! Tum verileriniz kalici olarak silinecektir.
+        Bu işlem geri alinamaz! Tum verileriniz kalici olarak silinecektir.
       </n-alert>
       <p class="text-gray-400 mb-4">
-        Hesabinizi silmek istediginizi onaylamak icin asagiya
+        Hesabınızi silmek istediginizi onaylamak için asagiya
         <strong style="color: var(--text-primary)">"HESABIMI SIL"</strong> yazin.
       </p>
       <n-input v-model:value="deleteConfirmText" placeholder="HESABIMI SIL" class="modern-input" />
       <template #footer>
         <div class="flex justify-end gap-3">
-          <n-button quaternary @click="showDeleteConfirm = false">Iptal</n-button>
+          <n-button quaternary @click="showDeleteConfirm = false">İptal</n-button>
           <n-button
             type="error"
             :disabled="deleteConfirmText !== 'HESABIMI SIL'"
@@ -1135,7 +1135,7 @@ const getRoleBadgeStyle = (rank) => {
     'Oyuncu': { background: 'linear-gradient(135deg, #6b7280, #4b5563)', color: '#fff' },
     'VIP': { background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#fff' },
     'Premium': { background: 'linear-gradient(135deg, #eab308, #ca8a04)', color: '#000' },
-    'Moderator': { background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff' },
+    'Moderatör': { background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff' },
     'Admin': { background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff' }
   }
   return styles[rank] || styles['Oyuncu']
@@ -1156,8 +1156,8 @@ const getCompletenessMessage = () => {
   if (percent < 25) return 'Profilinizi tamamlayin!'
   if (percent < 50) return 'Iyi bir baslangic!'
   if (percent < 75) return 'Neredeyse tamam!'
-  if (percent < 100) return 'Son bir adim!'
-  return 'Profil tamamlandi!'
+  if (percent < 100) return 'Son bir adım!'
+  return 'Profil tamamlandı!'
 }
 
 // Validation
@@ -1262,11 +1262,11 @@ const strengthClass = computed(() => {
 })
 
 const strengthText = computed(() => {
-  if (passwordStrength.value <= 20) return 'Cok Zayif'
+  if (passwordStrength.value <= 20) return 'Çok Zayif'
   if (passwordStrength.value <= 40) return 'Zayif'
   if (passwordStrength.value <= 60) return 'Orta'
   if (passwordStrength.value <= 80) return 'Guclu'
-  return 'Cok Guclu'
+  return 'Çok Guclu'
 })
 
 // Sessions
@@ -1298,8 +1298,8 @@ const activities = ref([
   {
     id: 1,
     type: 'success',
-    title: 'Sifre degistirildi',
-    description: 'Hesap sifreniz basariyla guncellendi',
+    title: 'Şifre degistirildi',
+    description: 'Hesap şifreniz basariyla güncellendi',
     created_at: new Date(Date.now() - 1000 * 60 * 30),
     metadata: { IP: '192.168.1.100' }
   },
@@ -1313,15 +1313,15 @@ const activities = ref([
   {
     id: 3,
     type: 'warning',
-    title: 'Basarisiz giris denemesi',
-    description: 'Yanlis sifre girildi',
+    title: 'Başarısız giriş denemesi',
+    description: 'Yanlış şifre girildi',
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 5),
     metadata: { IP: '192.168.1.105', Konum: 'Bilinmiyor' }
   },
   {
     id: 4,
     type: 'success',
-    title: 'Sunucu olusturuldu',
+    title: 'Sunucu oluşturuldu',
     description: 'Yeni CS2 sunucusu basariyla kuruldu',
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24)
   }
@@ -1341,22 +1341,22 @@ const backupCodes = ref([
 // Achievements
 const achievements = ref([
   { id: 1, name: 'Ilk Adim', icon: RocketIcon, unlocked: true },
-  { id: 2, name: 'Sunucu Ustasi', icon: ServerIcon, unlocked: true },
+  { id: 2, name: 'Sunucu Ustaşı', icon: ServerIcon, unlocked: true },
   { id: 3, name: 'Topluluk Yildizi', icon: StarIcon, unlocked: true },
   { id: 4, name: 'Guvenlik Uzman', icon: ShieldIcon, unlocked: false },
-  { id: 5, name: 'Sadik Uye', icon: HeartIcon, unlocked: true },
+  { id: 5, name: 'Sadik Üye', icon: HeartIcon, unlocked: true },
   { id: 6, name: 'Hiz Seytani', icon: ZapIcon, unlocked: false },
   { id: 7, name: 'Hedef Avcisi', icon: TargetIcon, unlocked: false },
   { id: 8, name: 'Alev Savasci', icon: FlameIcon, unlocked: true }
 ])
 
 const allAchievements = ref([
-  { id: 1, name: 'Ilk Adim', description: 'Hesabinizi olusturun', icon: RocketIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30) },
-  { id: 2, name: 'Sunucu Ustasi', description: '5 sunucu olusturun', icon: ServerIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15) },
-  { id: 3, name: 'Topluluk Yildizi', description: 'Forumda 50 gonderi paylasim', icon: StarIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7) },
+  { id: 1, name: 'Ilk Adim', description: 'Hesabınızi oluştürün', icon: RocketIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30) },
+  { id: 2, name: 'Sunucu Ustaşı', description: '5 sunucu oluştürün', icon: ServerIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15) },
+  { id: 3, name: 'Topluluk Yildizi', description: 'Forumda 50 gönderi paylasim', icon: StarIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7) },
   { id: 4, name: 'Guvenlik Uzmani', description: '2FA\'yi etkinlestirin', icon: ShieldIcon, unlocked: false, progress: 0 },
-  { id: 5, name: 'Sadik Uye', description: '1 yillik uyelik', icon: HeartIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5) },
-  { id: 6, name: 'Hiz Seytani', description: '10 hizli islem tamamlayin', icon: ZapIcon, unlocked: false, progress: 40 },
+  { id: 5, name: 'Sadik Üye', description: '1 yillik üyelik', icon: HeartIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5) },
+  { id: 6, name: 'Hiz Seytani', description: '10 hizli işlem tamamlayin', icon: ZapIcon, unlocked: false, progress: 40 },
   { id: 7, name: 'Hedef Avcisi', description: 'Tum gorevleri tamamlayin', icon: TargetIcon, unlocked: false, progress: 75 },
   { id: 8, name: 'Alev Savasci', description: '100 oyun saati', icon: FlameIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3) },
   { id: 9, name: 'Bilge', description: 'Tum kilavuzlari okuyun', icon: BookIcon, unlocked: false, progress: 20 }
@@ -1395,9 +1395,9 @@ const updateProfile = async () => {
   try {
     await new Promise(resolve => setTimeout(resolve, 1000))
     authStore.updateUser(profileForm)
-    window.$message?.success('Profil basariyla guncellendi')
+    window.$message?.success('Profil basariyla güncellendi')
   } catch (error) {
-    window.$message?.error('Profil guncellenemedi')
+    window.$message?.error('Profil güncellenemedi')
   } finally {
     saving.value = false
   }
@@ -1406,23 +1406,23 @@ const updateProfile = async () => {
 // Password methods
 const changePassword = async () => {
   if (passwordForm.new_password !== passwordForm.confirm_password) {
-    window.$message?.error('Sifreler eslesmiyor!')
+    window.$message?.error('Şifreler eşleşmiyor!')
     return
   }
   if (passwordStrength.value < 60) {
-    window.$message?.warning('Lutfen daha guclu bir sifre secin')
+    window.$message?.warning('Lütfen daha guclu bir şifre secin')
     return
   }
   savingPassword.value = true
   try {
     await new Promise(resolve => setTimeout(resolve, 1000))
-    window.$message?.success('Sifre basariyla guncellendi')
+    window.$message?.success('Şifre basariyla güncellendi')
     passwordForm.current_password = ''
     passwordForm.new_password = ''
     passwordForm.confirm_password = ''
     passwordStrength.value = 0
   } catch (error) {
-    window.$message?.error('Sifre guncellenemedi')
+    window.$message?.error('Şifre güncellenemedi')
   } finally {
     savingPassword.value = false
   }
@@ -1442,7 +1442,7 @@ const cancel2FASetup = () => {
 
 const verify2FACode = async () => {
   if (twoFACode.value.length !== 6) {
-    window.$message?.error('Lutfen 6 haneli kodu girin')
+    window.$message?.error('Lütfen 6 haneli kodu girin')
     return
   }
   verifying2FA.value = true
@@ -1450,7 +1450,7 @@ const verify2FACode = async () => {
     await new Promise(resolve => setTimeout(resolve, 1500))
     twoFAStep.value = 3
   } catch (error) {
-    window.$message?.error('Dogrulama basarisiz')
+    window.$message?.error('Doğrulama başarısız')
   } finally {
     verifying2FA.value = false
   }
@@ -1468,7 +1468,7 @@ const disable2FA = () => {
     title: 'Uyari',
     content: '2FA\'yi devre disi birakmak istediginizden emin misiniz?',
     positiveText: 'Evet, Devre Disi Birak',
-    negativeText: 'Iptal',
+    negativeText: 'İptal',
     onPositiveClick: () => {
       window.$message?.success('2FA devre disi birakildi')
     }
@@ -1493,7 +1493,7 @@ const revokeSession = (sessionId) => {
     title: 'Oturumu Sonlandir',
     content: 'Bu oturumu sonlandirmak istediginizden emin misiniz?',
     positiveText: 'Evet',
-    negativeText: 'Iptal',
+    negativeText: 'İptal',
     onPositiveClick: () => {
       sessions.value = sessions.value.filter(s => s.id !== sessionId)
       window.$message?.success('Oturum sonlandirildi')
@@ -1506,7 +1506,7 @@ const revokeAllSessions = () => {
     title: 'Tum Oturumlari Sonlandir',
     content: 'Mevcut oturum haric tum oturumlari sonlandirmak istediginizden emin misiniz?',
     positiveText: 'Evet',
-    negativeText: 'Iptal',
+    negativeText: 'İptal',
     onPositiveClick: () => {
       sessions.value = sessions.value.filter(s => s.is_current)
       window.$message?.success('Tum oturumlar sonlandirildi')
@@ -1531,11 +1531,11 @@ const saveSettings = async () => {
 const freezeAccount = () => {
   window.$dialog?.warning({
     title: 'Hesabi Dondur',
-    content: 'Hesabinizi dondurmak istediginizden emin misiniz?',
+    content: 'Hesabınızi dondurmak istediginizden emin misiniz?',
     positiveText: 'Evet, Dondur',
-    negativeText: 'Iptal',
+    negativeText: 'İptal',
     onPositiveClick: () => {
-      window.$message?.info('Hesabiniz donduruldu')
+      window.$message?.info('Hesabınız donduruldu')
     }
   })
 }
@@ -1544,7 +1544,7 @@ const deleteAccount = async () => {
   deletingAccount.value = true
   try {
     await new Promise(resolve => setTimeout(resolve, 2000))
-    window.$message?.success('Hesabiniz silindi')
+    window.$message?.success('Hesabınız silindi')
     showDeleteConfirm.value = false
   } catch (error) {
     window.$message?.error('Hesap silinemedi')
@@ -1555,31 +1555,31 @@ const deleteAccount = async () => {
 
 // Connected accounts methods
 const connectAccount = (provider) => {
-  window.$message?.info(`${provider} hesabi baglaniyor...`)
+  window.$message?.info(`${provider} hesabi bağlaniyor...`)
 }
 
 const disconnectAccount = (provider) => {
   window.$dialog?.warning({
-    title: 'Hesap Baglantisini Kes',
-    content: 'Bu hesabin baglantisini kesmek istediginizden emin misiniz?',
+    title: 'Hesap Bağlantısini Kes',
+    content: 'Bu hesabin bağlantısini kesmek istediginizden emin misiniz?',
     positiveText: 'Evet',
-    negativeText: 'Iptal',
+    negativeText: 'İptal',
     onPositiveClick: () => {
       connectedAccounts[provider].connected = false
       connectedAccounts[provider].username = null
-      window.$message?.success('Hesap baglantisi kesildi')
+      window.$message?.success('Hesap bağlantısi kesildi')
     }
   })
 }
 
 // Upload handlers
 const handleAvatarUpload = ({ file }) => {
-  window.$message?.success('Profil fotografi yuklendi')
+  window.$message?.success('Profil fotografi yüklendi')
   showAvatarUpload.value = false
 }
 
 const handleCoverUpload = ({ file }) => {
-  window.$message?.success('Kapak fotografi yuklendi')
+  window.$message?.success('Kapak fotografi yüklendi')
   showCoverUpload.value = false
 }
 
@@ -1592,7 +1592,7 @@ const loadMoreActivities = async () => {
       id: activities.value.length + 1,
       type: 'info',
       title: 'Eski aktivite',
-      description: 'Ornek aktivite aciklamasi',
+      description: 'Ornek aktivite açıklamasi',
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
     })
   } finally {

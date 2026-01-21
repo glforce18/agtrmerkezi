@@ -8,7 +8,7 @@
  */
 const defaults = {
   title: 'AGTR Merkezi',
-  description: 'CS 1.6 ve Half-Life oyun sunuculari icin en iyi topluluk platformu',
+  description: 'CS 1.6 ve Half-Life oyun sunucuları için en iyi topluluk platformu',
   keywords: 'cs 1.6, half-life, game server, oyun sunucusu, agtr, counter-strike',
   image: '/og-image.png',
   url: typeof window !== 'undefined' ? window.location.origin : ''
@@ -171,38 +171,38 @@ export function setPageSEO({
 export const pageSEO = {
   home: {
     title: null,
-    description: 'CS 1.6 ve Half-Life oyun sunuculari icin en iyi topluluk platformu. Sunucu kirala, topluluga katil!',
+    description: 'CS 1.6 ve Half-Life oyun sunucuları için en iyi topluluk platformu. Sunucu kirala, topluluğa katıl!',
     keywords: 'cs 1.6, half-life, game server, oyun sunucusu, agtr, counter-strike, gaming community'
   },
 
   forum: {
     title: 'Forum',
-    description: 'AGTR topluluk forumu. Oyun stratejileri, sunucu ayarlari ve daha fazlasi hakkinda tartis.',
+    description: 'AGTR topluluk forumu. Oyun stratejileri, sunucu ayarları ve daha fazlası hakkında tartış.',
     keywords: 'forum, cs 1.6 forum, oyun forumu, gaming forum'
   },
 
   servers: {
     title: 'Sunucular',
-    description: 'Aktif CS 1.6 ve Half-Life sunuculari. Hemen baglan ve oynamaya basla!',
-    keywords: 'cs 1.6 servers, game servers, oyun sunuculari, server list'
+    description: 'Aktif CS 1.6 ve Half-Life sunucuları. Hemen bağlan ve oynamaya başla!',
+    keywords: 'cs 1.6 servers, game servers, oyun sunucuları, server list'
   },
 
   shop: {
-    title: 'Magaza',
-    description: 'VIP paketler, sunucu kiralama ve daha fazlasi. En uygun fiyatlarla hemen satin al!',
+    title: 'Mağaza',
+    description: 'VIP paketler, sunucu kiralama ve daha fazlası. En uygun fiyatlarla hemen satın al!',
     keywords: 'vip, sunucu kiralama, game hosting, oyun sunucusu'
   },
 
   leaderboard: {
     title: 'Lider Tablosu',
-    description: 'En iyi oyuncular, en cok puan toplayanlar. Siralamalari incele!',
+    description: 'En iyi oyuncular, en çok puan toplayanlar. Sıralamaları incele!',
     keywords: 'leaderboard, ranking, top players, en iyi oyuncular'
   },
 
   jackpot: {
     title: 'Jackpot',
-    description: 'Sansini dene, buyuk odullar kazan! AGTR Jackpot sistemi.',
-    keywords: 'jackpot, odul, gaming lottery, oyun piyangosu'
+    description: 'Şansını dene, büyük ödüller kazan! AGTR Jackpot sistemi.',
+    keywords: 'jackpot, ödül, gaming lottery, oyun piyangosu'
   }
 }
 

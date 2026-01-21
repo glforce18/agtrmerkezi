@@ -5,7 +5,7 @@
       <div class="page-header">
         <div>
           <h1 class="page-title">Tema Ayarlari</h1>
-          <p class="page-desc">Site renkleri, fontlar ve gorunumu ozelllestirin</p>
+          <p class="page-desc">Site renkleri, fontlar ve görünümu özelllestirin</p>
         </div>
         <button class="btn-primary" @click="saveTheme">
           <Save :size="18" />

@@ -4,10 +4,10 @@
       <div class="max-w-md mx-auto">
         <div class="text-center mb-8">
           <h1 class="text-3xl font-display font-bold mb-2">
-            <span class="text-gradient-orange">Sifremi Unuttum</span>
+            <span class="text-gradient-orange">Şifremi Unuttum</span>
           </h1>
           <p class="opacity-60">
-            E-posta adresinizi girin, size sifre sifirlama linki gonderelim.
+            E-posta adresinizi girin, size şifre sifirlama linki gönderelim.
           </p>
         </div>
 
@@ -28,7 +28,7 @@
 
             <button type="submit" class="btn-gaming w-full" :disabled="loading">
               <span v-if="loading" class="loading loading-spinner loading-sm"></span>
-              <span v-else>Sifirlama Linki Gonder</span>
+              <span v-else>Sifirlama Linki Gönder</span>
             </button>
           </form>
 
@@ -38,18 +38,18 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 class="text-xl font-bold mb-2">E-posta Gonderildi!</h3>
+            <h3 class="text-xl font-bold mb-2">E-posta Gönderildi!</h3>
             <p class="opacity-60 mb-4">
-              {{ email }} adresine sifre sifirlama linki gonderdik.
+              {{ email }} adresine şifre sifirlama linki gönderdik.
             </p>
             <router-link to="/login" class="btn btn-outline btn-primary">
-              Giris Sayfasina Don
+              Giriş Sayfasina Don
             </router-link>
           </div>
 
           <div class="text-center mt-6">
             <router-link to="/login" class="link link-primary text-sm">
-              Giris sayfasina don
+              Giriş sayfasina don
             </router-link>
           </div>
         </div>

@@ -92,21 +92,21 @@ export function isValidEmail(email) {
  */
 export function validateUsername(username) {
   if (!username || typeof username !== 'string') {
-    return { valid: false, error: 'Kullanici adi gerekli' }
+    return { valid: false, error: 'Kullanıcı adı gerekli' }
   }
 
   const trimmed = username.trim()
 
   if (trimmed.length < 3) {
-    return { valid: false, error: 'Kullanici adi en az 3 karakter olmali' }
+    return { valid: false, error: 'Kullanıcı adı en az 3 karakter olmalı' }
   }
 
   if (trimmed.length > 32) {
-    return { valid: false, error: 'Kullanici adi en fazla 32 karakter olmali' }
+    return { valid: false, error: 'Kullanıcı adı en fazla 32 karakter olmalı' }
   }
 
   if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
-    return { valid: false, error: 'Kullanici adi sadece harf, rakam ve alt cizgi icermeli' }
+    return { valid: false, error: 'Kullanıcı adı sadece harf, rakam ve alt çizgi içermeli' }
   }
 
   return { valid: true, error: null }
@@ -122,23 +122,23 @@ export function validatePassword(password) {
   let strength = 0
 
   if (!password || typeof password !== 'string') {
-    return { valid: false, strength: 0, errors: ['Sifre gerekli'] }
+    return { valid: false, strength: 0, errors: ['Şifre gerekli'] }
   }
 
   if (password.length >= 8) strength++
   else errors.push('En az 8 karakter')
 
   if (/[A-Z]/.test(password)) strength++
-  else errors.push('En az 1 buyuk harf')
+  else errors.push('En az 1 büyük harf')
 
   if (/[a-z]/.test(password)) strength++
-  else errors.push('En az 1 kucuk harf')
+  else errors.push('En az 1 küçük harf')
 
   if (/[0-9]/.test(password)) strength++
   else errors.push('En az 1 rakam')
 
   if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++
-  else errors.push('En az 1 ozel karakter')
+  else errors.push('En az 1 özel karakter')
 
   return {
     valid: errors.length === 0,

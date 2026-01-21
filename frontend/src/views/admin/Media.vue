@@ -15,7 +15,7 @@
             </button>
             <button class="btn-primary" @click="showUploadModal = true">
               <Upload :size="18" />
-              <span>Gorsel Yukle</span>
+              <span>Gorsel Yükle</span>
             </button>
           </div>
         </div>
@@ -54,7 +54,7 @@
                 class="toggle-btn"
                 :class="{ active: viewMode === 'grid' }"
                 @click="viewMode = 'grid'"
-                title="Izgara Gorunum"
+                title="Izgara Görünüm"
               >
                 <Grid3x3 :size="18" />
               </button>
@@ -62,7 +62,7 @@
                 class="toggle-btn"
                 :class="{ active: viewMode === 'list' }"
                 @click="viewMode = 'list'"
-                title="Liste Gorunum"
+                title="Liste Görünüm"
               >
                 <List :size="18" />
               </button>
@@ -102,7 +102,7 @@
                 <button class="bulk-btn danger" @click="bulkDelete" title="Sil">
                   <Trash2 :size="16" />
                 </button>
-                <button class="bulk-btn" @click="clearSelection" title="Secimi Temizle">
+                <button class="bulk-btn" @click="clearSelection" title="Seçimi Temizle">
                   <X :size="16" />
                 </button>
               </div>
@@ -179,7 +179,7 @@
                     <button class="action-btn" @click.stop="copyImageUrl(image)" title="URL Kopyala">
                       <Link2 :size="18" />
                     </button>
-                    <button class="action-btn" @click.stop="openEditModal(image)" title="Duzenle">
+                    <button class="action-btn" @click.stop="openEditModal(image)" title="Düzenle">
                       <Pencil :size="18" />
                     </button>
                     <button class="action-btn danger" @click.stop="deleteImage(image)" title="Sil">
@@ -219,7 +219,7 @@
               <div class="list-col size-col">Boyut</div>
               <div class="list-col dimensions-col">Cozunurluk</div>
               <div class="list-col date-col">Tarih</div>
-              <div class="list-col actions-col">Islemler</div>
+              <div class="list-col actions-col">İşlemler</div>
             </div>
             <TransitionGroup name="list" tag="div" class="list-body">
               <div
@@ -265,7 +265,7 @@
                     <button class="row-btn" @click="copyImageUrl(image)" title="URL Kopyala">
                       <Link2 :size="16" />
                     </button>
-                    <button class="row-btn" @click="openEditModal(image)" title="Duzenle">
+                    <button class="row-btn" @click="openEditModal(image)" title="Düzenle">
                       <Pencil :size="16" />
                     </button>
                     <button class="row-btn danger" @click="deleteImage(image)" title="Sil">
@@ -284,10 +284,10 @@
             </div>
             <h3>Gorsel Bulunamadi</h3>
             <p v-if="searchQuery">Arama kriterlerinize uygun gorsel yok</p>
-            <p v-else>Henuz gorsel yuklenmemis</p>
+            <p v-else>Henuz gorsel yüklenmemis</p>
             <button class="btn-primary" @click="showUploadModal = true">
               <Upload :size="18" />
-              <span>Ilk Gorseli Yukle</span>
+              <span>Ilk Gorseli Yükle</span>
             </button>
           </div>
         </div>
@@ -340,7 +340,7 @@
                     <button
                       class="preview-btn"
                       @click="editBanner(getBannerByPosition(position.id))"
-                      title="Duzenle"
+                      title="Düzenle"
                     >
                       <Pencil :size="20" />
                     </button>
@@ -397,7 +397,7 @@
                   <th>Tarih Araligi</th>
                   <th>Link</th>
                   <th>Durum</th>
-                  <th>Islemler</th>
+                  <th>İşlemler</th>
                 </tr>
               </thead>
               <tbody>
@@ -455,7 +455,7 @@
                         <button class="table-btn" @click="previewBanner(banner)" title="Onizle">
                           <Eye :size="16" />
                         </button>
-                        <button class="table-btn" @click="editBanner(banner)" title="Duzenle">
+                        <button class="table-btn" @click="editBanner(banner)" title="Düzenle">
                           <Pencil :size="16" />
                         </button>
                         <button class="table-btn danger" @click="deleteBanner(banner)" title="Sil">
@@ -472,7 +472,7 @@
               <p>Henuz banner eklenmemis</p>
               <button class="btn-primary" @click="openBannerModal()">
                 <Plus :size="18" />
-                <span>Ilk Banneri Olustur</span>
+                <span>Ilk Banneri Oluştur</span>
               </button>
             </div>
           </div>
@@ -485,7 +485,7 @@
           <div v-if="showUploadModal" class="modal-backdrop" @click.self="showUploadModal = false">
             <div class="modal upload-modal">
               <div class="modal-header">
-                <h2>Gorsel Yukle</h2>
+                <h2>Gorsel Yükle</h2>
                 <button class="modal-close" @click="showUploadModal = false">
                   <X :size="24" />
                 </button>
@@ -538,7 +538,7 @@
                 <Transition name="expand">
                   <div v-if="uploadQueue.length > 0" class="upload-queue">
                     <div class="queue-header">
-                      <span>{{ uploadQueue.length }} dosya secildi</span>
+                      <span>{{ uploadQueue.length }} dosya seçildi</span>
                       <button class="clear-queue" @click="clearUploadQueue">
                         Temizle
                       </button>
@@ -565,7 +565,7 @@
               </div>
               <div class="modal-footer">
                 <button class="btn-secondary" @click="showUploadModal = false">
-                  Iptal
+                  İptal
                 </button>
                 <button
                   class="btn-primary"
@@ -574,7 +574,7 @@
                 >
                   <Loader2 v-if="uploading" :size="18" class="spin" />
                   <Upload v-else :size="18" />
-                  <span>{{ uploading ? 'Yukleniyor...' : `${uploadQueue.length} Dosya Yukle` }}</span>
+                  <span>{{ uploading ? 'Yükleniyor...' : `${uploadQueue.length} Dosya Yükle` }}</span>
                 </button>
               </div>
             </div>
@@ -632,7 +632,7 @@
                   <span>{{ previewImage.width || '?' }}x{{ previewImage.height || '?' }}px</span>
                 </div>
                 <div class="info-group">
-                  <label>Yukleme Tarihi</label>
+                  <label>Yükleme Tarihi</label>
                   <span>{{ formatDate(previewImage.created_at) }}</span>
                 </div>
                 <div class="info-group url-group">
@@ -647,7 +647,7 @@
                 <div class="preview-actions">
                   <button class="btn-secondary" @click="openEditModal(previewImage)">
                     <Pencil :size="16" />
-                    Duzenle
+                    Düzenle
                   </button>
                   <button class="btn-danger" @click="deleteImage(previewImage)">
                     <Trash2 :size="16" />
@@ -666,7 +666,7 @@
           <div v-if="editingImage" class="modal-backdrop" @click.self="editingImage = null">
             <div class="modal edit-modal">
               <div class="modal-header">
-                <h2>Gorseli Duzenle</h2>
+                <h2>Gorseli Düzenle</h2>
                 <button class="modal-close" @click="editingImage = null">
                   <X :size="24" />
                 </button>
@@ -681,7 +681,7 @@
                 </div>
                 <div class="form-group">
                   <label>Alt Text (SEO)</label>
-                  <input v-model="editingImage.alt_text" type="text" placeholder="Gorsel aciklamasi" />
+                  <input v-model="editingImage.alt_text" type="text" placeholder="Gorsel açıklamasi" />
                 </div>
                 <div class="form-group">
                   <label>Kategori</label>
@@ -704,7 +704,7 @@
               </div>
               <div class="modal-footer">
                 <button class="btn-secondary" @click="editingImage = null">
-                  Iptal
+                  İptal
                 </button>
                 <button class="btn-primary" @click="saveImage">
                   <Save :size="18" />
@@ -722,7 +722,7 @@
           <div v-if="showBannerModal" class="modal-backdrop" @click.self="closeBannerModal">
             <div class="modal banner-modal">
               <div class="modal-header">
-                <h2>{{ editingBanner ? 'Banner Duzenle' : 'Yeni Banner' }}</h2>
+                <h2>{{ editingBanner ? 'Banner Düzenle' : 'Yeni Banner' }}</h2>
                 <button class="modal-close" @click="closeBannerModal">
                   <X :size="24" />
                 </button>
@@ -814,11 +814,11 @@
               </div>
               <div class="modal-footer">
                 <button class="btn-secondary" @click="closeBannerModal">
-                  Iptal
+                  İptal
                 </button>
                 <button class="btn-primary" @click="saveBanner">
                   <Save :size="18" />
-                  {{ editingBanner ? 'Guncelle' : 'Olustur' }}
+                  {{ editingBanner ? 'Güncelle' : 'Oluştur' }}
                 </button>
               </div>
             </div>
@@ -896,7 +896,7 @@
               </div>
               <div class="modal-footer">
                 <button class="btn-secondary" @click="showImagePicker = false">
-                  Iptal
+                  İptal
                 </button>
                 <button class="btn-primary" @click="selectPickerImage" :disabled="!pickerSelected">
                   <Check :size="18" />
@@ -1048,7 +1048,7 @@ const categories = [
   { value: 'logo', label: 'Logolar', icon: Star },
   { value: 'icon', label: 'Ikonlar', icon: Flag },
   { value: 'banner', label: 'Bannerlar', icon: LayoutTemplate },
-  { value: 'general', label: 'Yuklemeler', icon: FileImage }
+  { value: 'general', label: 'Yüklemeler', icon: FileImage }
 ]
 
 const uploadCategories = [
@@ -1328,7 +1328,7 @@ const uploadFiles = async () => {
   showUploadModal.value = false
   uploadQueue.value = []
   fetchImages()
-  showToast('Gorseller yuklendi!')
+  showToast('Gorseller yüklendi!')
 }
 
 // ============================================
@@ -1369,7 +1369,7 @@ const saveImage = async () => {
     if (response.ok) {
       editingImage.value = null
       fetchImages()
-      showToast('Gorsel guncellendi!')
+      showToast('Gorsel güncellendi!')
     }
   } catch (e) {
     // Error handled
@@ -1511,7 +1511,7 @@ const saveBanner = async () => {
     if (response.ok) {
       closeBannerModal()
       fetchBanners()
-      showToast(editingBanner.value ? 'Banner guncellendi!' : 'Banner olusturuldu!')
+      showToast(editingBanner.value ? 'Banner güncellendi!' : 'Banner oluşturuldu!')
     }
   } catch (e) {
     // Error handled

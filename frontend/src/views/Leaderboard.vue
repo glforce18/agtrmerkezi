@@ -52,7 +52,7 @@
               </div>
             </div>
             <div v-if="searchQuery && filteredData.length === 0" class="search-no-results">
-              Sonuc bulunamadi
+              Sonuc bulunamadı
             </div>
           </div>
 
@@ -242,7 +242,7 @@
             <thead>
               <tr>
                 <th class="rank-col">Sira</th>
-                <th class="player-col">{{ activeCategory === 'players' ? 'Oyuncu' : activeCategory === 'servers' ? 'Sunucu' : 'Kullanici' }}</th>
+                <th class="player-col">{{ activeCategory === 'players' ? 'Oyuncu' : activeCategory === 'servers' ? 'Sunucu' : 'Kullanıcı' }}</th>
                 <template v-if="activeCategory === 'players'">
                   <th>K/D</th>
                   <th>Isabet</th>
@@ -370,7 +370,7 @@
 
       <!-- Stats Summary Cards -->
       <div class="stats-section mt-12" ref="statsSection">
-        <h3 class="stats-title">Istatistikler</h3>
+        <h3 class="stats-title">İstatistikler</h3>
         <div class="stats-grid">
           <div class="stat-card glass-morphism" v-for="(stat, index) in statsCards" :key="stat.id">
             <div class="stat-icon-wrapper" :style="{ backgroundColor: stat.bgColor }">
@@ -422,7 +422,7 @@
             </div>
           </div>
           <div class="preview-footer">
-            <span class="last-seen">Son gorulme: 5 dakika once</span>
+            <span class="last-seen">Son gorulme: 5 dakika önce</span>
           </div>
         </div>
       </Transition>
@@ -511,7 +511,7 @@ const shareModal = ref({
 const categoryTabs = [
   { value: 'players', label: 'En Iyi Oyuncular', icon: TrophyIcon, count: 10 },
   { value: 'servers', label: 'Populer Sunucular', icon: ServerIcon, count: 3 },
-  { value: 'users', label: 'Aktif Kullanicilar', icon: UsersIcon, count: 3 }
+  { value: 'users', label: 'Aktif Kullanıcılar', icon: UsersIcon, count: 3 }
 ]
 
 const timeOptions = [
@@ -616,7 +616,7 @@ const serversData = ref([
 
 const usersData = ref([
   { id: 1, position: 1, name: 'AdminUser', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin1', role: 'Administrator', score: 15234, servers: 12, posts: 856, isOnline: true },
-  { id: 2, position: 2, name: 'ModeratorPro', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin2', role: 'Moderator', score: 12456, servers: 8, posts: 623, isOnline: false },
+  { id: 2, position: 2, name: 'ModeratörPro', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin2', role: 'Moderatör', score: 12456, servers: 8, posts: 623, isOnline: false },
   { id: 3, position: 3, name: 'CommunityLead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin3', role: 'Community Manager', score: 10987, servers: 5, posts: 1234, isOnline: true }
 ])
 
@@ -673,7 +673,7 @@ const getSearchPlaceholder = () => {
   switch (activeCategory.value) {
     case 'players': return 'Oyuncu ara...'
     case 'servers': return 'Sunucu ara...'
-    case 'users': return 'Kullanici ara...'
+    case 'users': return 'Kullanıcı ara...'
     default: return 'Ara...'
   }
 }
@@ -695,7 +695,7 @@ const getCategoryTitle = () => {
   switch (activeCategory.value) {
     case 'players': return 'Oyuncu Siralamasi'
     case 'servers': return 'Sunucu Siralamasi'
-    case 'users': return 'Kullanici Siralamasi'
+    case 'users': return 'Kullanıcı Siralamasi'
     default: return 'Siralama'
   }
 }
@@ -788,7 +788,7 @@ const shareToTwitter = () => {
 const shareToDiscord = () => {
   const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. siradayim! Skor: ${formatNumber(shareModal.value.data?.score || 0)}`
   navigator.clipboard.writeText(text)
-  message.success('Discord icin kopyalandi!')
+  message.success('Discord için kopyalandi!')
 }
 
 const copyShareLink = () => {

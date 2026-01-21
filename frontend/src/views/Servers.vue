@@ -343,7 +343,7 @@
                 @click="quickConnect(server)"
               >
                 <template #icon><n-icon :component="Zap" /></template>
-                Hizli Baglan
+                Hızlı Bağlan
               </n-button>
               <router-link :to="`/servers/${server.id}`">
                 <n-button size="small" quaternary>
@@ -395,14 +395,14 @@
             type="primary"
             ghost
           >
-            Daha Fazla Yukle ({{ remainingCount }} kaldi)
+            Daha Fazla Yükle ({{ remainingCount }} kaldi)
           </n-button>
         </div>
       </div>
     </div>
 
     <!-- Quick Connect Modal -->
-    <n-modal v-model:show="showConnectModal" preset="card" style="width: 400px" title="Sunucuya Baglan">
+    <n-modal v-model:show="showConnectModal" preset="card" style="width: 400px" title="Sunucuya Bağlan">
       <div class="connect-modal-content" v-if="selectedServer">
         <div class="connect-server-info">
           <div class="connect-map-img">
@@ -416,14 +416,14 @@
         <n-input
           v-model:value="connectPassword"
           type="password"
-          placeholder="Sunucu sifresi (opsiyonel)"
+          placeholder="Sunucu şifresi (opsiyonel)"
           show-password-on="click"
         />
         <div class="connect-actions">
-          <n-button @click="showConnectModal = false">Iptal</n-button>
+          <n-button @click="showConnectModal = false">İptal</n-button>
           <n-button type="primary" @click="confirmConnect">
             <template #icon><n-icon :component="Zap" /></template>
-            Baglan
+            Bağlan
           </n-button>
         </div>
       </div>
@@ -576,13 +576,13 @@ const sortOptions = [
 ]
 
 const serverMenuOptions = [
-  { label: 'Sunucu Detaylari', key: 'details', icon: () => h(Settings) },
+  { label: 'Sunucu Detayları', key: 'details', icon: () => h(Settings) },
   { label: 'Adresi Kopyala', key: 'copy', icon: () => h(Copy) },
   { label: 'Steam ile Ac', key: 'steam', icon: () => h(ExternalLink) },
   { type: 'divider', key: 'd1' },
-  { label: 'Baslat', key: 'start', icon: () => h(Play) },
+  { label: 'Başlat', key: 'start', icon: () => h(Play) },
   { label: 'Durdur', key: 'stop', icon: () => h(Square) },
-  { label: 'Yeniden Baslat', key: 'restart', icon: () => h(RotateCw) }
+  { label: 'Yeniden Başlat', key: 'restart', icon: () => h(RotateCw) }
 ]
 
 // Computed
@@ -700,7 +700,7 @@ const refreshServers = async () => {
     servers.value = data.items || []
     refreshCountdown.value = refreshInterval.value
   } catch (err) {
-    message.error('Sunucular yuklenemedi')
+    message.error('Sunucular yüklenemedi')
   } finally {
     loading.value = false
   }
@@ -804,7 +804,7 @@ const confirmConnect = () => {
   const password = connectPassword.value ? `;password ${connectPassword.value}` : ''
   window.location.href = `steam://connect/${server.ip}:${server.port}${password}`
   showConnectModal.value = false
-  message.info('Steam uzerinden baglaniliyor...')
+  message.info('Steam uzerinden bağlaniliyor...')
 }
 
 const handleServerAction = async (key, server) => {
@@ -822,9 +822,9 @@ const handleServerAction = async (key, server) => {
       try {
         await serversAPI.start(server.id)
         server.status = 'running'
-        message.success('Sunucu baslatildi')
+        message.success('Sunucu başlatildi')
       } catch (err) {
-        message.error('Sunucu baslatilamadi')
+        message.error('Sunucu başlatilamadı')
       }
       break
     case 'stop':
@@ -833,15 +833,15 @@ const handleServerAction = async (key, server) => {
         server.status = 'stopped'
         message.success('Sunucu durduruldu')
       } catch (err) {
-        message.error('Sunucu durdurulamadi')
+        message.error('Sunucu durdurulamadı')
       }
       break
     case 'restart':
       try {
         await serversAPI.restart(server.id)
-        message.success('Sunucu yeniden baslatildi')
+        message.success('Sunucu yeniden başlatildi')
       } catch (err) {
-        message.error('Sunucu yeniden baslatilamadi')
+        message.error('Sunucu yeniden başlatilamadı')
       }
       break
   }

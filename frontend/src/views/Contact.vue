@@ -3,7 +3,7 @@
     <div class="container-custom">
       <div class="max-w-4xl mx-auto">
         <h1 class="text-4xl font-display font-bold mb-8 text-center">
-          <span class="text-gradient-orange">Iletisim</span>
+          <span class="text-gradient-orange">İletişim</span>
         </h1>
 
         <div class="grid md:grid-cols-2 gap-8">
@@ -46,7 +46,7 @@
                   <option value="">Konu Secin</option>
                   <option value="general">Genel Soru</option>
                   <option value="support">Teknik Destek</option>
-                  <option value="billing">Odeme/Fatura</option>
+                  <option value="billing">Ödeme/Fatura</option>
                   <option value="partnership">Is Birligi</option>
                   <option value="other">Diger</option>
                 </select>
@@ -66,7 +66,7 @@
 
               <button type="submit" class="btn-gaming w-full" :disabled="loading">
                 <span v-if="loading" class="loading loading-spinner loading-sm"></span>
-                <span v-else>Mesaj Gonder</span>
+                <span v-else>Mesaj Gönder</span>
               </button>
             </form>
 
@@ -84,7 +84,7 @@
           <!-- Contact Info -->
           <div class="space-y-6">
             <div class="glass-card p-6">
-              <h2 class="text-xl font-bold mb-4">Iletisim Bilgileri</h2>
+              <h2 class="text-xl font-bold mb-4">İletişim Bilgileri</h2>
               <div class="space-y-4">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
@@ -113,7 +113,7 @@
             </div>
 
             <div class="glass-card p-6">
-              <h2 class="text-xl font-bold mb-4">Calisma Saatleri</h2>
+              <h2 class="text-xl font-bold mb-4">Çalışma Saatleri</h2>
               <div class="space-y-2">
                 <div class="flex justify-between">
                   <span class="opacity-60">Pazartesi - Cuma</span>
