@@ -333,11 +333,15 @@ class JackpotService:
             JackpotBet.game_id == round.id
         ).all()
 
-        # Kullanıcı bazlı toplam bahisler
+        # Kullanıcı bazlı toplam bahisler - N+1 sorgu optimizasyonu
+        user_ids = list(set(bet.user_id for bet in bets))
+        users = self.db.query(User).filter(User.id.in_(user_ids)).all() if user_ids else []
+        user_map = {u.id: u for u in users}
+
         player_totals = {}
         for bet in bets:
             if bet.user_id not in player_totals:
-                user = self.db.query(User).filter(User.id == bet.user_id).first()
+                user = user_map.get(bet.user_id)
                 player_totals[bet.user_id] = {
                     "user_id": bet.user_id,
                     "username": user.username if user else "Unknown",
@@ -386,9 +390,14 @@ class JackpotService:
             JackpotGame.status == JackpotStatus.COMPLETED
         ).order_by(JackpotGame.created_at.desc()).limit(limit).all()
 
+        # N+1 sorgu optimizasyonu - tüm kazananları tek seferde çek
+        winner_ids = [r.winner_id for r in rounds if r.winner_id]
+        winners = self.db.query(User).filter(User.id.in_(winner_ids)).all() if winner_ids else []
+        winner_map = {u.id: u for u in winners}
+
         results = []
         for r in rounds:
-            winner_user = self.db.query(User).filter(User.id == r.winner_id).first() if r.winner_id else None
+            winner_user = winner_map.get(r.winner_id) if r.winner_id else None
             winner_amount = r.total_pot * (1 - r.house_cut_percent / 100) if r.total_pot else 0
 
             results.append({

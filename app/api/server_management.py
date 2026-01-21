@@ -15,9 +15,12 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.logging_config import get_logger
 from app.core.security import get_current_user
 from app.models.connection import get_db
 from app.models.database import User, UserRole
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -332,7 +335,7 @@ async def restore_backup_task(backup_path: str, server_path: str):
                     shutil.rmtree(server_path)
                 shutil.move(temp_backup, server_path)
     except Exception as e:
-        print(f"Restore error: {e}")
+        logger.error(f"Restore error: {e}")
 
 
 # ============================================================================

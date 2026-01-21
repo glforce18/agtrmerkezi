@@ -78,7 +78,7 @@
 
           <!-- Player Count Filter -->
           <div class="filter-group">
-            <label class="filter-label">Oyuncu Sayisi</label>
+            <label class="filter-label">Oyuncu Sayısı</label>
             <n-select
               v-model:value="filters.playerCount"
               :options="playerCountOptions"
@@ -91,7 +91,7 @@
 
           <!-- Region Filter -->
           <div class="filter-group">
-            <label class="filter-label">Bolge</label>
+            <label class="filter-label">Bölge</label>
             <n-select
               v-model:value="filters.region"
               :options="regionOptions"
@@ -110,7 +110,7 @@
                 :type="filters.status === 'all' ? 'primary' : 'default'"
                 @click="filters.status = 'all'"
               >
-                Tumu
+                Tümü
               </n-button>
               <n-button
                 :type="filters.status === 'running' ? 'success' : 'default'"
@@ -133,7 +133,7 @@
         <!-- Sort and View Controls -->
         <div class="sort-view-controls">
           <div class="sort-controls">
-            <span class="sort-label">Sirala:</span>
+            <span class="sort-label">Sırala:</span>
             <n-button-group size="small">
               <n-button
                 v-for="option in sortOptions"
@@ -553,16 +553,16 @@ const mapOptions = computed(() => {
 })
 
 const playerCountOptions = [
-  { label: 'Bos', value: 'empty' },
+  { label: 'Boş', value: 'empty' },
   { label: '1-10 Oyuncu', value: '1-10' },
   { label: '11-20 Oyuncu', value: '11-20' },
   { label: '21+ Oyuncu', value: '21+' },
-  { label: 'Dolu Degil', value: 'not-full' },
-  { label: 'Bos Degil', value: 'not-empty' }
+  { label: 'Dolu Değil', value: 'not-full' },
+  { label: 'Boş Değil', value: 'not-empty' }
 ]
 
 const regionOptions = [
-  { label: 'Turkiye', value: 'TR' },
+  { label: 'Türkiye', value: 'TR' },
   { label: 'Avrupa', value: 'EU' },
   { label: 'Amerika', value: 'US' },
   { label: 'Asya', value: 'AS' },
@@ -571,7 +571,7 @@ const regionOptions = [
 
 const sortOptions = [
   { label: 'Oyuncu', value: 'players', icon: Users },
-  { label: 'Isim', value: 'name', icon: Tag },
+  { label: 'İsim', value: 'name', icon: Tag },
   { label: 'Ping', value: 'ping', icon: Wifi }
 ]
 
@@ -790,7 +790,7 @@ const getRegionLabel = (value) => regionOptions.find(o => o.value === value)?.la
 
 const copyAddress = (server) => {
   navigator.clipboard.writeText(`${server.ip}:${server.port}`)
-  message.success('Adres kopyalandi')
+  message.success('Adres kopyalandı')
 }
 
 const quickConnect = (server) => {
@@ -804,7 +804,7 @@ const confirmConnect = () => {
   const password = connectPassword.value ? `;password ${connectPassword.value}` : ''
   window.location.href = `steam://connect/${server.ip}:${server.port}${password}`
   showConnectModal.value = false
-  message.info('Steam uzerinden bağlaniliyor...')
+  message.info('Steam üzerinden bağlanılıyor...')
 }
 
 const handleServerAction = async (key, server) => {
@@ -822,9 +822,9 @@ const handleServerAction = async (key, server) => {
       try {
         await serversAPI.start(server.id)
         server.status = 'running'
-        message.success('Sunucu başlatildi')
+        message.success('Sunucu başlatıldı')
       } catch (err) {
-        message.error('Sunucu başlatilamadı')
+        message.error('Sunucu başlatılamadı')
       }
       break
     case 'stop':
@@ -839,9 +839,9 @@ const handleServerAction = async (key, server) => {
     case 'restart':
       try {
         await serversAPI.restart(server.id)
-        message.success('Sunucu yeniden başlatildi')
+        message.success('Sunucu yeniden başlatıldı')
       } catch (err) {
-        message.error('Sunucu yeniden başlatilamadı')
+        message.error('Sunucu yeniden başlatılamadı')
       }
       break
   }

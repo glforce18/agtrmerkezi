@@ -819,9 +819,9 @@ const toasts = ref([])
 
 // Quick reject reasons
 const quickRejectReasons = [
-  'Dekont okunamiyor',
-  'Tutar uyusmuyor',
-  'Gönderen bilgisi hatali',
+  'Dekont okunamıyor',
+  'Tutar uyuşmuyor',
+  'Gönderen bilgisi hatalı',
   'Geçersiz işlem',
   'Şüpheli işlem'
 ]

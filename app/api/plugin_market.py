@@ -14,9 +14,12 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.logging_config import get_logger
 from app.core.security import get_current_user
 from app.models.connection import get_db
 from app.models.database import User, UserRole
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -434,9 +437,9 @@ async def install_plugin_files(server_path: str, plugin_file: str, plugin_name: 
             # Tek dosya
             shutil.copy(plugin_file, plugins_dir)
         
-        print(f"Plugin installed: {plugin_name} -> {server_path}")
+        logger.info(f"Plugin installed: {plugin_name} -> {server_path}")
     except Exception as e:
-        print(f"Plugin install error: {e}")
+        logger.error(f"Plugin install error: {e}")
 
 
 @router.delete("/{plugin_id}/uninstall/{server_id}")

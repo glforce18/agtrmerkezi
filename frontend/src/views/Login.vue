@@ -54,7 +54,7 @@
 
         <!-- Tagline -->
         <div class="tagline">
-          <h1>Hos Geldiniz!</h1>
+          <h1>Hoş Geldiniz!</h1>
           <p>Counter-Strike 1.6 sunucu yönetiminde yeni nesil platform</p>
         </div>
 
@@ -68,7 +68,7 @@
             </div>
             <div class="feature-text">
               <h3>7/24 Destek</h3>
-              <p>Her zaman yaninizdayiz</p>
+              <p>Her zaman yanınızdayız</p>
             </div>
           </div>
           <div class="feature-item">
@@ -79,7 +79,7 @@
             </div>
             <div class="feature-text">
               <h3>Hızlı Sunucular</h3>
-              <p>Dusuk ping, yuksek performans</p>
+              <p>Düşük ping, yüksek performans</p>
             </div>
           </div>
           <div class="feature-item">
@@ -90,7 +90,7 @@
             </div>
             <div class="feature-text">
               <h3>Topluluk</h3>
-              <p>Binlerce oyuncu ile tanis</p>
+              <p>Binlerce oyuncu ile tanış</p>
             </div>
           </div>
         </div>
@@ -144,7 +144,7 @@
         <div class="glass-card">
           <div class="card-header">
             <h2>Giriş Yap</h2>
-            <p>Hesabınıza erisim sağlayin</p>
+            <p>Hesabınıza erişim sağlayın</p>
           </div>
 
           <!-- OAuth Buttons -->
@@ -249,7 +249,7 @@
               <label class="custom-checkbox">
                 <input type="checkbox" v-model="form.remember" />
                 <span class="checkmark"></span>
-                <span class="checkbox-label">Beni Hatirla</span>
+                <span class="checkbox-label">Beni Hatırla</span>
               </label>
               <router-link to="/forgot-password" class="forgot-link">
                 Şifremi Unuttum
@@ -282,7 +282,7 @@
 
           <!-- Register Link -->
           <div class="register-link">
-            <p>Hesabin yok mu?</p>
+            <p>Hesabın yok mu?</p>
             <router-link to="/register">Kayıt Ol</router-link>
           </div>
         </div>

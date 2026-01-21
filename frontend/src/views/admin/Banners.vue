@@ -78,8 +78,8 @@
                 </td>
                 <td>
                   <div class="action-btns">
-                    <button @click="editBanner(banner)"><Edit :size="16" /></button>
-                    <button class="danger" @click="removeBanner(banner)"><Trash2 :size="16" /></button>
+                    <button @click="editBanner(banner)" aria-label="Banner düzenle"><Edit :size="16" /></button>
+                    <button class="danger" @click="removeBanner(banner)" aria-label="Banner sil"><Trash2 :size="16" /></button>
                   </div>
                 </td>
               </tr>

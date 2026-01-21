@@ -13,9 +13,12 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.logging_config import get_logger
 from app.core.security import get_current_user
 from app.models.connection import get_db
 from app.models.database import User, UserRole
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -253,7 +256,7 @@ async def send_discord_webhook(webhook_url: str, payload: dict, db: Session = No
             
             return resp.status_code in [200, 204]
     except Exception as e:
-        print(f"Webhook error: {e}")
+        logger.error(f"Webhook error: {e}")
         return False
 
 

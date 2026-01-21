@@ -76,59 +76,59 @@ try:
     from app.core.engine import run_startup_checks
     run_startup_checks()
 except Exception as e:
-    print(f"[UYARI] Core Engine: {e}")
+    logger.warning(f"Core Engine: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Uygulama yasam dongusu"""
-    print("=" * 50)
-    print("AGTR Merkezi v7.0 - Vue.js SPA Edition")
-    print("=" * 50)
+    """Uygulama yaşam döngüsü"""
+    logger.info("=" * 50)
+    logger.info("AGTR Merkezi v7.0 - Vue.js SPA Edition")
+    logger.info("=" * 50)
 
     init_db()
-    print("[OK] Veritabani tablolari hazir")
+    logger.info("Veritabanı tabloları hazır")
 
     create_default_data()
-    print("[OK] Varsayilan veriler yuklendi")
+    logger.info("Varsayılan veriler yüklendi")
 
-    # Redis baslat
+    # Redis başlat
     try:
         from app.core.redis_manager import redis_manager
         await redis_manager.connect()
-        print("[OK] Redis baglantisi kuruldu")
+        logger.info("Redis bağlantısı kuruldu")
     except Exception as e:
-        print(f"[UYARI] Redis baglantisi kurulamadi: {e}")
+        logger.warning(f"Redis bağlantısı kurulamadı: {e}")
 
-    # Scheduler baslat
+    # Scheduler başlat
     try:
         from app.tasks.scheduler import task_scheduler
         task_scheduler.start()
-        print("[OK] Scheduler baslatildi")
+        logger.info("Scheduler başlatıldı")
     except Exception as e:
-        print(f"[UYARI] Scheduler baslatilamadi: {e}")
+        logger.warning(f"Scheduler başlatılamadı: {e}")
 
     # WebSocket heartbeat cleanup task
     try:
         from app.core.websocket_manager import heartbeat_cleanup_task
         import asyncio
         asyncio.create_task(heartbeat_cleanup_task())
-        print("[OK] WebSocket heartbeat task baslatildi")
+        logger.info("WebSocket heartbeat task başlatıldı")
     except Exception as e:
-        print(f"[UYARI] WebSocket task baslatilamadi: {e}")
+        logger.warning(f"WebSocket task başlatılamadı: {e}")
 
-    # Jackpot Manager baslat
+    # Jackpot Manager başlat
     try:
         from app.tasks.jackpot_manager import start_jackpot_manager
         asyncio.create_task(start_jackpot_manager())
-        print("[OK] Jackpot manager baslatildi")
+        logger.info("Jackpot manager başlatıldı")
     except Exception as e:
-        print(f"[UYARI] Jackpot manager baslatilamadi: {e}")
+        logger.warning(f"Jackpot manager başlatılamadı: {e}")
 
-    print("=" * 50)
-    print(f"API: {settings.BASE_URL}/api")
-    print(f"Docs: {settings.BASE_URL}/api/docs")
-    print("=" * 50)
+    logger.info("=" * 50)
+    logger.info(f"API: {settings.BASE_URL}/api")
+    logger.info(f"Docs: {settings.BASE_URL}/api/docs")
+    logger.info("=" * 50)
 
     yield
 
@@ -136,14 +136,14 @@ async def lifespan(app: FastAPI):
     try:
         from app.core.redis_manager import redis_manager
         await redis_manager.disconnect()
-        print("[OK] Redis baglantisi kapatildi")
+        logger.info("Redis bağlantısı kapatıldı")
     except Exception as e:
-        print(f"[UYARI] Redis cleanup hatasi: {e}")
+        logger.warning(f"Redis cleanup hatası: {e}")
 
     try:
         from app.tasks.scheduler import task_scheduler
         task_scheduler.stop()
-        print("[OK] Scheduler durduruldu")
+        logger.info("Scheduler durduruldu")
     except Exception:
         pass
 
@@ -151,20 +151,20 @@ async def lifespan(app: FastAPI):
     try:
         from app.tasks.jackpot_manager import stop_jackpot_manager
         await stop_jackpot_manager()
-        print("[OK] Jackpot manager durduruldu")
+        logger.info("Jackpot manager durduruldu")
     except Exception:
         pass
 
-    print("AGTR Merkezi kapatiliyor...")
+    logger.info("AGTR Merkezi kapatılıyor...")
 
 
 def create_default_data():
-    """Varsayilan verileri olustur"""
+    """Varsayılan verileri oluştur"""
     from app.models.connection import SessionLocal
     db = SessionLocal()
 
     try:
-        # Superadmin kontrolu
+        # Superadmin kontrolü
         admin_user = db.query(User).filter(User.role == UserRole.SUPERADMIN).first()
         if not admin_user:
             admin_user = User(
@@ -176,7 +176,7 @@ def create_default_data():
                 balance=1000.0
             )
             db.add(admin_user)
-            print("  -> Superadmin olusturuldu")
+            logger.debug("Superadmin oluşturuldu")
 
         # Forum kategorileri
         if db.query(ForumCategory).count() == 0:
@@ -188,7 +188,7 @@ def create_default_data():
                 ForumCategory(name="Duyurular", slug="duyurular", description="Resmi duyurular", icon="megaphone", color="#ef4444", is_announcement=True),
             ]
             db.add_all(categories)
-            print("  -> Forum kategorileri olusturuldu")
+            logger.debug("Forum kategorileri oluşturuldu")
 
         # Sunucu paketleri
         if db.query(ServerPackage).count() == 0:
@@ -207,7 +207,7 @@ def create_default_data():
                 ServerPackage(slug="hldm_ultimate", name="HLDM Ultimate", game_type=GameType.HLDM, slots=32, features=["basic_plugins", "rcon_access", "anticheat", "custom_domain", "priority_support"], price_monthly=120.0, description="Profesyonel HLDM", display_order=9),
             ]
             db.add_all(packages)
-            print("  -> Sunucu paketleri olusturuldu")
+            logger.debug("Sunucu paketleri oluşturuldu")
 
         # Site ayarlari
         if db.query(SiteSettings).count() == 0:
@@ -216,17 +216,17 @@ def create_default_data():
                 site_description="Turkiye'nin en iyi Half-Life ve CS 1.6 platformu"
             )
             db.add(site_settings)
-            print("  -> Site ayarlari olusturuldu")
+            logger.debug("Site ayarları oluşturuldu")
 
-        # Varsayilan roller
+        # Varsayılan roller
         from app.api.roles import initialize_default_roles
         initialize_default_roles(db)
-        print("  -> Varsayilan roller olusturuldu")
+        logger.debug("Varsayılan roller oluşturuldu")
 
         db.commit()
 
     except Exception as e:
-        print(f"  [HATA] Varsayilan veri olusturma hatasi: {e}")
+        logger.error(f"Varsayılan veri oluşturma hatası: {e}")
         db.rollback()
     finally:
         db.close()

@@ -12,7 +12,7 @@
         </h1>
         <span class="text-xs text-green-500 flex items-center gap-1">
           <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-          Canli
+          Canlı
         </span>
       </div>
 
@@ -58,7 +58,7 @@
 
           <!-- Time Range -->
           <div class="filter-group">
-            <label class="filter-label">Zaman Araligi</label>
+            <label class="filter-label">Zaman Aralığı</label>
             <div class="time-range-buttons">
               <button
                 v-for="option in timeOptions"
@@ -113,7 +113,7 @@
                 </div>
                 <div class="stat-item">
                   <span class="stat-value">{{ filteredData[1].accuracy }}%</span>
-                  <span class="stat-label">Isabet</span>
+                  <span class="stat-label">İsabet</span>
                 </div>
               </div>
             </div>
@@ -154,7 +154,7 @@
                 </div>
                 <div class="stat-item">
                   <span class="stat-value">{{ filteredData[0].accuracy }}%</span>
-                  <span class="stat-label">Isabet</span>
+                  <span class="stat-label">İsabet</span>
                 </div>
               </div>
               <!-- Share Button -->
@@ -193,7 +193,7 @@
                 </div>
                 <div class="stat-item">
                   <span class="stat-value">{{ filteredData[2].accuracy }}%</span>
-                  <span class="stat-label">Isabet</span>
+                  <span class="stat-label">İsabet</span>
                 </div>
               </div>
             </div>
@@ -211,7 +211,7 @@
             <span>#{{ currentUserRank.position }}</span>
           </div>
           <div class="flex-1">
-            <p class="text-sm text-gray-400">Sizin Siraniz</p>
+            <p class="text-sm text-gray-400">Sizin Sıranız</p>
             <h4 class="font-bold text-lg">{{ currentUserRank.name }}</h4>
           </div>
           <div class="your-rank-score">
@@ -220,7 +220,7 @@
           </div>
           <button class="share-btn-alt" @click="sharePosition(currentUserRank)">
             <Share2Icon class="w-5 h-5" />
-            <span>Paylas</span>
+            <span>Paylaş</span>
           </button>
         </div>
       </div>
@@ -233,7 +233,7 @@
             <span>{{ getCategoryTitle() }}</span>
           </h2>
           <div class="table-actions">
-            <span class="results-count">{{ filteredData.length }} sonuc</span>
+            <span class="results-count">{{ filteredData.length }} sonuç</span>
           </div>
         </div>
 
@@ -241,11 +241,11 @@
           <table class="leaderboard-table">
             <thead>
               <tr>
-                <th class="rank-col">Sira</th>
+                <th class="rank-col">Sıra</th>
                 <th class="player-col">{{ activeCategory === 'players' ? 'Oyuncu' : activeCategory === 'servers' ? 'Sunucu' : 'Kullanıcı' }}</th>
                 <template v-if="activeCategory === 'players'">
                   <th>K/D</th>
-                  <th>Isabet</th>
+                  <th>İsabet</th>
                 </template>
                 <template v-else-if="activeCategory === 'servers'">
                   <th>Oyuncular</th>
@@ -417,7 +417,7 @@
               <span class="value">{{ profilePreview.data?.kd }}</span>
             </div>
             <div class="preview-stat">
-              <span class="label">Isabet</span>
+              <span class="label">İsabet</span>
               <span class="value">{{ profilePreview.data?.accuracy }}%</span>
             </div>
           </div>
@@ -429,7 +429,7 @@
     </Teleport>
 
     <!-- Share Modal -->
-    <n-modal v-model:show="shareModal.visible" preset="card" title="Sıralamani Paylas" class="share-modal">
+    <n-modal v-model:show="shareModal.visible" preset="card" title="Sıralamanı Paylaş" class="share-modal">
       <div class="share-content">
         <div class="share-preview glass-morphism">
           <div class="share-rank">#{{ shareModal.data?.position }}</div>
@@ -516,7 +516,7 @@ const categoryTabs = [
 
 const timeOptions = [
   { label: 'Hepsi', value: 'all' },
-  { label: 'Bugun', value: 'today' },
+  { label: 'Bugün', value: 'today' },
   { label: 'Hafta', value: 'week' },
   { label: 'Ay', value: 'month' }
 ]
@@ -525,7 +525,7 @@ const sortOptions = [
   { label: 'Sıralama', value: 'rank' },
   { label: 'Skor', value: 'score' },
   { label: 'Kills', value: 'kills' },
-  { label: 'Isabet', value: 'accuracy' }
+  { label: 'İsabet', value: 'accuracy' }
 ]
 
 // Tab indicator style
@@ -549,7 +549,7 @@ const currentUserRank = computed(() => {
 const statsCards = computed(() => [
   {
     id: 'competitors',
-    label: 'Toplam Yarismacilar',
+    label: 'Toplam Yarışmacılar',
     value: totalCompetitors.value,
     icon: UsersIcon,
     color: '#f97316',
@@ -560,7 +560,7 @@ const statsCards = computed(() => [
   },
   {
     id: 'active',
-    label: 'Su An Aktif',
+    label: 'Şu An Aktif',
     value: activeNow.value,
     icon: ActivityIcon,
     color: '#a855f7',
@@ -571,7 +571,7 @@ const statsCards = computed(() => [
   },
   {
     id: 'highest',
-    label: 'En Yuksek Skor',
+    label: 'En Yüksek Skor',
     value: highestScore.value,
     icon: FlameIcon,
     color: '#06b6d4',
@@ -582,7 +582,7 @@ const statsCards = computed(() => [
   },
   {
     id: 'accuracy',
-    label: 'Ortalama Isabet',
+    label: 'Ortalama İsabet',
     value: 72,
     suffix: '%',
     icon: TargetIcon,
@@ -693,9 +693,9 @@ const getCategoryIcon = () => {
 
 const getCategoryTitle = () => {
   switch (activeCategory.value) {
-    case 'players': return 'Oyuncu Sıralamasi'
-    case 'servers': return 'Sunucu Sıralamasi'
-    case 'users': return 'Kullanıcı Sıralamasi'
+    case 'players': return 'Oyuncu Sıralaması'
+    case 'servers': return 'Sunucu Sıralaması'
+    case 'users': return 'Kullanıcı Sıralaması'
     default: return 'Sıralama'
   }
 }
@@ -781,20 +781,20 @@ const sharePosition = (item) => {
 }
 
 const shareToTwitter = () => {
-  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. siradayim! Skor: ${formatNumber(shareModal.value.data?.score || 0)}`
+  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. sıradayım! Skor: ${formatNumber(shareModal.value.data?.score || 0)}`
   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
 }
 
 const shareToDiscord = () => {
-  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. siradayim! Skor: ${formatNumber(shareModal.value.data?.score || 0)}`
+  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. sıradayım! Skor: ${formatNumber(shareModal.value.data?.score || 0)}`
   navigator.clipboard.writeText(text)
-  message.success('Discord için kopyalandi!')
+  message.success('Discord için kopyalandı!')
 }
 
 const copyShareLink = () => {
   const link = `${window.location.origin}/leaderboard?highlight=${shareModal.value.data?.id}`
   navigator.clipboard.writeText(link)
-  message.success('Link kopyalandi!')
+  message.success('Link kopyalandı!')
 }
 
 // Intersection Observer for animated counters

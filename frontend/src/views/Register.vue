@@ -31,7 +31,7 @@
                 </svg>
               </div>
               <h2 class="success-title">Kayıt Başarılı!</h2>
-              <p class="success-text">Hosgeldiniz, yonlendiriliyorsunuz...</p>
+              <p class="success-text">Hoşgeldiniz, yönlendiriliyorsunuz...</p>
             </div>
           </div>
         </transition>
@@ -232,8 +232,8 @@
                 <Check :size="14" class="checkbox-check" />
               </div>
               <span class="checkbox-label">
-                <router-link to="/terms" class="link">Kullanım Kosullari</router-link> ve
-                <router-link to="/privacy" class="link">Gizlilik Politikasi</router-link>'ni
+                <router-link to="/terms" class="link">Kullanım Koşulları</router-link> ve
+                <router-link to="/privacy" class="link">Gizlilik Politikası</router-link>'nı
                 okudum ve kabul ediyorum
               </span>
             </label>
@@ -268,7 +268,7 @@
         <!-- Login Link -->
         <div class="login-link">
           <p>
-            Zaten hesabin var mi?
+            Zaten hesabın var mı?
             <router-link to="/login" class="link">Giriş Yap</router-link>
           </p>
         </div>
@@ -329,11 +329,11 @@ const passwordChecks = computed(() => ({
 const passwordStrength = computed(() => {
   const checks = Object.values(passwordChecks.value).filter(c => c.met).length
   const levels = [
-    { min: 0, max: 1, label: 'Çok Zayif', class: 'very-weak', percent: 20 },
-    { min: 2, max: 2, label: 'Zayif', class: 'weak', percent: 40 },
+    { min: 0, max: 1, label: 'Çok Zayıf', class: 'very-weak', percent: 20 },
+    { min: 2, max: 2, label: 'Zayıf', class: 'weak', percent: 40 },
     { min: 3, max: 3, label: 'Orta', class: 'medium', percent: 60 },
-    { min: 4, max: 4, label: 'Guclu', class: 'strong', percent: 80 },
-    { min: 5, max: 5, label: 'Çok Guclu', class: 'very-strong', percent: 100 }
+    { min: 4, max: 4, label: 'Güçlü', class: 'strong', percent: 80 },
+    { min: 5, max: 5, label: 'Çok Güçlü', class: 'very-strong', percent: 100 }
   ]
   return levels.find(l => checks >= l.min && checks <= l.max) || levels[0]
 })
@@ -397,7 +397,7 @@ const validateField = (field) => {
       break
     case 'confirm_password':
       if (!form.confirm_password) {
-        errors.confirm_password = 'Şifre tekrari gerekli'
+        errors.confirm_password = 'Şifre tekrarı gerekli'
       } else if (form.password !== form.confirm_password) {
         errors.confirm_password = 'Şifreler eşleşmiyor'
       }
@@ -447,7 +447,7 @@ const handleRegister = async () => {
   }
 
   if (!form.accept_terms) {
-    message.warning('Kullanım kosullarini kabul etmelisiniz')
+    message.warning('Kullanım koşullarını kabul etmelisiniz')
     triggerShake()
     return
   }

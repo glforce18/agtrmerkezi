@@ -10,10 +10,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.logging_config import get_logger
 from app.core.security import get_current_user_required
 from app.models.connection import get_db
 from app.models.database import User, UserRole
 from app.services.email import email_service
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -408,7 +411,7 @@ async def send_push_notification(db: Session, user_id: int, title: str, body: st
     except ImportError:
         pass  # pywebpush yüklü değil
     except Exception as e:
-        print(f"Push error: {e}")
+        logger.error(f"Push error: {e}")
 
 
 # ============================================================================

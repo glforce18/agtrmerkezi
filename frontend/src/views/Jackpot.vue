@@ -109,8 +109,9 @@
                 <div class="item-glow" :style="{ background: item.color }"></div>
                 <img
                   :src="getAvatarUrl(item.avatar, item.username)"
-                  :alt="item.username"
+                  :alt="`${item.username} avatar`"
                   class="spinner-avatar"
+                  loading="lazy"
                   @error="(e) => e.target.src = getDefaultAvatar(item.username)"
                 />
                 <span class="spinner-name">{{ item.username }}</span>
@@ -140,6 +141,7 @@
                 </div>
                 <img
                   :src="getAvatarUrl(winner.avatar, winner.username)"
+                  :alt="`Kazanan: ${winner.username}`"
                   class="jackpot-winner-avatar"
                   @error="(e) => e.target.src = getDefaultAvatar(winner.username)"
                 />
@@ -190,7 +192,7 @@
             :style="{ '--player-color': player.color, '--rank': index }"
           >
             <div class="player-rank">#{{ index + 1 }}</div>
-            <img :src="getAvatarUrl(player.avatar, player.username)" class="player-avatar" @error="(e) => e.target.src = getDefaultAvatar(player.username)" />
+            <img :src="getAvatarUrl(player.avatar, player.username)" :alt="`${player.username} avatar`" class="player-avatar" loading="lazy" @error="(e) => e.target.src = getDefaultAvatar(player.username)" />
             <div class="player-info">
               <span class="player-name">{{ player.username }}</span>
               <span class="player-bet">
@@ -408,11 +410,16 @@ let reconnectTimeout = null
 let heartbeatInterval = null
 let isUnmounting = false
 
-// Constants
-const minBet = 10
-const maxBet = 1000
-const houseCut = 5
+// Constants - defaults, overridden by API
+const DEFAULT_MIN_BET = 10
+const DEFAULT_MAX_BET = 1000
+const DEFAULT_HOUSE_CUT = 5
 const COUNTDOWN_MAX = 30
+
+// Dynamic bet limits from API
+const minBet = computed(() => currentRound.value?.min_bet || DEFAULT_MIN_BET)
+const maxBet = computed(() => currentRound.value?.max_bet || DEFAULT_MAX_BET)
+const houseCut = computed(() => currentRound.value?.house_cut || DEFAULT_HOUSE_CUT)
 
 // Renk paleti - Gaming style
 const colors = [
@@ -447,8 +454,8 @@ const sortedPlayers = computed(() => {
 })
 
 const canBet = computed(() => {
-  return betAmount.value >= minBet &&
-         betAmount.value <= maxBet &&
+  return betAmount.value >= minBet.value &&
+         betAmount.value <= maxBet.value &&
          betAmount.value <= balance.value &&
          currentRound.value?.status !== 'finished' &&
          !isSpinning.value
@@ -580,9 +587,11 @@ const fetchCurrentRound = async () => {
       if (data.winner) {
         winner.value = data.winner
       }
+    } else {
+      console.warn('Jackpot round fetch failed:', res.status)
     }
   } catch (e) {
-    // Error fetching round data - silently fail
+    console.error('Error fetching jackpot round:', e.message)
   }
 }
 
@@ -591,9 +600,11 @@ const fetchHistory = async () => {
     const res = await fetch('/api/games/jackpot/history?limit=10')
     if (res.ok) {
       recentRounds.value = await res.json()
+    } else {
+      console.warn('Jackpot history fetch failed:', res.status)
     }
   } catch (e) {
-    // Error fetching history - silently fail
+    console.error('Error fetching jackpot history:', e.message)
   }
 }
 

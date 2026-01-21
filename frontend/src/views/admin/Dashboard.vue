@@ -411,14 +411,14 @@
               </div>
               <div class="stat-details">
                 <span class="stat-number">{{ serverStats.error }}</span>
-                <span class="stat-desc">Hatali</span>
+                <span class="stat-desc">Hatalı</span>
               </div>
             </div>
           </div>
 
           <!-- Game Distribution -->
           <div class="game-distribution">
-            <h4>Oyun Dagilimi</h4>
+            <h4>Oyun Dağılımı</h4>
             <div class="distribution-bars">
               <div
                 v-for="game in gameDistribution"

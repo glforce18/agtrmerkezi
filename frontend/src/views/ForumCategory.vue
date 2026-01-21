@@ -233,12 +233,12 @@
                   <span v-if="searchQuery" key="search" class="filter-tag">
                     <SearchIcon class="w-3 h-3" />
                     "{{ searchQuery }}"
-                    <button @click="searchQuery = ''"><XIcon class="w-3 h-3" /></button>
+                    <button @click="searchQuery = ''" aria-label="Aramayı temizle"><XIcon class="w-3 h-3" /></button>
                   </span>
                   <span v-if="sortBy !== 'latest'" key="sort" class="filter-tag">
                     <ArrowUpDownIcon class="w-3 h-3" />
                     {{ currentSortOption.label }}
-                    <button @click="sortBy = 'latest'"><XIcon class="w-3 h-3" /></button>
+                    <button @click="sortBy = 'latest'" aria-label="Sıralamayı sıfırla"><XIcon class="w-3 h-3" /></button>
                   </span>
                 </TransitionGroup>
               </div>
@@ -1252,6 +1252,8 @@ watch(searchQuery, () => {
 })
 
 // Lifecycle
+let onlineUsersInterval = null
+
 onMounted(() => {
   if (infiniteScrollEnabled.value) {
     setupInfiniteScroll()
@@ -1259,7 +1261,7 @@ onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 
   // Simulate online users change
-  setInterval(() => {
+  onlineUsersInterval = setInterval(() => {
     onlineUsers.value = Math.floor(Math.random() * 10) + 20
   }, 30000)
 })
@@ -1267,6 +1269,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer) {
     observer.disconnect()
+  }
+  if (onlineUsersInterval) {
+    clearInterval(onlineUsersInterval)
   }
   document.removeEventListener('click', handleClickOutside)
 })
