@@ -45,7 +45,7 @@ export const useAdminStore = defineStore('admin', () => {
       dashboardData.value = await adminApi.getDashboard()
     } catch (e) {
       error.value = e.message
-      console.error('Dashboard fetch error:', e)
+      // Dashboard fetch error
     }
     loading.value = false
   }
@@ -63,7 +63,7 @@ export const useAdminStore = defineStore('admin', () => {
       pagination.value.users.total = data.total || 0
     } catch (e) {
       error.value = e.message
-      console.error('Users fetch error:', e)
+      // Users fetch error
     }
     loading.value = false
   }
@@ -119,7 +119,7 @@ export const useAdminStore = defineStore('admin', () => {
       pagination.value.servers.total = data.total || 0
     } catch (e) {
       error.value = e.message
-      console.error('Servers fetch error:', e)
+      // Servers fetch error
     }
     loading.value = false
   }
@@ -158,7 +158,7 @@ export const useAdminStore = defineStore('admin', () => {
       pagination.value.payments.total = data.total || 0
     } catch (e) {
       error.value = e.message
-      console.error('Payments fetch error:', e)
+      // Payments fetch error
     }
     loading.value = false
   }
@@ -204,7 +204,7 @@ export const useAdminStore = defineStore('admin', () => {
       packages.value = data.packages || []
     } catch (e) {
       error.value = e.message
-      console.error('Packages fetch error:', e)
+      // Packages fetch error
     }
     loading.value = false
   }
@@ -252,7 +252,7 @@ export const useAdminStore = defineStore('admin', () => {
       settings.value = await adminApi.getSettings()
     } catch (e) {
       error.value = e.message
-      console.error('Settings fetch error:', e)
+      // Settings fetch error
     }
     loading.value = false
   }

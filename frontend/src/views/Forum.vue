@@ -1,177 +1,323 @@
 <template>
-  <div class="min-h-screen">
-    <div class="container-custom py-8">
-      <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-4xl font-display font-bold mb-2">
-          <span class="text-gradient">Topluluk Forumu</span>
-        </h1>
-        <p class="text-gray-400">
-          CS 1.6 topluluğuyla bağlantıda kalın, sorular sorun ve bilginizi paylaşın
-        </p>
-      </div>
+  <div class="forum-page min-h-screen relative overflow-hidden">
+    <!-- Subtle Background -->
+    <div class="subtle-bg"></div>
 
-      <div class="grid lg:grid-cols-3 gap-6">
+    <!-- Compact Header -->
+    <div class="relative z-10 py-3 border-b border-white/10">
+      <div class="container-custom">
+        <div class="flex flex-col md:flex-row md:items-center gap-3">
+          <div class="flex items-center justify-between">
+            <h1 class="text-lg font-bold flex items-center gap-2">
+              <MessageSquareIcon class="w-5 h-5 text-orange-500" />
+              Forum
+              <span class="text-xs text-green-500 font-normal">({{ stats.onlineUsers }} online)</span>
+            </h1>
+          </div>
+          <div class="flex-1 max-w-md">
+            <div class="relative">
+              <SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                v-model="searchQuery"
+                type="text"
+                class="w-full pl-9 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg placeholder-gray-500 outline-none focus:border-orange-500"
+                style="color: var(--text-primary)"
+                placeholder="Ara..."
+                @focus="showSearchResults = true"
+                @blur="hideSearchResults"
+                @input="performSearch"
+              />
+            </div>
+          </div>
+          <div class="flex gap-2 overflow-x-auto pb-1">
+            <button
+              v-for="filter in categoryFilters.slice(0,4)"
+              :key="filter.id"
+              :class="[
+                'text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-all',
+                activeFilter === filter.id ? 'bg-orange-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              ]"
+              @click="setFilter(filter.id)"
+            >
+              {{ filter.name }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content container-custom py-4 relative z-10">
+      <div class="grid lg:grid-cols-3 gap-4">
         <!-- Main Content -->
         <div class="lg:col-span-2 space-y-6">
-          <!-- Search & New Topic -->
-          <n-card class="glass-card">
-            <div class="flex flex-col md:flex-row gap-3">
-              <div class="flex-1">
-                <n-input v-model:value="searchQuery" placeholder="Forumlarda ara...">
-                  <template #prefix>
-                    <SearchIcon class="w-4 h-4 text-gray-400" />
-                  </template>
-                </n-input>
-              </div>
-              <n-button type="primary" @click="showNewTopicModal = true">
-                <template #icon><PlusCircleIcon class="w-4 h-4" /></template>
-                Yeni Konu
+          <!-- Action Bar -->
+          <div class="action-bar glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between animate-slideUp">
+            <div class="flex items-center gap-4">
+              <n-button type="primary" class="new-topic-btn" @click="showNewTopicModal = true">
+                <template #icon><PlusCircleIcon class="w-5 h-5" /></template>
+                Yeni Konu Oluştur
               </n-button>
+              <div class="hidden md:flex items-center gap-2 text-sm text-gray-500">
+                <kbd class="kbd-sm">N</kbd> ile hızlı oluştur
+              </div>
             </div>
-          </n-card>
+            <div class="flex items-center gap-3">
+              <n-select
+                v-model:value="sortBy"
+                :options="sortOptions"
+                placeholder="Sırala"
+                class="w-40"
+              />
+              <button class="view-toggle p-2 rounded-lg glass-button" @click="toggleView">
+                <LayoutGridIcon v-if="viewMode === 'list'" class="w-5 h-5" />
+                <LayoutListIcon v-else class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
 
-          <!-- Categories -->
-          <div class="space-y-4">
-            <n-card
-              v-for="category in categories"
+          <!-- Loading State -->
+          <div v-if="isLoading" class="space-y-4">
+            <div v-for="n in 3" :key="n" class="skeleton-card glass-card rounded-2xl p-6">
+              <div class="flex items-start gap-4">
+                <div class="skeleton-box w-16 h-16 rounded-xl"></div>
+                <div class="flex-1 space-y-3">
+                  <div class="skeleton-line w-3/4 h-6"></div>
+                  <div class="skeleton-line w-1/2 h-4"></div>
+                  <div class="flex gap-4">
+                    <div class="skeleton-line w-20 h-4"></div>
+                    <div class="skeleton-line w-20 h-4"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="filteredCategories.length === 0" class="empty-state glass-card rounded-2xl p-12 text-center">
+            <div class="empty-illustration mx-auto mb-6">
+              <div class="empty-circle">
+                <FolderOpenIcon class="w-16 h-16 text-gray-600" />
+              </div>
+            </div>
+            <h3 class="text-2xl font-bold mb-2" style="color: var(--text-primary)">Kategori Bulunamadı</h3>
+            <p class="text-gray-500 max-w-md mx-auto mb-6">
+              Seçili filtrelere uygun kategori yok. Farklı filtreler deneyebilir veya tüm kategorileri görüntüleyebilirsiniz.
+            </p>
+            <n-button type="primary" @click="activeFilter = 'all'">
+              Tüm Kategorileri Göster
+            </n-button>
+          </div>
+
+          <!-- Categories Grid/List -->
+          <div v-else :class="viewMode === 'grid' ? 'grid md:grid-cols-2 gap-4' : 'space-y-4'">
+            <div
+              v-for="(category, index) in filteredCategories"
               :key="category.id"
-              class="glass-card cursor-pointer category-card"
+              class="category-card glass-card rounded-2xl overflow-hidden cursor-pointer animate-slideUp"
+              :style="{ animationDelay: `${index * 50}ms` }"
               @click="router.push(`/forum/category/${category.id}`)"
             >
-              <div class="flex items-start gap-4">
-                <!-- Category Icon -->
-                <div
-                  :class="[
-                    'w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0',
-                    getCategoryGradient(category.gradient)
-                  ]"
-                >
-                  <component :is="category.icon" class="w-8 h-8 text-white" />
+              <!-- Card Header with Gradient -->
+              <div :class="['card-header h-2', getCategoryGradientClass(category.gradient)]"></div>
+
+              <div class="p-6">
+                <div class="flex items-start gap-4">
+                  <!-- Floating Icon -->
+                  <div class="category-icon-wrapper relative">
+                    <div
+                      :class="[
+                        'category-icon w-16 h-16 rounded-xl flex items-center justify-center relative z-10',
+                        getCategoryGradientClass(category.gradient)
+                      ]"
+                    >
+                      <component :is="category.icon" class="w-8 h-8 text-white" />
+                    </div>
+                    <div :class="['icon-glow', getCategoryGlowClass(category.gradient)]"></div>
+                  </div>
+
+                  <!-- Category Info -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 class="text-xl font-bold group-hover:text-orange-500 transition-colors flex items-center gap-2" style="color: var(--text-primary)">
+                          {{ category.name }}
+                          <span v-if="category.isHot" class="hot-badge px-2 py-0.5 text-xs rounded-full">HOT</span>
+                        </h3>
+                        <p class="text-sm text-gray-400 mt-1">
+                          {{ category.description }}
+                        </p>
+                      </div>
+                      <ChevronRightIcon class="w-5 h-5 text-gray-500 flex-shrink-0 category-arrow" />
+                    </div>
+
+                    <!-- Stats Pills -->
+                    <div class="flex flex-wrap items-center gap-2 mt-4">
+                      <div class="stat-pill">
+                        <FileTextIcon class="w-3.5 h-3.5" />
+                        <span>{{ formatNumber(category.topics) }} Konu</span>
+                      </div>
+                      <div class="stat-pill">
+                        <MessageSquareIcon class="w-3.5 h-3.5" />
+                        <span>{{ formatNumber(category.posts) }} Gönderi</span>
+                      </div>
+                      <div v-if="category.newToday" class="stat-pill stat-pill-highlight">
+                        <SparklesIcon class="w-3.5 h-3.5" />
+                        <span>+{{ category.newToday }} bugün</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Category Info -->
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 class="text-xl font-bold hover:text-orange-500 transition-colors">
-                        {{ category.name }}
-                      </h3>
-                      <p class="text-sm text-gray-400">
-                        {{ category.description }}
+                <!-- Latest Topic -->
+                <div
+                  v-if="category.latestTopic"
+                  class="latest-topic mt-4 pt-4 border-t border-white/5"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="relative">
+                      <n-avatar round :size="32" :src="category.latestTopic.authorAvatar" />
+                      <div class="online-indicator"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-semibold text-gray-300 truncate hover:text-orange-500 transition-colors">
+                        {{ category.latestTopic.title }}
+                      </p>
+                      <p class="text-xs text-gray-500 flex items-center gap-2">
+                        <span>{{ category.latestTopic.author }}</span>
+                        <span class="w-1 h-1 bg-gray-600 rounded-full"></span>
+                        <ClockIcon class="w-3 h-3" />
+                        <span>{{ category.latestTopic.time }}</span>
                       </p>
                     </div>
                   </div>
-
-                  <!-- Stats -->
-                  <div class="flex items-center gap-6 text-sm mt-3">
-                    <div class="flex items-center gap-2 text-gray-400">
-                      <FileTextIcon class="w-4 h-4" />
-                      <span>{{ category.topics }} Konu</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-gray-400">
-                      <MessageSquareIcon class="w-4 h-4" />
-                      <span>{{ category.posts }} Gönderi</span>
-                    </div>
-                  </div>
-
-                  <!-- Latest Topic -->
-                  <div
-                    v-if="category.latestTopic"
-                    class="mt-4 pt-4 border-t border-white/10 flex items-center justify-between"
-                  >
-                    <div class="flex items-center gap-2 min-w-0">
-                      <n-avatar round :size="24" :src="category.latestTopic.authorAvatar" />
-                      <div class="min-w-0 flex-1">
-                        <p class="text-sm font-semibold truncate">
-                          {{ category.latestTopic.title }}
-                        </p>
-                        <p class="text-xs text-gray-500">
-                          {{ category.latestTopic.author }} • {{ category.latestTopic.time }}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRightIcon class="w-5 h-5 text-gray-500 flex-shrink-0" />
-                  </div>
                 </div>
               </div>
-            </n-card>
+            </div>
           </div>
         </div>
 
         <!-- Sidebar -->
         <div class="space-y-6">
+          <!-- Hot Topics -->
+          <div class="hot-topics-card glass-card rounded-2xl overflow-hidden animate-slideUp">
+            <div class="card-header-gradient p-4 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="icon-pulse">
+                  <FlameIcon class="w-5 h-5 text-orange-500" />
+                </div>
+                <span class="font-bold" style="color: var(--text-primary)">Popüler Konular</span>
+              </div>
+              <span class="live-badge">
+                <span class="live-dot"></span>
+                CANLI
+              </span>
+            </div>
+            <div class="p-4 space-y-3">
+              <div
+                v-for="(topic, index) in hotTopics"
+                :key="topic.id"
+                class="hot-topic-item p-3 rounded-xl cursor-pointer transition-all"
+                @click="router.push(`/forum/topic/${topic.id}`)"
+              >
+                <div class="flex items-start gap-3">
+                  <span class="topic-rank text-lg font-bold" :class="getRankColor(index)">
+                    #{{ index + 1 }}
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold truncate" style="color: var(--text-primary)">{{ topic.title }}</p>
+                    <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                      <span class="flex items-center gap-1">
+                        <MessageSquareIcon class="w-3 h-3" />
+                        {{ topic.replies }}
+                      </span>
+                      <span class="flex items-center gap-1">
+                        <EyeIcon class="w-3 h-3" />
+                        {{ topic.views }}
+                      </span>
+                      <span class="flex items-center gap-1">
+                        <TrendingUpIcon class="w-3 h-3 text-green-500" />
+                        {{ topic.trend }}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Forum Stats -->
-          <n-card class="glass-card">
+          <n-card class="glass-card rounded-2xl animate-slideUp animation-delay-100">
             <template #header>
               <div class="flex items-center gap-2">
-                <TrendingUpIcon class="w-5 h-5 text-orange-500" />
+                <BarChart3Icon class="w-5 h-5 text-orange-500" />
                 <span class="font-bold">Forum İstatistikleri</span>
               </div>
             </template>
             <div class="space-y-3">
-              <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                <span class="text-gray-400">Toplam Konu</span>
-                <span class="font-bold text-orange-500">{{ stats.totalTopics }}</span>
-              </div>
-              <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                <span class="text-gray-400">Toplam Gönderi</span>
-                <span class="font-bold text-purple-500">{{ stats.totalPosts }}</span>
-              </div>
-              <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                <span class="text-gray-400">Toplam Üye</span>
-                <span class="font-bold text-cyan-500">{{ stats.totalMembers }}</span>
-              </div>
-              <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                <span class="text-gray-400">Çevrimiçi</span>
-                <span class="font-bold text-green-500">{{ stats.onlineUsers }}</span>
+              <div v-for="statItem in sidebarStats" :key="statItem.label" class="stat-row p-3 rounded-xl">
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-400 flex items-center gap-2">
+                    <component :is="statItem.icon" class="w-4 h-4" />
+                    {{ statItem.label }}
+                  </span>
+                  <span :class="['font-bold', statItem.color]">{{ formatNumber(statItem.value) }}</span>
+                </div>
+                <div class="progress-bar mt-2">
+                  <div class="progress-fill" :class="statItem.barColor" :style="{ width: statItem.progress + '%' }"></div>
+                </div>
               </div>
             </div>
           </n-card>
 
           <!-- Active Users -->
-          <n-card class="glass-card">
+          <n-card class="glass-card rounded-2xl animate-slideUp animation-delay-200">
             <template #header>
-              <div class="flex items-center gap-2">
-                <UsersIcon class="w-5 h-5 text-orange-500" />
-                <span class="font-bold">Aktif Kullanıcılar</span>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <UsersIcon class="w-5 h-5 text-orange-500" />
+                  <span class="font-bold">Aktif Kullanıcılar</span>
+                </div>
+                <span class="text-xs text-gray-500">{{ activeUsers.length }} çevrimiçi</span>
               </div>
             </template>
-            <div class="space-y-3">
+            <div class="space-y-2">
               <div
                 v-for="user in activeUsers"
                 :key="user.id"
-                class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                class="user-item flex items-center gap-3 p-2 rounded-xl cursor-pointer"
               >
                 <div class="relative">
                   <n-avatar round :size="40" :src="user.avatar" />
-                  <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
+                  <div class="user-status" :class="user.status"></div>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="font-semibold truncate">{{ user.name }}</p>
-                  <p class="text-xs text-gray-500">{{ user.posts }} gönderi</p>
+                  <p class="font-semibold truncate text-sm" style="color: var(--text-primary)">{{ user.name }}</p>
+                  <p class="text-xs text-gray-500">{{ user.activity }}</p>
+                </div>
+                <div class="user-badge" :class="user.badgeColor">
+                  {{ user.badge }}
                 </div>
               </div>
             </div>
           </n-card>
 
           <!-- Recent Activity -->
-          <n-card class="glass-card">
+          <n-card class="glass-card rounded-2xl animate-slideUp animation-delay-300">
             <template #header>
               <div class="flex items-center gap-2">
                 <ActivityIcon class="w-5 h-5 text-orange-500" />
                 <span class="font-bold">Son Aktiviteler</span>
               </div>
             </template>
-            <div class="space-y-3">
+            <div class="activity-timeline">
               <div
                 v-for="activity in recentActivity"
                 :key="activity.id"
-                class="flex items-start gap-3 p-3 bg-white/5 rounded-lg"
+                class="activity-item"
               >
-                <div :class="['w-2 h-2 rounded-full mt-2', getActivityColor(activity.type)]"></div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm">{{ activity.message }}</p>
+                <div :class="['activity-dot', activity.dotColor]"></div>
+                <div class="activity-content">
+                  <p class="text-sm text-gray-300">{{ activity.message }}</p>
                   <span class="text-xs text-gray-500">{{ activity.time }}</span>
                 </div>
               </div>
@@ -182,44 +328,163 @@
     </div>
 
     <!-- New Topic Modal -->
-    <n-modal v-model:show="showNewTopicModal" preset="card" title="Yeni Konu Oluştur" style="width: 600px;">
-      <n-form @submit.prevent="createTopic" class="space-y-4">
-        <n-form-item label="Kategori Seç">
-          <n-select
-            v-model:value="newTopic.categoryId"
-            placeholder="Kategori seçin"
-            :options="categoryOptions"
-          />
-        </n-form-item>
-
-        <n-form-item label="Konu Başlığı">
-          <n-input v-model:value="newTopic.title" placeholder="Başlık girin..." />
-        </n-form-item>
-
-        <n-form-item label="İçerik">
-          <n-input
-            v-model:value="newTopic.content"
-            type="textarea"
-            placeholder="Konu içeriği..."
-            :rows="6"
-          />
-        </n-form-item>
-      </n-form>
-      <template #footer>
-        <div class="flex gap-3 justify-end">
-          <n-button quaternary @click="showNewTopicModal = false">İptal</n-button>
-          <n-button type="primary" @click="createTopic">
-            <template #icon><SendIcon class="w-4 h-4" /></template>
-            Konuyu Oluştur
-          </n-button>
+    <n-modal v-model:show="showNewTopicModal" :mask-closable="false">
+      <div class="new-topic-modal glass-card rounded-2xl w-full max-w-3xl mx-4">
+        <!-- Modal Header -->
+        <div class="modal-header p-6 border-b border-white/10">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="modal-icon w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
+                <EditIcon class="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 class="text-xl font-bold" style="color: var(--text-primary)">Yeni Konu Oluştur</h2>
+                <p class="text-sm text-gray-500">Topluluğa yeni bir tartışma başlatın</p>
+              </div>
+            </div>
+            <button class="close-btn p-2 rounded-lg" @click="showNewTopicModal = false">
+              <XIcon class="w-5 h-5" />
+            </button>
+          </div>
         </div>
-      </template>
+
+        <!-- Modal Body -->
+        <div class="modal-body p-6">
+          <div class="grid md:grid-cols-2 gap-6">
+            <!-- Editor Side -->
+            <div class="editor-side space-y-4">
+              <div class="form-group">
+                <label class="form-label">Kategori Seç</label>
+                <n-select
+                  v-model:value="newTopic.categoryId"
+                  placeholder="Kategori seçin"
+                  :options="categoryOptions"
+                  class="w-full"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Konu Başlığı</label>
+                <n-input
+                  v-model:value="newTopic.title"
+                  placeholder="Dikkat çekici bir başlık yazın..."
+                  class="title-input"
+                />
+                <span class="char-counter text-xs text-gray-500">{{ newTopic.title.length }}/100</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">İçerik</label>
+                <div class="editor-toolbar flex gap-1 mb-2">
+                  <button v-for="tool in editorTools" :key="tool.name" class="toolbar-btn" :title="tool.title">
+                    <component :is="tool.icon" class="w-4 h-4" />
+                  </button>
+                </div>
+                <n-input
+                  v-model:value="newTopic.content"
+                  type="textarea"
+                  placeholder="Konu içeriğini yazın... Markdown desteklenir"
+                  :rows="10"
+                  class="content-textarea"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Etiketler</label>
+                <n-select
+                  v-model:value="newTopic.tags"
+                  multiple
+                  filterable
+                  tag
+                  placeholder="Etiket ekleyin..."
+                  :options="tagOptions"
+                />
+              </div>
+            </div>
+
+            <!-- Preview Side -->
+            <div class="preview-side">
+              <div class="preview-header flex items-center justify-between mb-4">
+                <span class="text-sm font-semibold text-gray-400">Önizleme</span>
+                <span class="preview-badge">CANLI</span>
+              </div>
+              <div class="preview-card glass-card rounded-xl p-4">
+                <div v-if="!newTopic.title && !newTopic.content" class="preview-empty text-center py-12">
+                  <EyeIcon class="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                  <p class="text-gray-500">Konunuz burada önizlenecek</p>
+                </div>
+                <div v-else>
+                  <h3 class="text-lg font-bold mb-2" style="color: var(--text-primary)">{{ newTopic.title || 'Başlık girilmedi' }}</h3>
+                  <div class="flex items-center gap-2 mb-4 text-sm text-gray-500">
+                    <n-avatar round :size="24" :src="authStore.user?.avatar" />
+                    <span>{{ authStore.user?.username || 'Kullanıcı' }}</span>
+                    <span>•</span>
+                    <span>Şimdi</span>
+                  </div>
+                  <div class="preview-content prose prose-invert text-sm text-gray-300">
+                    {{ newTopic.content || 'İçerik girilmedi...' }}
+                  </div>
+                  <div v-if="newTopic.tags?.length" class="flex flex-wrap gap-2 mt-4">
+                    <span v-for="tag in newTopic.tags" :key="tag" class="tag-pill">
+                      #{{ tag }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="preview-tips mt-4 space-y-2">
+                <div class="tip-item" :class="{ 'tip-valid': newTopic.categoryId }">
+                  <CheckCircleIcon v-if="newTopic.categoryId" class="w-4 h-4 text-green-500" />
+                  <CircleIcon v-else class="w-4 h-4 text-gray-600" />
+                  <span>Kategori seçildi</span>
+                </div>
+                <div class="tip-item" :class="{ 'tip-valid': newTopic.title.length >= 5 }">
+                  <CheckCircleIcon v-if="newTopic.title.length >= 5" class="w-4 h-4 text-green-500" />
+                  <CircleIcon v-else class="w-4 h-4 text-gray-600" />
+                  <span>Başlık en az 5 karakter</span>
+                </div>
+                <div class="tip-item" :class="{ 'tip-valid': newTopic.content.length >= 20 }">
+                  <CheckCircleIcon v-if="newTopic.content.length >= 20" class="w-4 h-4 text-green-500" />
+                  <CircleIcon v-else class="w-4 h-4 text-gray-600" />
+                  <span>İçerik en az 20 karakter</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer p-6 border-t border-white/10 flex items-center justify-between">
+          <div class="text-sm text-gray-500">
+            <kbd class="kbd-sm">Ctrl</kbd> + <kbd class="kbd-sm">Enter</kbd> ile gönder
+          </div>
+          <div class="flex gap-3">
+            <n-button quaternary @click="showNewTopicModal = false">İptal</n-button>
+            <n-button type="primary" :disabled="!isTopicValid" :loading="isSubmitting" @click="createTopic">
+              <template #icon><SendIcon class="w-4 h-4" /></template>
+              Konuyu Oluştur
+            </n-button>
+          </div>
+        </div>
+      </div>
+    </n-modal>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <n-modal v-model:show="showShortcutsModal" preset="card" title="Klavye Kısayolları" style="width: 500px;">
+      <div class="shortcuts-list space-y-3">
+        <div v-for="shortcut in keyboardShortcuts" :key="shortcut.key" class="shortcut-item flex items-center justify-between p-3 rounded-lg bg-white/5">
+          <span class="text-gray-300">{{ shortcut.description }}</span>
+          <div class="flex items-center gap-1">
+            <kbd v-for="(key, idx) in shortcut.keys" :key="idx" class="kbd">{{ key }}</kbd>
+          </div>
+        </div>
+      </div>
     </n-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -235,7 +500,33 @@ import {
   WrenchIcon,
   HelpCircleIcon,
   TrophyIcon,
-  SendIcon
+  SendIcon,
+  FlameIcon,
+  EyeIcon,
+  ClockIcon,
+  BarChart3Icon,
+  ArrowRightIcon,
+  SearchXIcon,
+  FolderOpenIcon,
+  LayoutGridIcon,
+  LayoutListIcon,
+  SparklesIcon,
+  EditIcon,
+  XIcon,
+  CheckCircleIcon,
+  CircleIcon,
+  BoldIcon,
+  ItalicIcon,
+  LinkIcon,
+  ImageIcon,
+  ListIcon,
+  CodeIcon,
+  HashIcon,
+  ZapIcon,
+  StarIcon,
+  AwardIcon,
+  ShieldIcon,
+  HomeIcon
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -262,15 +553,98 @@ const getHeaders = () => {
   }
   return headers
 }
+
+// State
 const searchQuery = ref('')
+const showSearchResults = ref(false)
+const searchResults = ref([])
+const isSearching = ref(false)
 const showNewTopicModal = ref(false)
+const showShortcutsModal = ref(false)
+const isLoading = ref(false)
+const isSubmitting = ref(false)
+const statsSection = ref(null)
+const statsVisible = ref(false)
+const activeFilter = ref('all')
+const sortBy = ref('latest')
+const viewMode = ref('list')
 
 const stats = reactive({
+  totalTopics: 1648,
+  totalPosts: 11532,
+  totalMembers: 3421,
+  onlineUsers: 127
+})
+
+const animatedStats = reactive({
   totalTopics: 0,
   totalPosts: 0,
   totalMembers: 0,
   onlineUsers: 0
 })
+
+// Stats items for animated section
+const statsItems = [
+  { key: 'totalTopics', label: 'Toplam Konu', icon: FileTextIcon, iconBg: 'bg-gradient-to-br from-orange-500 to-orange-600', valueColor: 'text-orange-500' },
+  { key: 'totalPosts', label: 'Toplam Gönderi', icon: MessageSquareIcon, iconBg: 'bg-gradient-to-br from-purple-500 to-purple-600', valueColor: 'text-purple-500' },
+  { key: 'totalMembers', label: 'Toplam Üye', icon: UsersIcon, iconBg: 'bg-gradient-to-br from-cyan-500 to-cyan-600', valueColor: 'text-cyan-500' },
+  { key: 'onlineUsers', label: 'Çevrimiçi', icon: ZapIcon, iconBg: 'bg-gradient-to-br from-green-500 to-green-600', valueColor: 'text-green-500' }
+]
+
+// Sidebar stats
+const sidebarStats = computed(() => [
+  { label: 'Toplam Konu', value: stats.totalTopics, icon: FileTextIcon, color: 'text-orange-500', barColor: 'bg-orange-500', progress: 85 },
+  { label: 'Toplam Gönderi', value: stats.totalPosts, icon: MessageSquareIcon, color: 'text-purple-500', barColor: 'bg-purple-500', progress: 92 },
+  { label: 'Toplam Üye', value: stats.totalMembers, icon: UsersIcon, color: 'text-cyan-500', barColor: 'bg-cyan-500', progress: 78 },
+  { label: 'Çevrimiçi', value: stats.onlineUsers, icon: ZapIcon, color: 'text-green-500', barColor: 'bg-green-500', progress: 45 }
+])
+
+// Category filters
+const categoryFilters = [
+  { id: 'all', name: 'Tümü', icon: HomeIcon, count: null },
+  { id: 'hot', name: 'Popüler', icon: FlameIcon, count: 12 },
+  { id: 'new', name: 'Yeni', icon: SparklesIcon, count: 24 },
+  { id: 'support', name: 'Destek', icon: WrenchIcon, count: 8 },
+  { id: 'events', name: 'Etkinlikler', icon: TrophyIcon, count: 3 }
+]
+
+// Sort options
+const sortOptions = [
+  { label: 'En Yeni', value: 'latest' },
+  { label: 'En Popüler', value: 'popular' },
+  { label: 'En Çok Yanıt', value: 'replies' },
+  { label: 'En Çok Görüntülenen', value: 'views' }
+]
+
+// Editor tools
+const editorTools = [
+  { name: 'bold', icon: BoldIcon, title: 'Kalın' },
+  { name: 'italic', icon: ItalicIcon, title: 'İtalik' },
+  { name: 'link', icon: LinkIcon, title: 'Link' },
+  { name: 'image', icon: ImageIcon, title: 'Resim' },
+  { name: 'list', icon: ListIcon, title: 'Liste' },
+  { name: 'code', icon: CodeIcon, title: 'Kod' }
+]
+
+// Tag options
+const tagOptions = [
+  { label: 'amxmodx', value: 'amxmodx' },
+  { label: 'hlds', value: 'hlds' },
+  { label: 'plugin', value: 'plugin' },
+  { label: 'sunucu', value: 'sunucu' },
+  { label: 'yardim', value: 'yardim' },
+  { label: 'turnuva', value: 'turnuva' }
+]
+
+// Keyboard shortcuts
+const keyboardShortcuts = [
+  { keys: ['N'], description: 'Yeni konu oluştur' },
+  { keys: ['Ctrl', 'K'], description: 'Arama yap' },
+  { keys: ['/'], description: 'Aramaya odaklan' },
+  { keys: ['?'], description: 'Kısayolları göster' },
+  { keys: ['Esc'], description: 'Modalı kapat' },
+  { keys: ['Ctrl', 'Enter'], description: 'Formu gönder' }
+]
 
 const categories = ref([
   {
@@ -281,6 +655,9 @@ const categories = ref([
     gradient: 'primary-secondary',
     topics: 342,
     posts: 2145,
+    newToday: 15,
+    isHot: true,
+    filter: 'hot',
     latestTopic: {
       title: 'Yeni güncelleme hakkında düşünceleriniz?',
       author: 'Player123',
@@ -296,6 +673,9 @@ const categories = ref([
     gradient: 'secondary-accent',
     topics: 256,
     posts: 1834,
+    newToday: 8,
+    isHot: false,
+    filter: 'support',
     latestTopic: {
       title: 'HLDS Performans İpuçları',
       author: 'AdminUser',
@@ -311,6 +691,9 @@ const categories = ref([
     gradient: 'accent-error',
     topics: 428,
     posts: 3214,
+    newToday: 22,
+    isHot: true,
+    filter: 'support',
     latestTopic: {
       title: 'Sunucu başlatma hatası',
       author: 'NewbieGamer',
@@ -326,6 +709,9 @@ const categories = ref([
     gradient: 'primary-accent',
     topics: 534,
     posts: 2876,
+    newToday: 18,
+    isHot: false,
+    filter: 'new',
     latestTopic: {
       title: 'En iyi map rotasyonu nedir?',
       author: 'ProPlayer',
@@ -341,6 +727,9 @@ const categories = ref([
     gradient: 'warning-success',
     topics: 88,
     posts: 1463,
+    newToday: 5,
+    isHot: true,
+    filter: 'events',
     latestTopic: {
       title: '5v5 Turnuva Kayıtları Açıldı!',
       author: 'EventManager',
@@ -350,6 +739,22 @@ const categories = ref([
   }
 ])
 
+// Hot Topics
+const hotTopics = ref([
+  { id: 1, title: 'En iyi AWP taktikleri nelerdir?', replies: 156, views: 2340, trend: 45 },
+  { id: 2, title: 'Yeni turnuva duyurusu', replies: 89, views: 1856, trend: 32 },
+  { id: 3, title: 'HLDS optimizasyon rehberi', replies: 234, views: 4521, trend: 28 },
+  { id: 4, title: 'AMX Mod X plugin geliştirme', replies: 67, views: 982, trend: 15 },
+  { id: 5, title: 'Clan alımları başladı!', replies: 45, views: 756, trend: 12 }
+])
+
+const filteredCategories = computed(() => {
+  if (activeFilter.value === 'all') return categories.value
+  if (activeFilter.value === 'hot') return categories.value.filter(c => c.isHot)
+  if (activeFilter.value === 'new') return categories.value.filter(c => c.newToday > 10)
+  return categories.value.filter(c => c.filter === activeFilter.value)
+})
+
 const categoryOptions = computed(() => {
   return categories.value.map(cat => ({
     label: cat.name,
@@ -357,7 +762,11 @@ const categoryOptions = computed(() => {
   }))
 })
 
-const getCategoryGradient = (gradient) => {
+const isTopicValid = computed(() => {
+  return newTopic.categoryId && newTopic.title.length >= 5 && newTopic.content.length >= 20
+})
+
+const getCategoryGradientClass = (gradient) => {
   const gradients = {
     'primary-secondary': 'bg-gradient-to-br from-orange-500 to-purple-500',
     'secondary-accent': 'bg-gradient-to-br from-purple-500 to-cyan-500',
@@ -368,50 +777,134 @@ const getCategoryGradient = (gradient) => {
   return gradients[gradient] || 'bg-gradient-to-br from-orange-500 to-purple-500'
 }
 
-const getActivityColor = (type) => {
-  const colors = {
-    primary: 'bg-orange-500',
-    secondary: 'bg-purple-500',
-    success: 'bg-green-500',
-    accent: 'bg-cyan-500'
+const getCategoryGlowClass = (gradient) => {
+  const glows = {
+    'primary-secondary': 'glow-orange-purple',
+    'secondary-accent': 'glow-purple-cyan',
+    'accent-error': 'glow-cyan-red',
+    'primary-accent': 'glow-orange-cyan',
+    'warning-success': 'glow-yellow-green'
   }
-  return colors[type] || 'bg-gray-500'
+  return glows[gradient] || 'glow-orange-purple'
+}
+
+const getRankColor = (index) => {
+  const colors = ['text-yellow-500', 'text-gray-400', 'text-orange-600', 'text-gray-500', 'text-gray-500']
+  return colors[index] || 'text-gray-500'
+}
+
+const formatNumber = (num) => {
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K'
+  }
+  return num.toString()
+}
+
+// Particle style generator
+const getParticleStyle = (n) => {
+  const random = (min, max) => Math.random() * (max - min) + min
+  return {
+    left: `${random(0, 100)}%`,
+    top: `${random(0, 100)}%`,
+    animationDelay: `${random(0, 5)}s`,
+    animationDuration: `${random(10, 20)}s`,
+    width: `${random(2, 6)}px`,
+    height: `${random(2, 6)}px`,
+    opacity: random(0.1, 0.5)
+  }
 }
 
 const activeUsers = ref([
-  { id: 1, name: 'Player123', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u1', posts: 1234 },
-  { id: 2, name: 'AdminUser', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u2', posts: 856 },
-  { id: 3, name: 'ProGamer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u3', posts: 623 },
-  { id: 4, name: 'NewbieCS', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u4', posts: 142 },
-  { id: 5, name: 'MapMaster', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u5', posts: 387 }
+  { id: 1, name: 'Player123', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u1', activity: 'Konu okuyor', status: 'online', badge: 'PRO', badgeColor: 'badge-pro' },
+  { id: 2, name: 'AdminUser', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u2', activity: 'Yanıt yazıyor', status: 'online', badge: 'ADMIN', badgeColor: 'badge-admin' },
+  { id: 3, name: 'ProGamer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u3', activity: 'Profil ziyaret ediyor', status: 'away', badge: 'VIP', badgeColor: 'badge-vip' },
+  { id: 4, name: 'NewbieCS', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u4', activity: 'Arama yapıyor', status: 'online', badge: 'YENİ', badgeColor: 'badge-new' },
+  { id: 5, name: 'MapMaster', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u5', activity: 'Çevrimdışı', status: 'offline', badge: 'MOD', badgeColor: 'badge-mod' }
 ])
 
 const recentActivity = ref([
-  { id: 1, type: 'primary', message: 'Player123 yeni bir konu oluşturdu', time: '2 dakika önce' },
-  { id: 2, type: 'secondary', message: 'AdminUser bir konuya yanıt verdi', time: '8 dakika önce' },
-  { id: 3, type: 'success', message: 'ProGamer bir konuyu beğendi', time: '15 dakika önce' },
-  { id: 4, type: 'accent', message: 'NewUser foruma katıldı', time: '23 dakika önce' }
+  { id: 1, message: 'Player123 yeni bir konu oluşturdu', time: '2 dakika önce', dotColor: 'dot-orange' },
+  { id: 2, message: 'AdminUser bir konuya yanıt verdi', time: '8 dakika önce', dotColor: 'dot-purple' },
+  { id: 3, message: 'ProGamer bir konuyu beğendi', time: '15 dakika önce', dotColor: 'dot-green' },
+  { id: 4, message: 'NewUser foruma katıldı', time: '23 dakika önce', dotColor: 'dot-cyan' },
+  { id: 5, message: 'Turnuva sonuçları açıklandı', time: '45 dakika önce', dotColor: 'dot-yellow' }
 ])
 
 const newTopic = reactive({
   categoryId: null,
   title: '',
-  content: ''
+  content: '',
+  tags: []
 })
 
+// Functions
+const setFilter = (filterId) => {
+  activeFilter.value = filterId
+}
+
+const toggleView = () => {
+  viewMode.value = viewMode.value === 'list' ? 'grid' : 'list'
+}
+
+const performSearch = () => {
+  if (searchQuery.value.length < 2) {
+    searchResults.value = []
+    return
+  }
+
+  isSearching.value = true
+
+  // Simulated search - replace with actual API call
+  setTimeout(() => {
+    searchResults.value = [
+      { id: 1, title: 'AWP Taktikleri Rehberi', subtitle: 'Genel Tartışma • 156 yanıt', icon: FileTextIcon, iconBg: 'bg-orange-500/20' },
+      { id: 2, title: 'HLDS Kurulum Rehberi', subtitle: 'Sunucu Ayarları • 89 yanıt', icon: ServerIcon, iconBg: 'bg-purple-500/20' },
+      { id: 3, title: 'Player123', subtitle: 'Kullanıcı • 1234 gönderi', icon: UsersIcon, iconBg: 'bg-cyan-500/20' }
+    ]
+    isSearching.value = false
+  }, 500)
+}
+
+const hideSearchResults = () => {
+  setTimeout(() => {
+    showSearchResults.value = false
+  }, 200)
+}
+
+const goToResult = (result) => {
+  router.push(`/forum/topic/${result.id}`)
+  showSearchResults.value = false
+  searchQuery.value = ''
+}
+
+// Intersection Observer for stats animation
+const animateStats = () => {
+  const duration = 2000
+  const steps = 60
+  const interval = duration / steps
+
+  let currentStep = 0
+
+  const timer = setInterval(() => {
+    currentStep++
+    const progress = currentStep / steps
+    const easeOut = 1 - Math.pow(1 - progress, 3)
+
+    animatedStats.totalTopics = Math.round(stats.totalTopics * easeOut)
+    animatedStats.totalPosts = Math.round(stats.totalPosts * easeOut)
+    animatedStats.totalMembers = Math.round(stats.totalMembers * easeOut)
+    animatedStats.onlineUsers = Math.round(stats.onlineUsers * easeOut)
+
+    if (currentStep >= steps) {
+      clearInterval(timer)
+    }
+  }, interval)
+}
+
 const createTopic = async () => {
-  if (!newTopic.categoryId) {
-    window.$message?.warning('Lütfen bir kategori seçin')
-    return
-  }
-  if (!newTopic.title || newTopic.title.trim().length < 5) {
-    window.$message?.warning('Başlık en az 5 karakter olmalıdır')
-    return
-  }
-  if (!newTopic.content || newTopic.content.trim().length < 20) {
-    window.$message?.warning('İçerik en az 20 karakter olmalıdır')
-    return
-  }
+  if (!isTopicValid.value) return
+
+  isSubmitting.value = true
 
   try {
     const response = await fetch('/api/forum/topics', {
@@ -420,7 +913,8 @@ const createTopic = async () => {
       body: JSON.stringify({
         category_id: newTopic.categoryId,
         title: newTopic.title.trim(),
-        content: newTopic.content.trim()
+        content: newTopic.content.trim(),
+        tags: newTopic.tags
       })
     })
 
@@ -429,6 +923,7 @@ const createTopic = async () => {
       newTopic.categoryId = null
       newTopic.title = ''
       newTopic.content = ''
+      newTopic.tags = []
       window.$message?.success('Konu başarıyla oluşturuldu')
     } else {
       const error = await response.json()
@@ -436,30 +931,784 @@ const createTopic = async () => {
     }
   } catch (error) {
     window.$message?.error('Bir hata oluştu, lütfen tekrar deneyin')
+  } finally {
+    isSubmitting.value = false
   }
 }
+
+// Keyboard shortcuts handler
+const handleKeydown = (e) => {
+  // Don't trigger shortcuts when typing in inputs
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault()
+      if (showNewTopicModal.value && isTopicValid.value) {
+        createTopic()
+      }
+    }
+    return
+  }
+
+  if (e.key === 'n' || e.key === 'N') {
+    e.preventDefault()
+    showNewTopicModal.value = true
+  }
+
+  if (e.key === '/' || (e.ctrlKey && e.key === 'k')) {
+    e.preventDefault()
+    document.querySelector('.search-input')?.focus()
+  }
+
+  if (e.key === '?') {
+    e.preventDefault()
+    showShortcutsModal.value = true
+  }
+
+  if (e.key === 'Escape') {
+    showNewTopicModal.value = false
+    showShortcutsModal.value = false
+    showSearchResults.value = false
+  }
+}
+
+onMounted(() => {
+  // Setup Intersection Observer for stats
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !statsVisible.value) {
+          statsVisible.value = true
+          animateStats()
+        }
+      })
+    },
+    { threshold: 0.5 }
+  )
+
+  if (statsSection.value) {
+    observer.observe(statsSection.value)
+  }
+
+  // Setup keyboard shortcuts
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <style scoped>
-.text-gradient {
-  background: linear-gradient(to right, #f97316, #8b5cf6, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Base Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes particle-float {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Animation Classes */
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.6s ease-out forwards;
+}
+
+.animate-countUp {
+  animation: countUp 0.5s ease-out forwards;
+}
+
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-400 { animation-delay: 400ms; }
+
+/* Particles */
+.particles-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  background: linear-gradient(135deg, #f97316, #8b5cf6);
+  border-radius: 50%;
+  animation: particle-float linear infinite;
+}
+
+/* Glass Morphism */
 .glass-card {
   background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-badge {
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.category-card {
+.glass-search {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.glass-search:focus-within {
+  border-color: rgba(249, 115, 22, 0.5);
+  box-shadow: 0 0 30px rgba(249, 115, 22, 0.15);
+}
+
+.glass-button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #9ca3af;
   transition: all 0.2s ease;
 }
 
+.glass-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+/* Text Gradient */
+.text-gradient-animated {
+  background: linear-gradient(90deg, #f97316, #8b5cf6, #06b6d4, #f97316);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 8s ease infinite;
+}
+
+/* Search */
+.search-input {
+  font-size: 1rem;
+}
+
+.search-input::placeholder {
+  color: #6b7280;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.375rem;
+  color: #9ca3af;
+}
+
+.kbd-sm {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+}
+
+.search-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 50;
+}
+
+.search-dropdown-enter-active,
+.search-dropdown-leave-active {
+  transition: all 0.2s ease;
+}
+
+.search-dropdown-enter-from,
+.search-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.search-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(249, 115, 22, 0.2);
+  border-top-color: #f97316;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Stats Section */
+.stat-card {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.3s ease;
+}
+
+.stat-card.animate-countUp {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+/* Category Filters */
+.filter-chip {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.filter-chip-active {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+}
+
+.filter-chip-inactive {
+  background: rgba(255, 255, 255, 0.05);
+  color: #9ca3af;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filter-chip-inactive:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.filter-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Category Cards */
+.category-card {
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.category-card.animate-slideUp {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .category-card:hover {
-  border-color: rgba(249, 115, 22, 0.5);
+  border-color: rgba(249, 115, 22, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.category-card:hover .category-arrow {
+  transform: translateX(4px);
+  color: #f97316;
+}
+
+.category-arrow {
+  transition: all 0.3s ease;
+}
+
+.category-icon-wrapper {
+  position: relative;
+}
+
+.category-icon {
+  transition: all 0.3s ease;
+}
+
+.category-card:hover .category-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.icon-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.category-card:hover .icon-glow {
+  opacity: 1;
+}
+
+.glow-orange-purple { box-shadow: 0 0 30px rgba(249, 115, 22, 0.5); }
+.glow-purple-cyan { box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
+.glow-cyan-red { box-shadow: 0 0 30px rgba(6, 182, 212, 0.5); }
+.glow-orange-cyan { box-shadow: 0 0 30px rgba(249, 115, 22, 0.5); }
+.glow-yellow-green { box-shadow: 0 0 30px rgba(234, 179, 8, 0.5); }
+
+.card-header {
+  width: 100%;
+}
+
+/* Stat Pills */
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 9999px;
+  color: #9ca3af;
+}
+
+.stat-pill-highlight {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+}
+
+/* Hot Badge */
+.hot-badge {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: white;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Latest Topic */
+.online-indicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border: 2px solid #111827;
+  border-radius: 50%;
+}
+
+/* Hot Topics Card */
+.hot-topics-card {
+  overflow: hidden;
+}
+
+.card-header-gradient {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(139, 92, 246, 0.1));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.icon-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-radius: 0.25rem;
+  letter-spacing: 0.1em;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: live-pulse 1s ease-in-out infinite;
+}
+
+.hot-topic-item {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.hot-topic-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.topic-rank {
+  min-width: 2rem;
+}
+
+/* Stats Row */
+.stat-row {
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.2s ease;
+}
+
+.stat-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s ease-out;
+}
+
+/* User Item */
+.user-item {
+  transition: all 0.2s ease;
+}
+
+.user-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.user-status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #111827;
+  border-radius: 50%;
+}
+
+.user-status.online { background: #22c55e; }
+.user-status.away { background: #eab308; }
+.user-status.offline { background: #6b7280; }
+
+.user-badge {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  border-radius: 0.25rem;
+  letter-spacing: 0.05em;
+}
+
+.badge-pro { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+.badge-admin { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.badge-vip { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+.badge-new { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.badge-mod { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+
+/* Activity Timeline */
+.activity-timeline {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.activity-timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(249, 115, 22, 0.5), transparent);
+}
+
+.activity-item {
+  position: relative;
+  padding: 0.75rem 0;
+}
+
+.activity-dot {
+  position: absolute;
+  left: -1.25rem;
+  top: 1rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #111827;
+}
+
+.dot-orange { background: #f97316; }
+.dot-purple { background: #8b5cf6; }
+.dot-green { background: #22c55e; }
+.dot-cyan { background: #06b6d4; }
+.dot-yellow { background: #eab308; }
+
+/* New Topic Modal */
+.new-topic-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: #9ca3af;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
+}
+
+.char-counter {
+  display: block;
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+.editor-toolbar {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.toolbar-btn {
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  color: #9ca3af;
+  transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.preview-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-radius: 0.25rem;
+  letter-spacing: 0.1em;
+}
+
+.preview-card {
+  min-height: 200px;
+}
+
+.preview-empty {
+  color: #4b5563;
+}
+
+.tag-pill {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  border-radius: 9999px;
+}
+
+.tip-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+.tip-item.tip-valid {
+  color: #9ca3af;
+}
+
+/* Skeleton Loading */
+.skeleton-card {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeleton-box {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+.skeleton-line {
+  height: 1rem;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 0.25rem;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Empty State */
+.empty-state {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.empty-illustration {
+  width: 120px;
+  height: 120px;
+}
+
+.empty-circle {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(139, 92, 246, 0.1));
+  border-radius: 50%;
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero-section .text-5xl {
+    font-size: 2.5rem;
+  }
+
+  .search-shortcut {
+    display: none;
+  }
+
+  .shortcuts-hint {
+    display: none;
+  }
+
+  .new-topic-modal {
+    margin: 1rem;
+  }
+
+  .grid.md\\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Action Button Styles */
+.new-topic-btn {
+  background: linear-gradient(135deg, #f97316, #ea580c) !important;
+  border: none !important;
+  font-weight: 600;
+  transition: all 0.3s ease !important;
+}
+
+.new-topic-btn:hover {
   transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(249, 115, 22, 0.4) !important;
+}
+
+/* Shortcut Item */
+.shortcut-item kbd {
+  min-width: 2rem;
+  text-align: center;
 }
 </style>

@@ -113,13 +113,20 @@ apiClient.interceptors.response.use(
           })
 
         case 403:
-          console.error('Yetkisiz erişim:', error.response.data)
+          // Forbidden - user doesn't have permission
           break
         case 404:
-          console.error('Bulunamadı:', error.response.data)
+          // Not found
+          break
+        case 429:
+          // Rate limited
+          error.message = 'Çok fazla istek gönderildi. Lütfen bekleyin.'
           break
         case 500:
-          console.error('Sunucu hatası:', error.response.data)
+        case 502:
+        case 503:
+          // Server error
+          error.message = 'Sunucu hatası. Lütfen tekrar deneyin.'
           break
       }
     }

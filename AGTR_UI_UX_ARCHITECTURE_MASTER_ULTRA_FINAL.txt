@@ -1,0 +1,309 @@
+
+AGTR MERKEZI – UI/UX + PROJECT ARCHITECTURE MASTER DOCUMENT (ULTRA FINAL)
+========================================================================
+Target: Claude Code (Autonomous Code Agent)
+Environment: Debian Linux
+Project Root: /var/www/agtrmerkezi
+
+This document is the SINGLE SOURCE OF TRUTH.
+All instructions are mandatory unless explicitly stated otherwise.
+
+========================================================================
+SECTION 1 – PROJECT OVERVIEW
+========================================================================
+AGTR Merkez is a full-stack, production-grade gaming community platform
+focused on CS 1.6 / Half-Life ecosystem.
+
+Core goals:
+- Premium dark gaming UI
+- High usability and clarity
+- Strong visual hierarchy
+- Performance-safe enhancements only
+
+This is NOT a rewrite.
+This IS a controlled UI/UX evolution.
+
+========================================================================
+SECTION 2 – HIGH-LEVEL ARCHITECTURE
+========================================================================
+Project structure overview:
+
+/var/www/agtrmerkezi
+├── frontend/        → Vue 3 + Vite + Tailwind (SOURCE OF TRUTH FOR UI)
+├── static/dist/     → Generated frontend build output (DO NOT EDIT)
+├── app/             → Python backend (API, services, logic)
+├── alembic/         → Database migrations
+├── tests/           → Pytest test suite
+├── sql/             → Raw SQL scripts
+├── docker-compose.yml / Dockerfile
+└── deploy.sh / install.sh
+
+CRITICAL RULE:
+ALL UI/UX changes MUST be applied inside /frontend ONLY.
+
+========================================================================
+SECTION 3 – FRONTEND STRUCTURE (EDITABLE)
+========================================================================
+Frontend source directory:
+
+/frontend/src
+├── components/   → Reusable UI components
+├── views/        → Page-level components
+├── layouts/      → Page shells (navbar, footer, spacing)
+├── router/       → Route definitions
+├── stores/       → Pinia stores
+├── api/          → Backend API calls
+├── services/     → Business logic helpers
+├── composables/  → Reusable logic/hooks
+├── assets/       → Images, fonts, CSS
+├── style.css     → Global styles
+└── main.js       → App entry
+
+Allowed modifications:
+- style.css
+- Tailwind config
+- components/*
+- layouts/*
+- views/*
+
+DO NOT touch:
+- node_modules
+- static/dist
+
+========================================================================
+SECTION 4 – GENERATED OUTPUT (READ-ONLY)
+========================================================================
+/static/dist contains compiled frontend assets.
+
+RULE:
+Never manually edit files in static/dist.
+Changes must originate from frontend and be rebuilt.
+
+========================================================================
+SECTION 5 – BACKEND (READ-ONLY FOR UI TASKS)
+========================================================================
+/app directory contains:
+- API endpoints
+- Security logic
+- Jackpot backend logic
+- Wallet, forum, auth, websocket
+
+RULE:
+Backend code must NOT be modified for UI/UX tasks unless explicitly requested.
+
+========================================================================
+SECTION 6 – DESIGN PHILOSOPHY
+========================================================================
+Principles:
+1. Clarity over decoration
+2. Space equals quality
+3. One primary action per page
+4. Gaming UI, not corporate UI
+5. Subtle motion only
+
+Target feeling:
+- Premium
+- Trustworthy
+- Competitive
+- Engaging
+
+========================================================================
+SECTION 7 – VISUAL HIERARCHY
+========================================================================
+Each page must define ONE primary action.
+
+Homepage primary CTA:
+- "Forum'a Katıl" OR "Sunucuları Keşfet"
+
+Primary CTA rules:
+- Larger size
+- Solid fill
+- Bright orange
+- Subtle glow
+
+Secondary actions:
+- Outline buttons
+- Reduced contrast
+
+========================================================================
+SECTION 8 – TYPOGRAPHY SYSTEM
+========================================================================
+Fonts:
+- Headings: Inter / Poppins / Sora
+- Body: Inter / Roboto
+
+Scale:
+H1: 48–56px
+H2: 24–28px
+H3: 16–18px
+Body: 14–15px
+Meta: 12–13px
+
+Line-height:
+- Body: 1.5–1.7
+- Headings: 1.2–1.3
+
+========================================================================
+SECTION 9 – GRID & SPACING
+========================================================================
+- Page padding: 80–120px
+- Card gap: ≥24px
+- Card padding: 20–28px
+
+Whitespace is mandatory.
+
+========================================================================
+SECTION 10 – CARD SYSTEM
+========================================================================
+Cards used for:
+- Forum
+- Stats
+- Servers
+- Jackpot
+
+Style:
+- Radius: 12–16px
+- Slightly lighter background
+- Subtle border
+
+Hover:
+translateY(-4px)
+glow shadow
+transition 0.2s
+
+========================================================================
+SECTION 11 – COLOR ROLE SYSTEM
+========================================================================
+Orange = primary emphasis only.
+
+Roles:
+- Primary (Armor, Jackpot, CTA): Orange
+- Success (TL, wins): Green
+- Info (stats): Blue/Purple
+- Warning: Yellow
+- Error: Red
+- Neutral: Gray
+
+========================================================================
+SECTION 12 – NAVBAR & HEADER
+========================================================================
+- Active page indicator
+- Hover transitions
+- Avatar borders by role
+
+========================================================================
+SECTION 13 – JACKPOT EXPERIENCE (CRITICAL)
+========================================================================
+Goal:
+Dramatic, memorable win experience.
+
+Requirements:
+- Large spinner
+- Background blur/vignette
+- Noise reduction during spin
+
+Win moment:
+- Screen dim
+- Winner centered
+- Armor emphasized
+- Glow/burst animation
+
+========================================================================
+SECTION 14 – MICRO-INTERACTIONS
+========================================================================
+- Hover feedback
+- Click feedback
+- HOT pulse badges
+- Smooth transitions
+- Custom scrollbar
+
+Avoid over-animation.
+
+========================================================================
+SECTION 15 – UI STATES
+========================================================================
+All interactive elements must define:
+- Loading (prefer skeletons)
+- Empty
+- Error
+- Success
+
+No silent states allowed.
+
+========================================================================
+SECTION 16 – EMPTY STATES
+========================================================================
+Empty states must be intentional.
+
+Examples:
+- No forum threads
+- Jackpot waiting
+- No servers
+
+Empty state must not resemble a bug.
+
+========================================================================
+SECTION 17 – COMPONENT REUSABILITY
+========================================================================
+Mandatory reusable components:
+- Buttons
+- Cards
+- Badges
+- Modals
+- Tooltips
+
+Avoid one-off styles.
+
+========================================================================
+SECTION 18 – RESPONSIVE DESIGN
+========================================================================
+Breakpoints:
+- Desktop: 1200px+
+- Tablet: 768–1199px
+- Mobile: <768px
+
+Rules:
+- Maintain hierarchy
+- Reduce density
+- Stack cards
+- Keep primary CTA visible
+
+========================================================================
+SECTION 19 – PERFORMANCE RULES
+========================================================================
+Animations:
+- Transform & opacity only
+- 150–300ms duration
+- No infinite loops (except indicators)
+
+Performance > visuals.
+
+========================================================================
+SECTION 20 – CLAUDE EXECUTION INSTRUCTIONS
+========================================================================
+Claude must:
+- Treat this document as binding
+- Modify ONLY frontend
+- Preserve existing logic
+- Work incrementally
+- Avoid speculative refactors
+
+Frontend is the ONLY UI source of truth.
+
+========================================================================
+SECTION 21 – QUALITY CHECKLIST
+========================================================================
+Before completion:
+- One primary action per page
+- Consistent typography
+- Proper spacing
+- Correct color roles
+- Hover states exist
+- Empty states handled
+- Jackpot feels epic
+
+If any check fails, refinement is required.
+
+========================================================================
+END OF ULTRA FINAL DOCUMENT
+========================================================================

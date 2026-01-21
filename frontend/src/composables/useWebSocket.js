@@ -86,7 +86,7 @@ export function useWebSocket(endpoint, options = {}) {
 
           if (onMessage) onMessage(data)
         } catch (err) {
-          console.error('WebSocket message parse error:', err)
+          // Parse error - ignore invalid message
         }
       }
 
@@ -109,12 +109,12 @@ export function useWebSocket(endpoint, options = {}) {
       }
 
       ws.value.onerror = (error) => {
-        console.error('WebSocket error:', endpoint, error)
+        // WebSocket error - handled by onclose
         if (onError) onError(error)
       }
 
     } catch (error) {
-      console.error('WebSocket connection error:', error)
+      // Connection error
       isConnected.value = false
     }
   }
@@ -150,7 +150,7 @@ export function useWebSocket(endpoint, options = {}) {
       ws.value.send(message)
       return true
     } catch (error) {
-      console.error('WebSocket send error:', error)
+      // Send error
       return false
     }
   }

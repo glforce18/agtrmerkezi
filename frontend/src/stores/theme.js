@@ -1,10 +1,31 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { darkTheme } from 'naive-ui'
 
+const STORAGE_KEY = 'agtr-theme-mode'
+
 export const useThemeStore = defineStore('theme', () => {
-  // Simple dark/light mode
-  const isDark = ref(localStorage.getItem('agtr-dark-mode') !== 'false')
+  // Theme mode: 'light', 'dark', or 'system'
+  const mode = ref(localStorage.getItem(STORAGE_KEY) || 'dark')
+
+  // System preference
+  const systemPrefersDark = ref(
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
+
+  // Simple dark/light mode (computed from mode)
+  const isDark = computed(() => {
+    if (mode.value === 'system') {
+      return systemPrefersDark.value
+    }
+    return mode.value === 'dark'
+  })
+
+  // Theme mode label for UI
+  const modeLabel = computed(() => {
+    const labels = { light: 'Açık', dark: 'Koyu', system: 'Sistem' }
+    return labels[mode.value]
+  })
 
   // Naive UI theme object
   const naiveTheme = computed(() => isDark.value ? darkTheme : null)
@@ -249,35 +270,73 @@ export const useThemeStore = defineStore('theme', () => {
     },
   }))
 
-  function setDarkMode(value) {
-    isDark.value = value
-    localStorage.setItem('agtr-dark-mode', value.toString())
+  // Set theme mode
+  function setMode(newMode) {
+    mode.value = newMode
+    localStorage.setItem(STORAGE_KEY, newMode)
+    applyTheme()
+  }
 
-    // Update document class for Tailwind
-    if (value) {
-      document.documentElement.classList.add('dark')
+  // Toggle between light and dark (skip system)
+  function toggleTheme() {
+    setMode(isDark.value ? 'light' : 'dark')
+  }
+
+  // Cycle through modes: light -> dark -> system -> light
+  function cycleMode() {
+    const modes = ['light', 'dark', 'system']
+    const currentIndex = modes.indexOf(mode.value)
+    const nextIndex = (currentIndex + 1) % modes.length
+    setMode(modes[nextIndex])
+  }
+
+  // Legacy support
+  function setDarkMode(value) {
+    setMode(value ? 'dark' : 'light')
+  }
+
+  // Apply theme to document
+  function applyTheme() {
+    const root = document.documentElement
+
+    if (isDark.value) {
+      root.classList.add('dark')
+      root.classList.remove('light')
     } else {
-      document.documentElement.classList.remove('dark')
+      root.classList.add('light')
+      root.classList.remove('dark')
+    }
+
+    // Update meta theme-color for mobile browsers
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', isDark.value ? '#0f0f1a' : '#ffffff')
     }
   }
 
-  function toggleTheme() {
-    setDarkMode(!isDark.value)
-  }
+  // Listen for system preference changes
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+  mediaQuery.addEventListener('change', (e) => {
+    systemPrefersDark.value = e.matches
+    if (mode.value === 'system') {
+      applyTheme()
+    }
+  })
 
-  // Initialize on load
-  function init() {
-    setDarkMode(isDark.value)
-  }
-
-  // Call init
-  init()
+  // Watch isDark changes to apply theme
+  watch(isDark, () => {
+    applyTheme()
+  }, { immediate: true })
 
   return {
+    mode,
     isDark,
+    modeLabel,
     naiveTheme,
     themeOverrides,
+    setMode,
     setDarkMode,
-    toggleTheme
+    toggleTheme,
+    cycleMode
   }
 })

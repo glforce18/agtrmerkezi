@@ -142,10 +142,8 @@ class JackpotService:
         round.total_pot = (round.total_pot or 0) + amount
         round.participant_count = (round.participant_count or 0) + 1
 
-        # İlk bahis ise turu aktif yap
-        if round.status == JackpotStatus.WAITING:
-            round.status = JackpotStatus.ACTIVE
-            round.started_at = datetime.utcnow()
+        # NOT: Status değişikliği jackpot_manager tarafından yapılacak
+        # 2+ benzersiz oyuncu olduğunda manager ACTIVE'e geçirecek
 
         self.db.commit()
         self.db.refresh(bet)
@@ -240,21 +238,31 @@ class JackpotService:
             reference_type="jackpot"
         )
 
-        # Oyun geçmişi kaydet
+        # Kullanıcı istatistiklerini güncelle
         bets = self.db.query(JackpotBet).filter(JackpotBet.game_id == round_id).all()
         for bet in bets:
             is_winner = bet.user_id == winning_bet.user_id
-            profit = winner_amount - bet.amount if is_winner else -bet.amount
 
-            history = JackpotHistory(
-                game_id=round.id,
-                user_id=bet.user_id,
-                bet_amount=bet.amount,
-                win_amount=winner_amount if is_winner else 0,
-                profit=profit,
-                is_winner=is_winner
-            )
-            self.db.add(history)
+            # Kullanıcının history kaydını bul veya oluştur
+            history = self.db.query(JackpotHistory).filter(
+                JackpotHistory.user_id == bet.user_id
+            ).first()
+
+            if not history:
+                history = JackpotHistory(user_id=bet.user_id)
+                self.db.add(history)
+
+            # İstatistikleri güncelle
+            history.total_games_played = (history.total_games_played or 0) + 1
+            history.total_wagered = (history.total_wagered or 0) + bet.amount
+
+            if is_winner:
+                history.win_count = (history.win_count or 0) + 1
+                history.total_won = (history.total_won or 0) + winner_amount
+                if winner_amount > (history.biggest_win or 0):
+                    history.biggest_win = winner_amount
+            else:
+                history.total_lost = (history.total_lost or 0) + bet.amount
 
         self.db.commit()
 

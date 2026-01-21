@@ -879,9 +879,21 @@ class SiteSettings(Base):
     # Tema ayarlari
     theme_settings = Column(JSON, default={})
 
-    # Logo ayarlari
-    logo_url = Column(String(500))
-    favicon_url = Column(String(500))
+    # Branding / Logo ayarlari
+    logo_url = Column(String(500), default='/logo-navbar.png')
+    logo_dark_url = Column(String(500))
+    logo_mobile_url = Column(String(500))
+    logo_width = Column(String(20), default='auto')
+    logo_height = Column(String(20), default='36')
+    logo_text = Column(String(50), default='AGTR')
+    logo_subtitle = Column(String(50), default='MERKEZİ')
+    show_logo_text = Column(Boolean, default=False)
+    footer_logo_url = Column(String(500))
+    footer_logo_width = Column(String(20), default='auto')
+    footer_logo_height = Column(String(20), default='48')
+    favicon_url = Column(String(500), default='/favicon.ico')
+    primary_color = Column(String(20), default='#f97316')
+    secondary_color = Column(String(20), default='#3b82f6')
 
     # Timestamps
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

@@ -32,8 +32,11 @@ app.use(pinia)
 app.use(router)
 
 // Global error handler
-app.config.errorHandler = (err, instance, info) => {
-  console.error('Global error:', err, info)
+app.config.errorHandler = (err, _instance, _info) => {
+  // Log to external service in production
+  if (import.meta.env.DEV) {
+    console.error('Vue error:', err) // eslint-disable-line no-console
+  }
   window.$message?.error('Bir hata oluştu')
 }
 

@@ -32,6 +32,9 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/api/payments/callback",  # Payment gateway callbacks
             "/api/media",  # Protected by auth middleware
             "/api/smart-media",  # Protected by auth middleware
+            "/api/admin/media",  # Admin media upload - protected by admin auth
+            "/api/notifications",  # Notification actions
+            "/api/user/avatar",  # Avatar upload
             "/ws"  # WebSocket connections
         ]
     

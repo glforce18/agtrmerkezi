@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import get_current_user
 from app.models.connection import get_db
 from app.models.database import User, UserRole
@@ -24,7 +25,7 @@ router = APIRouter()
 # CONFIGURATION
 # ============================================================================
 
-SERVERS_PATH = "/home/gameservers"
+SERVERS_PATH = settings.HLDS_PATH
 BACKUPS_PATH = "/var/www/backups/servers"
 MAX_BACKUPS_PER_SERVER = 5
 
@@ -575,7 +576,7 @@ async def execute_task(db: Session, task_id: int):
         if task[2] == "restart":
             # Sunucu restart
             result = subprocess.run(
-                ["/home/gameservers/server_manager.sh", "restart", str(task[1])],
+                [f"{settings.HLDS_PATH}/server_manager.sh", "restart", str(task[1])],
                 capture_output=True, timeout=120
             )
             output = result.stdout.decode()

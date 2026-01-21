@@ -181,38 +181,24 @@ const getHeaders = () => {
   return headers
 }
 
-const pages = ref([
-  {
-    id: 1,
-    page_slug: 'home',
-    section_slug: 'hero',
-    title: 'AGTR Merkezi',
-    subtitle: 'CS 1.6 ve Half-Life Gaming Community',
-    content: '',
-    is_active: true,
-    icon: 'Home'
-  },
-  {
-    id: 2,
-    page_slug: 'home',
-    section_slug: 'features',
-    title: 'Ozellikler',
-    subtitle: 'Neden bizi secmelisiniz?',
-    content: '',
-    is_active: true,
-    icon: 'Info'
-  },
-  {
-    id: 3,
-    page_slug: 'jackpot',
-    section_slug: 'hero',
-    title: 'Jackpot',
-    subtitle: 'Armor ile sans oyunlari',
-    content: '',
-    is_active: true,
-    icon: 'Trophy'
+const pages = ref([])
+const loading = ref(false)
+
+const fetchPages = async () => {
+  loading.value = true
+  try {
+    const response = await fetch('/api/admin/pages', {
+      headers: getHeaders()
+    })
+    if (response.ok) {
+      const data = await response.json()
+      pages.value = data.pages || []
+    }
+  } catch (e) {
+    console.error('Fetch pages error:', e)
   }
-])
+  loading.value = false
+}
 
 const showAddModal = ref(false)
 const editingPage = ref(null)
@@ -273,7 +259,7 @@ const savePage = async () => {
 
     if (response.ok) {
       closeModal()
-      // Refresh pages list
+      fetchPages()
     }
   } catch (e) {
     console.error('Save error:', e)
@@ -281,7 +267,7 @@ const savePage = async () => {
 }
 
 onMounted(() => {
-  // Fetch pages from API
+  fetchPages()
 })
 </script>
 

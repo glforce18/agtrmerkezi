@@ -142,6 +142,12 @@ const routes = [
     meta: { title: 'Tema Ayarlari', requiresAuth: true, requiresAdmin: true }
   },
   {
+    path: '/admin/forum',
+    name: 'admin-forum',
+    component: () => import('@/views/admin/Forum.vue'),
+    meta: { title: 'Forum Yönetimi', requiresAuth: true, requiresAdmin: true }
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/Login.vue'),

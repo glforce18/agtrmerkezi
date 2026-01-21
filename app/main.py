@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
@@ -51,6 +51,7 @@ from app.api import (
 )
 from app.api.admin import forum_categories as admin_forum_categories
 from app.api.admin import forum_topics as admin_forum_topics
+from app.api.admin import pages as admin_pages
 from app.core.security import get_current_user, hash_password
 from app.models.connection import get_db, init_db
 from app.models.database import (
@@ -303,8 +304,9 @@ app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
 
 # Admin APIs
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
-app.include_router(admin_forum_categories.router, tags=["Admin Forum"])
-app.include_router(admin_forum_topics.router, tags=["Admin Forum"])
+app.include_router(admin_forum_categories.router, prefix="/api", tags=["Admin Forum"])
+app.include_router(admin_forum_topics.router, prefix="/api", tags=["Admin Forum"])
+app.include_router(admin_pages.router, tags=["Admin Pages"])
 
 # Feature APIs
 app.include_router(websocket.router, tags=["WebSocket"])
@@ -397,3 +399,80 @@ async def get_leaderboard(game: str = None, db: Session = Depends(get_db)):
         "score": int(u.balance or 0),
         "avatar": f"https://api.dicebear.com/7.x/initials/svg?seed={u.username}"
     } for i, u in enumerate(users)]
+
+
+@app.get("/api/public/settings")
+async def get_public_settings(db: Session = Depends(get_db)):
+    """Get public site settings (branding, logo, etc.) - no auth required"""
+    site = db.query(SiteSettings).first()
+
+    if not site:
+        # Return defaults
+        return {
+            "site_name": "AGTR Merkezi",
+            "site_description": "Half-Life & CS 1.6 Gaming Platform",
+            "logo_url": "/logo-navbar.png",
+            "logo_dark_url": "",
+            "logo_mobile_url": "",
+            "logo_width": "auto",
+            "logo_height": "36",
+            "logo_text": "AGTR",
+            "logo_subtitle": "MERKEZİ",
+            "show_logo_text": False,
+            "footer_logo_url": "",
+            "footer_logo_width": "auto",
+            "footer_logo_height": "48",
+            "favicon_url": "/favicon.ico",
+            "primary_color": "#f97316",
+            "secondary_color": "#3b82f6",
+            "discord_url": "",
+            "maintenance_mode": False
+        }
+
+    return {
+        "site_name": site.site_name or "AGTR Merkezi",
+        "site_description": site.site_description or "",
+        "logo_url": site.logo_url or "/logo-navbar.png",
+        "logo_dark_url": site.logo_dark_url or "",
+        "logo_mobile_url": site.logo_mobile_url or "",
+        "logo_width": site.logo_width or "auto",
+        "logo_height": site.logo_height or "36",
+        "logo_text": site.logo_text or "AGTR",
+        "logo_subtitle": site.logo_subtitle or "MERKEZİ",
+        "show_logo_text": site.show_logo_text or False,
+        "footer_logo_url": site.footer_logo_url or "",
+        "footer_logo_width": site.footer_logo_width or "auto",
+        "footer_logo_height": site.footer_logo_height or "48",
+        "favicon_url": site.favicon_url or "/favicon.ico",
+        "primary_color": site.primary_color or "#f97316",
+        "secondary_color": site.secondary_color or "#3b82f6",
+        "discord_url": site.discord_url or "",
+        "maintenance_mode": site.maintenance_mode or False
+    }
+
+
+# ==================== SPA FRONTEND ====================
+
+# Serve Vue.js SPA - must be last!
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    """Serve Vue.js SPA for all non-API routes"""
+    import os
+
+    # Check if it's a static file request
+    static_file = f"static/dist/{full_path}"
+    if os.path.isfile(static_file):
+        return FileResponse(static_file)
+
+    # Check assets folder
+    assets_file = f"static/dist/assets/{full_path}"
+    if os.path.isfile(assets_file):
+        return FileResponse(assets_file)
+
+    # For all other routes, serve index.html (SPA routing)
+    index_path = "static/dist/index.html"
+    if os.path.isfile(index_path):
+        return FileResponse(index_path)
+
+    # Fallback to static folder root
+    return FileResponse("static/dist/index.html")

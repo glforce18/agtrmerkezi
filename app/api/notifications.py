@@ -10,7 +10,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.core.security import get_current_user
+from app.core.security import get_current_user_required
 from app.models.connection import get_db
 from app.models.database import User, UserRole
 from app.services.email import email_service
@@ -104,7 +104,7 @@ async def get_notifications(
     unread_only: bool = False,
     limit: int = 50,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """📋 Bildirimler"""
     ensure_notification_tables(db)
@@ -141,7 +141,7 @@ async def get_notifications(
 async def mark_as_read(
     notification_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """✅ Okundu işaretle"""
     db.execute(text("""
@@ -156,7 +156,7 @@ async def mark_as_read(
 @router.post("/read-all")
 async def mark_all_as_read(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """✅ Tümünü okundu işaretle"""
     db.execute(text("""
@@ -172,7 +172,7 @@ async def mark_all_as_read(
 async def archive_notification(
     notification_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """🗑️ Bildirimi arşivle"""
     db.execute(text("""
@@ -180,8 +180,25 @@ async def archive_notification(
         WHERE id = :id AND user_id = :uid
     """), {"id": notification_id, "uid": current_user.id})
     db.commit()
-    
+
     return {"success": True}
+
+
+@router.delete("/")
+async def clear_all_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """🗑️ Tüm bildirimleri temizle"""
+    ensure_notification_tables(db)
+
+    db.execute(text("""
+        UPDATE notifications SET is_archived = TRUE
+        WHERE user_id = :uid AND is_archived = FALSE
+    """), {"uid": current_user.id})
+    db.commit()
+
+    return {"success": True, "message": "Tüm bildirimler temizlendi"}
 
 
 # ============================================================================
@@ -264,7 +281,7 @@ async def create_notification_for_users(
 async def subscribe_push(
     data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """📲 Push aboneliği"""
     ensure_notification_tables(db)
@@ -301,7 +318,7 @@ async def subscribe_push(
 async def unsubscribe_push(
     data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """🔕 Push aboneliğini iptal et"""
     endpoint = data.get("endpoint")
@@ -371,7 +388,7 @@ async def send_push_notification(db: Session, user_id: int, title: str, body: st
 @router.get("/preferences")
 async def get_preferences(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """⚙️ Bildirim tercihleri"""
     ensure_notification_tables(db)
@@ -408,7 +425,7 @@ async def get_preferences(
 async def update_preferences(
     data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """⚙️ Bildirim tercihlerini güncelle"""
     ensure_notification_tables(db)
@@ -451,7 +468,7 @@ async def send_broadcast(
     data: dict,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """📢 Toplu bildirim gönder"""
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
@@ -507,7 +524,7 @@ async def send_broadcast_notifications(db: Session, broadcast_id: int, title: st
 @router.get("/broadcast/history")
 async def broadcast_history(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_required)
 ):
     """📋 Toplu bildirim geçmişi"""
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:

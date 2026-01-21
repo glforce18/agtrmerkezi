@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import get_current_user
 from app.models.connection import get_db
 from app.models.database import User, UserRole
@@ -24,7 +25,7 @@ router = APIRouter()
 # ============================================================================
 
 PLUGINS_PATH = "/var/www/agtrmerkezi/static/plugins"
-SERVERS_PATH = "/home/gameservers"
+SERVERS_PATH = settings.HLDS_PATH
 
 # ============================================================================
 # DATABASE TABLES

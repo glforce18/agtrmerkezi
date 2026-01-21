@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import psutil
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
@@ -2724,30 +2724,38 @@ async def list_media(
 @router.post("/media/upload")
 async def upload_media(
     file: UploadFile = File(...),
-    category: str = Query("general"),
+    category: str = Form("general"),
     admin: User = Depends(get_current_admin)
 ):
     """Gorsel yukle"""
     import os
-    
+    import uuid
+
     allowed_ext = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
     ext = Path(file.filename).suffix.lower()
-    
+
     if ext not in allowed_ext:
-        raise HTTPException(status_code=400, detail="Gecersiz dosya formati")
-    
+        raise HTTPException(status_code=400, detail="Gecersiz dosya formati. Izin verilen: png, jpg, jpeg, gif, webp, svg")
+
+    # Validate file size (max 10MB)
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Dosya boyutu 10MB'dan buyuk olamaz")
+
     upload_dir = Path(f"/var/www/agtrmerkezi/static/images/{category}")
     upload_dir.mkdir(parents=True, exist_ok=True)
-    
-    file_path = upload_dir / file.filename
-    
+
+    # Generate unique filename to avoid overwrites
+    unique_name = f"{uuid.uuid4().hex[:8]}_{file.filename}"
+    file_path = upload_dir / unique_name
+
     with open(file_path, "wb") as f:
-        content = await file.read()
         f.write(content)
-    
+
     return {
         "success": True,
-        "file_path": f"/static/images/{category}/{file.filename}"
+        "file_path": f"/static/images/{category}/{unique_name}",
+        "url": f"/static/images/{category}/{unique_name}"
     }
 
 
