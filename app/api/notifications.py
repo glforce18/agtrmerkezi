@@ -201,6 +201,36 @@ async def clear_all_notifications(
     return {"success": True, "message": "Tüm bildirimler temizlendi"}
 
 
+@router.post("/cleanup")
+async def cleanup_old_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """🧹 Eski bildirimleri temizle (30 günden eski)"""
+    ensure_notification_tables(db)
+
+    # 30 günden eski bildirimleri arşivle
+    result = db.execute(text("""
+        UPDATE notifications SET is_archived = TRUE
+        WHERE user_id = :uid
+        AND is_archived = FALSE
+        AND created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)
+    """), {"uid": current_user.id})
+    db.commit()
+
+    # Okunmuş ve 7 günden eski bildirimleri de arşivle
+    db.execute(text("""
+        UPDATE notifications SET is_archived = TRUE
+        WHERE user_id = :uid
+        AND is_archived = FALSE
+        AND is_read = TRUE
+        AND created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
+    """), {"uid": current_user.id})
+    db.commit()
+
+    return {"success": True, "message": "Eski bildirimler temizlendi"}
+
+
 # ============================================================================
 # CREATE NOTIFICATIONS
 # ============================================================================

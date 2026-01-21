@@ -461,11 +461,57 @@ const navItems = [
   { path: '/shop', label: 'Sunucu Kirala', icon: ShoppingBag }
 ]
 
-// Notifications
-const notifications = ref([
-  { id: 1, title: 'Sunucu Başladı', message: 'AGTR Public #1 başarıyla başladı.', read: false, time: '2 dakika önce' },
-  { id: 2, title: 'Yeni Güncelleme', message: 'v8.0 yayinlandi!', read: false, time: '1 saat önce' }
-])
+// Notifications - API'den yüklenir
+const notifications = ref([])
+const notificationsLoading = ref(false)
+let notificationRefreshInterval = null
+
+// Fetch notifications from API
+const fetchNotifications = async () => {
+  const token = localStorage.getItem('access_token')
+  if (!token) return
+
+  try {
+    const res = await fetch('/api/notifications/?limit=10', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (res.ok) {
+      const data = await res.json()
+      notifications.value = (data.notifications || []).map(n => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        read: n.is_read,
+        time: formatNotificationTime(n.created_at),
+        action_url: n.action_url
+      }))
+      // Yeni bildirim varsa animasyon göster
+      if (data.unread_count > 0 && !hasNewNotification.value) {
+        hasNewNotification.value = true
+      }
+    }
+  } catch (e) {
+    // Sessizce hata yönet
+  }
+}
+
+// Format notification time
+const formatNotificationTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diff = now - date
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (seconds < 60) return 'Az önce'
+  if (minutes < 60) return `${minutes} dk önce`
+  if (hours < 24) return `${hours} saat önce`
+  if (days < 7) return `${days} gün önce`
+  return date.toLocaleDateString('tr-TR')
+}
 
 // Scroll handling
 const handleScroll = () => {
@@ -557,24 +603,64 @@ const handleLogout = async () => {
 const handleNotificationPopover = (show) => {
   if (show) {
     hasNewNotification.value = false
+    // Popover açıldığında bildirimleri yenile
+    fetchNotifications()
   }
 }
 
-const markAllAsRead = () => {
-  notifications.value = notifications.value.map(n => ({ ...n, read: true }))
-}
+const markAllAsRead = async () => {
+  const token = localStorage.getItem('access_token')
+  if (!token) return
 
-const handleNotificationClick = (notification) => {
-  notification.read = true
-}
-
-// Simulate new notification (for demo)
-const simulateNewNotification = () => {
-  setTimeout(() => {
-    if (unreadCount.value > 0) {
-      hasNewNotification.value = true
+  try {
+    const res = await fetch('/api/notifications/read-all', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (res.ok) {
+      // Lokal state'i güncelle
+      notifications.value = notifications.value.map(n => ({ ...n, read: true }))
     }
-  }, 3000)
+  } catch (e) {
+    // Hata yönetimi
+  }
+}
+
+const handleNotificationClick = async (notification) => {
+  if (!notification.read) {
+    const token = localStorage.getItem('access_token')
+    if (token) {
+      try {
+        await fetch(`/api/notifications/${notification.id}/read`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        notification.read = true
+      } catch (e) {
+        // Hata yönetimi
+      }
+    }
+  }
+
+  // Eğer action_url varsa yönlendir
+  if (notification.action_url) {
+    router.push(notification.action_url)
+  }
+}
+
+// Delete old notifications (older than 30 days)
+const cleanupOldNotifications = async () => {
+  const token = localStorage.getItem('access_token')
+  if (!token) return
+
+  try {
+    await fetch('/api/notifications/cleanup', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+  } catch (e) {
+    // Sessizce hata yönet
+  }
 }
 
 // Lifecycle
@@ -586,12 +672,24 @@ onMounted(() => {
     settingsStore.fetchSettings()
   }
 
-  simulateNewNotification()
+  // Bildirimleri yükle
+  fetchNotifications()
+
+  // 30 saniyede bir bildirimleri yenile
+  notificationRefreshInterval = setInterval(fetchNotifications, 30000)
+
+  // Eski bildirimleri temizle (sayfa yüklendiğinde bir kez)
+  cleanupOldNotifications()
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   document.body.style.overflow = ''
+
+  // Interval'i temizle
+  if (notificationRefreshInterval) {
+    clearInterval(notificationRefreshInterval)
+  }
 })
 
 // Watch for route changes to close mobile menu
