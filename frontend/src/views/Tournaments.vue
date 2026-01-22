@@ -185,6 +185,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
@@ -192,6 +199,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   Trophy,
   Calendar,
@@ -208,10 +216,12 @@ import {
 } from 'lucide-vue-next'
 import { useTournamentsStore, TournamentStatus, GameType } from '@/stores/tournaments'
 import { useAuthStore } from '@/stores/auth'
+import { useRequireSteam } from '@/composables/useRequireSteam'
 import TournamentCard from '@/components/game/TournamentCard.vue'
 
 const tournamentsStore = useTournamentsStore()
 const authStore = useAuthStore()
+const { showSteamModal, connectSteam, closeModal } = useRequireSteam()
 
 const {
   tournaments,

@@ -21,7 +21,7 @@
               v-if="authStore.isAuthenticated && !clansStore.isInClan"
               type="primary"
               size="large"
-              @click="showCreateModal = true"
+              @click="requireSteam(() => showCreateModal = true)"
             >
               <template #icon><Plus class="w-5 h-5" /></template>
               Klan Oluştur
@@ -168,7 +168,7 @@
           <Shield class="w-16 h-16 text-gray-600" />
           <h3 class="text-xl font-semibold mt-4">Klan Bulunamadı</h3>
           <p class="text-gray-400 mt-2">Arama kriterlerinize uygun klan yok.</p>
-          <n-button v-if="authStore.isAuthenticated" type="primary" class="mt-4" @click="showCreateModal = true">
+          <n-button v-if="authStore.isAuthenticated" type="primary" class="mt-4" @click="requireSteam(() => showCreateModal = true)">
             <template #icon><Plus class="w-5 h-5" /></template>
             İlk Klanı Oluştur
           </n-button>
@@ -234,6 +234,13 @@
         </div>
       </n-form>
     </n-modal>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
@@ -242,18 +249,21 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   Shield, Plus, Users, Trophy, Target, Crown, Search,
   ArrowRight, Clock, UserPlus
 } from 'lucide-vue-next'
 import { useClansStore } from '@/stores/clans'
 import { useAuthStore } from '@/stores/auth'
+import { useRequireSteam } from '@/composables/useRequireSteam'
 import ClanCard from '@/components/social/ClanCard.vue'
 
 const router = useRouter()
 const message = useMessage()
 const clansStore = useClansStore()
 const authStore = useAuthStore()
+const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
 
 // Search & Filter
 const searchQuery = ref('')

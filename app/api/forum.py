@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.redis_manager import redis_manager
 from app.core.sanitizer import sanitize_forum_content, sanitize_title
-from app.core.security import get_current_user, get_current_user_required
+from app.core.security import get_current_user, get_current_user_required, get_current_user_with_steam
 from app.models.connection import get_db
 from app.models.database import (
     User,
@@ -782,7 +782,7 @@ async def get_topic(slug: str, db: Session = Depends(get_db)):
 async def create_topic(
     data: TopicCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_required)
+    current_user: User = Depends(get_current_user_with_steam)
 ):
     """Yeni konu oluştur"""
     # Rate limit check
@@ -978,7 +978,7 @@ async def create_reply(
     slug: str,
     data: ReplyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_required)
+    current_user: User = Depends(get_current_user_with_steam)
 ):
     """Yanıt ekle"""
     # Rate limit check

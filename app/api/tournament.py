@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.core.security import get_current_user
+from app.core.security import get_current_user, get_current_user_with_steam
 from app.models.connection import get_db
 from app.models.database import User, UserRole
 
@@ -322,9 +322,9 @@ async def register_team(
     tournament_id: int,
     data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_with_steam)
 ):
-    """📝 Turnuvaya takım kayıt"""
+    """📝 Turnuvaya takım kayıt (Steam hesabi baglantisi gerekli)"""
     ensure_tournament_tables(db)
     
     # Turnuva kontrolü

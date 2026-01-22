@@ -56,9 +56,12 @@
           <!-- Action Bar -->
           <div class="action-bar glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between animate-slideUp">
             <div class="flex items-center gap-4">
-              <n-button type="primary" class="new-topic-btn" @click="showNewTopicModal = true">
-                <template #icon><PlusCircleIcon class="w-5 h-5" /></template>
-                Yeni Konu Oluştur
+              <n-button type="primary" class="new-topic-btn" @click="handleNewTopic">
+                <template #icon>
+                  <LockIcon v-if="!hasSteam" class="w-5 h-5" />
+                  <PlusCircleIcon v-else class="w-5 h-5" />
+                </template>
+                {{ hasSteam ? 'Yeni Konu Olustur' : 'Steam Gerekli' }}
               </n-button>
               <div class="hidden md:flex items-center gap-2 text-sm text-gray-500">
                 <kbd class="kbd-sm">N</kbd> ile hızlı oluştur
@@ -529,6 +532,13 @@
         </div>
       </div>
     </n-modal>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
@@ -537,7 +547,9 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import { forumAPI } from '@/api'
+import { useRequireSteam } from '@/composables/useRequireSteam'
 import {
   SearchIcon,
   PlusCircleIcon,
@@ -577,11 +589,13 @@ import {
   StarIcon,
   AwardIcon,
   ShieldIcon,
-  HomeIcon
+  HomeIcon,
+  LockIcon
 } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
 
 // Get CSRF token from cookie
 const getCsrfToken = () => {
@@ -1173,6 +1187,13 @@ const animateStats = () => {
   }, interval)
 }
 
+// Handle new topic button - require Steam
+const handleNewTopic = () => {
+  requireSteam(() => {
+    showNewTopicModal.value = true
+  })
+}
+
 const createTopic = async () => {
   if (!isTopicValid.value) return
 
@@ -1225,7 +1246,7 @@ const handleKeydown = (e) => {
 
   if (e.key === 'n' || e.key === 'N') {
     e.preventDefault()
-    showNewTopicModal.value = true
+    handleNewTopic()
   }
 
   if (e.key === '/' || (e.ctrlKey && e.key === 'k')) {

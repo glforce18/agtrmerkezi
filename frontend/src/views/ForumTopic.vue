@@ -680,6 +680,24 @@
         id="reply-form"
         class="reply-form-container glass-morphism-strong rounded-3xl overflow-hidden animate-fade-in"
       >
+        <!-- Steam Required Notice -->
+        <div v-if="!hasSteam" class="steam-required-notice p-4 border-b border-white/10">
+          <div class="flex items-center gap-3">
+            <div class="steam-icon-container">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-[#66c0f4]">
+                <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10c-4.6 0-8.45-3.08-9.64-7.27l3.83 1.58a2.84 2.84 0 0 0 2.78 2.27c1.56 0 2.83-1.27 2.83-2.83v-.13l3.4-2.43h.08c2.08 0 3.77-1.69 3.77-3.77s-1.69-3.77-3.77-3.77-3.77 1.69-3.77 3.77v.05l-2.37 3.46-.16-.01c-.55 0-1.08.16-1.53.45L2 11.54A10 10 0 0 1 12 2z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm text-gray-300">Steam hesabi baglayarak yanit yazabilirsiniz</p>
+              <p class="text-xs text-gray-500">Topluluk guvenligi icin Steam dogrulamasi gereklidir</p>
+            </div>
+            <n-button size="small" type="info" @click="connectSteam">
+              Steam Bagla
+            </n-button>
+          </div>
+        </div>
+
         <!-- Quote Preview in Form -->
         <Transition name="slide-down">
           <div v-if="quotedReply" class="quote-form-preview border-b border-white/10 p-4">
@@ -1000,6 +1018,13 @@
         Herhangi bir sayfada <kbd class="kbd px-1.5 py-0.5 text-xs bg-white/10 border border-white/20 rounded">?</kbd> tusuna basarak bu menüyu gorebilirsiniz
       </div>
     </n-modal>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
@@ -1009,6 +1034,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useForumTopicWS } from '@/composables/useWebSocket'
+import { useRequireSteam } from '@/composables/useRequireSteam'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -1074,6 +1101,9 @@ import {
 const route = useRoute()
 const router = useRouter()
 const topicId = route.params.id
+
+// Steam requirement
+const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
 
 // Refs
 const replyFormRef = ref(null)
@@ -1820,6 +1850,11 @@ function loadDraft() {
 async function submitReply() {
   if (!newReply.value.trim()) return
 
+  // Check for Steam requirement
+  if (!requireSteam()) {
+    return
+  }
+
   isSubmitting.value = true
 
   try {
@@ -1933,6 +1968,23 @@ watch(sortOrder, () => {
 </script>
 
 <style scoped>
+/* Steam Required Notice */
+.steam-required-notice {
+  background: linear-gradient(135deg, rgba(102, 192, 244, 0.1), rgba(23, 26, 33, 0.9));
+  border-bottom: 1px solid rgba(102, 192, 244, 0.2);
+}
+
+.steam-icon-container {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #171a21, #1b2838);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(102, 192, 244, 0.3);
+}
+
 /* Reading Progress Indicator */
 .reading-progress-container {
   position: fixed;

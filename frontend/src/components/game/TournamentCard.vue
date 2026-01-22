@@ -85,7 +85,7 @@
 
       <div class="footer-right">
         <n-button
-          v-if="canRegister"
+          v-if="canRegister && hasSteam"
           type="primary"
           size="small"
           @click.stop="handleRegister"
@@ -93,6 +93,16 @@
         >
           <template #icon><UserPlus class="w-4 h-4" /></template>
           Katıl
+        </n-button>
+
+        <n-button
+          v-else-if="canRegister && !hasSteam"
+          size="small"
+          class="steam-required-btn"
+          @click.stop="handleRegister"
+        >
+          <template #icon><Lock class="w-4 h-4" /></template>
+          Steam Gerekli
         </n-button>
 
         <n-button
@@ -131,9 +141,11 @@ import {
   UserPlus,
   Check,
   ChevronRight,
-  Gamepad2
+  Gamepad2,
+  Lock
 } from 'lucide-vue-next'
 import { useTournamentsStore, TournamentStatus } from '@/stores/tournaments'
+import { useRequireSteam } from '@/composables/useRequireSteam'
 
 const props = defineProps({
   tournament: {
@@ -146,6 +158,7 @@ const emit = defineEmits(['register', 'unregister'])
 
 const message = useMessage()
 const tournamentsStore = useTournamentsStore()
+const { hasSteam, requireSteam } = useRequireSteam()
 
 const registering = ref(false)
 
@@ -224,6 +237,9 @@ const formatPrize = (amount) => {
 }
 
 const handleRegister = async () => {
+  // Steam hesabi kontrolu
+  if (!requireSteam()) return
+
   registering.value = true
   const result = await tournamentsStore.registerForTournament(props.tournament.id)
   registering.value = false
@@ -449,5 +465,16 @@ const handleUnregister = async () => {
 
 .view-btn:hover {
   color: #f97316;
+}
+
+.steam-required-btn {
+  background: linear-gradient(135deg, #1b2838, #2a475e) !important;
+  border-color: #66c0f4 !important;
+  color: #66c0f4 !important;
+}
+
+.steam-required-btn:hover {
+  background: #66c0f4 !important;
+  color: #1b2838 !important;
 }
 </style>

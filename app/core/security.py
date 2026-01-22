@@ -330,6 +330,27 @@ async def get_superadmin(
     return user
 
 
+async def get_current_user_with_steam(
+    user: User = Depends(get_current_user_required)
+) -> User:
+    """Steam hesabi bagli kullanici getir"""
+    if not user.steam_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu ozellik icin Steam hesabi baglantisi gerekli. Profil ayarlarindan Steam hesabinizi baglayabilirsiniz."
+        )
+    return user
+
+
+async def get_current_user_with_steam_optional(
+    user: Optional[User] = Depends(get_current_user)
+) -> Optional[User]:
+    """Steam hesabi bagli kullanici getir (opsiyonel - steam yoksa None doner)"""
+    if user and not user.steam_id:
+        return None
+    return user
+
+
 def generate_reference_code(prefix: str = "PAY") -> str:
     """Referans kodu olustur"""
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")

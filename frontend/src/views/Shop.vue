@@ -244,7 +244,8 @@
               </div>
 
               <!-- Purchase Button -->
-              <button class="purchase-btn muzzle-flash-hover recoil-click" @click="selectPackage(pkg)">
+              <button class="purchase-btn muzzle-flash-hover recoil-click" @click="requireSteam(() => selectPackage(pkg))">
+                <span v-if="!hasSteam && user" class="steam-badge">Steam gerekli</span>
                 <span class="btn-text">Satın Al</span>
                 <ShoppingCart :size="18" />
                 <div class="btn-shine"></div>
@@ -302,8 +303,9 @@
             <tr class="action-row">
               <td></td>
               <td v-for="pkg in filteredPackages" :key="pkg.id + '-action'">
-                <button class="table-purchase-btn" @click="selectPackage(pkg)">
-                  Satın Al
+                <button class="table-purchase-btn" @click="requireSteam(() => selectPackage(pkg))">
+                  <span v-if="!hasSteam && user" class="steam-badge-sm">Steam gerekli</span>
+                  <span v-else>Satın Al</span>
                 </button>
               </td>
             </tr>
@@ -667,6 +669,13 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeSteamModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
@@ -674,7 +683,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useRequireSteam } from '@/composables/useRequireSteam'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   Banknote,
   Shield,
@@ -709,6 +720,7 @@ import {
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal: closeSteamModal } = useRequireSteam()
 
 // Get CSRF token from cookie
 const getCsrfToken = () => {
@@ -2179,6 +2191,31 @@ onMounted(() => {
 
 .purchase-btn:hover .btn-shine {
   left: 100%;
+}
+
+.steam-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: linear-gradient(135deg, #171a21, #1b2838);
+  color: #66c0f4;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #66c0f4;
+  z-index: 1;
+}
+
+.steam-badge-sm {
+  display: block;
+  background: linear-gradient(135deg, #171a21, #1b2838);
+  color: #66c0f4;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(102, 192, 244, 0.5);
 }
 
 /* ============================================

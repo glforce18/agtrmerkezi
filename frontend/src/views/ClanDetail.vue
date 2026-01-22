@@ -67,7 +67,7 @@
               </template>
 
               <template v-else-if="authStore.isAuthenticated && !clansStore.isInClan">
-                <n-button v-if="clan.is_recruiting && !hasApplied" type="primary" @click="handleApply">
+                <n-button v-if="clan.is_recruiting && !hasApplied" type="primary" @click="requireSteam(handleApply)">
                   <template #icon><UserPlus class="w-5 h-5" /></template>
                   Başvur
                 </n-button>
@@ -207,6 +207,13 @@
         </div>
       </n-form>
     </n-modal>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
@@ -214,12 +221,14 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessage, useDialog } from 'naive-ui'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   Shield, Users, Trophy, Target, Crown, UserPlus, Lock,
   Settings, LogOut, Clock, Check, X, MoreVertical, TrendingUp
 } from 'lucide-vue-next'
 import { useClansStore, ClanRole } from '@/stores/clans'
 import { useAuthStore } from '@/stores/auth'
+import { useRequireSteam } from '@/composables/useRequireSteam'
 
 const route = useRoute()
 const router = useRouter()
@@ -227,6 +236,7 @@ const message = useMessage()
 const dialog = useDialog()
 const clansStore = useClansStore()
 const authStore = useAuthStore()
+const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
 
 // State
 const loading = ref(true)

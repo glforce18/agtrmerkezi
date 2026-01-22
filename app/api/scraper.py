@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 
-from app.core.security import get_current_user_required
+from app.core.security import get_current_user_required, get_current_user_with_steam
 from app.models.connection import get_db
 from app.models.database import (
     CommunityServer,
@@ -444,10 +444,10 @@ async def add_server_manually(
     ip: str,
     port: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_required)
+    current_user: User = Depends(get_current_user_with_steam)
 ):
     """
-    Manuel sunucu ekle (Admin)
+    Manuel sunucu ekle (Admin - Steam gerekli)
     """
     if not check_admin_role(current_user):
         raise HTTPException(status_code=403, detail="Yetkisiz islem")

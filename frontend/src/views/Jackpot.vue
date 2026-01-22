@@ -278,10 +278,15 @@
           <button
             @click="placeBet"
             class="bet-btn"
+            :class="{ 'no-steam': !hasSteam }"
             :disabled="!canBet || betting"
           >
             <div class="btn-glow"></div>
             <Loader2Icon v-if="betting" :size="24" class="spin" />
+            <template v-else-if="!hasSteam">
+              <LockIcon :size="24" />
+              <span>Steam Gerekli</span>
+            </template>
             <template v-else>
               <RocketIcon :size="24" />
               <span>BAHİS YAP</span>
@@ -370,13 +375,22 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useRequireSteam } from '@/composables/useRequireSteam'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   Trophy as TrophyIcon,
   Users as UsersIcon,
@@ -390,10 +404,12 @@ import {
   Flame as FlameIcon,
   Rocket as RocketIcon,
   History as HistoryIcon,
-  ChevronRight as ChevronRightIcon
+  ChevronRight as ChevronRightIcon,
+  Lock as LockIcon
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
+const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
 
 // State
 const currentRound = ref(null)
@@ -620,6 +636,9 @@ const getCsrfToken = () => {
 
 const placeBet = async () => {
   if (!canBet.value) return
+
+  // Steam hesabi kontrolu
+  if (!requireSteam()) return
 
   betting.value = true
   try {
@@ -2088,6 +2107,16 @@ onUnmounted(() => {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+.bet-btn.no-steam {
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+  border: 2px solid #66c0f4;
+}
+
+.bet-btn.no-steam:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1b2838 0%, #2a475e 100%);
+  box-shadow: 0 10px 40px rgba(102, 192, 244, 0.3);
 }
 
 .bet-info {

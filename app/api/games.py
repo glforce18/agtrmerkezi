@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.core.security import get_current_user_required
+from app.core.security import get_current_user_required, get_current_user_with_steam
 from app.models.connection import get_db
 from app.models.database import User, JackpotStatus
 from app.services.jackpot import get_jackpot_service
@@ -95,10 +95,10 @@ async def get_current_round(db: Session = Depends(get_db)):
 async def place_jackpot_bet(
     request: Request,
     data: PlaceBetRequest,
-    current_user: User = Depends(get_current_user_required),
+    current_user: User = Depends(get_current_user_with_steam),
     db: Session = Depends(get_db)
 ):
-    """Jackpot'a bahis yap"""
+    """Jackpot'a bahis yap (Steam hesabi baglantisi gerekli)"""
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent", "")[:500]
 

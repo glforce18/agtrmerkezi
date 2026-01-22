@@ -91,6 +91,7 @@ declare module 'vue' {
     ServerMonitoringDashboard: typeof import('./components/dashboard/ServerMonitoringDashboard.vue')['default']
     Skeleton: typeof import('./components/ui/Skeleton.vue')['default']
     SkeletonCard: typeof import('./components/ui/SkeletonCard.vue')['default']
+    SteamRequiredModal: typeof import('./components/SteamRequiredModal.vue')['default']
     ToastContainer: typeof import('./components/ui/ToastContainer.vue')['default']
     TournamentBracket: typeof import('./components/game/TournamentBracket.vue')['default']
     TournamentCard: typeof import('./components/game/TournamentCard.vue')['default']

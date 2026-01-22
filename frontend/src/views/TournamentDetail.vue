@@ -125,7 +125,7 @@
 
           <div class="action-buttons">
             <n-button
-              v-if="canRegister"
+              v-if="canRegister && hasSteam"
               type="primary"
               size="large"
               @click="handleRegister"
@@ -133,6 +133,16 @@
             >
               <template #icon><UserPlus class="w-5 h-5" /></template>
               Turnuvaya Katıl
+            </n-button>
+
+            <n-button
+              v-else-if="canRegister && !hasSteam"
+              size="large"
+              class="steam-required-btn"
+              @click="handleRegister"
+            >
+              <template #icon><Lock class="w-5 h-5" /></template>
+              Steam Gerekli
             </n-button>
 
             <n-button
@@ -329,6 +339,13 @@
         </div>
       </template>
     </div>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
@@ -355,16 +372,20 @@ import {
   GitBranch,
   FileText,
   AlertTriangle,
-  Medal
+  Medal,
+  Lock
 } from 'lucide-vue-next'
 import { useTournamentsStore, TournamentStatus } from '@/stores/tournaments'
 import { useAuthStore } from '@/stores/auth'
+import { useRequireSteam } from '@/composables/useRequireSteam'
 import TournamentBracket from '@/components/game/TournamentBracket.vue'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 
 const route = useRoute()
 const message = useMessage()
 const tournamentsStore = useTournamentsStore()
 const authStore = useAuthStore()
+const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
 
 const loading = ref(false)
 const error = ref(null)
@@ -460,6 +481,9 @@ const handleRegister = async () => {
     message.warning('Kayıt olmak için giriş yapmalısınız.')
     return
   }
+
+  // Steam hesabi kontrolu
+  if (!requireSteam()) return
 
   registering.value = true
   const result = await tournamentsStore.registerForTournament(tournament.value.id)
@@ -1061,5 +1085,17 @@ onMounted(() => {
   .tab-content {
     padding: 16px;
   }
+}
+
+/* Steam Required Button */
+.steam-required-btn {
+  background: linear-gradient(135deg, #1b2838, #2a475e) !important;
+  border-color: #66c0f4 !important;
+  color: #66c0f4 !important;
+}
+
+.steam-required-btn:hover {
+  background: #66c0f4 !important;
+  color: #1b2838 !important;
 }
 </style>

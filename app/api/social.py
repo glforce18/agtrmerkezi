@@ -14,7 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.security import get_current_user
+from app.core.security import get_current_user, get_current_user_with_steam
 from app.models.connection import get_db
 from app.models.database import User
 
@@ -458,7 +458,7 @@ async def list_clans(
 async def create_clan(
     data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_with_steam)
 ):
     """➕ Klan oluştur"""
     ensure_social_tables(db)
@@ -542,7 +542,7 @@ async def apply_to_clan(
     clan_id: int,
     data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_with_steam)
 ):
     """📝 Klana başvur"""
     ensure_social_tables(db)
