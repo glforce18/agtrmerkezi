@@ -56,6 +56,33 @@
 - `app/api/forum_gamification.py`
 - `app/api/admin/forum_moderation.py`
 
+### Steam-Exclusive Ozellikler (22 Ocak 2026) - Commit d6d25cd
+Steam hesabi baglantisi gerektiren ozellikler eklendi:
+
+**Backend Dependency:**
+- `get_current_user_with_steam` - Steam zorunlu
+- `get_current_user_with_steam_optional` - Steam opsiyonel
+
+**Korunan Ozellikler:**
+| Ozellik | Endpoint | Dosya |
+|---------|----------|-------|
+| Forum konu olusturma | POST /api/forum/topics | forum.py |
+| Forum yanit yazma | POST /api/forum/topics/*/replies | forum.py |
+| Jackpot bahis | POST /api/jackpot/bet | games.py |
+| Turnuva kayit | POST /api/tournaments/*/register | tournament.py |
+| Klan olusturma | POST /api/clans | social.py |
+| Klana katilma | POST /api/clans/*/apply | social.py |
+| Sunucu ekleme | POST /api/admin/servers/add | scraper.py |
+
+**Frontend Komponetleri:**
+- `composables/useRequireSteam.js` - Steam kontrol composable
+- `components/SteamRequiredModal.vue` - Steam baglama modal
+
+**Guncellenen Sayfalar:**
+- Jackpot.vue, Tournaments.vue, TournamentDetail.vue
+- Forum.vue, ForumTopic.vue
+- Clans.vue, ClanDetail.vue, Shop.vue
+
 ## Kod Stilleri
 - Commit mesajlari: `feat:`, `fix:`, `docs:` prefix
 - Python: FastAPI + Pydantic + SQLAlchemy

@@ -513,8 +513,10 @@ class User(Base):
     
     # Profil alanlari
     email_verified = Column(Boolean, default=False)
+    email_verification_token = Column(String(64), index=True)
+    email_verification_sent_at = Column(DateTime)
     bio = Column(Text)
-    
+
     # Relationships
     servers = relationship("GameServer", back_populates="owner", lazy="dynamic")
     payments = relationship("Payment", back_populates="user", lazy="dynamic")
@@ -534,7 +536,8 @@ class User(Base):
     gdpr_requests = relationship("GDPRRequest", foreign_keys="GDPRRequest.user_id", back_populates="user", lazy="dynamic")
     download_history = relationship("DownloadHistory", back_populates="user", lazy="dynamic")
     user_activities = relationship("UserActivity", back_populates="user", lazy="dynamic")
-    
+    favorite_servers = relationship("UserFavoriteServer", back_populates="user", cascade="all, delete-orphan")
+
     @property
     def is_online(self):
         """Son 5 dakika icinde aktifse online say"""
@@ -1231,17 +1234,37 @@ class ConfigHistory(Base):
 # ==================== USER FAVORITES ====================
 
 class UserFavorite(Base):
-    """Kullanici favori sunuculari"""
+    """Kullanici favori sunuculari (game_servers icin)"""
     __tablename__ = "user_favorites"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=func.now())
-    
+
     __table_args__ = (
         UniqueConstraint("user_id", "server_id", name="uq_user_favorite"),
     )
+
+
+class UserFavoriteServer(Base):
+    """Kullanici favori sunuculari - Community sunuculari icin (cihazlar arasi senkronizasyon)"""
+    __tablename__ = "user_favorite_servers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    server_id = Column(Integer, nullable=False)  # Can be community server ID or any server ID
+    server_ip = Column(String(50))  # Store IP for quick access
+    server_port = Column(Integer)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Unique constraint - one favorite per user per server
+    __table_args__ = (
+        UniqueConstraint('user_id', 'server_id', name='uq_user_server_favorite'),
+        Index('idx_user_favorites_user', 'user_id'),
+    )
+
+    user = relationship("User", back_populates="favorite_servers")
 
 
 # ==================== USER PREFERENCES ====================
@@ -1836,9 +1859,13 @@ class CommunityServer(Base):
     tags = Column(JSON, default=list)  # ["competitive", "public", "24/7"]
 
     # Kaynak bilgisi
-    source = Column(String(50), default="scraper")  # scraper, manual, gametracker
+    source = Column(String(50), default="scraper")  # scraper, manual, gametracker, user
     is_verified = Column(Boolean, default=False)  # Admin onaylı mı?
     is_featured = Column(Boolean, default=False)  # Öne çıkan sunucu
+
+    # Kullanici tarafindan eklenen sunucular icin
+    submitted_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    description = Column(Text, nullable=True)  # Kullanici aciklamasi
 
     # İstatistikler
     total_queries = Column(Integer, default=0)
@@ -1857,7 +1884,11 @@ class CommunityServer(Base):
         Index('idx_community_server_game', 'game_type'),
         Index('idx_community_server_online', 'is_online'),
         Index('idx_community_server_country', 'country'),
+        Index('idx_community_server_submitted_by', 'submitted_by'),
     )
+
+    # Relationship
+    submitter = relationship("User", foreign_keys=[submitted_by], backref="submitted_servers")
 
     @property
     def address(self) -> str:

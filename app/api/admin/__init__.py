@@ -4,7 +4,7 @@
 # ============================================
 
 # Submodules
-from . import forum_categories, forum_topics, forum_moderation
+from . import forum_categories, forum_topics, forum_moderation, stats
 
 # Main admin router from _main.py
 from ._main import router
@@ -12,4 +12,7 @@ from ._main import router
 # Include forum moderation router
 router.include_router(forum_moderation.router)
 
-__all__ = ['router', 'forum_categories', 'forum_topics', 'forum_moderation']
+# Include stats router
+router.include_router(stats.router)
+
+__all__ = ['router', 'forum_categories', 'forum_topics', 'forum_moderation', 'stats']

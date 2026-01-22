@@ -244,12 +244,23 @@
               </div>
 
               <!-- Purchase Button -->
-              <button class="purchase-btn muzzle-flash-hover recoil-click" @click="requireSteam(() => selectPackage(pkg))">
-                <span v-if="!hasSteam && user" class="steam-badge">Steam gerekli</span>
-                <span class="btn-text">Satın Al</span>
-                <ShoppingCart :size="18" />
-                <div class="btn-shine"></div>
-              </button>
+              <n-tooltip :disabled="isLoggedIn" trigger="hover">
+                <template #trigger>
+                  <button
+                    class="purchase-btn muzzle-flash-hover recoil-click"
+                    :class="{ 'btn-disabled': !isLoggedIn }"
+                    @click="isLoggedIn ? requireSteam(() => selectPackage(pkg)) : null"
+                    :disabled="!isLoggedIn"
+                  >
+                    <span v-if="!isLoggedIn" class="login-badge">Giris Yap</span>
+                    <span v-else-if="!hasSteam && user" class="steam-badge">Steam gerekli</span>
+                    <span class="btn-text">Satin Al</span>
+                    <ShoppingCart :size="18" />
+                    <div class="btn-shine"></div>
+                  </button>
+                </template>
+                Satin almak icin giris yapin
+              </n-tooltip>
             </div>
           </div>
         </div>
@@ -303,10 +314,21 @@
             <tr class="action-row">
               <td></td>
               <td v-for="pkg in filteredPackages" :key="pkg.id + '-action'">
-                <button class="table-purchase-btn" @click="requireSteam(() => selectPackage(pkg))">
-                  <span v-if="!hasSteam && user" class="steam-badge-sm">Steam gerekli</span>
-                  <span v-else>Satın Al</span>
-                </button>
+                <n-tooltip :disabled="isLoggedIn" trigger="hover">
+                  <template #trigger>
+                    <button
+                      class="table-purchase-btn"
+                      :class="{ 'btn-disabled': !isLoggedIn }"
+                      @click="isLoggedIn ? requireSteam(() => selectPackage(pkg)) : null"
+                      :disabled="!isLoggedIn"
+                    >
+                      <span v-if="!isLoggedIn" class="login-badge-sm">Giris Yap</span>
+                      <span v-else-if="!hasSteam && user" class="steam-badge-sm">Steam gerekli</span>
+                      <span v-else>Satin Al</span>
+                    </button>
+                  </template>
+                  Satin almak icin giris yapin
+                </n-tooltip>
               </td>
             </tr>
           </tbody>
@@ -810,6 +832,7 @@ const testimonials = ref([
 
 // Computed
 const user = computed(() => authStore.user)
+const isLoggedIn = computed(() => !!authStore.user)
 
 const filteredPackages = computed(() => {
   if (selectedGame.value === 'all') {
@@ -2216,6 +2239,46 @@ onMounted(() => {
   padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid rgba(102, 192, 244, 0.5);
+}
+
+.login-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  z-index: 1;
+}
+
+.login-badge-sm {
+  display: block;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.purchase-btn.btn-disabled,
+.table-purchase-btn.btn-disabled {
+  background: linear-gradient(135deg, #4b5563, #374151);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.purchase-btn.btn-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.purchase-btn.btn-disabled .btn-shine {
+  display: none;
 }
 
 /* ============================================

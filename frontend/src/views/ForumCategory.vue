@@ -113,17 +113,24 @@
 
               <!-- New Topic Button -->
               <div class="hero-action">
-                <n-button
-                  type="primary"
-                  size="large"
-                  class="new-topic-btn"
-                  @click="showNewTopicModal = true"
-                >
-                  <template #icon>
-                    <PlusCircleIcon class="w-5 h-5" />
+                <n-tooltip :disabled="isLoggedIn" trigger="hover">
+                  <template #trigger>
+                    <n-button
+                      type="primary"
+                      size="large"
+                      class="new-topic-btn"
+                      :class="{ 'btn-disabled': !isLoggedIn }"
+                      @click="handleNewTopic"
+                    >
+                      <template #icon>
+                        <LockIcon v-if="!isLoggedIn" class="w-5 h-5" />
+                        <PlusCircleIcon v-else class="w-5 h-5" />
+                      </template>
+                      {{ isLoggedIn ? 'Yeni Konu Ac' : 'Giris Yap' }}
+                    </n-button>
                   </template>
-                  Yeni Konu Ac
-                </n-button>
+                  Konu olusturmak icin giris yapin
+                </n-tooltip>
               </div>
             </div>
           </div>
@@ -457,10 +464,24 @@
             </p>
 
             <div class="empty-actions">
-              <n-button type="primary" size="large" class="empty-cta" @click="showNewTopicModal = true">
-                <template #icon><PlusCircleIcon class="w-5 h-5" /></template>
-                İlk Konuyu Ac
-              </n-button>
+              <n-tooltip :disabled="isLoggedIn" trigger="hover">
+                <template #trigger>
+                  <n-button
+                    type="primary"
+                    size="large"
+                    class="empty-cta"
+                    :class="{ 'btn-disabled': !isLoggedIn }"
+                    @click="handleNewTopic"
+                  >
+                    <template #icon>
+                      <LockIcon v-if="!isLoggedIn" class="w-5 h-5" />
+                      <PlusCircleIcon v-else class="w-5 h-5" />
+                    </template>
+                    {{ isLoggedIn ? 'Ilk Konuyu Ac' : 'Giris Yap' }}
+                  </n-button>
+                </template>
+                Konu olusturmak icin giris yapin
+              </n-tooltip>
               <n-button quaternary size="large" @click="router.push('/forum')">
                 <template #icon><ArrowLeftIcon class="w-5 h-5" /></template>
                 Foruma Don
@@ -686,6 +707,13 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeSteamModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
@@ -693,6 +721,8 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useRequireSteam } from '@/composables/useRequireSteam'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   HomeIcon,
   MessageSquareIcon,
@@ -739,6 +769,10 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const categoryId = route.params.id
+const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal: closeSteamModal } = useRequireSteam()
+
+// Auth state
+const isLoggedIn = computed(() => !!authStore.user)
 
 // Refs
 const searchQuery = ref('')
@@ -1052,6 +1086,12 @@ const validateForm = () => {
     return false
   }
   return true
+}
+
+const handleNewTopic = () => {
+  requireSteam(() => {
+    showNewTopicModal.value = true
+  })
 }
 
 const createTopic = async () => {
@@ -1650,6 +1690,25 @@ onUnmounted(() => {
 .new-topic-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(249, 115, 22, 0.5) !important;
+}
+
+.new-topic-btn.btn-disabled,
+.empty-cta.btn-disabled {
+  background: linear-gradient(135deg, #4b5563, #374151) !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.new-topic-btn.btn-disabled:hover,
+.empty-cta.btn-disabled:hover {
+  transform: none;
+  box-shadow: none !important;
+}
+
+.new-topic-btn.btn-disabled::before,
+.empty-cta.btn-disabled::before {
+  display: none;
 }
 
 /* Filter Section */

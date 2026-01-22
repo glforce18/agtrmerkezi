@@ -56,13 +56,25 @@
           <!-- Action Bar -->
           <div class="action-bar glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between animate-slideUp">
             <div class="flex items-center gap-4">
-              <n-button type="primary" class="new-topic-btn" @click="handleNewTopic">
-                <template #icon>
-                  <LockIcon v-if="!hasSteam" class="w-5 h-5" />
-                  <PlusCircleIcon v-else class="w-5 h-5" />
+              <n-tooltip :disabled="isLoggedIn" trigger="hover">
+                <template #trigger>
+                  <n-button
+                    type="primary"
+                    class="new-topic-btn"
+                    :class="{ 'btn-disabled': !isLoggedIn }"
+                    @click="handleNewTopic"
+                  >
+                    <template #icon>
+                      <LockIcon v-if="!isLoggedIn || !hasSteam" class="w-5 h-5" />
+                      <PlusCircleIcon v-else class="w-5 h-5" />
+                    </template>
+                    <span v-if="!isLoggedIn">Giris Yap</span>
+                    <span v-else-if="!hasSteam">Steam Gerekli</span>
+                    <span v-else>Yeni Konu Olustur</span>
+                  </n-button>
                 </template>
-                {{ hasSteam ? 'Yeni Konu Olustur' : 'Steam Gerekli' }}
-              </n-button>
+                Konu olusturmak icin giris yapin
+              </n-tooltip>
               <div class="hidden md:flex items-center gap-2 text-sm text-gray-500">
                 <kbd class="kbd-sm">N</kbd> ile hızlı oluştur
               </div>
@@ -596,6 +608,9 @@ import {
 const router = useRouter()
 const authStore = useAuthStore()
 const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
+
+// Auth state
+const isLoggedIn = computed(() => !!authStore.user)
 
 // Get CSRF token from cookie
 const getCsrfToken = () => {
@@ -2020,6 +2035,17 @@ onUnmounted(() => {
 .new-topic-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(249, 115, 22, 0.4) !important;
+}
+
+.new-topic-btn.btn-disabled {
+  background: linear-gradient(135deg, #4b5563, #374151) !important;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.new-topic-btn.btn-disabled:hover {
+  transform: none;
+  box-shadow: none !important;
 }
 
 /* Shortcut Item */

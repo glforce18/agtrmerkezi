@@ -12,8 +12,83 @@
         </h1>
         <span class="text-xs text-green-500 flex items-center gap-1">
           <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-          Canlı
+          Canli
         </span>
+      </div>
+
+      <!-- ELO System Join Banner (for non-participants) -->
+      <!-- Not logged in -->
+      <div v-if="!isLoggedIn && activeCategory === 'elo'" class="elo-join-banner glass-morphism mb-6">
+        <div class="flex flex-col md:flex-row items-center gap-4 p-5">
+          <div class="elo-banner-icon">
+            <AwardIcon class="w-10 h-10 text-orange-500" />
+          </div>
+          <div class="flex-1 text-center md:text-left">
+            <h3 class="text-lg font-bold mb-1">ELO Sistemine Katil</h3>
+            <p class="text-sm text-gray-400">
+              ELO sistemine katilmak icin giris yapin.
+            </p>
+          </div>
+          <div class="flex flex-col items-center gap-2">
+            <button
+              class="btn-join-elo"
+              @click="$router.push({ name: 'Login', query: { redirect: $route.fullPath } })"
+            >
+              <UserIcon class="w-5 h-5" />
+              Giris Yap
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logged in but no Steam -->
+      <div v-else-if="isLoggedIn && !hasSteam && activeCategory === 'elo'" class="elo-join-banner glass-morphism mb-6">
+        <div class="flex flex-col md:flex-row items-center gap-4 p-5">
+          <div class="elo-banner-icon">
+            <AwardIcon class="w-10 h-10 text-orange-500" />
+          </div>
+          <div class="flex-1 text-center md:text-left">
+            <h3 class="text-lg font-bold mb-1">ELO Sistemine Katil</h3>
+            <p class="text-sm text-gray-400">
+              ELO sistemine katilmak icin Steam hesabinizi baglayin.
+            </p>
+          </div>
+          <div class="flex flex-col items-center gap-2">
+            <button
+              class="btn-connect-steam"
+              @click="connectSteam"
+            >
+              <SteamIcon class="w-5 h-5" />
+              Steam Bagla
+            </button>
+            <span class="text-xs text-gray-500">Steam hesabi baglayarak katilabilirsiniz</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logged in with Steam but not in ELO -->
+      <div v-else-if="isLoggedIn && hasSteam && !isParticipating && activeCategory === 'elo'" class="elo-join-banner glass-morphism mb-6">
+        <div class="flex flex-col md:flex-row items-center gap-4 p-5">
+          <div class="elo-banner-icon">
+            <AwardIcon class="w-10 h-10 text-orange-500" />
+          </div>
+          <div class="flex-1 text-center md:text-left">
+            <h3 class="text-lg font-bold mb-1">ELO Sistemine Katil</h3>
+            <p class="text-sm text-gray-400">
+              Rekabetci siralamalara katilmak icin ELO puanlariyla yarisma baslatin.
+            </p>
+          </div>
+          <div class="flex flex-col items-center gap-2">
+            <button
+              class="btn-join-elo"
+              @click="joinEloSystem"
+              :disabled="joiningElo"
+            >
+              <ZapIcon class="w-5 h-5" />
+              {{ joiningElo ? 'Katiliyor...' : 'ELO Sistemine Katil' }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Category Tabs -->
@@ -30,6 +105,26 @@
             <span v-if="tab.count" class="tab-count">{{ tab.count }}</span>
           </button>
           <div class="tab-indicator" :style="tabIndicatorStyle"></div>
+        </div>
+      </div>
+
+      <!-- ELO Tier Legend (when ELO tab is active) -->
+      <div v-if="activeCategory === 'elo'" class="tier-legend glass-morphism mb-4 p-4">
+        <h4 class="text-sm font-semibold mb-3 flex items-center gap-2">
+          <InfoIcon class="w-4 h-4 text-gray-400" />
+          ELO Seviyeleri
+        </h4>
+        <div class="flex flex-wrap gap-3">
+          <div
+            v-for="tier in eloTiers"
+            :key="tier.name"
+            class="tier-badge"
+            :style="{ '--tier-color': tier.color }"
+          >
+            <component :is="getTierIcon(tier.icon)" class="w-4 h-4" :style="{ color: tier.color }" />
+            <span class="tier-name">{{ tier.name }}</span>
+            <span class="tier-min">{{ tier.min_elo }}+</span>
+          </div>
         </div>
       </div>
 
@@ -52,13 +147,26 @@
               </div>
             </div>
             <div v-if="searchQuery && filteredData.length === 0" class="search-no-results">
-              Sonuç bulunamadı
+              Sonuc bulunamadi
             </div>
+          </div>
+
+          <!-- Tier Filter (for ELO) -->
+          <div v-if="activeCategory === 'elo'" class="filter-group">
+            <label class="filter-label">Seviye</label>
+            <n-select
+              v-model:value="tierFilter"
+              :options="tierFilterOptions"
+              class="tier-select"
+              style="width: 140px;"
+              clearable
+              placeholder="Tum Seviyeler"
+            />
           </div>
 
           <!-- Time Range -->
           <div class="filter-group">
-            <label class="filter-label">Zaman Aralığı</label>
+            <label class="filter-label">Zaman Araligi</label>
             <div class="time-range-buttons">
               <button
                 v-for="option in timeOptions"
@@ -73,7 +181,7 @@
 
           <!-- Sort -->
           <div class="filter-group">
-            <label class="filter-label">Sıralama</label>
+            <label class="filter-label">Siralama</label>
             <n-select
               v-model:value="sortBy"
               :options="sortOptions"
@@ -85,7 +193,7 @@
       </div>
 
       <!-- Top 3 Podium -->
-      <div v-if="activeCategory === 'players' && filteredData.length >= 3" class="podium-section mb-12">
+      <div v-if="(activeCategory === 'players' || activeCategory === 'elo') && filteredData.length >= 3" class="podium-section mb-12">
         <div class="podium-grid">
           <!-- 2nd Place -->
           <div class="podium-item silver podium-entry" style="animation-delay: 0.2s" @mouseenter="hoveredPodium = 2" @mouseleave="hoveredPodium = null">
@@ -103,17 +211,22 @@
                 <div class="online-indicator" :class="{ online: filteredData[1].isOnline }"></div>
               </div>
               <h3 class="podium-name">{{ filteredData[1].name }}</h3>
-              <n-tag size="small" :bordered="false" class="podium-rank-tag">{{ filteredData[1].rank }}</n-tag>
-              <div class="podium-score silver-score">{{ formatNumber(filteredData[1].score) }}</div>
-              <div class="podium-label">Skor</div>
+              <!-- ELO Tier Badge -->
+              <div v-if="activeCategory === 'elo' && filteredData[1].tier" class="podium-tier-badge" :style="{ '--tier-color': filteredData[1].tier.color }">
+                <component :is="getTierIcon(filteredData[1].tier.icon)" class="w-3 h-3" />
+                <span>{{ filteredData[1].tier.name }}</span>
+              </div>
+              <n-tag v-else size="small" :bordered="false" class="podium-rank-tag">{{ filteredData[1].rank }}</n-tag>
+              <div class="podium-score silver-score">{{ activeCategory === 'elo' ? filteredData[1].elo : formatNumber(filteredData[1].score) }}</div>
+              <div class="podium-label">{{ activeCategory === 'elo' ? 'ELO' : 'Skor' }}</div>
               <div class="podium-stats">
                 <div class="stat-item">
-                  <span class="stat-value">{{ filteredData[1].kd }}</span>
-                  <span class="stat-label">K/D</span>
+                  <span class="stat-value">{{ activeCategory === 'elo' ? filteredData[1].wins : filteredData[1].kd }}</span>
+                  <span class="stat-label">{{ activeCategory === 'elo' ? 'Galibiyet' : 'K/D' }}</span>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-value">{{ filteredData[1].accuracy }}%</span>
-                  <span class="stat-label">İsabet</span>
+                  <span class="stat-value">{{ activeCategory === 'elo' ? filteredData[1].win_rate + '%' : filteredData[1].accuracy + '%' }}</span>
+                  <span class="stat-label">{{ activeCategory === 'elo' ? 'Kazanma' : 'Isabet' }}</span>
                 </div>
               </div>
             </div>
@@ -145,17 +258,22 @@
                 <div class="winner-ring"></div>
               </div>
               <h3 class="podium-name winner-name">{{ filteredData[0].name }}</h3>
-              <n-tag type="warning" size="small" class="podium-rank-tag">{{ filteredData[0].rank }}</n-tag>
-              <div class="podium-score gold-score">{{ formatNumber(filteredData[0].score) }}</div>
-              <div class="podium-label">Skor</div>
+              <!-- ELO Tier Badge -->
+              <div v-if="activeCategory === 'elo' && filteredData[0].tier" class="podium-tier-badge winner-tier" :style="{ '--tier-color': filteredData[0].tier.color }">
+                <component :is="getTierIcon(filteredData[0].tier.icon)" class="w-4 h-4" />
+                <span>{{ filteredData[0].tier.name }}</span>
+              </div>
+              <n-tag v-else type="warning" size="small" class="podium-rank-tag">{{ filteredData[0].rank }}</n-tag>
+              <div class="podium-score gold-score">{{ activeCategory === 'elo' ? filteredData[0].elo : formatNumber(filteredData[0].score) }}</div>
+              <div class="podium-label">{{ activeCategory === 'elo' ? 'ELO' : 'Skor' }}</div>
               <div class="podium-stats">
                 <div class="stat-item">
-                  <span class="stat-value">{{ filteredData[0].kd }}</span>
-                  <span class="stat-label">K/D</span>
+                  <span class="stat-value">{{ activeCategory === 'elo' ? filteredData[0].wins : filteredData[0].kd }}</span>
+                  <span class="stat-label">{{ activeCategory === 'elo' ? 'Galibiyet' : 'K/D' }}</span>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-value">{{ filteredData[0].accuracy }}%</span>
-                  <span class="stat-label">İsabet</span>
+                  <span class="stat-value">{{ activeCategory === 'elo' ? filteredData[0].win_rate + '%' : filteredData[0].accuracy + '%' }}</span>
+                  <span class="stat-label">{{ activeCategory === 'elo' ? 'Kazanma' : 'Isabet' }}</span>
                 </div>
               </div>
               <!-- Share Button -->
@@ -184,17 +302,22 @@
                 <div class="online-indicator" :class="{ online: filteredData[2].isOnline }"></div>
               </div>
               <h3 class="podium-name">{{ filteredData[2].name }}</h3>
-              <n-tag size="small" :bordered="false" class="podium-rank-tag">{{ filteredData[2].rank }}</n-tag>
-              <div class="podium-score bronze-score">{{ formatNumber(filteredData[2].score) }}</div>
-              <div class="podium-label">Skor</div>
+              <!-- ELO Tier Badge -->
+              <div v-if="activeCategory === 'elo' && filteredData[2].tier" class="podium-tier-badge" :style="{ '--tier-color': filteredData[2].tier.color }">
+                <component :is="getTierIcon(filteredData[2].tier.icon)" class="w-3 h-3" />
+                <span>{{ filteredData[2].tier.name }}</span>
+              </div>
+              <n-tag v-else size="small" :bordered="false" class="podium-rank-tag">{{ filteredData[2].rank }}</n-tag>
+              <div class="podium-score bronze-score">{{ activeCategory === 'elo' ? filteredData[2].elo : formatNumber(filteredData[2].score) }}</div>
+              <div class="podium-label">{{ activeCategory === 'elo' ? 'ELO' : 'Skor' }}</div>
               <div class="podium-stats">
                 <div class="stat-item">
-                  <span class="stat-value">{{ filteredData[2].kd }}</span>
-                  <span class="stat-label">K/D</span>
+                  <span class="stat-value">{{ activeCategory === 'elo' ? filteredData[2].wins : filteredData[2].kd }}</span>
+                  <span class="stat-label">{{ activeCategory === 'elo' ? 'Galibiyet' : 'K/D' }}</span>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-value">{{ filteredData[2].accuracy }}%</span>
-                  <span class="stat-label">İsabet</span>
+                  <span class="stat-value">{{ activeCategory === 'elo' ? filteredData[2].win_rate + '%' : filteredData[2].accuracy + '%' }}</span>
+                  <span class="stat-label">{{ activeCategory === 'elo' ? 'Kazanma' : 'Isabet' }}</span>
                 </div>
               </div>
             </div>
@@ -205,23 +328,40 @@
         </div>
       </div>
 
-      <!-- Your Rank Banner (if logged in) -->
+      <!-- Your Rank Banner (if logged in and participating) -->
       <div v-if="currentUserRank" class="your-rank-banner glass-morphism mb-8">
         <div class="flex items-center gap-4">
           <div class="your-rank-badge">
             <span>#{{ currentUserRank.position }}</span>
           </div>
           <div class="flex-1">
-            <p class="text-sm text-gray-400">Sizin Sıranız</p>
-            <h4 class="font-bold text-lg">{{ currentUserRank.name }}</h4>
+            <p class="text-sm text-gray-400">Sizin Siraniz</p>
+            <h4 class="font-bold text-lg flex items-center gap-2">
+              {{ currentUserRank.name }}
+              <div v-if="activeCategory === 'elo' && currentUserRank.tier" class="inline-tier-badge" :style="{ '--tier-color': currentUserRank.tier.color }">
+                <component :is="getTierIcon(currentUserRank.tier.icon)" class="w-3 h-3" />
+                <span>{{ currentUserRank.tier.name }}</span>
+              </div>
+            </h4>
           </div>
           <div class="your-rank-score">
-            <span class="text-2xl font-bold text-orange-500">{{ formatNumber(currentUserRank.score) }}</span>
-            <span class="text-sm text-gray-400 ml-2">Skor</span>
+            <span class="text-2xl font-bold text-orange-500">{{ activeCategory === 'elo' ? currentUserRank.elo : formatNumber(currentUserRank.score) }}</span>
+            <span class="text-sm text-gray-400 ml-2">{{ activeCategory === 'elo' ? 'ELO' : 'Skor' }}</span>
+          </div>
+          <!-- Next Tier Progress (for ELO) -->
+          <div v-if="activeCategory === 'elo' && currentUserRank.next_tier" class="next-tier-progress">
+            <div class="next-tier-info">
+              <span class="text-xs text-gray-400">Sonraki Seviye:</span>
+              <span class="text-sm font-semibold" :style="{ color: currentUserRank.next_tier.color }">{{ currentUserRank.next_tier.name }}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: getProgressToNextTier(currentUserRank) + '%', backgroundColor: currentUserRank.next_tier.color }"></div>
+            </div>
+            <span class="text-xs text-gray-500">{{ currentUserRank.elo_to_next_tier }} ELO kaldi</span>
           </div>
           <button class="share-btn-alt" @click="sharePosition(currentUserRank)">
             <Share2Icon class="w-5 h-5" />
-            <span>Paylaş</span>
+            <span>Paylas</span>
           </button>
         </div>
       </div>
@@ -234,32 +374,37 @@
             <span>{{ getCategoryTitle() }}</span>
           </h2>
           <div class="table-actions">
-            <span class="results-count">{{ filteredData.length }} sonuç</span>
+            <span class="results-count">{{ filteredData.length }} sonuc</span>
           </div>
         </div>
 
         <!-- Empty State -->
-        <div v-if="currentData.length === 0 && !loadingPlayers && !loadingServers" class="empty-state">
+        <div v-if="currentData.length === 0 && !loadingPlayers && !loadingServers && !loadingElo" class="empty-state">
           <TrophyIcon class="w-16 h-16 text-gray-600 mb-4" />
-          <h3 class="text-xl font-semibold text-gray-400 mb-2">Henüz veri yok</h3>
-          <p class="text-gray-500">Bu kategoride henüz sıralama verisi bulunmuyor.</p>
+          <h3 class="text-xl font-semibold text-gray-400 mb-2">Henuz veri yok</h3>
+          <p class="text-gray-500">Bu kategoride henuz siralama verisi bulunmuyor.</p>
         </div>
 
         <!-- Loading State -->
-        <div v-else-if="loadingPlayers || loadingServers" class="loading-state">
+        <div v-else-if="loadingPlayers || loadingServers || loadingElo" class="loading-state">
           <div class="loading-spinner"></div>
-          <p class="text-gray-400 mt-4">Yükleniyor...</p>
+          <p class="text-gray-400 mt-4">Yukleniyor...</p>
         </div>
 
         <div v-else class="table-wrapper">
           <table class="leaderboard-table">
             <thead>
               <tr>
-                <th class="rank-col">Sıra</th>
-                <th class="player-col">{{ activeCategory === 'players' ? 'Oyuncu' : activeCategory === 'servers' ? 'Sunucu' : 'Kullanıcı' }}</th>
+                <th class="rank-col">Sira</th>
+                <th class="player-col">{{ activeCategory === 'players' || activeCategory === 'elo' ? 'Oyuncu' : activeCategory === 'servers' ? 'Sunucu' : 'Kullanici' }}</th>
                 <template v-if="activeCategory === 'players'">
                   <th>K/D</th>
-                  <th>İsabet</th>
+                  <th>Isabet</th>
+                </template>
+                <template v-else-if="activeCategory === 'elo'">
+                  <th>Seviye</th>
+                  <th>Galibiyet</th>
+                  <th>Kazanma %</th>
                 </template>
                 <template v-else-if="activeCategory === 'servers'">
                   <th>Oyuncular</th>
@@ -269,7 +414,7 @@
                   <th>Sunucular</th>
                   <th>Forum</th>
                 </template>
-                <th class="score-col">Skor</th>
+                <th class="score-col">{{ activeCategory === 'elo' ? 'ELO' : 'Skor' }}</th>
                 <th class="actions-col"></th>
               </tr>
             </thead>
@@ -330,6 +475,28 @@
                     </div>
                   </td>
                 </template>
+                <template v-else-if="activeCategory === 'elo'">
+                  <td>
+                    <div v-if="item.tier" class="tier-cell-badge" :style="{ '--tier-color': item.tier.color }">
+                      <component :is="getTierIcon(item.tier.icon)" class="w-4 h-4" />
+                      <span>{{ item.tier.name }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="wins-stat">
+                      <span class="wins-value">{{ item.wins }}</span>
+                      <span class="losses-value">/{{ item.losses }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="winrate-stat">
+                      <div class="winrate-bar">
+                        <div class="winrate-fill" :style="{ width: `${item.win_rate}%` }"></div>
+                      </div>
+                      <span class="winrate-value">{{ item.win_rate }}%</span>
+                    </div>
+                  </td>
+                </template>
                 <template v-else-if="activeCategory === 'servers'">
                   <td>
                     <div class="players-stat">
@@ -349,13 +516,13 @@
                     <n-tag type="primary" size="small">{{ item.servers }} sunucu</n-tag>
                   </td>
                   <td>
-                    <n-tag type="info" size="small">{{ item.posts }} paylaşım</n-tag>
+                    <n-tag type="info" size="small">{{ item.posts }} paylasim</n-tag>
                   </td>
                 </template>
                 <td class="score-col">
                   <div class="score-display">
                     <TrendingUpIcon class="w-4 h-4 text-green-500" />
-                    <span class="score-value">{{ formatNumber(item.score) }}</span>
+                    <span class="score-value">{{ activeCategory === 'elo' ? item.elo : formatNumber(item.score) }}</span>
                   </div>
                 </td>
                 <td class="actions-col">
@@ -384,7 +551,7 @@
 
       <!-- Stats Summary Cards -->
       <div class="stats-section mt-12" ref="statsSection">
-        <h3 class="stats-title">İstatistikler</h3>
+        <h3 class="stats-title">Istatistikler</h3>
         <div class="stats-grid">
           <div class="stat-card glass-morphism" v-for="(stat, index) in statsCards" :key="stat.id">
             <div class="stat-icon-wrapper" :style="{ backgroundColor: stat.bgColor }">
@@ -423,32 +590,32 @@
           </div>
           <div class="preview-stats">
             <div class="preview-stat">
-              <span class="label">Skor</span>
-              <span class="value">{{ formatNumber(profilePreview.data?.score || 0) }}</span>
+              <span class="label">{{ activeCategory === 'elo' ? 'ELO' : 'Skor' }}</span>
+              <span class="value">{{ activeCategory === 'elo' ? profilePreview.data?.elo : formatNumber(profilePreview.data?.score || 0) }}</span>
             </div>
             <div class="preview-stat">
-              <span class="label">K/D</span>
-              <span class="value">{{ profilePreview.data?.kd }}</span>
+              <span class="label">{{ activeCategory === 'elo' ? 'Galibiyet' : 'K/D' }}</span>
+              <span class="value">{{ activeCategory === 'elo' ? profilePreview.data?.wins : profilePreview.data?.kd }}</span>
             </div>
             <div class="preview-stat">
-              <span class="label">İsabet</span>
-              <span class="value">{{ profilePreview.data?.accuracy }}%</span>
+              <span class="label">{{ activeCategory === 'elo' ? 'Kazanma' : 'Isabet' }}</span>
+              <span class="value">{{ activeCategory === 'elo' ? profilePreview.data?.win_rate + '%' : profilePreview.data?.accuracy + '%' }}</span>
             </div>
           </div>
           <div class="preview-footer">
-            <span class="last-seen">Son görülme: 5 dakika önce</span>
+            <span class="last-seen">Son gorulme: 5 dakika once</span>
           </div>
         </div>
       </Transition>
     </Teleport>
 
     <!-- Share Modal -->
-    <n-modal v-model:show="shareModal.visible" preset="card" title="Sıralamanı Paylaş" class="share-modal">
+    <n-modal v-model:show="shareModal.visible" preset="card" title="Siralamanizi Paylasin" class="share-modal">
       <div class="share-content">
         <div class="share-preview glass-morphism">
           <div class="share-rank">#{{ shareModal.data?.position }}</div>
           <h3>{{ shareModal.data?.name }}</h3>
-          <p>{{ formatNumber(shareModal.data?.score || 0) }} Skor</p>
+          <p>{{ activeCategory === 'elo' ? shareModal.data?.elo + ' ELO' : formatNumber(shareModal.data?.score || 0) + ' Skor' }}</p>
         </div>
         <div class="share-buttons">
           <button class="share-option twitter" @click="shareToTwitter">
@@ -464,12 +631,22 @@
         </div>
       </div>
     </n-modal>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, h, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { NAvatar, NTag, NProgress, useMessage } from 'naive-ui'
+import { useAuthStore } from '@/stores/auth'
+import { useRequireSteam } from '@/composables/useRequireSteam'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   TrophyIcon,
   ServerIcon,
@@ -488,16 +665,33 @@ import {
   TrendingDownIcon,
   FlameIcon,
   TargetIcon,
-  AwardIcon
+  AwardIcon,
+  DiamondIcon,
+  ShieldIcon,
+  InfoIcon
 } from 'lucide-vue-next'
 
+// Steam icon component (inline SVG)
+const SteamIcon = {
+  template: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10c-4.6 0-8.45-3.08-9.64-7.27l3.83 1.58a2.84 2.84 0 0 0 2.78 2.27c1.56 0 2.83-1.27 2.83-2.83v-.13l3.4-2.43h.08c2.08 0 3.77-1.69 3.77-3.77s-1.69-3.77-3.77-3.77-3.77 1.69-3.77 3.77v.05l-2.37 3.46-.16-.01c-.55 0-1.08.16-1.53.45L2 11.54A10 10 0 0 1 12 2z"/></svg>`
+}
+
 const message = useMessage()
+const authStore = useAuthStore()
+const { hasSteam, isLoggedIn, requireSteam, showSteamModal, connectSteam, closeModal } = useRequireSteam()
+const currentUserId = computed(() => authStore.user?.id)
+
+// ELO participation state
+const isParticipating = ref(false)
+const joiningElo = ref(false)
+const myEloRanking = ref(null)
 
 // State
-const activeCategory = ref('players')
+const activeCategory = ref('elo')
 const searchQuery = ref('')
 const timeFilter = ref('all')
-const sortBy = ref('rank')
+const tierFilter = ref(null)
+const sortBy = ref('elo')
 const currentPage = ref(1)
 const itemsPerPage = 10
 const hoveredPodium = ref(null)
@@ -506,6 +700,15 @@ const showConfetti = ref(false)
 const statsSection = ref(null)
 const statCounters = ref([])
 const countersAnimated = ref(false)
+
+// ELO Tiers
+const eloTiers = ref([
+  { name: 'Diamond', color: '#B9F2FF', icon: 'diamond', min_elo: 2000 },
+  { name: 'Platinum', color: '#E5E4E2', icon: 'crown', min_elo: 1600 },
+  { name: 'Gold', color: '#FFD700', icon: 'trophy', min_elo: 1300 },
+  { name: 'Silver', color: '#C0C0C0', icon: 'medal', min_elo: 1000 },
+  { name: 'Bronze', color: '#CD7F32', icon: 'shield', min_elo: 0 }
+])
 
 // Profile preview
 const profilePreview = ref({
@@ -523,24 +726,38 @@ const shareModal = ref({
 
 // Category tabs config
 const categoryTabs = [
-  { value: 'players', label: 'En İyi Oyuncular', icon: TrophyIcon, count: 10 },
-  { value: 'servers', label: 'Popüler Sunucular', icon: ServerIcon, count: 3 },
-  { value: 'users', label: 'Aktif Kullanıcılar', icon: UsersIcon, count: 3 }
+  { value: 'elo', label: 'ELO Siralaması', icon: AwardIcon, count: null },
+  { value: 'players', label: 'En Iyi Oyuncular', icon: TrophyIcon, count: null },
+  { value: 'servers', label: 'Populer Sunucular', icon: ServerIcon, count: null },
+  { value: 'users', label: 'Aktif Kullanicilar', icon: UsersIcon, count: null }
 ]
 
 const timeOptions = [
   { label: 'Hepsi', value: 'all' },
-  { label: 'Bugün', value: 'today' },
+  { label: 'Bugun', value: 'today' },
   { label: 'Hafta', value: 'week' },
   { label: 'Ay', value: 'month' }
 ]
 
-const sortOptions = [
-  { label: 'Sıralama', value: 'rank' },
-  { label: 'Skor', value: 'score' },
-  { label: 'Kills', value: 'kills' },
-  { label: 'İsabet', value: 'accuracy' }
-]
+const sortOptions = computed(() => {
+  if (activeCategory.value === 'elo') {
+    return [
+      { label: 'ELO', value: 'elo' },
+      { label: 'Galibiyet', value: 'wins' },
+      { label: 'Kazanma %', value: 'win_rate' }
+    ]
+  }
+  return [
+    { label: 'Siralama', value: 'rank' },
+    { label: 'Skor', value: 'score' },
+    { label: 'Kills', value: 'kills' },
+    { label: 'Isabet', value: 'accuracy' }
+  ]
+})
+
+const tierFilterOptions = computed(() => [
+  ...eloTiers.value.map(t => ({ label: t.name, value: t.name }))
+])
 
 // Tab indicator style
 const tabIndicatorStyle = computed(() => {
@@ -551,19 +768,26 @@ const tabIndicatorStyle = computed(() => {
   }
 })
 
-// Mock current user (for "your rank" feature)
-const currentUserId = ref(5) // Simulating logged in user
-
+// Current user rank
 const currentUserRank = computed(() => {
-  if (!currentUserId.value || activeCategory.value !== 'players') return null
-  return playersData.value.find(p => p.id === currentUserId.value)
+  if (!currentUserId.value) return null
+  if (activeCategory.value === 'elo' && myEloRanking.value) {
+    return {
+      ...myEloRanking.value,
+      name: myEloRanking.value.username
+    }
+  }
+  if (activeCategory.value === 'players') {
+    return playersData.value.find(p => p.id === currentUserId.value)
+  }
+  return null
 })
 
 // Stats cards config
 const statsCards = computed(() => [
   {
     id: 'competitors',
-    label: 'Toplam Yarışmacılar',
+    label: 'Toplam Yarismacilar',
     value: totalCompetitors.value,
     icon: UsersIcon,
     color: '#f97316',
@@ -574,7 +798,7 @@ const statsCards = computed(() => [
   },
   {
     id: 'active',
-    label: 'Şu An Aktif',
+    label: 'Su An Aktif',
     value: activeNow.value,
     icon: ActivityIcon,
     color: '#a855f7',
@@ -585,7 +809,7 @@ const statsCards = computed(() => [
   },
   {
     id: 'highest',
-    label: 'En Yüksek Skor',
+    label: activeCategory.value === 'elo' ? 'En Yuksek ELO' : 'En Yuksek Skor',
     value: highestScore.value,
     icon: FlameIcon,
     color: '#06b6d4',
@@ -596,9 +820,9 @@ const statsCards = computed(() => [
   },
   {
     id: 'accuracy',
-    label: 'Ortalama İsabet',
-    value: 72,
-    suffix: '%',
+    label: activeCategory.value === 'elo' ? 'Ortalama ELO' : 'Ortalama Isabet',
+    value: activeCategory.value === 'elo' ? averageElo.value : 72,
+    suffix: activeCategory.value === 'elo' ? '' : '%',
     icon: TargetIcon,
     color: '#10b981',
     bgColor: 'rgba(16, 185, 129, 0.15)',
@@ -608,34 +832,138 @@ const statsCards = computed(() => [
   }
 ])
 
-// Data - API'den çekilecek
+// Data - API'den cekilecek
 const playersData = ref([])
 const serversData = ref([])
 const usersData = ref([])
+const eloData = ref([])
+const eloStats = ref(null)
+const averageElo = ref(1000)
 
 // Loading states
 const loadingPlayers = ref(false)
 const loadingServers = ref(false)
 const loadingUsers = ref(false)
+const loadingElo = ref(false)
 
 // Fetch functions
+const fetchEloLeaderboard = async () => {
+  loadingElo.value = true
+  try {
+    const params = new URLSearchParams({
+      page: '1',
+      per_page: '50',
+      period: timeFilter.value
+    })
+    if (tierFilter.value) {
+      params.append('tier', tierFilter.value)
+    }
+
+    const response = await fetch(`/api/leaderboard?${params}`)
+    if (response.ok) {
+      const data = await response.json()
+      eloData.value = (data.leaderboard || []).map(p => ({
+        id: p.user_id,
+        position: p.position,
+        name: p.username,
+        avatar: p.avatar,
+        elo: p.elo,
+        tier: p.tier,
+        wins: p.wins,
+        losses: p.losses,
+        win_rate: p.win_rate,
+        kd_ratio: p.kd_ratio,
+        games_played: p.games_played,
+        isOnline: p.is_online,
+        rank: p.tier?.name || 'Unranked',
+        score: p.elo
+      }))
+    }
+  } catch (error) {
+    console.error('ELO leaderboard fetch error:', error)
+  } finally {
+    loadingElo.value = false
+  }
+}
+
+const fetchEloStats = async () => {
+  try {
+    const response = await fetch('/api/leaderboard/stats')
+    if (response.ok) {
+      eloStats.value = await response.json()
+      averageElo.value = Math.round(eloStats.value.average_elo || 1000)
+    }
+  } catch (error) {
+    console.error('ELO stats fetch error:', error)
+  }
+}
+
+const fetchMyRanking = async () => {
+  if (!isLoggedIn.value) return
+  try {
+    const response = await fetch('/api/leaderboard/me', {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    })
+    if (response.ok) {
+      myEloRanking.value = await response.json()
+      isParticipating.value = myEloRanking.value.is_participating
+    }
+  } catch (error) {
+    console.error('My ranking fetch error:', error)
+  }
+}
+
+const joinEloSystem = async () => {
+  // This requires Steam, so use requireSteam which also checks login
+  if (!requireSteam()) return
+
+  joiningElo.value = true
+  try {
+    const response = await fetch('/api/leaderboard/join', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      message.success(data.message)
+      isParticipating.value = true
+      await fetchMyRanking()
+      await fetchEloLeaderboard()
+    } else {
+      const error = await response.json()
+      message.error(error.detail || 'ELO sistemine katilamadiniz')
+    }
+  } catch (error) {
+    console.error('Join ELO error:', error)
+    message.error('Bir hata olustu')
+  } finally {
+    joiningElo.value = false
+  }
+}
+
 const fetchPlayers = async () => {
   loadingPlayers.value = true
   try {
-    const response = await fetch('/api/leaderboard?period=month&limit=50')
+    const response = await fetch('/api/games/leaderboard?period=month&limit=50')
     if (response.ok) {
       const data = await response.json()
-      playersData.value = (data.leaderboard || []).map((p, i) => ({
+      playersData.value = (data || []).map((p, i) => ({
         id: p.user_id || i + 1,
         position: i + 1,
         name: p.username || 'Oyuncu',
         avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`,
-        rank: getRankFromPoints(p.total_points),
-        score: Math.round(p.total_points) || 0,
-        kills: Math.round(p.total_points * 10) || 0,
-        deaths: Math.round(p.total_points * 3) || 0,
-        kd: (p.total_points / 30).toFixed(2),
-        accuracy: Math.min(99, Math.floor(50 + p.total_points / 100)),
+        rank: getRankFromPoints(p.total_profit),
+        score: Math.round(p.total_profit) || 0,
+        kills: Math.round(p.total_profit * 10) || 0,
+        deaths: Math.round(p.total_profit * 3) || 0,
+        kd: (p.total_profit / 30).toFixed(2),
+        accuracy: Math.min(99, Math.floor(50 + p.total_profit / 100)),
         isOnline: false
       }))
     }
@@ -672,8 +1000,6 @@ const fetchServers = async () => {
 }
 
 const fetchStaff = async () => {
-  // Staff listesi admin panelinden veya özel endpoint'den çekilebilir
-  // Şimdilik boş bırakıyoruz
   loadingUsers.value = false
   usersData.value = []
 }
@@ -689,9 +1015,30 @@ const getRankFromPoints = (points) => {
   return 'Silver'
 }
 
+const getTierIcon = (iconName) => {
+  const icons = {
+    diamond: DiamondIcon,
+    crown: CrownIcon,
+    trophy: TrophyIcon,
+    medal: MedalIcon,
+    shield: ShieldIcon
+  }
+  return icons[iconName] || AwardIcon
+}
+
+const getProgressToNextTier = (ranking) => {
+  if (!ranking.next_tier || !ranking.tier) return 100
+  const currentTierMin = ranking.tier.min_elo
+  const nextTierMin = ranking.next_tier.min_elo
+  const range = nextTierMin - currentTierMin
+  const progress = ranking.elo - currentTierMin
+  return Math.min(100, Math.max(0, Math.round((progress / range) * 100)))
+}
+
 // Computed
 const currentData = computed(() => {
   switch (activeCategory.value) {
+    case 'elo': return eloData.value
     case 'players': return playersData.value
     case 'servers': return serversData.value
     case 'users': return usersData.value
@@ -706,12 +1053,22 @@ const filteredData = computed(() => {
     data = data.filter(item => item.name.toLowerCase().includes(query))
   }
   // Sort
-  if (sortBy.value === 'score') {
-    data.sort((a, b) => b.score - a.score)
-  } else if (sortBy.value === 'kills' && activeCategory.value === 'players') {
-    data.sort((a, b) => b.kills - a.kills)
-  } else if (sortBy.value === 'accuracy' && activeCategory.value === 'players') {
-    data.sort((a, b) => b.accuracy - a.accuracy)
+  if (activeCategory.value === 'elo') {
+    if (sortBy.value === 'wins') {
+      data.sort((a, b) => b.wins - a.wins)
+    } else if (sortBy.value === 'win_rate') {
+      data.sort((a, b) => b.win_rate - a.win_rate)
+    } else {
+      data.sort((a, b) => b.elo - a.elo)
+    }
+  } else {
+    if (sortBy.value === 'score') {
+      data.sort((a, b) => b.score - a.score)
+    } else if (sortBy.value === 'kills' && activeCategory.value === 'players') {
+      data.sort((a, b) => b.kills - a.kills)
+    } else if (sortBy.value === 'accuracy' && activeCategory.value === 'players') {
+      data.sort((a, b) => b.accuracy - a.accuracy)
+    }
   }
   return data
 })
@@ -725,7 +1082,11 @@ const paginatedData = computed(() => {
 const totalPages = computed(() => Math.ceil(filteredData.value.length / itemsPerPage))
 const totalCompetitors = computed(() => currentData.value.length)
 const activeNow = computed(() => Math.floor(currentData.value.length * 0.65))
-const highestScore = computed(() => currentData.value.length > 0 ? currentData.value[0].score : 0)
+const highestScore = computed(() => {
+  if (currentData.value.length === 0) return 0
+  if (activeCategory.value === 'elo') return currentData.value[0]?.elo || 0
+  return currentData.value[0]?.score || 0
+})
 
 // Methods
 const formatNumber = (num) => {
@@ -740,9 +1101,10 @@ const getAvatarUrl = (avatar, username) => {
 
 const getSearchPlaceholder = () => {
   switch (activeCategory.value) {
+    case 'elo': return 'Oyuncu ara...'
     case 'players': return 'Oyuncu ara...'
     case 'servers': return 'Sunucu ara...'
-    case 'users': return 'Kullanıcı ara...'
+    case 'users': return 'Kullanici ara...'
     default: return 'Ara...'
   }
 }
@@ -753,6 +1115,7 @@ const handleSearch = () => {
 
 const getCategoryIcon = () => {
   switch (activeCategory.value) {
+    case 'elo': return AwardIcon
     case 'players': return TrophyIcon
     case 'servers': return ServerIcon
     case 'users': return UsersIcon
@@ -762,10 +1125,11 @@ const getCategoryIcon = () => {
 
 const getCategoryTitle = () => {
   switch (activeCategory.value) {
-    case 'players': return 'Oyuncu Sıralaması'
-    case 'servers': return 'Sunucu Sıralaması'
-    case 'users': return 'Kullanıcı Sıralaması'
-    default: return 'Sıralama'
+    case 'elo': return 'ELO Siralamasi'
+    case 'players': return 'Oyuncu Siralamasi'
+    case 'servers': return 'Sunucu Siralamasi'
+    case 'users': return 'Kullanici Siralamasi'
+    default: return 'Siralama'
   }
 }
 
@@ -787,30 +1151,7 @@ const getRankClass = (position) => {
   return 'rank-badge normal'
 }
 
-// Particle effects
-const getParticleStyle = (index) => {
-  const size = Math.random() * 4 + 2
-  return {
-    '--x': `${Math.random() * 100}%`,
-    '--y': `${Math.random() * 100}%`,
-    '--size': `${size}px`,
-    '--duration': `${Math.random() * 20 + 10}s`,
-    '--delay': `${Math.random() * 5}s`,
-    '--opacity': Math.random() * 0.5 + 0.1
-  }
-}
-
 // Confetti effect
-const getConfettiStyle = (index) => {
-  const colors = ['#f97316', '#fbbf24', '#a855f7', '#06b6d4', '#10b981', '#ef4444']
-  return {
-    '--x': `${Math.random() * 100}%`,
-    '--color': colors[index % colors.length],
-    '--rotation': `${Math.random() * 360}deg`,
-    '--delay': `${Math.random() * 0.5}s`
-  }
-}
-
 let confettiTimeout = null
 const triggerConfetti = () => {
   if (confettiTimeout) return
@@ -824,7 +1165,7 @@ const triggerConfetti = () => {
 // Profile preview
 let previewTimeout = null
 const showProfilePreview = (event, item) => {
-  if (activeCategory.value !== 'players') return
+  if (activeCategory.value === 'servers') return
   previewTimeout = setTimeout(() => {
     const rect = event.target.getBoundingClientRect()
     profilePreview.value = {
@@ -850,20 +1191,26 @@ const sharePosition = (item) => {
 }
 
 const shareToTwitter = () => {
-  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. sıradayım! Skor: ${formatNumber(shareModal.value.data?.score || 0)}`
+  const scoreText = activeCategory.value === 'elo'
+    ? `${shareModal.value.data?.elo} ELO`
+    : `${formatNumber(shareModal.value.data?.score || 0)} Skor`
+  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. siradayim! ${scoreText}`
   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
 }
 
 const shareToDiscord = () => {
-  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. sıradayım! Skor: ${formatNumber(shareModal.value.data?.score || 0)}`
+  const scoreText = activeCategory.value === 'elo'
+    ? `${shareModal.value.data?.elo} ELO`
+    : `${formatNumber(shareModal.value.data?.score || 0)} Skor`
+  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. siradayim! ${scoreText}`
   navigator.clipboard.writeText(text)
-  message.success('Discord için kopyalandı!')
+  message.success('Discord icin kopyalandi!')
 }
 
 const copyShareLink = () => {
   const link = `${window.location.origin}/leaderboard?highlight=${shareModal.value.data?.id}`
   navigator.clipboard.writeText(link)
-  message.success('Link kopyalandı!')
+  message.success('Link kopyalandi!')
 }
 
 // Intersection Observer for animated counters
@@ -911,6 +1258,9 @@ const animateCounters = () => {
 onMounted(() => {
   setupIntersectionObserver()
   // Fetch real data from API
+  fetchEloLeaderboard()
+  fetchEloStats()
+  fetchMyRanking()
   fetchPlayers()
   fetchServers()
   fetchStaff()
@@ -923,9 +1273,22 @@ onUnmounted(() => {
 })
 
 // Watch for category changes
-watch(activeCategory, () => {
+watch(activeCategory, (newVal) => {
   currentPage.value = 1
   searchQuery.value = ''
+  if (newVal === 'elo') {
+    sortBy.value = 'elo'
+    fetchEloLeaderboard()
+  } else {
+    sortBy.value = 'rank'
+  }
+})
+
+// Watch for tier filter changes
+watch(tierFilter, () => {
+  if (activeCategory.value === 'elo') {
+    fetchEloLeaderboard()
+  }
 })
 </script>
 
@@ -957,218 +1320,183 @@ watch(activeCategory, () => {
   box-shadow: var(--glass-shadow);
 }
 
-/* Particles Background */
-.particles-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+/* ELO Join Banner */
+.elo-join-banner {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(168, 85, 247, 0.1));
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.elo-banner-icon {
+  width: 60px;
+  height: 60px;
+  background: rgba(249, 115, 22, 0.15);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-join-elo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--orange), #ea580c);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-join-elo:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.4);
+}
+
+.btn-join-elo:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-connect-steam {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #171a21, #1b2838);
+  color: #66c0f4;
+  border: 1px solid #66c0f4;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-connect-steam:hover {
+  background: #66c0f4;
+  color: #171a21;
+}
+
+/* Tier Legend */
+.tier-legend {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tier-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--tier-color, #666);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.tier-name {
+  color: var(--tier-color, #fff);
+  font-weight: 600;
+}
+
+.tier-min {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+/* Tier Badge in tables/podium */
+.podium-tier-badge,
+.inline-tier-badge,
+.tier-cell-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--tier-color, #666);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--tier-color, #fff);
+  font-weight: 600;
+}
+
+.winner-tier {
+  font-size: 14px;
+  padding: 6px 14px;
+}
+
+/* Wins/Losses stat */
+.wins-stat {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.wins-value {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.losses-value {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+/* Win Rate stat */
+.winrate-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.winrate-bar {
+  flex: 1;
+  max-width: 80px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
   overflow: hidden;
-  z-index: 0;
 }
 
-.particle {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: var(--size);
-  height: var(--size);
-  background: radial-gradient(circle, var(--orange), transparent);
-  border-radius: 50%;
-  opacity: var(--opacity);
-  animation: particle-float var(--duration) ease-in-out infinite;
-  animation-delay: var(--delay);
-}
-
-@keyframes particle-float {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  25% {
-    transform: translate(20px, -30px) scale(1.2);
-  }
-  50% {
-    transform: translate(-10px, -60px) scale(0.8);
-  }
-  75% {
-    transform: translate(30px, -30px) scale(1.1);
-  }
-}
-
-/* Confetti */
-.confetti-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
+.winrate-fill {
   height: 100%;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 100;
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+  border-radius: 3px;
+  transition: width 0.5s ease;
 }
 
-.confetti {
-  position: absolute;
-  left: var(--x);
-  top: -20px;
-  width: 10px;
-  height: 10px;
-  background: var(--color);
-  transform: rotate(var(--rotation));
-  animation: confetti-fall 3s ease-out forwards;
-  animation-delay: var(--delay);
+.winrate-value {
+  font-weight: 600;
+  font-size: 14px;
+  color: #10b981;
 }
 
-@keyframes confetti-fall {
-  0% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100vh) rotate(720deg);
-    opacity: 0;
-  }
+/* Next Tier Progress */
+.next-tier-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
 }
 
-/* Hero Section */
-.hero-section {
-  position: relative;
+.next-tier-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.trophy-container {
-  position: relative;
-  display: inline-block;
-}
-
-.trophy-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 150px;
-  height: 150px;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.4), transparent 70%);
-  border-radius: 50%;
-  animation: trophy-pulse 2s ease-in-out infinite;
-}
-
-@keyframes trophy-pulse {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.2);
-    opacity: 0.8;
-  }
-}
-
-.trophy-icon {
-  position: relative;
-  z-index: 2;
-  animation: trophy-bounce 2s ease-in-out infinite;
-}
-
-@keyframes trophy-bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.trophy-sparkles {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100px;
-  height: 100px;
-  transform: translate(-50%, -50%);
-}
-
-.sparkle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 4px;
+.progress-bar {
   height: 4px;
-  background: var(--gold);
-  border-radius: 50%;
-  transform-origin: center;
-  animation: sparkle-orbit 3s linear infinite;
-  animation-delay: var(--delay);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
-@keyframes sparkle-orbit {
-  0% {
-    transform: rotate(var(--angle)) translateX(50px) scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: rotate(calc(var(--angle) + 180deg)) translateX(50px) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(calc(var(--angle) + 360deg)) translateX(50px) scale(0);
-    opacity: 0;
-  }
-}
-
-.hero-title {
-  animation: hero-appear 0.8s ease-out;
-}
-
-.hero-subtitle {
-  animation: hero-appear 0.8s ease-out 0.2s both;
-}
-
-@keyframes hero-appear {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.text-gradient-animated {
-  background: linear-gradient(90deg, var(--orange), var(--purple), var(--cyan), var(--orange));
-  background-size: 300% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: gradient-shift 8s ease infinite;
-}
-
-@keyframes gradient-shift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.live-dot {
-  width: 8px;
-  height: 8px;
-  background: #10b981;
-  border-radius: 50%;
-  animation: live-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes live-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-  }
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
 }
 
 /* Category Tabs */
@@ -2269,10 +2597,6 @@ watch(activeCategory, () => {
 }
 
 @media (max-width: 768px) {
-  .hero-title {
-    font-size: 3rem;
-  }
-
   .category-tabs {
     flex-direction: column;
     gap: 8px;
@@ -2322,18 +2646,14 @@ watch(activeCategory, () => {
     justify-content: center;
     margin-top: 12px;
   }
+
+  .next-tier-progress {
+    width: 100%;
+    margin-top: 12px;
+  }
 }
 
 @media (max-width: 480px) {
-  .hero-title {
-    font-size: 2.5rem;
-  }
-
-  .trophy-icon {
-    width: 60px;
-    height: 60px;
-  }
-
   .stats-grid {
     grid-template-columns: 1fr;
   }

@@ -14,7 +14,11 @@ export const authAPI = {
   disable2FA: (code) => apiClient.post('/auth/2fa/disable', { code }),
   forgotPassword: (email) => apiClient.post('/auth/forgot-password', { email }),
   resetPassword: (data) => apiClient.post('/auth/reset-password', data),
-  changePassword: (data) => apiClient.post('/auth/change-password', data)
+  changePassword: (data) => apiClient.post('/auth/change-password', data),
+  // Email verification
+  sendVerificationEmail: () => apiClient.post('/auth/email/send-verification'),
+  verifyEmail: (token) => apiClient.post('/auth/email/verify', { token }),
+  getEmailVerificationStatus: () => apiClient.get('/auth/email/status')
 }
 
 export const serversAPI = {

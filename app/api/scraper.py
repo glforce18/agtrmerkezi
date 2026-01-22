@@ -65,6 +65,14 @@ class SingleServerQuery(BaseModel):
     port: int = Field(..., ge=1, le=65535)
 
 
+class ServerSubmitRequest(BaseModel):
+    """Kullanici sunucu ekleme istegi"""
+    ip: str = Field(..., description="Sunucu IP adresi")
+    port: int = Field(default=27015, ge=1, le=65535, description="Sunucu portu")
+    name: Optional[str] = Field(None, max_length=200, description="Sunucu adi (opsiyonel)")
+    description: Optional[str] = Field(None, max_length=500, description="Sunucu aciklamasi (opsiyonel)")
+
+
 # ==================== PUBLIC ENDPOINTS ====================
 
 @router.get("/servers")
@@ -290,6 +298,231 @@ async def query_single_server(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await scraper.close()
+
+
+# ==================== USER SUBMISSION ENDPOINTS ====================
+
+@router.post("/community-servers/submit")
+async def submit_server(
+    data: ServerSubmitRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_with_steam)
+):
+    """
+    Topluluk sunucusu ekle (Steam gerekli)
+    Kullanicilar kendi sunucularini ekleyebilir
+    """
+    import re
+
+    # IP format validation
+    ip_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    if not re.match(ip_pattern, data.ip):
+        raise HTTPException(status_code=400, detail="Gecersiz IP adresi formati")
+
+    # Check if IP octets are valid
+    octets = data.ip.split('.')
+    for octet in octets:
+        if int(octet) > 255:
+            raise HTTPException(status_code=400, detail="Gecersiz IP adresi")
+
+    # Check if server already exists
+    existing = db.query(CommunityServer).filter(
+        CommunityServer.ip_address == data.ip,
+        CommunityServer.port == data.port
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Bu sunucu zaten mevcut")
+
+    # Query the server to verify it's online
+    scraper = ServerScraper(timeout=5.0)
+    try:
+        result = await scraper.query_server(data.ip, data.port)
+        if not result:
+            raise HTTPException(
+                status_code=400,
+                detail="Sunucu yanitlamiyor. Lutfen sunucunun online oldugunu ve IP:Port bilgisinin dogru oldugunu kontrol edin."
+            )
+
+        # Map game type
+        game_type_map = {
+            GameTypeEnum.AG: GameType.AG,
+            GameTypeEnum.CS16: GameType.CS16,
+            GameTypeEnum.HLDM: GameType.HLDM,
+        }
+        game_type = game_type_map.get(result.game_type, GameType.HLDM)
+
+        # Use provided name or fallback to server's actual name
+        server_name = data.name if data.name else result.name
+
+        # Create server
+        server = CommunityServer(
+            ip_address=data.ip,
+            port=data.port,
+            name=server_name,
+            game_type=game_type,
+            game_dir=result.game_dir,
+            current_map=result.map,
+            current_players=result.players,
+            max_players=result.max_players,
+            ping=result.ping,
+            password_protected=result.password_protected,
+            source="user",
+            is_verified=False,
+            is_featured=False,
+            submitted_by=current_user.id,
+            description=data.description
+        )
+        db.add(server)
+        db.commit()
+        db.refresh(server)
+
+        logger.info(f"Kullanici {current_user.username} sunucu ekledi: {server.address}")
+
+        return {
+            "success": True,
+            "message": "Sunucu basariyla eklendi",
+            "server": {
+                "id": server.id,
+                "ip": server.ip_address,
+                "port": server.port,
+                "address": server.address,
+                "name": server.name,
+                "game_type": server.game_type.value,
+                "current_map": server.current_map,
+                "players": server.current_players,
+                "max_players": server.max_players,
+                "ping": server.ping,
+                "is_online": True
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Sunucu ekleme hatasi: {e}")
+        raise HTTPException(status_code=500, detail="Sunucu eklenirken bir hata olustu")
+    finally:
+        await scraper.close()
+
+
+@router.get("/community-servers/my")
+async def get_my_servers(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """
+    Benim ekledigim sunucular
+    """
+    servers = db.query(CommunityServer).filter(
+        CommunityServer.submitted_by == current_user.id
+    ).order_by(CommunityServer.created_at.desc()).all()
+
+    return {
+        "servers": [
+            {
+                "id": s.id,
+                "ip": s.ip_address,
+                "port": s.port,
+                "address": s.address,
+                "name": s.name or f"Server {s.address}",
+                "game_type": s.game_type.value,
+                "current_map": s.current_map or "Unknown",
+                "players": s.current_players,
+                "max_players": s.max_players,
+                "ping": s.ping,
+                "is_online": s.is_online,
+                "password_protected": s.password_protected,
+                "country": s.country,
+                "is_featured": s.is_featured,
+                "is_verified": s.is_verified,
+                "description": s.description,
+                "last_seen": s.last_seen.isoformat() if s.last_seen else None,
+                "created_at": s.created_at.isoformat() if s.created_at else None
+            }
+            for s in servers
+        ],
+        "total": len(servers)
+    }
+
+
+@router.delete("/community-servers/{server_id}")
+async def delete_my_server(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """
+    Sunucumu sil (sadece kendi ekledigim sunuculari silebilirim)
+    """
+    server = db.query(CommunityServer).filter(
+        CommunityServer.id == server_id
+    ).first()
+
+    if not server:
+        raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
+
+    # Check ownership (unless admin)
+    if server.submitted_by != current_user.id and not check_admin_role(current_user):
+        raise HTTPException(status_code=403, detail="Bu sunucuyu silme yetkiniz yok")
+
+    db.delete(server)
+    db.commit()
+
+    logger.info(f"Kullanici {current_user.username} sunucu sildi: {server.address}")
+
+    return {"success": True, "message": "Sunucu silindi"}
+
+
+@router.post("/community-servers/{server_id}/refresh")
+async def refresh_server_status(
+    server_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Sunucu durumunu guncelle (Public - herkes kullanabilir)
+    """
+    server = db.query(CommunityServer).filter(CommunityServer.id == server_id).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
+
+    scraper = ServerScraper(timeout=3.0)
+    try:
+        result = await scraper.query_server(server.ip_address, server.port)
+
+        if result:
+            server.current_players = result.players
+            server.current_map = result.map
+            server.ping = result.ping
+            server.is_online = True
+            server.last_seen = datetime.utcnow()
+            server.last_query = datetime.utcnow()
+            server.total_queries += 1
+        else:
+            server.is_online = False
+            server.last_query = datetime.utcnow()
+
+        db.commit()
+
+        return {
+            "id": server.id,
+            "is_online": server.is_online,
+            "players": server.current_players,
+            "max_players": server.max_players,
+            "current_map": server.current_map,
+            "ping": server.ping,
+            "last_seen": server.last_seen.isoformat() if server.last_seen else None
+        }
+
+    except Exception as e:
+        logger.warning(f"Sunucu refresh hatasi: {e}")
+        return {
+            "id": server.id,
+            "is_online": False,
+            "error": "Sunucu sorgulanamiyor"
+        }
     finally:
         await scraper.close()
 

@@ -184,6 +184,12 @@ const routes = [
     meta: { title: 'Bakım Modu', requiresAuth: true, requiresAdmin: true }
   },
   {
+    path: '/admin/stats',
+    name: 'admin-stats',
+    component: () => import('@/views/admin/Stats.vue'),
+    meta: { title: 'Istatistikler', requiresAuth: true, requiresAdmin: true }
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/Login.vue'),
@@ -206,6 +212,12 @@ const routes = [
     name: 'forgot-password',
     component: () => import('@/views/ForgotPassword.vue'),
     meta: { title: 'Şifremi Unuttum', guestOnly: true }
+  },
+  {
+    path: '/verify-email',
+    name: 'verify-email',
+    component: () => import('@/views/VerifyEmail.vue'),
+    meta: { title: 'E-posta Dogrulama' }
   },
   {
     path: '/terms',

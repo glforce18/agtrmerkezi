@@ -34,6 +34,7 @@ from app.api import (
     forum,
     game_integration,
     games,
+    leaderboard,
     maintenance,
     media,
     notifications,
@@ -50,6 +51,7 @@ from app.api import (
     system,
     tournament,
     user,
+    user_favorites,
     wallet,
     websocket,
 )
@@ -300,8 +302,10 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # Core APIs
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(user.router, prefix="/api/user", tags=["User"])
+app.include_router(user_favorites.router, prefix="/api", tags=["User Favorites"])
 app.include_router(wallet.router, prefix="/api/wallet", tags=["Wallet"])
 app.include_router(games.router, prefix="/api/games", tags=["Games"])
+app.include_router(leaderboard.router, prefix="/api", tags=["Leaderboard & ELO"])
 app.include_router(game_integration.router, prefix="/api", tags=["Game Integration"])
 
 # Role Management

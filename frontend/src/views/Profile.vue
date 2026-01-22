@@ -492,6 +492,69 @@
           aria-labelledby="tab-security"
           class="tab-content space-y-6"
         >
+          <!-- Email Verification Section -->
+          <div v-if="showEmailVerificationSection" class="glass-card rounded-2xl p-6">
+            <div class="section-header">
+              <div class="section-icon" :class="user?.email_verified ? 'section-icon-green' : 'section-icon-yellow'">
+                <MailCheckIcon v-if="user?.email_verified" class="w-5 h-5" />
+                <MailWarningIcon v-else class="w-5 h-5" />
+              </div>
+              <h3 class="section-title">E-posta Dogrulama</h3>
+              <n-tag
+                :type="user?.email_verified ? 'success' : 'warning'"
+                size="medium"
+                round
+                class="ml-auto"
+              >
+                {{ user?.email_verified ? 'Dogrulandi' : 'Dogrulanmadi' }}
+              </n-tag>
+            </div>
+
+            <!-- Verified State -->
+            <div v-if="user?.email_verified" class="email-verified-state">
+              <n-alert type="success" :bordered="false">
+                <template #icon><CheckCircleIcon class="w-5 h-5" /></template>
+                <template #header>E-posta Adresiniz Dogrulandi</template>
+                E-posta adresiniz ({{ user?.email }}) basariyla dogrulandi.
+              </n-alert>
+            </div>
+
+            <!-- Not Verified State -->
+            <div v-else class="email-not-verified-state">
+              <p class="text-gray-400 mb-4">
+                E-posta adresinizi dogrulamaniz gerekmektedir. Dogrulama yapmadiginiz surece bazi ozellikler kisitli olabilir.
+              </p>
+
+              <div class="flex flex-wrap items-center gap-4">
+                <n-button
+                  v-if="emailVerification.canResend"
+                  type="warning"
+                  size="large"
+                  :loading="emailVerification.sending"
+                  @click="sendEmailVerification"
+                  class="btn-save"
+                >
+                  <template #icon><SendIcon class="w-4 h-4" /></template>
+                  Dogrulama Emaili Gonder
+                </n-button>
+                <n-button
+                  v-else
+                  disabled
+                  size="large"
+                  class="btn-save"
+                >
+                  <template #icon><ClockIcon class="w-4 h-4" /></template>
+                  {{ emailVerification.countdown }}s bekleyin
+                </n-button>
+
+                <p class="text-sm text-gray-500">
+                  <MailIcon class="w-4 h-4 inline-block mr-1" />
+                  {{ user?.email }}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Password Change Section -->
           <div v-if="!isOAuthUser" class="glass-card rounded-2xl p-6">
             <div class="section-header">
@@ -1244,6 +1307,8 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import ProfileCustomizer from '@/components/profile/ProfileCustomizer.vue'
+import { authAPI } from '@/api'
+import { useUIStore } from '@/stores/ui'
 import {
   UserIcon,
   ShieldCheckIcon,
@@ -1263,6 +1328,10 @@ import {
   AlertCircleIcon,
   AlertTriangleIcon,
   MailIcon,
+  MailCheck as MailCheckIcon,
+  MailWarning as MailWarningIcon,
+  Send as SendIcon,
+  Clock as ClockIcon,
   PhoneIcon,
   GlobeIcon,
   SaveIcon,
@@ -1440,6 +1509,80 @@ const deleteConfirmText = ref('')
 const twoFAStep = ref(1)
 const twoFASecret = ref('')
 const twoFACode = ref('')
+
+// UI Store for notifications
+const uiStore = useUIStore()
+
+// Email Verification
+const emailVerification = reactive({
+  sending: false,
+  canResend: true,
+  countdown: 0
+})
+let emailCountdownInterval = null
+
+// Show email verification section only for non-Steam users
+const showEmailVerificationSection = computed(() => {
+  // Steam users don't need email verification
+  if (user.value?.steam_id) return false
+  // Show for all non-Steam users (whether verified or not)
+  return true
+})
+
+const sendEmailVerification = async () => {
+  if (emailVerification.sending || !emailVerification.canResend) return
+
+  emailVerification.sending = true
+  try {
+    await authAPI.sendVerificationEmail()
+    uiStore.addNotification({
+      type: 'success',
+      message: 'Dogrulama emaili gonderildi! Lutfen gelen kutunuzu kontrol edin.'
+    })
+    startEmailCountdown(60)
+  } catch (error) {
+    const message = error.response?.data?.detail || 'Email gonderilemedi'
+    uiStore.addNotification({
+      type: 'error',
+      message
+    })
+    // Rate limit hatasi ise countdown baslat
+    if (error.response?.status === 429) {
+      const match = message.match(/(\d+)/)
+      if (match) {
+        startEmailCountdown(parseInt(match[1]))
+      }
+    }
+  } finally {
+    emailVerification.sending = false
+  }
+}
+
+const startEmailCountdown = (seconds) => {
+  emailVerification.countdown = seconds
+  emailVerification.canResend = false
+  if (emailCountdownInterval) clearInterval(emailCountdownInterval)
+  emailCountdownInterval = setInterval(() => {
+    emailVerification.countdown--
+    if (emailVerification.countdown <= 0) {
+      clearInterval(emailCountdownInterval)
+      emailVerification.canResend = true
+    }
+  }, 1000)
+}
+
+const checkEmailVerificationStatus = async () => {
+  if (!user.value || user.value.steam_id || user.value.email_verified) return
+
+  try {
+    const status = await authAPI.getEmailVerificationStatus()
+    if (!status.resend_available && status.resend_wait_seconds > 0) {
+      startEmailCountdown(status.resend_wait_seconds)
+    }
+  } catch (error) {
+    // Sessiz hata
+  }
+}
 
 // Forms
 const profileForm = reactive({
@@ -2217,7 +2360,8 @@ onMounted(async () => {
     fetchSessions(),
     fetchActivities(),
     fetchConnectedAccounts(),
-    fetch2FAStatus()
+    fetch2FAStatus(),
+    checkEmailVerificationStatus()
   ])
 })
 
@@ -2262,6 +2406,7 @@ onBeforeUnmount(() => {
 // Cleanup
 onUnmounted(() => {
   window.onbeforeunload = null
+  if (emailCountdownInterval) clearInterval(emailCountdownInterval)
 })
 </script>
 
@@ -2763,6 +2908,21 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: #f97316;
+}
+
+.section-icon-green {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)) !important;
+  color: #10b981 !important;
+}
+
+.section-icon-yellow {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(234, 179, 8, 0.1)) !important;
+  color: #eab308 !important;
+}
+
+.email-verified-state,
+.email-not-verified-state {
+  margin-top: 16px;
 }
 
 .section-title {

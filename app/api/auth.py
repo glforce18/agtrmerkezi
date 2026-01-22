@@ -1001,3 +1001,154 @@ async def oauth_callback(
         logger.error(f"OAuth callback hatasi ({provider}): {type(e).__name__}: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         return RedirectResponse(url=f"/login?error={provider}_failed")
+
+
+# ==================== EMAIL VERIFICATION ====================
+
+class EmailVerificationRequest(BaseModel):
+    token: str
+
+
+@router.post("/email/send-verification")
+async def send_verification_email(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Dogrulama emaili gonder"""
+    # Steam kullanicilari icin email dogrulama gerekli degil
+    if current_user.steam_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Steam hesabi bagli kullanicilar icin email dogrulama gerekli degil"
+        )
+
+    # Email zaten dogrulanmis mi?
+    if current_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="E-posta adresiniz zaten dogrulanmis"
+        )
+
+    # Son gonderimden bu yana 60 saniye gecmis mi?
+    if current_user.email_verification_sent_at:
+        time_diff = (datetime.utcnow() - current_user.email_verification_sent_at).total_seconds()
+        if time_diff < 60:
+            remaining = int(60 - time_diff)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Lutfen {remaining} saniye bekleyin"
+            )
+
+    # Token olustur
+    verification_token = secrets.token_urlsafe(32)
+    current_user.email_verification_token = verification_token
+    current_user.email_verification_sent_at = datetime.utcnow()
+    db.commit()
+
+    # Email gonder
+    verification_url = f"{settings.SITE_URL}/verify-email?token={verification_token}"
+    try:
+        await email_service.send_verification_email(
+            to=current_user.email,
+            username=current_user.display_name or current_user.username,
+            verification_url=verification_url
+        )
+        logger.info(f"Email dogrulama linki gonderildi: {current_user.username}")
+    except Exception as e:
+        logger.error(f"Email gonderim hatasi: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Email gonderilemedi. Lutfen daha sonra tekrar deneyin."
+        )
+
+    client_ip = request.client.host if request.client else None
+    log_audit(
+        db, current_user.id, "email_verification_sent", "user", current_user.id,
+        ip_address=client_ip
+    )
+
+    return {"success": True, "message": "Dogrulama emaili gonderildi"}
+
+
+@router.post("/email/verify")
+async def verify_email(
+    request: Request,
+    data: EmailVerificationRequest,
+    db: Session = Depends(get_db)
+):
+    """Email dogrula"""
+    user = db.query(User).filter(
+        User.email_verification_token == data.token
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Gecersiz veya suresi dolmus dogrulama linki"
+        )
+
+    # Token suresi kontrolu (24 saat)
+    if user.email_verification_sent_at:
+        time_diff = (datetime.utcnow() - user.email_verification_sent_at).total_seconds()
+        if time_diff > 86400:  # 24 saat
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Dogrulama linkinin suresi dolmus. Yeni bir link talep edin."
+            )
+
+    # Email dogrula
+    user.email_verified = True
+    user.email_verification_token = None
+    user.email_verification_sent_at = None
+    db.commit()
+
+    client_ip = request.client.host if request.client else None
+    log_audit(
+        db, user.id, "email_verified", "user", user.id,
+        ip_address=client_ip
+    )
+    logger.info(f"Email dogrulandi: {user.username}")
+
+    return {"success": True, "message": "E-posta adresiniz basariyla dogrulandi"}
+
+
+@router.get("/email/status")
+async def email_verification_status(
+    current_user: User = Depends(get_current_user_required)
+):
+    """Email dogrulama durumu"""
+    # Steam bagliysa dogrulama gerekmiyor
+    requires_verification = not current_user.steam_id and not current_user.email_verified
+
+    # Yeniden gonderim icin bekleme suresi
+    resend_available = True
+    resend_wait_seconds = 0
+
+    if current_user.email_verification_sent_at:
+        time_diff = (datetime.utcnow() - current_user.email_verification_sent_at).total_seconds()
+        if time_diff < 60:
+            resend_available = False
+            resend_wait_seconds = int(60 - time_diff)
+
+    return {
+        "email_verified": current_user.email_verified,
+        "steam_linked": bool(current_user.steam_id),
+        "requires_verification": requires_verification,
+        "resend_available": resend_available,
+        "resend_wait_seconds": resend_wait_seconds
+    }
+
+
+# ==================== VERIFIED USER DEPENDENCY ====================
+
+async def get_verified_user(
+    user: User = Depends(get_current_user_required)
+) -> User:
+    """Steam bagliysa veya email dogrulanmissa kabul et"""
+    if not user.steam_id and not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email dogrulamasi veya Steam baglantisi gerekli"
+        )
+    return user

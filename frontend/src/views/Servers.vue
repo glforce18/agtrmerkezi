@@ -277,7 +277,19 @@
               <span class="status-text">{{ server.status === 'running' ? 'CANLI' : 'KAPALI' }}</span>
             </div>
             <!-- Favorite Toggle -->
+            <n-tooltip v-if="!isLoggedIn" trigger="hover">
+              <template #trigger>
+                <button
+                  class="favorite-btn disabled"
+                  @click.stop="toggleFavorite(server.id)"
+                >
+                  <n-icon :component="Heart" />
+                </button>
+              </template>
+              Giris yaparak favorilere ekleyebilirsiniz
+            </n-tooltip>
             <button
+              v-else
               :class="['favorite-btn', { active: favorites.has(server.id) }]"
               @click.stop="toggleFavorite(server.id)"
             >
@@ -438,6 +450,8 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useMessage } from 'naive-ui'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
+import { useRequireAuth } from '@/composables/useRequireAuth'
+import { useAuthStore } from '@/stores/auth'
 import {
   Server,
   Activity,
@@ -512,6 +526,8 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const message = useMessage()
+const authStore = useAuthStore()
+const { isLoggedIn, requireAuth } = useRequireAuth()
 
 // State
 const servers = ref([])
@@ -729,13 +745,33 @@ const toggleSort = (field) => {
   }
 }
 
-const toggleFavorite = (serverId) => {
+const toggleFavorite = async (serverId) => {
+  if (!requireAuth({ message: 'Favorilere eklemek icin giris yapmaniz gerekiyor' })) return
+
+  // Toggle local state
   if (favorites.value.has(serverId)) {
     favorites.value.delete(serverId)
   } else {
     favorites.value.add(serverId)
   }
+
+  // Save to localStorage as backup
   localStorage.setItem('serverFavorites', JSON.stringify([...favorites.value]))
+
+  // Optionally sync to backend (if endpoint exists)
+  try {
+    await fetch('/api/user/favorites/server', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      },
+      body: JSON.stringify({ server_id: serverId })
+    })
+  } catch (e) {
+    // Backend sync failed, localStorage still has data
+    console.log('Favorite sync failed:', e)
+  }
 }
 
 const clearAllFilters = () => {
@@ -881,7 +917,28 @@ watch([searchQuery, filters], () => {
 }, { deep: true })
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  // Load from localStorage first
+  const stored = localStorage.getItem('serverFavorites')
+  if (stored) favorites.value = new Set(JSON.parse(stored))
+
+  // If logged in, sync from backend
+  if (authStore.isAuthenticated) {
+    try {
+      const res = await fetch('/api/user/favorites/servers', {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        favorites.value = new Set(data.server_ids || [])
+        localStorage.setItem('serverFavorites', JSON.stringify([...favorites.value]))
+      }
+    } catch (e) {
+      // Backend sync failed, use localStorage data
+      console.log('Failed to fetch favorites from backend:', e)
+    }
+  }
+
   refreshServers()
   startRefreshTimer()
 })
@@ -1390,6 +1447,17 @@ onUnmounted(() => {
 .favorite-btn.active {
   color: #f97316;
   animation: heartBeat 0.4s ease;
+}
+
+.favorite-btn.disabled {
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+.favorite-btn.disabled:hover {
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.4);
+  transform: none;
 }
 
 @keyframes heartBeat {

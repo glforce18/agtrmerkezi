@@ -211,9 +211,35 @@ class EmailService:
                 </div>
             </body>
             </html>
+            """,
+
+            "email_verification": f"""
+            <!DOCTYPE html>
+            <html>
+            <head>{base_style}</head>
+            <body>
+                <div class="container">
+                    <div class="header" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <h1>E-posta Dogrulama</h1>
+                    </div>
+                    <div class="content">
+                        <p>Merhaba <span class="highlight">{context.get('username', 'Kullanici')}</span>,</p>
+                        <p>E-posta adresinizi dogrulamak icin asagidaki butona tiklayin:</p>
+                        <a href="{context.get('verification_url', '#')}" class="btn" style="background: #10b981;">E-postami Dogrula</a>
+                        <p style="color: #888; font-size: 14px;">
+                            Bu link 24 saat icerisinde gecersiz olacaktir.<br>
+                            Eger bu istegi siz yapmadiysan, bu emaili gormezden gelebilirsiniz.
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <p>&copy; {datetime.utcnow().year} AGTR Merkezi</p>
+                    </div>
+                </div>
+            </body>
+            </html>
             """
         }
-        
+
         return templates.get(template_name, templates["notification"])
     
     async def send_email(self, to: str, subject: str, html_content: str, 
@@ -280,7 +306,7 @@ class EmailService:
                                     renew_url=renew_url or "https://agtrmerkezi.com/panel")
         return await self.send_email(to, "Sunucu Sureniz Doluyor! ⏰", html)
     
-    async def send_notification(self, to: str, username: str, title: str, 
+    async def send_notification(self, to: str, username: str, title: str,
                                 message: str, action_url: str = None, action_text: str = None):
         """Genel bildirim emaili"""
         html = self.render_template("notification",
@@ -290,6 +316,13 @@ class EmailService:
                                     action_url=action_url,
                                     action_text=action_text)
         return await self.send_email(to, f"{title} - AGTR Merkezi", html)
+
+    async def send_verification_email(self, to: str, username: str, verification_url: str):
+        """E-posta dogrulama emaili"""
+        html = self.render_template("email_verification",
+                                    username=username,
+                                    verification_url=verification_url)
+        return await self.send_email(to, "E-posta Adresinizi Dogrulayin - AGTR Merkezi", html)
 
 
 # Global instance

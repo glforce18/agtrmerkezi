@@ -318,10 +318,23 @@
             </div>
 
             <div class="tournament-actions">
-              <n-button type="primary" block>
-                <template #icon><Zap class="w-4 h-4" /></template>
-                Hemen Katıl
-              </n-button>
+              <n-tooltip :disabled="isLoggedIn" trigger="hover">
+                <template #trigger>
+                  <n-button
+                    type="primary"
+                    block
+                    :class="{ 'btn-disabled': !isLoggedIn }"
+                    @click="joinTournament(event)"
+                  >
+                    <template #icon>
+                      <Lock v-if="!isLoggedIn" class="w-4 h-4" />
+                      <Zap v-else class="w-4 h-4" />
+                    </template>
+                    {{ isLoggedIn ? 'Hemen Katil' : 'Giris Yap' }}
+                  </n-button>
+                </template>
+                Turnuvaya katilmak icin giris yapin
+              </n-tooltip>
             </div>
 
             <div class="tournament-glow"></div>
@@ -447,9 +460,12 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue'
+import { useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useSettingsStore } from '@/stores/settings'
 import { useClansStore } from '@/stores/clans'
+import { useAuthStore } from '@/stores/auth'
+import { useRequireSteam } from '@/composables/useRequireSteam'
 import GameIcon from '@/components/game/GameIcon.vue'
 import ActivityFeed from '@/components/social/ActivityFeed.vue'
 import {
@@ -480,11 +496,18 @@ import {
   Shield,
   Star,
   TrendingUp,
-  Activity
+  Activity,
+  Lock
 } from 'lucide-vue-next'
 
+const router = useRouter()
 const themeStore = useThemeStore()
 const settingsStore = useSettingsStore()
+const authStore = useAuthStore()
+const { hasSteam, requireSteam } = useRequireSteam()
+
+// Auth state
+const isLoggedIn = computed(() => !!authStore.user)
 const clansStore = useClansStore()
 const isDark = computed(() => themeStore.isDark)
 
@@ -738,6 +761,14 @@ const getPlayerGradient = (index) => {
 const connectServer = (server) => {
   // Steam connect protocol
   window.location.href = `steam://connect/${server.ip || 'agtr.com.tr'}:27015`
+}
+
+// Tournament join handler
+const joinTournament = (event) => {
+  requireSteam(() => {
+    // Navigate to tournament details or registration page
+    router.push(`/events/${event.id}`)
+  })
 }
 
 // Animation functions
@@ -1969,6 +2000,18 @@ onUnmounted(() => {
   opacity: 0;
   transition: opacity 0.5s ease;
   pointer-events: none;
+}
+
+/* Disabled Button State */
+.btn-disabled {
+  background: linear-gradient(135deg, #4b5563, #374151) !important;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.btn-disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* ===== Community Highlights ===== */

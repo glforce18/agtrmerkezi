@@ -26,14 +26,14 @@
             <template #trigger>
               <button
                 class="fab-button"
-                :class="{ 'liked': hasLikedTopic }"
+                :class="{ 'liked': hasLikedTopic, 'disabled-action': !isLoggedIn }"
                 @click="likeTopic"
               >
                 <HeartIcon class="w-5 h-5" :class="{ 'animate-like': likeAnimating }" />
                 <span class="fab-count">{{ topic?.likes }}</span>
               </button>
             </template>
-            Begeni
+            {{ isLoggedIn ? 'Begeni' : 'Begenmek icin giris yapin' }}
           </n-tooltip>
 
           <div class="h-6 w-px bg-white/20" />
@@ -49,11 +49,15 @@
 
           <n-tooltip trigger="hover" placement="top">
             <template #trigger>
-              <button class="fab-button" @click="showReportModal = true">
+              <button
+                class="fab-button"
+                :class="{ 'disabled-action': !isLoggedIn }"
+                @click="reportTopic"
+              >
                 <FlagIcon class="w-5 h-5" />
               </button>
             </template>
-            Bildir
+            {{ isLoggedIn ? 'Bildir' : 'Bildirmek icin giris yapin' }}
           </n-tooltip>
 
           <div class="h-6 w-px bg-white/20" />
@@ -210,16 +214,22 @@
           <!-- Quick Actions (Desktop) -->
           <div class="hidden lg:flex items-center gap-2">
             <n-button-group>
-              <n-button
-                :type="hasLikedTopic ? 'primary' : 'default'"
-                quaternary
-                @click="likeTopic"
-              >
-                <template #icon>
-                  <HeartIcon class="w-4 h-4" :class="{ 'text-red-500 fill-red-500': hasLikedTopic }" />
+              <n-tooltip trigger="hover">
+                <template #trigger>
+                  <n-button
+                    :type="hasLikedTopic ? 'primary' : 'default'"
+                    quaternary
+                    :class="{ 'disabled-action': !isLoggedIn }"
+                    @click="likeTopic"
+                  >
+                    <template #icon>
+                      <HeartIcon class="w-4 h-4" :class="{ 'text-red-500 fill-red-500': hasLikedTopic }" />
+                    </template>
+                    {{ topic?.likes }}
+                  </n-button>
                 </template>
-                {{ topic?.likes }}
-              </n-button>
+                {{ isLoggedIn ? 'Begen' : 'Begenmek icin giris yapin' }}
+              </n-tooltip>
               <n-button quaternary @click="showShareModal = true">
                 <template #icon><Share2Icon class="w-4 h-4" /></template>
               </n-button>
@@ -406,18 +416,23 @@
             <!-- Post Actions -->
             <div class="flex items-center justify-between">
               <div class="flex gap-3">
-                <button
-                  class="like-button-animated"
-                  :class="{ 'liked': hasLikedTopic, 'animating': likeAnimating }"
-                  @click="likeTopic"
-                >
-                  <HeartIcon class="like-icon w-5 h-5" />
-                  <span class="like-count">{{ topic?.likes }}</span>
-                  <span class="like-text">Begeni</span>
-                  <div class="like-particles">
-                    <span v-for="i in 6" :key="i" class="particle" />
-                  </div>
-                </button>
+                <n-tooltip trigger="hover">
+                  <template #trigger>
+                    <button
+                      class="like-button-animated"
+                      :class="{ 'liked': hasLikedTopic, 'animating': likeAnimating, 'disabled-action': !isLoggedIn }"
+                      @click="likeTopic"
+                    >
+                      <HeartIcon class="like-icon w-5 h-5" />
+                      <span class="like-count">{{ topic?.likes }}</span>
+                      <span class="like-text">Begeni</span>
+                      <div class="like-particles">
+                        <span v-for="i in 6" :key="i" class="particle" />
+                      </div>
+                    </button>
+                  </template>
+                  {{ isLoggedIn ? 'Begen' : 'Begenmek icin giris yapin' }}
+                </n-tooltip>
                 <n-button size="small" @click="scrollToReplyForm" class="action-button">
                   <template #icon><ReplyIcon class="w-4 h-4" /></template>
                   Yanıtla
@@ -427,10 +442,21 @@
                   Paylas
                 </n-button>
               </div>
-              <n-button size="small" type="error" quaternary @click="showReportModal = true">
-                <template #icon><FlagIcon class="w-4 h-4" /></template>
-                Bildir
-              </n-button>
+              <n-tooltip trigger="hover">
+                <template #trigger>
+                  <n-button
+                    size="small"
+                    type="error"
+                    quaternary
+                    :class="{ 'disabled-action': !isLoggedIn }"
+                    @click="reportTopic"
+                  >
+                    <template #icon><FlagIcon class="w-4 h-4" /></template>
+                    Bildir
+                  </n-button>
+                </template>
+                {{ isLoggedIn ? 'Bildir' : 'Bildirmek icin giris yapin' }}
+              </n-tooltip>
             </div>
           </div>
         </div>
@@ -593,14 +619,19 @@
 
                 <!-- Reply Actions -->
                 <div class="flex items-center gap-3 pt-3 border-t border-white/10">
-                  <button
-                    class="reply-like-btn"
-                    :class="{ 'liked': reply.hasLiked }"
-                    @click="likeReply(reply.id)"
-                  >
-                    <HeartIcon class="w-4 h-4" />
-                    <span>{{ reply.likes }}</span>
-                  </button>
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <button
+                        class="reply-like-btn"
+                        :class="{ 'liked': reply.hasLiked, 'disabled-action': !isLoggedIn }"
+                        @click="likeReply(reply.id)"
+                      >
+                        <HeartIcon class="w-4 h-4" />
+                        <span>{{ reply.likes }}</span>
+                      </button>
+                    </template>
+                    {{ isLoggedIn ? 'Begen' : 'Begenmek icin giris yapin' }}
+                  </n-tooltip>
                   <n-button text size="tiny" @click="quoteReply(reply)" class="reply-action-btn">
                     <template #icon><QuoteIcon class="w-3 h-3" /></template>
                     Alıntıla
@@ -609,10 +640,22 @@
                     <template #icon><AtSignIcon class="w-3 h-3" /></template>
                     Yanıtla
                   </n-button>
-                  <n-button text size="tiny" type="error" @click="reportReply(reply)" class="reply-action-btn">
-                    <template #icon><FlagIcon class="w-3 h-3" /></template>
-                    Bildir
-                  </n-button>
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <n-button
+                        text
+                        size="tiny"
+                        type="error"
+                        :class="{ 'disabled-action': !isLoggedIn }"
+                        @click="reportReply(reply)"
+                        class="reply-action-btn"
+                      >
+                        <template #icon><FlagIcon class="w-3 h-3" /></template>
+                        Bildir
+                      </n-button>
+                    </template>
+                    {{ isLoggedIn ? 'Bildir' : 'Bildirmek icin giris yapin' }}
+                  </n-tooltip>
                 </div>
               </div>
             </div>
@@ -1035,6 +1078,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useForumTopicWS } from '@/composables/useWebSocket'
 import { useRequireSteam } from '@/composables/useRequireSteam'
+import { useRequireAuth } from '@/composables/useRequireAuth'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   HomeIcon,
@@ -1104,6 +1148,9 @@ const topicId = route.params.id
 
 // Steam requirement
 const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
+
+// Auth requirement
+const { isLoggedIn, requireAuth } = useRequireAuth()
 
 // Refs
 const replyFormRef = ref(null)
@@ -1480,6 +1527,8 @@ function toggleReplyReaction(replyId, emoji) {
 }
 
 function likeTopic() {
+  if (!requireAuth({ message: 'Begenmek icin giris yapmaniz gerekiyor', redirect: false })) return
+
   if (topic.value) {
     hasLikedTopic.value = !hasLikedTopic.value
     topic.value.likes += hasLikedTopic.value ? 1 : -1
@@ -1496,6 +1545,8 @@ function likeTopic() {
 }
 
 function likeReply(replyId) {
+  if (!requireAuth({ message: 'Begenmek icin giris yapmaniz gerekiyor', redirect: false })) return
+
   const reply = replies.value.find(r => r.id === replyId)
   if (reply) {
     reply.hasLiked = !reply.hasLiked
@@ -1579,7 +1630,16 @@ function shareToSocial(social) {
   showShareModal.value = false
 }
 
+function reportTopic() {
+  if (!requireAuth({ message: 'Sikayet etmek icin giris yapmaniz gerekiyor', redirect: false })) return
+
+  editingItem.value = topic.value
+  showReportModal.value = true
+}
+
 function reportReply(reply) {
+  if (!requireAuth({ message: 'Sikayet etmek icin giris yapmaniz gerekiyor', redirect: false })) return
+
   editingItem.value = reply
   showReportModal.value = true
 }
@@ -3259,5 +3319,15 @@ watch(sortOrder, () => {
 @keyframes skeleton-shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+/* Disabled action state for non-authenticated users */
+.disabled-action {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.disabled-action:hover {
+  opacity: 0.6;
 }
 </style>

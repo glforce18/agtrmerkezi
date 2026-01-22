@@ -28,7 +28,7 @@
             </p>
           </div>
 
-          <!-- Stats Cards -->
+          <!-- Stats Cards & Add Server Button -->
           <div class="flex items-center gap-3">
             <div class="stat-mini">
               <GameIcon name="server-pulse" size="sm" color="#22c55e" />
@@ -40,6 +40,22 @@
               <span class="text-blue-500 font-bold">{{ stats.total_players }}</span>
               <span class="text-xs text-gray-500">Oyuncu</span>
             </div>
+            <n-tooltip :disabled="isLoggedIn" trigger="hover">
+              <template #trigger>
+                <n-button
+                  type="primary"
+                  size="small"
+                  @click="openSubmitModal"
+                  class="add-server-btn muzzle-flash-hover"
+                  :class="{ 'btn-disabled': !isLoggedIn }"
+                >
+                  <Lock v-if="!isLoggedIn" class="w-4 h-4 mr-1" />
+                  <Plus v-else class="w-4 h-4 mr-1" />
+                  {{ isLoggedIn ? 'Sunucu Ekle' : 'Giris Yap' }}
+                </n-button>
+              </template>
+              Sunucu eklemek icin giris yapin
+            </n-tooltip>
             <n-button
               quaternary
               circle
@@ -55,6 +71,62 @@
           </div>
         </div>
       </header>
+
+      <!-- My Servers Section (for logged in users) -->
+      <div v-if="isLoggedIn && myServers.length > 0" class="my-servers-section mb-6">
+        <div class="section-header">
+          <h2 class="text-lg font-semibold flex items-center gap-2">
+            <User class="w-5 h-5 text-orange-500" />
+            Benim Sunucularim
+          </h2>
+          <n-button quaternary size="small" @click="fetchMyServers" :loading="myServersLoading">
+            <RefreshCw class="w-4 h-4" />
+          </n-button>
+        </div>
+        <div class="my-servers-grid">
+          <div
+            v-for="server in myServers"
+            :key="'my-' + server.id"
+            class="my-server-card glass-card"
+          >
+            <div class="my-server-header">
+              <div class="game-badge-sm" :style="{ background: getGameColor(server.game_type) }">
+                <GameIcon :name="getGameIcon(server.game_type)" size="xs" color="#fff" />
+              </div>
+              <div class="my-server-info">
+                <h4 class="my-server-name">{{ server.name }}</h4>
+                <p class="my-server-address">{{ server.address }}</p>
+              </div>
+              <div class="my-server-status-wrap">
+                <div
+                  class="status-indicator"
+                  :class="server.is_online ? 'online' : 'offline'"
+                  :title="server.is_online ? 'Online' : 'Offline'"
+                ></div>
+                <span class="player-count" v-if="server.is_online">
+                  {{ server.players }}/{{ server.max_players }}
+                </span>
+              </div>
+            </div>
+            <div class="my-server-actions">
+              <n-button size="tiny" quaternary @click="refreshServerStatus(server)">
+                <RefreshCw class="w-3 h-3" />
+              </n-button>
+              <n-button size="tiny" quaternary @click="copyAddress(server.address)">
+                <Copy class="w-3 h-3" />
+              </n-button>
+              <n-button
+                size="tiny"
+                quaternary
+                type="error"
+                @click="confirmDeleteServer(server)"
+              >
+                <Trash2 class="w-3 h-3" />
+              </n-button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Game Type Tabs -->
       <div class="game-tabs mb-6">
@@ -281,22 +353,133 @@
         </div>
       </div>
     </n-modal>
+
+    <!-- Submit Server Modal -->
+    <n-modal
+      v-model:show="showSubmitModal"
+      preset="card"
+      title="Sunucu Ekle"
+      :style="{ maxWidth: '480px' }"
+      class="submit-modal"
+    >
+      <div class="submit-form">
+        <p class="form-desc mb-4">
+          Kendi sunucunuzu topluluk listesine ekleyin. Sunucunuzun online oldugunu ve Steam hesabinizin bagli oldugunu kontrol edin.
+        </p>
+
+        <n-form ref="submitFormRef" :model="submitForm" :rules="submitRules">
+          <n-form-item label="IP Adresi" path="ip">
+            <n-input
+              v-model:value="submitForm.ip"
+              placeholder="192.168.1.1"
+              :disabled="submitting"
+            />
+          </n-form-item>
+
+          <n-form-item label="Port" path="port">
+            <n-input-number
+              v-model:value="submitForm.port"
+              :min="1"
+              :max="65535"
+              placeholder="27015"
+              style="width: 100%"
+              :disabled="submitting"
+            />
+          </n-form-item>
+
+          <n-form-item label="Sunucu Adi (Opsiyonel)" path="name">
+            <n-input
+              v-model:value="submitForm.name"
+              placeholder="Sunucu adi (bos birakirsaniz otomatik alinir)"
+              :disabled="submitting"
+              :maxlength="200"
+              show-count
+            />
+          </n-form-item>
+
+          <n-form-item label="Aciklama (Opsiyonel)" path="description">
+            <n-input
+              v-model:value="submitForm.description"
+              type="textarea"
+              placeholder="Sunucu hakkinda kisa aciklama..."
+              :disabled="submitting"
+              :maxlength="500"
+              show-count
+              :rows="3"
+            />
+          </n-form-item>
+        </n-form>
+
+        <div class="submit-actions">
+          <n-button
+            type="primary"
+            @click="submitServer"
+            :loading="submitting"
+            :disabled="!submitForm.ip"
+          >
+            <Plus class="w-4 h-4 mr-1" />
+            Sunucu Ekle
+          </n-button>
+          <n-button quaternary @click="showSubmitModal = false" :disabled="submitting">
+            Vazgec
+          </n-button>
+        </div>
+      </div>
+    </n-modal>
+
+    <!-- Delete Confirmation Modal -->
+    <n-modal
+      v-model:show="showDeleteModal"
+      preset="dialog"
+      title="Sunucuyu Sil"
+      type="warning"
+      positive-text="Sil"
+      negative-text="Vazgec"
+      @positive-click="deleteServer"
+      @negative-click="showDeleteModal = false"
+    >
+      <p>
+        <strong>{{ serverToDelete?.name }}</strong> sunucusunu silmek istediginizden emin misiniz?
+        Bu islem geri alinamaz.
+      </p>
+    </n-modal>
+
+    <!-- Steam Required Modal -->
+    <SteamRequiredModal
+      :show="showSteamModal"
+      @close="closeSteamModal"
+      @connect="connectSteam"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useMessage } from 'naive-ui'
 import {
   RefreshCw, Search, Map, Users, Wifi, Flag,
-  Gamepad2, Copy, Star
+  Gamepad2, Copy, Star, Plus, User, Trash2, Lock
 } from 'lucide-vue-next'
 import GameIcon from '@/components/game/GameIcon.vue'
+import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import { useGameEffects } from '@/composables/useGameEffects'
+import { useRequireSteam } from '@/composables/useRequireSteam'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
 const message = useMessage()
 const gameEffects = useGameEffects()
+const authStore = useAuthStore()
+const {
+  hasSteam,
+  showSteamModal,
+  requireSteam,
+  connectSteam,
+  closeModal: closeSteamModal
+} = useRequireSteam()
+
+// Auth state
+const isLoggedIn = computed(() => !!authStore.user)
 
 // State
 const loading = ref(false)
@@ -307,6 +490,40 @@ const currentPage = ref(1)
 const pagination = ref({ total: 0, total_pages: 1 })
 const showModal = ref(false)
 const selectedServer = ref(null)
+
+// My Servers State
+const myServers = ref([])
+const myServersLoading = ref(false)
+
+// Submit Server State
+const showSubmitModal = ref(false)
+const submitting = ref(false)
+const submitFormRef = ref(null)
+const submitForm = ref({
+  ip: '',
+  port: 27015,
+  name: '',
+  description: ''
+})
+
+const submitRules = {
+  ip: [
+    { required: true, message: 'IP adresi gerekli', trigger: 'blur' },
+    {
+      pattern: /^(\d{1,3}\.){3}\d{1,3}$/,
+      message: 'Gecerli bir IP adresi girin (ornek: 192.168.1.1)',
+      trigger: 'blur'
+    }
+  ],
+  port: [
+    { required: true, message: 'Port gerekli', trigger: 'blur' },
+    { type: 'number', min: 1, max: 65535, message: 'Port 1-65535 arasinda olmali', trigger: 'blur' }
+  ]
+}
+
+// Delete Server State
+const showDeleteModal = ref(false)
+const serverToDelete = ref(null)
 
 // Filters
 const searchQuery = ref('')
@@ -391,7 +608,6 @@ const fetchServers = async () => {
     pagination.value = response.pagination || response.data?.pagination || { total: 0, total_pages: 1 }
   } catch (error) {
     console.error('Failed to fetch servers:', error)
-    // API endpoint yoksa boş veri göster
     servers.value = []
     pagination.value = { total: 0, total_pages: 1 }
   } finally {
@@ -405,13 +621,30 @@ const fetchStats = async () => {
     stats.value = response || { online_servers: 0, total_players: 0, by_game_type: {} }
   } catch (error) {
     console.error('Failed to fetch stats:', error)
-    // API yoksa varsayılan değerler
     stats.value = { online_servers: 0, total_players: 0, by_game_type: {} }
+  }
+}
+
+const fetchMyServers = async () => {
+  if (!isLoggedIn.value) return
+
+  myServersLoading.value = true
+  try {
+    const response = await api.get('/community/community-servers/my')
+    myServers.value = response.servers || []
+  } catch (error) {
+    console.error('Failed to fetch my servers:', error)
+    myServers.value = []
+  } finally {
+    myServersLoading.value = false
   }
 }
 
 const refreshData = async () => {
   await Promise.all([fetchServers(), fetchStats()])
+  if (isLoggedIn.value) {
+    await fetchMyServers()
+  }
   message.success('Veriler guncellendi')
 }
 
@@ -426,7 +659,6 @@ const showServerDetail = async (server) => {
     selectedServer.value = response || server
   } catch (error) {
     console.error('Live query failed:', error)
-    // Hata durumunda mevcut veriyi koru
   } finally {
     queryLoading.value = false
   }
@@ -436,7 +668,6 @@ const connectToServer = (server) => {
   const protocol = server.game_type === 'cs16' ? 'steam://connect/' : 'hl://'
   window.location.href = `${protocol}${server.address}`
 
-  // Show achievement
   gameEffects.showAchievement({
     title: 'Sunucuya Baglaniliyor',
     description: server.name,
@@ -448,7 +679,6 @@ const connectToServer = (server) => {
 const copyAddress = (address) => {
   navigator.clipboard.writeText(address)
   message.success('IP adresi kopyalandi')
-
   gameEffects.showXP(10, { type: 'default', label: '' })
 }
 
@@ -485,6 +715,115 @@ const getPingClass = (ping) => {
   return 'text-red-500'
 }
 
+// Submit Server Methods
+const openSubmitModal = () => {
+  requireSteam(() => {
+    submitForm.value = { ip: '', port: 27015, name: '', description: '' }
+    showSubmitModal.value = true
+  })
+}
+
+const submitServer = async () => {
+  try {
+    await submitFormRef.value?.validate()
+  } catch (errors) {
+    return
+  }
+
+  submitting.value = true
+  try {
+    const response = await api.post('/community/community-servers/submit', {
+      ip: submitForm.value.ip,
+      port: submitForm.value.port,
+      name: submitForm.value.name || null,
+      description: submitForm.value.description || null
+    })
+
+    message.success(response.message || 'Sunucu basariyla eklendi!')
+    showSubmitModal.value = false
+
+    // Refresh data
+    await Promise.all([fetchServers(), fetchStats(), fetchMyServers()])
+
+    gameEffects.showAchievement({
+      title: 'Sunucu Eklendi!',
+      description: response.server?.name || submitForm.value.ip,
+      gameIcon: 'server-pulse',
+      color: '#22c55e'
+    })
+  } catch (error) {
+    console.error('Failed to submit server:', error)
+    message.error(error.message || 'Sunucu eklenirken bir hata olustu')
+  } finally {
+    submitting.value = false
+  }
+}
+
+// Delete Server Methods
+const confirmDeleteServer = (server) => {
+  serverToDelete.value = server
+  showDeleteModal.value = true
+}
+
+const deleteServer = async () => {
+  if (!serverToDelete.value) return
+
+  try {
+    await api.delete(`/community/community-servers/${serverToDelete.value.id}`)
+    message.success('Sunucu silindi')
+    showDeleteModal.value = false
+    serverToDelete.value = null
+    await fetchMyServers()
+  } catch (error) {
+    console.error('Failed to delete server:', error)
+    message.error(error.message || 'Sunucu silinirken bir hata olustu')
+  }
+}
+
+// Refresh single server status
+const refreshServerStatus = async (server) => {
+  try {
+    const response = await api.post(`/community/community-servers/${server.id}/refresh`)
+    const idx = myServers.value.findIndex(s => s.id === server.id)
+    if (idx !== -1) {
+      myServers.value[idx] = {
+        ...myServers.value[idx],
+        is_online: response.is_online,
+        players: response.players || 0,
+        max_players: response.max_players || myServers.value[idx].max_players,
+        current_map: response.current_map || myServers.value[idx].current_map,
+        ping: response.ping || myServers.value[idx].ping
+      }
+    }
+    message.success(response.is_online ? 'Sunucu online' : 'Sunucu offline')
+  } catch (error) {
+    console.error('Failed to refresh server status:', error)
+    message.error('Sunucu durumu alinamadi')
+  }
+}
+
+// Periodic refresh for status indicators
+let statusRefreshInterval = null
+
+const startStatusRefresh = () => {
+  statusRefreshInterval = setInterval(async () => {
+    if (myServers.value.length > 0) {
+      for (const server of myServers.value) {
+        try {
+          const response = await api.post(`/community/community-servers/${server.id}/refresh`)
+          const idx = myServers.value.findIndex(s => s.id === server.id)
+          if (idx !== -1) {
+            myServers.value[idx].is_online = response.is_online
+            myServers.value[idx].players = response.players || 0
+          }
+        } catch (error) {
+          // Silent fail for background refresh
+        }
+      }
+    }
+  }, 60000) // Refresh every 60 seconds
+}
+
 // Watchers
 watch([selectedGame, sortBy, currentPage], () => {
   fetchServers()
@@ -505,10 +844,33 @@ watch(searchQuery, () => {
   }, 300)
 })
 
+// Watch for login state changes
+watch(isLoggedIn, (newVal) => {
+  if (newVal) {
+    fetchMyServers()
+    startStatusRefresh()
+  } else {
+    myServers.value = []
+    if (statusRefreshInterval) {
+      clearInterval(statusRefreshInterval)
+    }
+  }
+})
+
 // Lifecycle
 onMounted(() => {
   fetchServers()
   fetchStats()
+  if (isLoggedIn.value) {
+    fetchMyServers()
+    startStatusRefresh()
+  }
+})
+
+onUnmounted(() => {
+  if (statusRefreshInterval) {
+    clearInterval(statusRefreshInterval)
+  }
 })
 </script>
 
@@ -580,6 +942,126 @@ onMounted(() => {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: 8px;
+}
+
+.add-server-btn {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border: none;
+}
+
+.add-server-btn.btn-disabled {
+  background: linear-gradient(135deg, #4b5563, #374151);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* My Servers Section */
+.my-servers-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.my-servers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.my-server-card {
+  padding: 12px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.my-server-card:hover {
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.my-server-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.game-badge-sm {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.my-server-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.my-server-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.my-server-address {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.my-server-status-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-indicator.online {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+  animation: pulse-green 2s infinite;
+}
+
+.status-indicator.offline {
+  background: #ef4444;
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.player-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.my-server-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
 }
 
 /* Game Tabs */
@@ -931,6 +1413,25 @@ onMounted(() => {
   border-top: 1px solid var(--border-light);
 }
 
+/* Submit Modal */
+.submit-form {
+  padding: 4px 0;
+}
+
+.form-desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.submit-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
 /* Pagination */
 .pagination-wrapper {
   display: flex;
@@ -940,6 +1441,10 @@ onMounted(() => {
 /* Responsive */
 @media (max-width: 768px) {
   .servers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .my-servers-grid {
     grid-template-columns: 1fr;
   }
 
