@@ -384,6 +384,25 @@
                   <button v-for="tool in editorTools" :key="tool.name" class="toolbar-btn" :title="tool.title">
                     <component :is="tool.icon" class="w-4 h-4" />
                   </button>
+                  <div class="toolbar-divider mx-2"></div>
+                  <button
+                    class="toolbar-btn image-upload-btn"
+                    :class="{ 'disabled': topicImages.length >= MAX_IMAGES }"
+                    :title="`Resim Ekle (${topicImages.length}/${MAX_IMAGES})`"
+                    @click="triggerImageUpload"
+                    :disabled="topicImages.length >= MAX_IMAGES || isUploadingImage"
+                  >
+                    <ImageIcon class="w-4 h-4" />
+                    <span v-if="isUploadingImage" class="loading-spinner-sm ml-1"></span>
+                  </button>
+                  <input
+                    ref="imageUploadInput"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    class="hidden"
+                    @change="handleImageSelect"
+                  />
                 </div>
                 <n-input
                   v-model:value="newTopic.content"
@@ -392,6 +411,23 @@
                   :rows="10"
                   class="content-textarea"
                 />
+
+                <!-- Image Preview Section -->
+                <div v-if="topicImages.length > 0" class="image-preview-section mt-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-gray-400">Yuklenen Resimler ({{ topicImages.length }}/{{ MAX_IMAGES }})</span>
+                    <button class="text-xs text-red-400 hover:text-red-300" @click="clearImages">Tümünü Temizle</button>
+                  </div>
+                  <div class="image-preview-grid">
+                    <div v-for="image in topicImages" :key="image.id" class="image-preview-item">
+                      <img :src="image.preview" :alt="image.name" />
+                      <button class="image-remove-btn" @click="removeImage(image.id)">
+                        <XIcon class="w-3 h-3" />
+                      </button>
+                      <span class="image-name">{{ image.name }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="form-group">
@@ -460,8 +496,16 @@
 
         <!-- Modal Footer -->
         <div class="modal-footer p-6 border-t border-white/10 flex items-center justify-between">
-          <div class="text-sm text-gray-500">
-            <kbd class="kbd-sm">Ctrl</kbd> + <kbd class="kbd-sm">Enter</kbd> ile gönder
+          <div class="flex items-center gap-4 text-sm text-gray-500">
+            <span>
+              <kbd class="kbd-sm">Ctrl</kbd> + <kbd class="kbd-sm">Enter</kbd> ile gönder
+            </span>
+            <transition name="fade">
+              <span v-if="draftSaved" class="draft-saved-indicator flex items-center gap-1.5 text-green-500">
+                <CheckCircleIcon class="w-4 h-4" />
+                Taslak kaydedildi
+              </span>
+            </transition>
           </div>
           <div class="flex gap-3">
             <n-button quaternary @click="showNewTopicModal = false">İptal</n-button>
@@ -878,6 +922,193 @@ const newTopic = reactive({
   tags: []
 })
 
+// Draft auto-save state
+const draftSaveTimer = ref(null)
+const draftSaved = ref(false)
+const draftSavedTimeout = ref(null)
+const DRAFT_KEY = 'forum_draft_topic'
+
+// Image upload state
+const MAX_IMAGES = 3
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
+const topicImages = ref([])
+const imageUploadInput = ref(null)
+const isUploadingImage = ref(false)
+
+// Draft auto-save functions
+const saveDraft = () => {
+  if (newTopic.title || newTopic.content || newTopic.categoryId || newTopic.tags.length > 0) {
+    const draft = {
+      categoryId: newTopic.categoryId,
+      title: newTopic.title,
+      content: newTopic.content,
+      tags: newTopic.tags,
+      savedAt: Date.now()
+    }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    draftSaved.value = true
+
+    // Hide "Draft saved" indicator after 2 seconds
+    if (draftSavedTimeout.value) clearTimeout(draftSavedTimeout.value)
+    draftSavedTimeout.value = setTimeout(() => {
+      draftSaved.value = false
+    }, 2000)
+  }
+}
+
+const loadDraft = () => {
+  const savedDraft = localStorage.getItem(DRAFT_KEY)
+  if (savedDraft) {
+    try {
+      const draft = JSON.parse(savedDraft)
+      // Only load if draft is less than 24 hours old
+      if (Date.now() - draft.savedAt < 24 * 60 * 60 * 1000) {
+        newTopic.categoryId = draft.categoryId
+        newTopic.title = draft.title || ''
+        newTopic.content = draft.content || ''
+        newTopic.tags = draft.tags || []
+        window.$message?.info('Taslak yuklendi')
+      } else {
+        // Draft is too old, clear it
+        clearDraft()
+      }
+    } catch (e) {
+      console.error('Failed to load draft:', e)
+      clearDraft()
+    }
+  }
+}
+
+const clearDraft = () => {
+  localStorage.removeItem(DRAFT_KEY)
+  draftSaved.value = false
+}
+
+const startDraftAutoSave = () => {
+  // Save draft every 10 seconds while typing
+  draftSaveTimer.value = setInterval(() => {
+    if (showNewTopicModal.value) {
+      saveDraft()
+    }
+  }, 10000)
+}
+
+const stopDraftAutoSave = () => {
+  if (draftSaveTimer.value) {
+    clearInterval(draftSaveTimer.value)
+    draftSaveTimer.value = null
+  }
+}
+
+// Image upload functions
+const triggerImageUpload = () => {
+  if (topicImages.value.length >= MAX_IMAGES) {
+    window.$message?.warning(`En fazla ${MAX_IMAGES} resim yukleyebilirsiniz`)
+    return
+  }
+  imageUploadInput.value?.click()
+}
+
+const handleImageSelect = async (event) => {
+  const files = Array.from(event.target.files || [])
+
+  for (const file of files) {
+    if (topicImages.value.length >= MAX_IMAGES) {
+      window.$message?.warning(`En fazla ${MAX_IMAGES} resim yukleyebilirsiniz`)
+      break
+    }
+
+    if (!file.type.startsWith('image/')) {
+      window.$message?.error(`${file.name} bir resim dosyasi degil`)
+      continue
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      window.$message?.error(`${file.name} 2MB'dan buyuk`)
+      continue
+    }
+
+    try {
+      isUploadingImage.value = true
+      const imageData = await uploadImage(file)
+      topicImages.value.push(imageData)
+
+      // Insert markdown into content
+      const markdown = `![${file.name}](${imageData.url})\n`
+      newTopic.content += markdown
+
+      window.$message?.success('Resim yuklendi')
+    } catch (error) {
+      window.$message?.error('Resim yuklenemedi: ' + (error.message || 'Bilinmeyen hata'))
+    } finally {
+      isUploadingImage.value = false
+    }
+  }
+
+  // Reset input
+  event.target.value = ''
+}
+
+const uploadImage = async (file) => {
+  // Try to upload to API first
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const response = await fetch('/api/media/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken()
+      },
+      body: formData
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return {
+        id: Date.now(),
+        name: file.name,
+        url: data.url || data.file_url,
+        preview: data.url || data.file_url
+      }
+    }
+  } catch (e) {
+    console.log('API upload failed, falling back to base64:', e)
+  }
+
+  // Fallback to base64
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      resolve({
+        id: Date.now(),
+        name: file.name,
+        url: e.target.result,
+        preview: e.target.result
+      })
+    }
+    reader.onerror = () => reject(new Error('Dosya okunamadi'))
+    reader.readAsDataURL(file)
+  })
+}
+
+const removeImage = (imageId) => {
+  const image = topicImages.value.find(img => img.id === imageId)
+  if (image) {
+    // Remove markdown from content
+    const markdownPattern = new RegExp(`!\\[${image.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\([^)]+\\)\\n?`, 'g')
+    newTopic.content = newTopic.content.replace(markdownPattern, '')
+
+    topicImages.value = topicImages.value.filter(img => img.id !== imageId)
+    window.$message?.info('Resim kaldirildi')
+  }
+}
+
+const clearImages = () => {
+  topicImages.value = []
+}
+
 // Functions
 const setFilter = (filterId) => {
   activeFilter.value = filterId
@@ -965,6 +1196,8 @@ const createTopic = async () => {
       newTopic.title = ''
       newTopic.content = ''
       newTopic.tags = []
+      clearDraft() // Clear draft after successful post
+      clearImages() // Clear uploaded images
       window.$message?.success('Konu başarıyla oluşturuldu')
     } else {
       const error = await response.json()
@@ -1012,6 +1245,18 @@ const handleKeydown = (e) => {
   }
 }
 
+// Watch for modal open/close to manage draft auto-save
+watch(showNewTopicModal, (isOpen) => {
+  if (isOpen) {
+    loadDraft()
+    startDraftAutoSave()
+  } else {
+    stopDraftAutoSave()
+    // Save draft one more time when closing
+    saveDraft()
+  }
+})
+
 onMounted(async () => {
   // Fetch data from API
   await Promise.all([
@@ -1043,6 +1288,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  stopDraftAutoSave()
+  if (draftSavedTimeout.value) clearTimeout(draftSavedTimeout.value)
 })
 </script>
 
@@ -1758,5 +2005,126 @@ onUnmounted(() => {
 .shortcut-item kbd {
   min-width: 2rem;
   text-align: center;
+}
+
+/* Draft saved indicator */
+.draft-saved-indicator {
+  animation: fadeInOut 0.3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(5px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Image Upload Styles */
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.image-upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.image-upload-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading-spinner-sm {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(249, 115, 22, 0.2);
+  border-top-color: #f97316;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.image-preview-section {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.image-preview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.image-preview-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.image-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-preview-item:hover img {
+  opacity: 0.7;
+}
+
+.image-remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.8);
+  color: white;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.image-preview-item:hover .image-remove-btn {
+  opacity: 1;
+}
+
+.image-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2px 4px;
+  font-size: 9px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hidden {
+  display: none;
 }
 </style>

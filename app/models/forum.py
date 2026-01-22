@@ -10,7 +10,13 @@ from app.models.database import (
     ForumPost,
     ForumPostLike,
     ForumReply,
+    ForumReport,
+    ForumReportStatus,
     ForumTopic,
+    ForumTag,
+    ForumTopicTag,
+    ForumMention,
+    ForumSubscription,
 )
 
 __all__ = [
@@ -19,5 +25,11 @@ __all__ = [
     'ForumTopic',
     'ForumPost',
     'ForumPostLike',
-    'ForumReply'
+    'ForumReply',
+    'ForumReport',
+    'ForumReportStatus',
+    'ForumTag',
+    'ForumTopicTag',
+    'ForumMention',
+    'ForumSubscription',
 ]

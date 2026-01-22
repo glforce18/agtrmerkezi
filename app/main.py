@@ -309,6 +309,8 @@ from app.api import roles
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles"])
 app.include_router(servers.router, prefix="/api/servers", tags=["Game Servers"])
 app.include_router(forum.router, prefix="/api/forum", tags=["Forum"])
+from app.api import forum_gamification
+app.include_router(forum_gamification.router, prefix="/api", tags=["Forum Gamification"])
 app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
 
 # Admin APIs

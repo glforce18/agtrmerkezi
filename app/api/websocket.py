@@ -23,7 +23,7 @@ router = APIRouter()
 
 class ConnectionManager:
     """WebSocket bağlantı yöneticisi"""
-    
+
     def __init__(self):
         # endpoint -> set of websockets
         self.connections: Dict[str, Set[WebSocket]] = {}
@@ -31,6 +31,12 @@ class ConnectionManager:
         self.authenticated: Dict[WebSocket, int] = {}
         # room_id -> set of websockets (for chat)
         self.rooms: Dict[str, Set[WebSocket]] = {}
+        # room_id -> set of user_ids (for tracking online users in rooms)
+        self.room_users: Dict[str, Set[int]] = {}
+        # user_id -> user_info (for caching user details)
+        self.user_info: Dict[int, dict] = {}
+        # room_id -> {user_id: timestamp} (for typing indicators)
+        self.typing_users: Dict[str, Dict[int, float]] = {}
     
     async def connect(self, websocket: WebSocket, endpoint: str):
         await websocket.accept()
@@ -90,13 +96,110 @@ class ConnectionManager:
         if room_id not in self.rooms:
             self.rooms[room_id] = set()
         self.rooms[room_id].add(websocket)
-    
+
     def leave_room(self, websocket: WebSocket, room_id: str):
         if room_id in self.rooms:
             self.rooms[room_id].discard(websocket)
-    
+
     def authenticate(self, websocket: WebSocket, user_id: int):
         self.authenticated[websocket] = user_id
+
+    def get_user_id(self, websocket: WebSocket) -> int | None:
+        """Get user ID for a websocket connection"""
+        return self.authenticated.get(websocket)
+
+    def set_user_info(self, user_id: int, info: dict):
+        """Cache user info for broadcasting"""
+        self.user_info[user_id] = info
+
+    def get_user_info(self, user_id: int) -> dict | None:
+        """Get cached user info"""
+        return self.user_info.get(user_id)
+
+    async def join_room_with_user(self, websocket: WebSocket, room_id: str, user_id: int, user_info: dict = None):
+        """Join a room and track user presence"""
+        self.join_room(websocket, room_id)
+
+        if room_id not in self.room_users:
+            self.room_users[room_id] = set()
+
+        # Check if user is new to the room
+        is_new_user = user_id not in self.room_users[room_id]
+        self.room_users[room_id].add(user_id)
+
+        if user_info:
+            self.set_user_info(user_id, user_info)
+
+        return is_new_user
+
+    async def leave_room_with_user(self, websocket: WebSocket, room_id: str, user_id: int):
+        """Leave a room and update user presence"""
+        self.leave_room(websocket, room_id)
+
+        # Check if user has other connections in the room
+        user_still_in_room = False
+        if room_id in self.rooms:
+            for ws in self.rooms[room_id]:
+                if self.authenticated.get(ws) == user_id:
+                    user_still_in_room = True
+                    break
+
+        if not user_still_in_room and room_id in self.room_users:
+            self.room_users[room_id].discard(user_id)
+            # Clean up typing indicator
+            if room_id in self.typing_users:
+                self.typing_users[room_id].pop(user_id, None)
+
+        return not user_still_in_room  # Returns True if user fully left
+
+    def get_room_user_count(self, room_id: str) -> int:
+        """Get number of unique users in a room"""
+        return len(self.room_users.get(room_id, set()))
+
+    def get_room_users(self, room_id: str) -> list:
+        """Get list of users in a room with their info"""
+        users = []
+        for user_id in self.room_users.get(room_id, set()):
+            info = self.user_info.get(user_id, {})
+            users.append({
+                "id": user_id,
+                "username": info.get("username", f"User{user_id}"),
+                "avatar": info.get("avatar")
+            })
+        return users
+
+    def set_typing(self, room_id: str, user_id: int):
+        """Mark user as typing in a room"""
+        if room_id not in self.typing_users:
+            self.typing_users[room_id] = {}
+        self.typing_users[room_id][user_id] = time.time()
+
+    def clear_typing(self, room_id: str, user_id: int):
+        """Clear typing indicator for a user"""
+        if room_id in self.typing_users:
+            self.typing_users[room_id].pop(user_id, None)
+
+    def get_typing_users(self, room_id: str, timeout: float = 3.0) -> list:
+        """Get list of users currently typing (within timeout)"""
+        typing = []
+        now = time.time()
+        expired = []
+
+        for user_id, timestamp in self.typing_users.get(room_id, {}).items():
+            if now - timestamp < timeout:
+                info = self.user_info.get(user_id, {})
+                typing.append({
+                    "id": user_id,
+                    "username": info.get("username", f"User{user_id}")
+                })
+            else:
+                expired.append(user_id)
+
+        # Clean up expired typing indicators
+        for user_id in expired:
+            self.typing_users[room_id].pop(user_id, None)
+
+        return typing
 
 
 manager = ConnectionManager()
@@ -538,4 +641,193 @@ async def broadcast_jackpot_winner(winner_data: dict):
     await manager.broadcast("jackpot", {
         "type": "winner",
         "data": winner_data
+    })
+
+
+# ==================== FORUM TOPIC WEBSOCKET ====================
+
+@router.websocket("/ws/forum/topic/{topic_id}")
+async def forum_topic_ws(websocket: WebSocket, topic_id: int):
+    """Forum topic real-time connection"""
+    await manager.connect(websocket, f"forum-topic-{topic_id}")
+    room_id = f"forum:topic:{topic_id}"
+    user_id = None
+    user_info = None
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+
+            try:
+                message = json.loads(data)
+                action = message.get("action")
+
+                if action == "auth":
+                    # Token ile authenticate
+                    token = message.get("token")
+                    if token:
+                        decoded = decode_token(token)
+                        if decoded:
+                            user_id = int(decoded.get("sub"))
+                            manager.authenticate(websocket, user_id)
+
+                            # Get user info from DB
+                            with db_session() as db:
+                                user = db.query(User).filter(User.id == user_id).first()
+                                if user:
+                                    user_info = {
+                                        "id": user_id,
+                                        "username": user.display_name or user.username,
+                                        "avatar": user.avatar
+                                    }
+
+                            await websocket.send_json({
+                                "type": "auth_success",
+                                "user_id": user_id
+                            })
+
+                elif action == "join":
+                    # Join the topic room
+                    if user_id:
+                        is_new = await manager.join_room_with_user(
+                            websocket, room_id, user_id, user_info
+                        )
+
+                        # Send current viewers count
+                        viewer_count = manager.get_room_user_count(room_id)
+                        viewers = manager.get_room_users(room_id)
+
+                        await websocket.send_json({
+                            "type": "room_joined",
+                            "topic_id": topic_id,
+                            "viewer_count": viewer_count,
+                            "viewers": viewers
+                        })
+
+                        # Broadcast user joined to others in room
+                        if is_new and user_info:
+                            await manager.broadcast_to_room(room_id, {
+                                "type": "forum_user_joined",
+                                "topic_id": topic_id,
+                                "user": user_info,
+                                "viewer_count": viewer_count
+                            })
+                    else:
+                        # Anonymous viewer
+                        manager.join_room(websocket, room_id)
+                        viewer_count = manager.get_room_user_count(room_id)
+                        await websocket.send_json({
+                            "type": "room_joined",
+                            "topic_id": topic_id,
+                            "viewer_count": viewer_count,
+                            "viewers": []
+                        })
+
+                elif action == "leave":
+                    # Leave the topic room
+                    if user_id:
+                        user_left = await manager.leave_room_with_user(
+                            websocket, room_id, user_id
+                        )
+                        if user_left:
+                            viewer_count = manager.get_room_user_count(room_id)
+                            await manager.broadcast_to_room(room_id, {
+                                "type": "forum_user_left",
+                                "topic_id": topic_id,
+                                "user": user_info,
+                                "viewer_count": viewer_count
+                            })
+                    else:
+                        manager.leave_room(websocket, room_id)
+
+                elif action == "typing":
+                    # User is typing
+                    if user_id and user_info:
+                        manager.set_typing(room_id, user_id)
+
+                        # Broadcast typing indicator to others
+                        await manager.broadcast_to_room(room_id, {
+                            "type": "forum_user_typing",
+                            "topic_id": topic_id,
+                            "user": {
+                                "id": user_id,
+                                "username": user_info.get("username")
+                            }
+                        })
+
+                elif action == "stop_typing":
+                    # User stopped typing
+                    if user_id:
+                        manager.clear_typing(room_id, user_id)
+                        await manager.broadcast_to_room(room_id, {
+                            "type": "forum_user_stop_typing",
+                            "topic_id": topic_id,
+                            "user_id": user_id
+                        })
+
+                elif action == "get_viewers":
+                    # Get current viewers
+                    viewer_count = manager.get_room_user_count(room_id)
+                    viewers = manager.get_room_users(room_id)
+                    await websocket.send_json({
+                        "type": "viewers_update",
+                        "topic_id": topic_id,
+                        "viewer_count": viewer_count,
+                        "viewers": viewers
+                    })
+
+                elif action == "ping":
+                    await websocket.send_json({"type": "pong"})
+
+            except json.JSONDecodeError:
+                pass
+
+    except WebSocketDisconnect:
+        # Clean up on disconnect
+        if user_id:
+            user_left = await manager.leave_room_with_user(websocket, room_id, user_id)
+            if user_left:
+                viewer_count = manager.get_room_user_count(room_id)
+                await manager.broadcast_to_room(room_id, {
+                    "type": "forum_user_left",
+                    "topic_id": topic_id,
+                    "user": user_info,
+                    "viewer_count": viewer_count
+                })
+        else:
+            manager.leave_room(websocket, room_id)
+
+        manager.disconnect(websocket, f"forum-topic-{topic_id}")
+
+
+# ==================== FORUM BROADCAST HELPERS ====================
+
+async def broadcast_forum_new_reply(topic_id: int, reply_data: dict):
+    """Broadcast new reply to topic viewers"""
+    room_id = f"forum:topic:{topic_id}"
+    await manager.broadcast_to_room(room_id, {
+        "type": "forum_new_reply",
+        "topic_id": topic_id,
+        "reply": reply_data
+    })
+
+
+async def broadcast_forum_reply_updated(topic_id: int, reply_id: int, reply_data: dict):
+    """Broadcast reply update to topic viewers"""
+    room_id = f"forum:topic:{topic_id}"
+    await manager.broadcast_to_room(room_id, {
+        "type": "forum_reply_updated",
+        "topic_id": topic_id,
+        "reply_id": reply_id,
+        "reply": reply_data
+    })
+
+
+async def broadcast_forum_reply_deleted(topic_id: int, reply_id: int):
+    """Broadcast reply deletion to topic viewers"""
+    room_id = f"forum:topic:{topic_id}"
+    await manager.broadcast_to_room(room_id, {
+        "type": "forum_reply_deleted",
+        "topic_id": topic_id,
+        "reply_id": reply_id
     })

@@ -337,7 +337,10 @@
                     </span>
                   </div>
 
-                  <h3 class="topic-title">{{ topic.title }}</h3>
+                  <h3 class="topic-title">
+                    <span v-if="isTopicUnread(topic)" class="unread-dot" title="Okunmamis"></span>
+                    {{ topic.title }}
+                  </h3>
                   <div class="topic-meta">
                     <span class="meta-item author-meta">
                       <n-avatar v-if="viewMode === 'compact'" round :size="20" :src="topic.authorAvatar" class="meta-avatar" />
@@ -756,6 +759,20 @@ const tagInput = ref('')
 const titleError = ref('')
 const contentError = ref('')
 const onlineUsers = ref(23)
+
+// Read/Unread tracking
+const READ_KEY_PREFIX = 'forum_read_'
+
+// Check if a topic is unread (never viewed or has new activity since last view)
+const isTopicUnread = (topic) => {
+  const lastReadTimestamp = localStorage.getItem(`${READ_KEY_PREFIX}${topic.id}`)
+  if (!lastReadTimestamp) return true // Never read
+
+  // Check if topic has new activity since last read
+  // In a real implementation, topic.lastActivityTimestamp would come from API
+  const topicActivityTime = topic.lastActivityTimestamp || new Date(topic.created).getTime()
+  return topicActivityTime > parseInt(lastReadTimestamp)
+}
 
 // Preview tooltip state
 const previewTooltip = reactive({
@@ -3414,5 +3431,23 @@ onUnmounted(() => {
   .type-option {
     flex: none;
   }
+}
+
+/* Unread Indicator */
+.unread-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+  animation: unread-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
+}
+
+@keyframes unread-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.2); }
 }
 </style>

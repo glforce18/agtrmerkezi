@@ -726,6 +726,10 @@ class ForumTopic(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
+    # Edit tracking
+    edited_at = Column(DateTime)
+    edited_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+
     # user_id alias for backward compatibility
     @property
     def user_id(self):
@@ -736,6 +740,7 @@ class ForumTopic(Base):
     category = relationship("ForumCategory", back_populates="topics")
     posts = relationship("ForumPost", back_populates="topic", lazy="dynamic")
     last_poster = relationship("User", foreign_keys=[last_post_by])
+    editor = relationship("User", foreign_keys=[edited_by])
 
 
 class ForumPost(Base):
@@ -781,12 +786,158 @@ class ForumReply(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True)
+    is_best_answer = Column(Boolean, default=False)  # Best answer feature
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Edit tracking
+    edited_at = Column(DateTime)
 
     # Relationships
     topic = relationship("ForumTopic", backref="replies")
     author = relationship("User", back_populates="forum_replies")
+
+
+class ForumReportStatus(enum.Enum):
+    """Forum report status"""
+    PENDING = "pending"
+    REVIEWED = "reviewed"
+    RESOLVED = "resolved"
+    DISMISSED = "dismissed"
+
+
+class ForumReport(Base):
+    """Forum content reports - spam, harassment etc."""
+    __tablename__ = "forum_reports"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    reporter_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    content_type = Column(String(20), nullable=False)  # "topic" or "reply"
+    content_id = Column(Integer, nullable=False)  # topic_id or reply_id
+    reason = Column(String(50), nullable=False)  # spam, harassment, inappropriate, other
+    details = Column(Text)  # Additional details from reporter
+    status = Column(Enum(ForumReportStatus), default=ForumReportStatus.PENDING)
+    reviewed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    reviewed_at = Column(DateTime)
+    resolution_notes = Column(Text)
+    created_at = Column(DateTime, default=func.now())
+
+    # Unique constraint to prevent duplicate reports from same user
+    __table_args__ = (
+        UniqueConstraint("reporter_id", "content_type", "content_id", name="uq_forum_report"),
+        Index('idx_forum_report_content', 'content_type', 'content_id'),
+        Index('idx_forum_report_status', 'status'),
+    )
+
+    # Relationships
+    reporter = relationship("User", foreign_keys=[reporter_id])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+
+
+# ==================== FORUM TAG SYSTEM ====================
+
+class ForumTag(Base):
+    """Forum etiketleri"""
+    __tablename__ = "forum_tags"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(50), unique=True, nullable=False)
+    slug = Column(String(50), unique=True, nullable=False, index=True)
+    color = Column(String(20), default="#6b7280")
+    usage_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    topic_tags = relationship("ForumTopicTag", back_populates="tag", cascade="all, delete-orphan")
+
+
+class ForumTopicTag(Base):
+    """Konu-Etiket iliskisi"""
+    __tablename__ = "forum_topic_tags"
+
+    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), primary_key=True)
+    tag_id = Column(Integer, ForeignKey("forum_tags.id", ondelete="CASCADE"), primary_key=True)
+
+    # Relationships
+    topic = relationship("ForumTopic", backref="topic_tags")
+    tag = relationship("ForumTag", back_populates="topic_tags")
+
+
+# ==================== FORUM MENTION SYSTEM ====================
+
+class ForumMention(Base):
+    """Forum mentionlari - @kullanici_adi"""
+    __tablename__ = "forum_mentions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    mentioned_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    content_type = Column(String(20), nullable=False)  # topic, reply
+    content_id = Column(Integer, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id], backref="mentions_received")
+    mentioner = relationship("User", foreign_keys=[mentioned_by], backref="mentions_made")
+
+    __table_args__ = (
+        Index('idx_mention_user', 'user_id', 'is_read'),
+        Index('idx_mention_content', 'content_type', 'content_id'),
+    )
+
+
+# ==================== FORUM SUBSCRIPTION SYSTEM ====================
+
+class ForumSubscription(Base):
+    """Forum konu abonelikleri"""
+    __tablename__ = "forum_subscriptions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    user = relationship("User", backref="forum_subscriptions")
+    topic = relationship("ForumTopic", backref="subscriptions")
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'topic_id', name='uq_forum_subscription'),
+    )
+
+
+# ==================== FORUM BADGE SYSTEM ====================
+
+class ForumBadge(Base):
+    """Forum rozet/badge tanimlari"""
+    __tablename__ = "forum_badges"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    description = Column(Text)
+    icon = Column(String(50))  # Icon name (e.g., "star", "heart", "crown")
+    color = Column(String(20))  # Hex color (e.g., "#FF6B00")
+    requirement_type = Column(String(50))  # topics_count, replies_count, likes_received, etc.
+    requirement_value = Column(Integer)  # Threshold value to earn badge
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    user_badges = relationship("UserForumBadge", back_populates="badge")
+
+
+class UserForumBadge(Base):
+    """Kullanicilarin kazandigi rozetler"""
+    __tablename__ = "user_forum_badges"
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    badge_id = Column(Integer, ForeignKey("forum_badges.id", ondelete="CASCADE"), primary_key=True)
+    earned_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    user = relationship("User", backref="forum_badges")
+    badge = relationship("ForumBadge", back_populates="user_badges")
 
 
 # ==================== SUPPORT MODELS ====================
@@ -1736,3 +1887,80 @@ class ServerScanLog(Base):
         if self.total_scanned == 0:
             return 0
         return (self.online_found / self.total_scanned) * 100
+
+
+# ==================== CONTENT MODERATION SYSTEM ====================
+
+class ContentBlacklist(Base):
+    """Forum icerik kara listesi - yasakli kelimeler"""
+    __tablename__ = "content_blacklist"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    word = Column(String(100), nullable=False, unique=True, index=True)
+    category = Column(String(50), default="general")  # general, spam, slur, advertising
+    is_active = Column(Boolean, default=True)
+    added_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationship
+    adder = relationship("User", foreign_keys=[added_by])
+
+
+class UserWarning(Base):
+    """Kullanici uyarilari"""
+    __tablename__ = "user_warnings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    reason = Column(String(255), nullable=False)
+    warned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    expires_at = Column(DateTime)  # Uyarinin gecerlilik suresi
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id], backref="warnings")
+    warner = relationship("User", foreign_keys=[warned_by])
+
+    __table_args__ = (
+        Index('idx_warning_user_expires', 'user_id', 'expires_at'),
+    )
+
+
+class ForumBan(Base):
+    """Forum banlari (soft ban - sadece forum erisimi engellenir)"""
+    __tablename__ = "forum_bans"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    reason = Column(String(255), nullable=False)
+    banned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    expires_at = Column(DateTime, nullable=False)  # Ban bitis zamani
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id], backref="forum_bans")
+    banner = relationship("User", foreign_keys=[banned_by])
+
+    __table_args__ = (
+        Index('idx_forum_ban_user_expires', 'user_id', 'expires_at'),
+    )
+
+
+class ModerationLog(Base):
+    """Moderasyon islem loglari"""
+    __tablename__ = "moderation_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    action = Column(String(50), nullable=False)  # warn, ban, unban, filter, delete
+    target_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    moderator_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    reason = Column(String(500))
+    details = Column(JSON)  # Ek detaylar (silinen icerik, vb.)
+    content_type = Column(String(50))  # topic, reply
+    content_id = Column(Integer)
+    ip_address = Column(String(45))
+    created_at = Column(DateTime, default=func.now(), index=True)
+
+    # Relationships
+    target_user = relationship("User", foreign_keys=[target_user_id])
+    moderator = relationship("User", foreign_keys=[moderator_id])

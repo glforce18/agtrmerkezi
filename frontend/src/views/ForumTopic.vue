@@ -184,6 +184,26 @@
                 <ClockIcon class="w-4 h-4 text-cyan-400" />
                 <span>{{ topic?.created }}</span>
               </div>
+              <!-- Real-time Viewers Badge -->
+              <n-tooltip v-if="wsViewerCount > 0" trigger="hover">
+                <template #trigger>
+                  <div class="stat-chip live-viewers">
+                    <div class="live-dot" />
+                    <UsersIcon class="w-4 h-4 text-green-400" />
+                    <span>{{ wsViewerCount }} izliyor</span>
+                  </div>
+                </template>
+                <div class="p-2">
+                  <div class="text-xs text-gray-400 mb-2">Su an konuyu goruntuleyenler:</div>
+                  <div v-for="viewer in wsViewers" :key="viewer.id" class="flex items-center gap-2 py-1">
+                    <n-avatar round :size="20" :src="viewer.avatar" />
+                    <span class="text-sm">{{ viewer.username }}</span>
+                  </div>
+                  <div v-if="wsViewers.length === 0" class="text-xs text-gray-500">
+                    Anonim izleyiciler
+                  </div>
+                </div>
+              </n-tooltip>
             </div>
           </div>
 
@@ -424,7 +444,7 @@
               <span /><span /><span />
             </div>
             <span class="text-sm text-gray-400">
-              <strong class="text-orange-400">{{ typingUsers.join(', ') }}</strong> yaziyor...
+              <strong class="text-orange-400">{{ typingUsers.map(u => u.username || u).join(', ') }}</strong> yaziyor...
             </span>
           </div>
         </div>
@@ -598,6 +618,40 @@
             </div>
           </div>
         </TransitionGroup>
+
+        <!-- Load More Replies Button -->
+        <div v-if="canLoadMoreReplies" class="load-more-container mt-6">
+          <button
+            class="load-more-btn glass-morphism"
+            :disabled="isLoadingMoreReplies"
+            @click="loadMoreReplies"
+          >
+            <template v-if="isLoadingMoreReplies">
+              <div class="skeleton-loading-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <span>Yanitlar yukleniyor...</span>
+            </template>
+            <template v-else>
+              <ChevronDownIcon class="w-5 h-5" />
+              <span>Daha fazla yanit yukle ({{ allSortedReplies.length - displayedRepliesCount }} kaldi)</span>
+            </template>
+          </button>
+        </div>
+
+        <!-- Skeleton Loading for Replies -->
+        <div v-if="isLoadingMoreReplies" class="skeleton-replies mt-4 space-y-4">
+          <div v-for="n in 3" :key="n" class="skeleton-reply-card glass-morphism rounded-2xl p-4">
+            <div class="flex items-start gap-4">
+              <div class="skeleton-avatar"></div>
+              <div class="flex-1 space-y-3">
+                <div class="skeleton-line w-1/4"></div>
+                <div class="skeleton-line w-3/4"></div>
+                <div class="skeleton-line w-1/2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Pagination -->
@@ -921,6 +975,31 @@
         </div>
       </template>
     </n-modal>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <n-modal v-model:show="showShortcutsModal" preset="card" title="Klavye Kisayollari" style="width: 500px;" class="shortcuts-modal">
+      <div class="shortcuts-list space-y-3">
+        <div
+          v-for="shortcut in keyboardShortcuts"
+          :key="shortcut.keys.join('+')"
+          class="shortcut-item flex items-center justify-between p-3 rounded-lg bg-white/5"
+        >
+          <span class="text-gray-300">{{ shortcut.description }}</span>
+          <div class="flex items-center gap-1">
+            <kbd
+              v-for="(key, idx) in shortcut.keys"
+              :key="idx"
+              class="kbd px-2 py-1 text-xs font-mono bg-white/10 border border-white/20 rounded"
+            >
+              {{ key }}
+            </kbd>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 text-center text-sm text-gray-500">
+        Herhangi bir sayfada <kbd class="kbd px-1.5 py-0.5 text-xs bg-white/10 border border-white/20 rounded">?</kbd> tusuna basarak bu menüyu gorebilirsiniz
+      </div>
+    </n-modal>
   </div>
 </template>
 
@@ -929,10 +1008,12 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { useForumTopicWS } from '@/composables/useWebSocket'
 import {
   HomeIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
+  ChevronDownIcon,
   FolderIcon,
   FileTextIcon,
   ArrowLeftIcon,
@@ -1018,13 +1099,127 @@ const quotedReply = ref(null)
 const editContent = ref('')
 const editingItem = ref(null)
 const deletingItem = ref(null)
-const typingUsers = ref([])
 const activeFormats = ref([])
-const typingTimeout = ref(null)
 const readingProgress = ref(0)
+
+// Lazy loading replies state
+const REPLIES_PER_PAGE = 10
+const displayedRepliesCount = ref(REPLIES_PER_PAGE)
+const isLoadingMoreReplies = ref(false)
+const hasMoreReplies = ref(true)
+
+// Read/Unread tracking
+const READ_KEY_PREFIX = 'forum_read_'
+
+// Keyboard shortcuts
+const showShortcutsModal = ref(false)
+const keyboardShortcuts = [
+  { keys: ['R'], description: 'Yanit yaz' },
+  { keys: ['Q'], description: 'Secili metni alintila' },
+  { keys: ['Ctrl', 'Enter'], description: 'Formu gonder' },
+  { keys: ['?'], description: 'Kisayollari goster' },
+  { keys: ['Esc'], description: 'Modali kapat' },
+  { keys: ['Home'], description: 'Sayfanin basina git' },
+  { keys: ['End'], description: 'Sayfanin sonuna git' }
+]
 
 // Current user - auth'dan gelecek
 const currentUserId = ref(null)
+
+// WebSocket for real-time updates
+const wsViewerCount = ref(0)
+const wsViewers = ref([])
+const wsConnected = ref(false)
+const typingUsers = ref([])
+let forumWS = null
+let typingTimeout = null
+
+// Initialize WebSocket connection
+function initWebSocket() {
+  if (forumWS) {
+    forumWS.disconnect()
+  }
+
+  forumWS = useForumTopicWS(topicId, {
+    onNewReply: (reply) => {
+      // Check if reply already exists (from our own submission)
+      const exists = replies.value.find(r => r.id === reply.id)
+      if (!exists) {
+        // Add the new reply with proper format
+        replies.value.push({
+          id: reply.id,
+          content: reply.content,
+          author: reply.author?.username || 'Unknown',
+          authorId: reply.author?.id,
+          authorAvatar: reply.author?.avatar,
+          authorRole: 'Uye',
+          authorLevel: 15,
+          authorXpProgress: 50,
+          authorPosts: 0,
+          authorJoined: 'Simdi',
+          authorOnline: true,
+          created: 'Az once',
+          likes: 0,
+          hasLiked: false,
+          isEdited: false,
+          reactions: []
+        })
+
+        // Show notification
+        window.$message?.info(`${reply.author?.username || 'Birisi'} yeni bir yanit yazdi`)
+
+        // Scroll to new reply if user is near bottom
+        const scrollBottom = document.documentElement.scrollHeight - window.scrollY - window.innerHeight
+        if (scrollBottom < 500) {
+          nextTick(() => {
+            const lastReply = document.getElementById(`reply-${reply.id}`)
+            if (lastReply) {
+              lastReply.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+          })
+        }
+      }
+    },
+    onUserTyping: (user) => {
+      // Update typing users
+      const idx = typingUsers.value.findIndex(u => u.id === user.id)
+      if (idx === -1) {
+        typingUsers.value.push(user)
+      }
+      // Auto-clear after 3 seconds
+      setTimeout(() => {
+        const removeIdx = typingUsers.value.findIndex(u => u.id === user.id)
+        if (removeIdx !== -1) {
+          typingUsers.value.splice(removeIdx, 1)
+        }
+      }, 3000)
+    },
+    onUserStopTyping: (userId) => {
+      const idx = typingUsers.value.findIndex(u => u.id === userId)
+      if (idx !== -1) {
+        typingUsers.value.splice(idx, 1)
+      }
+    },
+    onUserJoined: (user, count) => {
+      wsViewerCount.value = count
+      if (user && user.username) {
+        window.$message?.info(`${user.username} konuyu goruntulemeye basladi`)
+      }
+    },
+    onUserLeft: (user, count) => {
+      wsViewerCount.value = count
+    },
+    onViewersUpdate: (count, viewers) => {
+      wsViewerCount.value = count
+      wsViewers.value = viewers
+    }
+  })
+
+  // Update connection status
+  watch(() => forumWS?.isConnected?.value, (connected) => {
+    wsConnected.value = connected
+  }, { immediate: true })
+}
 
 // Category colors
 const categoryColors = {
@@ -1114,7 +1309,7 @@ const replyActionOptions = [
 ]
 
 // Computed
-const sortedReplies = computed(() => {
+const allSortedReplies = computed(() => {
   const sorted = [...replies.value]
   switch (sortOrder.value) {
     case 'newest':
@@ -1124,6 +1319,16 @@ const sortedReplies = computed(() => {
     default:
       return sorted
   }
+})
+
+// Lazy loaded replies - only show up to displayedRepliesCount
+const sortedReplies = computed(() => {
+  return allSortedReplies.value.slice(0, displayedRepliesCount.value)
+})
+
+// Check if there are more replies to load
+const canLoadMoreReplies = computed(() => {
+  return displayedRepliesCount.value < allSortedReplies.value.length
 })
 
 const renderedContent = computed(() => {
@@ -1276,7 +1481,7 @@ function bookmarkTopic() {
 
 function quoteReply(reply) {
   quotedReply.value = reply
-  const quoteText = `> **${reply.author}** yazdi:\n> ${reply.content.replace(/\n/g, '\n> ')}\n\n`
+  const quoteText = `> @${reply.author} wrote:\n> ${reply.content.replace(/\n/g, '\n> ')}\n\n`
   newReply.value = quoteText + newReply.value
   scrollToReplyForm()
   window.$message?.info('Alıntı eklendi')
@@ -1479,19 +1684,129 @@ function insertEmoji(emoji) {
 }
 
 function handleTyping() {
-  // Simulate typing indicator (in real app, this would be websocket)
-  if (typingTimeout.value) {
-    clearTimeout(typingTimeout.value)
+  // Send typing indicator via WebSocket
+  if (forumWS && forumWS.sendTyping) {
+    forumWS.sendTyping()
   }
 }
 
 function handleEditorFocus() {
   // Track focus for typing indicator
+  if (forumWS && forumWS.sendTyping) {
+    forumWS.sendTyping()
+  }
 }
 
 function saveDraft() {
   localStorage.setItem(`forum_draft_${topicId}`, newReply.value)
   window.$message?.success('Taslak kaydedildi')
+}
+
+// Load more replies with skeleton loading
+async function loadMoreReplies() {
+  if (isLoadingMoreReplies.value || !canLoadMoreReplies.value) return
+
+  isLoadingMoreReplies.value = true
+
+  // Simulate API call with delay
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  // In real implementation, this would fetch from API with pagination:
+  // const response = await forumAPI.getReplies(topicId, {
+  //   page: Math.floor(displayedRepliesCount.value / REPLIES_PER_PAGE) + 1,
+  //   limit: REPLIES_PER_PAGE
+  // })
+
+  displayedRepliesCount.value += REPLIES_PER_PAGE
+  isLoadingMoreReplies.value = false
+}
+
+// Reset replies count when sort changes
+function resetRepliesCount() {
+  displayedRepliesCount.value = REPLIES_PER_PAGE
+}
+
+// Mark topic as read
+function markTopicAsRead() {
+  localStorage.setItem(`${READ_KEY_PREFIX}${topicId}`, Date.now().toString())
+}
+
+// Keyboard shortcuts handler
+function handleKeydown(e) {
+  // Don't trigger shortcuts when typing in inputs
+  const isTyping = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
+
+  // Ctrl+Enter to submit form (works even in textarea)
+  if (e.ctrlKey && e.key === 'Enter') {
+    if (isTyping && newReply.value.trim()) {
+      e.preventDefault()
+      submitReply()
+    }
+    return
+  }
+
+  // Don't trigger other shortcuts when typing
+  if (isTyping) return
+
+  // R = Reply to topic
+  if (e.key === 'r' || e.key === 'R') {
+    e.preventDefault()
+    scrollToReplyForm()
+    return
+  }
+
+  // Q = Quote selected text
+  if (e.key === 'q' || e.key === 'Q') {
+    e.preventDefault()
+    quoteSelectedText()
+    return
+  }
+
+  // ? = Show shortcuts help modal
+  if (e.key === '?') {
+    e.preventDefault()
+    showShortcutsModal.value = true
+    return
+  }
+
+  // Escape = Close modals
+  if (e.key === 'Escape') {
+    showShortcutsModal.value = false
+    showReportModal.value = false
+    showShareModal.value = false
+    showEditModal.value = false
+    showDeleteModal.value = false
+    return
+  }
+
+  // Home = Scroll to top
+  if (e.key === 'Home' && !e.ctrlKey) {
+    e.preventDefault()
+    scrollToTop()
+    return
+  }
+
+  // End = Scroll to bottom
+  if (e.key === 'End' && !e.ctrlKey) {
+    e.preventDefault()
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+    return
+  }
+}
+
+// Quote selected text from page
+function quoteSelectedText() {
+  const selection = window.getSelection()
+  const selectedText = selection?.toString().trim()
+
+  if (selectedText) {
+    const quoteText = `> ${selectedText.replace(/\n/g, '\n> ')}\n\n`
+    newReply.value = quoteText + newReply.value
+    scrollToReplyForm()
+    window.$message?.info('Secili metin alintilandi')
+  } else {
+    window.$message?.warning('Önce alıntilamak icin bir metin secin')
+  }
 }
 
 function loadDraft() {
@@ -1581,17 +1896,39 @@ function checkUrlHash() {
 // Lifecycle
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  window.addEventListener('keydown', handleKeydown)
   checkUrlHash()
   loadDraft()
+  markTopicAsRead() // Mark topic as read when viewed
 
-  onUnmounted(() => {
-    window.removeEventListener('scroll', handleScroll)
-  })
+  // Initialize WebSocket connection for real-time updates
+  initWebSocket()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('keydown', handleKeydown)
+
+  // Disconnect WebSocket when leaving the page
+  if (forumWS) {
+    forumWS.disconnect()
+    forumWS = null
+  }
+
+  // Clear typing timeout
+  if (typingTimeout) {
+    clearTimeout(typingTimeout)
+  }
 })
 
 // Watch for hash changes
 watch(() => route.hash, () => {
   checkUrlHash()
+})
+
+// Reset replies count when sort order changes
+watch(sortOrder, () => {
+  resetRepliesCount()
 })
 </script>
 
@@ -1766,6 +2103,36 @@ watch(() => route.hash, () => {
 .stat-chip:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: translateY(-1px);
+}
+
+/* Live Viewers Badge */
+.stat-chip.live-viewers {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  position: relative;
+}
+
+.stat-chip.live-viewers:hover {
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
 }
 
 /* Tags */
@@ -2756,5 +3123,89 @@ watch(() => route.hash, () => {
   .like-button-animated .like-text {
     display: none;
   }
+}
+
+/* Load More Button */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+}
+
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  color: #9ca3af;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+  transform: translateY(-2px);
+}
+
+.load-more-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Skeleton Loading */
+.skeleton-loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.skeleton-loading-dots span {
+  width: 6px;
+  height: 6px;
+  background: #f97316;
+  border-radius: 50%;
+  animation: skeleton-bounce 1.4s ease-in-out infinite both;
+}
+
+.skeleton-loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.skeleton-loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+.skeleton-loading-dots span:nth-child(3) { animation-delay: 0s; }
+
+@keyframes skeleton-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.skeleton-reply-card {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeleton-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 </style>
