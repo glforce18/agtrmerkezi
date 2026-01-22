@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import get_current_user
 from app.models.connection import get_db
 from app.models.database import User
@@ -20,15 +21,15 @@ from app.models.database import User
 router = APIRouter()
 
 # ============================================================================
-# CONFIGURATION
+# CONFIGURATION (from settings, loaded from .env)
 # ============================================================================
 
-DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
-DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
-DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "https://agtrmerkezi.com/api/social/discord/callback")
+DISCORD_CLIENT_ID = getattr(settings, "DISCORD_CLIENT_ID", "")
+DISCORD_CLIENT_SECRET = getattr(settings, "DISCORD_CLIENT_SECRET", "")
+DISCORD_REDIRECT_URI = getattr(settings, "DISCORD_REDIRECT_URI", f"{settings.BASE_URL}/api/social/discord/callback")
 
-STEAM_API_KEY = os.getenv("STEAM_API_KEY", "")
-STEAM_REALM = os.getenv("STEAM_REALM", "https://agtrmerkezi.com")
+STEAM_API_KEY = getattr(settings, "STEAM_API_KEY", "")
+STEAM_REALM = getattr(settings, "STEAM_REALM", settings.BASE_URL)
 
 # ============================================================================
 # DATABASE TABLES

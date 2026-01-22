@@ -128,8 +128,10 @@ class Settings(BaseSettings):
 
     # OAuth Ayarlari
     STEAM_API_KEY: str = ""
+    STEAM_REALM: str = "https://agtrmerkezi.com"
     DISCORD_CLIENT_ID: str = ""
     DISCORD_CLIENT_SECRET: str = ""
+    DISCORD_REDIRECT_URI: str = "https://agtrmerkezi.com/api/social/discord/callback"
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     OAUTH_STATE_EXPIRE_MINUTES: int = 10
