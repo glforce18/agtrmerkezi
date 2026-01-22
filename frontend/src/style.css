@@ -60,29 +60,29 @@
     --card-radius-sm: 10px;
   }
 
-  /* Dark Mode Variables */
+  /* Dark Mode Variables - Softer & Eye-friendly */
   html.dark {
-    --bg-primary: #0f0f12;
-    --bg-secondary: #18181c;
-    --bg-tertiary: #1f1f24;
-    --bg-card: rgba(255, 255, 255, 0.03);
-    --bg-hover: rgba(255, 255, 255, 0.06);
+    --bg-primary: #121318;
+    --bg-secondary: #1a1b21;
+    --bg-tertiary: #22232a;
+    --bg-card: rgba(255, 255, 255, 0.025);
+    --bg-hover: rgba(255, 255, 255, 0.05);
 
-    --text-primary: #f5f5f5;
-    --text-secondary: #a1a1aa;
-    --text-tertiary: #71717a;
-    --text-muted: #52525b;
+    --text-primary: #e8e8ec;
+    --text-secondary: #9ca3af;
+    --text-tertiary: #6b7280;
+    --text-muted: #4b5563;
 
-    --border-color: rgba(255, 255, 255, 0.1);
-    --border-light: rgba(255, 255, 255, 0.06);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-light: rgba(255, 255, 255, 0.05);
 
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.025);
+    --glass-border: rgba(255, 255, 255, 0.06);
 
-    --card-bg: rgba(24, 24, 28, 0.8);
-    --input-bg: rgba(255, 255, 255, 0.05);
+    --card-bg: rgba(26, 27, 33, 0.9);
+    --input-bg: rgba(255, 255, 255, 0.04);
 
-    --overlay-bg: rgba(0, 0, 0, 0.6);
+    --overlay-bg: rgba(0, 0, 0, 0.7);
   }
 
   /* Light Mode Variables */
@@ -118,7 +118,9 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
+    width: 100%;
+    max-width: 100vw;
   }
 
   body {
@@ -126,16 +128,24 @@
     min-height: 100vh;
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     width: 100%;
     max-width: 100vw;
     transition: background-color 0.3s ease, color 0.3s ease;
+    position: relative;
   }
 
-  /* Dark mode default */
+  /* Prevent horizontal scroll globally */
+  #app {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  /* Dark mode default - Softer gradient */
   html.dark body {
-    background: linear-gradient(180deg, #18181c 0%, #0f0f12 100%);
-    color: #e5e5e5;
+    background: linear-gradient(180deg, #1a1b21 0%, #121318 100%);
+    color: #e8e8ec;
   }
 
   html:not(.dark) body {
@@ -290,12 +300,81 @@
   .card-base {
     border-radius: var(--card-radius);
     padding: var(--spacing-card-padding);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   }
 
   .card-base:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Modern Card - Soft shadows & subtle interactions */
+  .card-modern {
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: var(--card-radius);
+    padding: var(--spacing-card-padding);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-modern:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  html.dark .card-modern:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Interactive Card - For clickable items */
+  .card-interactive {
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: var(--card-radius);
+    padding: var(--spacing-card-padding);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-interactive::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(249, 115, 22, 0.03) 100%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-3px);
+    border-color: rgba(249, 115, 22, 0.25);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  }
+
+  .card-interactive:hover::before {
+    opacity: 1;
+  }
+
+  .card-interactive:active {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Highlighted Card - For featured items */
+  .card-highlight {
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(249, 115, 22, 0.03) 100%);
+    border: 1px solid rgba(249, 115, 22, 0.15);
+    border-radius: var(--card-radius);
+    padding: var(--spacing-card-padding);
+    transition: all 0.3s ease;
+  }
+
+  .card-highlight:hover {
+    border-color: rgba(249, 115, 22, 0.35);
+    box-shadow: 0 8px 32px rgba(249, 115, 22, 0.08);
   }
 
   /* Glass card effect - Theme Aware */
@@ -308,8 +387,23 @@
   }
 
   .glass-card:hover {
-    border-color: rgba(249, 115, 22, 0.3) !important;
-    box-shadow: 0 8px 32px rgba(249, 115, 22, 0.1);
+    border-color: rgba(249, 115, 22, 0.25) !important;
+    box-shadow: 0 8px 32px rgba(249, 115, 22, 0.08);
+  }
+
+  /* Soft Glow Card - Subtle ambient effect */
+  .card-soft-glow {
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: var(--card-radius);
+    padding: var(--spacing-card-padding);
+    transition: all 0.3s ease;
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+
+  .card-soft-glow:hover {
+    border-color: rgba(249, 115, 22, 0.2);
+    box-shadow: 0 0 24px rgba(249, 115, 22, 0.06);
   }
 
   /* Theme-aware text utilities */
@@ -615,26 +709,76 @@
     animation: bounceIn 0.6s ease-out;
   }
 
-  /* Hover effects */
+  /* Hover effects - Refined */
   .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
   }
 
   .hover-lift:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  }
+
+  html.dark .hover-lift:hover {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
   }
 
   .hover-glow:hover {
-    box-shadow: var(--shadow-gaming);
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
   }
 
   .hover-scale {
-    transition: transform 0.3s ease;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .hover-scale:hover {
-    transform: scale(1.05);
+    transform: scale(1.03);
+  }
+
+  /* Smooth press effect for buttons */
+  .press-effect {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .press-effect:active {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  /* Subtle bounce on hover */
+  .hover-bounce {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .hover-bounce:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Link hover underline animation */
+  .link-animated {
+    position: relative;
+    transition: color 0.2s ease;
+  }
+
+  .link-animated::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--color-primary);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .link-animated:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  .link-animated:hover {
+    color: var(--color-primary);
   }
 
   /* Stagger animations for lists */
@@ -764,6 +908,559 @@
     transform: scale(4);
     opacity: 0;
   }
+}
+
+/* ========================================
+   OYUN TEMALİ ANİMASYONLAR
+   Half-Life & CS 1.6 Temalı
+   ======================================== */
+
+/* Muzzle Flash - Buton hover efekti */
+@keyframes muzzleFlash {
+  0% {
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
+    transform: scale(1);
+  }
+  20% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.8), 0 0 40px rgba(249, 115, 22, 0.6);
+    transform: scale(1.02);
+  }
+  40% {
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+    transform: scale(1);
+  }
+  60% {
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.9), 0 0 50px rgba(249, 115, 22, 0.7);
+    transform: scale(1.03);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
+    transform: scale(1);
+  }
+}
+
+/* Recoil - Geri tepme efekti */
+@keyframes recoil {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(0.5deg);
+  }
+  75% {
+    transform: translateY(-1px) rotate(-0.25deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+/* Headshot Pop - Headshot göstergesi */
+@keyframes headshotPop {
+  0% {
+    transform: scale(0) rotate(-15deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.3) rotate(5deg);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.9) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Kill Streak Slide - Kill streak bildirimi */
+@keyframes killStreakSlide {
+  0% {
+    transform: translateX(100%) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    transform: translateX(-10%) scale(1.05);
+    opacity: 1;
+  }
+  30% {
+    transform: translateX(0) scale(1);
+  }
+  80% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-100%) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Level Up Burst - Seviye atlama patlaması */
+@keyframes levelUpBurst {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+    filter: blur(10px);
+  }
+  30% {
+    transform: scale(1.2);
+    opacity: 1;
+    filter: blur(0);
+  }
+  50% {
+    transform: scale(1);
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Level Up Ring - Seviye atlama halka efekti */
+@keyframes levelUpRing {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+    border-width: 4px;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* XP Float - XP kazanma yazısı */
+@keyframes xpFloat {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(-10px) scale(1.2);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(-25px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-60px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Achievement Slide - Başarım popup */
+@keyframes achievementSlide {
+  0% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  15% {
+    transform: translateX(-5%);
+    opacity: 1;
+  }
+  25% {
+    transform: translateX(0);
+  }
+  85% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+
+/* Achievement Icon Bounce */
+@keyframes achievementIconBounce {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.2) rotate(-10deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.15) rotate(-3deg);
+  }
+}
+
+/* Server Pulse - Sunucu durumu */
+@keyframes serverPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+}
+
+/* Server Pulse Offline */
+@keyframes serverPulseOffline {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+/* Bomb Pulse - Bomba efekti */
+@keyframes bombPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
+    background-color: rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0.4);
+    background-color: rgba(239, 68, 68, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
+    background-color: rgba(239, 68, 68, 0.3);
+  }
+}
+
+/* Bomb Timer Tick */
+@keyframes bombTick {
+  0%, 90% {
+    transform: scale(1);
+  }
+  95% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Kill Feed In */
+@keyframes killFeedIn {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Kill Feed Out */
+@keyframes killFeedOut {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+/* Floating Weapon Icons */
+@keyframes weaponFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  25% {
+    transform: translateY(-15px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(5deg);
+  }
+  75% {
+    transform: translateY(-20px) rotate(2deg);
+  }
+}
+
+/* Counter Increment */
+@keyframes counterIncrement {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+    color: var(--brand-orange);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Crown Float - #1 için */
+@keyframes crownFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(3deg);
+  }
+}
+
+/* Rank Badge Glow */
+@keyframes rankBadgeGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.9), 0 0 40px rgba(249, 115, 22, 0.5);
+  }
+}
+
+/* Card 3D Tilt - Shop kartları için */
+@keyframes cardTilt3D {
+  0% {
+    transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+  }
+  25% {
+    transform: perspective(1000px) rotateY(2deg) rotateX(-2deg);
+  }
+  50% {
+    transform: perspective(1000px) rotateY(-1deg) rotateX(1deg);
+  }
+  75% {
+    transform: perspective(1000px) rotateY(1deg) rotateX(-1deg);
+  }
+  100% {
+    transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+  }
+}
+
+/* Popular Badge Pulse */
+@keyframes popularBadgePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.8), 0 0 30px rgba(251, 191, 36, 0.4);
+  }
+}
+
+/* Purchase Confetti */
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-100%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* XP Bar Glow */
+@keyframes xpBarGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.8), 0 0 25px rgba(139, 92, 246, 0.4);
+  }
+}
+
+/* Level Badge Float */
+@keyframes levelBadgeFloat {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.05);
+  }
+}
+
+/* Achievement Unlock Shine */
+@keyframes achievementUnlockShine {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Podium Entry - Stagger slide up */
+@keyframes podiumEntry {
+  0% {
+    transform: translateY(100%) scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-10%) scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Winner Celebration */
+@keyframes winnerCelebration {
+  0% {
+    transform: scale(0.5) rotate(-10deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  70% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Bullet Confetti */
+@keyframes bulletConfetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(calc(100vh + 50px)) rotate(1080deg);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   OYUN EFEKT UTILITY CLASS'LARI
+   ======================================== */
+
+/* Muzzle Flash Hover */
+.muzzle-flash-hover:hover {
+  animation: muzzleFlash 0.4s ease-out;
+}
+
+/* Recoil Click */
+.recoil-click:active {
+  animation: recoil 0.15s ease-out;
+}
+
+/* Server Online Pulse */
+.server-online-pulse {
+  animation: serverPulse 2s ease-in-out infinite;
+}
+
+/* Server Offline Pulse */
+.server-offline-pulse {
+  animation: serverPulseOffline 1.5s ease-in-out infinite;
+}
+
+/* Bomb Countdown */
+.bomb-countdown {
+  animation: bombPulse 0.5s ease-in-out infinite;
+}
+
+/* Floating Weapon */
+.floating-weapon {
+  animation: weaponFloat 4s ease-in-out infinite;
+}
+
+/* Crown Float */
+.crown-float {
+  animation: crownFloat 3s ease-in-out infinite;
+}
+
+/* Rank Glow */
+.rank-glow {
+  animation: rankBadgeGlow 2s ease-in-out infinite;
+}
+
+/* Popular Badge */
+.popular-badge-pulse {
+  animation: popularBadgePulse 2s ease-in-out infinite;
+}
+
+/* XP Bar Animated */
+.xp-bar-animated {
+  animation: xpBarGlow 2s ease-in-out infinite;
+}
+
+/* Level Badge Float */
+.level-badge-float {
+  animation: levelBadgeFloat 3s ease-in-out infinite;
+}
+
+/* Card 3D Tilt Hover */
+.card-3d-tilt {
+  transition: transform 0.3s ease;
+}
+
+.card-3d-tilt:hover {
+  animation: cardTilt3D 0.5s ease-in-out;
+}
+
+/* Kill Feed Item */
+.kill-feed-item {
+  animation: killFeedIn 0.3s ease-out forwards;
+}
+
+.kill-feed-item.leaving {
+  animation: killFeedOut 0.3s ease-in forwards;
+}
+
+/* Achievement Popup */
+.achievement-popup {
+  animation: achievementSlide 4s ease-in-out forwards;
+}
+
+.achievement-popup .icon {
+  animation: achievementIconBounce 0.6s ease-in-out 0.3s;
+}
+
+/* XP Gain Float */
+.xp-gain-float {
+  animation: xpFloat 1.5s ease-out forwards;
+}
+
+/* Level Up Animation */
+.level-up-burst {
+  animation: levelUpBurst 0.8s ease-out forwards;
+}
+
+.level-up-ring {
+  animation: levelUpRing 1s ease-out forwards;
+}
+
+/* Podium Entry Animation */
+.podium-entry {
+  animation: podiumEntry 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.podium-entry-1 { animation-delay: 0.2s; }
+.podium-entry-2 { animation-delay: 0.1s; }
+.podium-entry-3 { animation-delay: 0.3s; }
+
+/* Counter Animation */
+.counter-animate {
+  animation: counterIncrement 0.3s ease-out;
+}
+
+/* Headshot Indicator */
+.headshot-pop {
+  animation: headshotPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Winner Celebration */
+.winner-celebrate {
+  animation: winnerCelebration 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 /* Dark mode color scheme */

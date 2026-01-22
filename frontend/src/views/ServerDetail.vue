@@ -836,19 +836,12 @@ const stats = reactive({
   uptime: '3d 12h'
 })
 
-const consoleLogs = ref([
-  { time: '14:32:01', level: 'info', message: 'Server started successfully' },
-  { time: '14:32:15', level: 'info', message: 'Map loaded: de_dust2' },
-  { time: '14:32:45', level: 'success', message: 'Player connected: PlayerName' },
-])
+// Console logs - Sunucudan çekilecek
+const consoleLogs = ref([])
 
 const currentPath = ref('/')
-const files = ref([
-  { name: 'addons', type: 'folder', size: '-', modified: '2 hours ago' },
-  { name: 'maps', type: 'folder', size: '-', modified: '1 day ago' },
-  { name: 'server.cfg', type: 'file', size: '4.2 KB', modified: '5 minutes ago' },
-  { name: 'mapcycle.txt', type: 'file', size: '892 B', modified: '1 hour ago' },
-])
+// Files - Sunucudan çekilecek
+const files = ref([])
 
 const fileColumns = [
   {
@@ -886,10 +879,8 @@ const config = reactive({
   mapcycle: 'de_dust2\nde_inferno\nde_nuke'
 })
 
-const onlinePlayers = ref([
-  { id: 1, name: 'Player1', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1', score: 25, ping: 45, duration: '12:34' },
-  { id: 2, name: 'Player2', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2', score: 18, ping: 67, duration: '08:12' },
-])
+// Online players - Sunucudan çekilecek
+const onlinePlayers = ref([])
 
 const playerColumns = [
   {
@@ -926,32 +917,16 @@ const playerColumns = [
   }
 ]
 
-const recentActivity = ref([
-  { id: 1, type: 'success', message: 'Server started successfully', time: '5 minutes ago' },
-  { id: 2, type: 'info', message: 'Map changed to de_dust2', time: '15 minutes ago' },
-  { id: 3, type: 'error', message: 'Player kicked for high ping', time: '1 hour ago' },
-])
+// Recent activity - Sunucudan çekilecek
+const recentActivity = ref([])
 
-// Plugins Data
-const installedPlugins = ref([
-  { id: 1, name: 'AMX Mod X', version: '1.10.0', author: 'AMXX Team', enabled: true },
-  { id: 2, name: 'ReHLDS', version: '3.12.0', author: 'ReHLDS Team', enabled: true },
-  { id: 3, name: 'ReGameDLL', version: '5.21.0', author: 'ReGameDLL Team', enabled: true },
-  { id: 4, name: 'MetaMod-R', version: '1.3.0', author: 'MetaMod Team', enabled: false },
-])
+// Plugins Data - Sunucudan çekilecek
+const installedPlugins = ref([])
+const popularPlugins = ref([])
 
-const popularPlugins = ref([
-  { id: 1, name: 'Knife Arena', description: 'Bıçak dövüşü modu', downloads: '25K+' },
-  { id: 2, name: 'GunGame', description: 'Silah yarışması modu', downloads: '18K+' },
-  { id: 3, name: 'Zombie Plague', description: 'Zombi salgını modu', downloads: '45K+' },
-])
-
-// Ban Data
+// Ban Data - Sunucudan çekilecek
 const showBanModal = ref(false)
-const banList = ref([
-  { id: 1, playerName: 'Cheater123', steamId: 'STEAM_0:1:12345678', reason: 'Aimbot', permanent: true, duration: '-', bannedBy: 'Admin' },
-  { id: 2, playerName: 'Toxic_Player', steamId: 'STEAM_0:0:87654321', reason: 'Hakaret', permanent: false, duration: '7 gün', bannedBy: 'Moderatör' },
-])
+const banList = ref([])
 
 const newBan = reactive({
   playerName: '',
@@ -989,13 +964,9 @@ const banColumns = [
   }
 ]
 
-// Scheduled Tasks Data
+// Scheduled Tasks Data - Sunucudan çekilecek
 const showTaskModal = ref(false)
-const scheduledTasks = ref([
-  { id: 1, name: 'Günlük Restart', type: 'restart', schedule: 'Her gün 04:00', enabled: true },
-  { id: 2, name: 'Saatlik Yedek', type: 'backup', schedule: 'Her saat başı', enabled: true },
-  { id: 3, name: 'Haftalık Temizlik', type: 'command', schedule: 'Her Pazar 03:00', enabled: false },
-])
+const scheduledTasks = ref([])
 
 const newTask = reactive({
   name: '',
@@ -1009,12 +980,8 @@ const taskTypeOptions = [
   { label: 'Komut', value: 'command' }
 ]
 
-// Backup Data
-const backups = ref([
-  { id: 1, name: 'backup_2026-01-17_04-00', date: '17 Ocak 2026, 04:00', size: '156 MB', type: 'auto' },
-  { id: 2, name: 'backup_2026-01-16_04-00', date: '16 Ocak 2026, 04:00', size: '154 MB', type: 'auto' },
-  { id: 3, name: 'manual_backup_v2', date: '15 Ocak 2026, 18:30', size: '158 MB', type: 'manual' },
-])
+// Backup Data - Sunucudan çekilecek
+const backups = ref([])
 
 const backupSettings = reactive({
   autoBackup: true,
@@ -1028,12 +995,13 @@ const frequencyOptions = [
   { label: 'Haftalık', value: 'weekly' }
 ]
 
+// Chart data - Sunucudan çekilecek
 const chartData = computed(() => ({
-  labels: ['15:00', '15:05', '15:10', '15:15', '15:20', '15:25', '15:30'],
+  labels: [],
   datasets: [
     {
       label: 'CPU %',
-      data: [45, 52, 38, 65, 45, 48, 55],
+      data: [],
       borderColor: '#f97316',
       backgroundColor: 'rgba(249, 115, 22, 0.1)',
       fill: true,
@@ -1041,7 +1009,7 @@ const chartData = computed(() => ({
     },
     {
       label: 'RAM %',
-      data: [62, 65, 58, 70, 62, 64, 68],
+      data: [],
       borderColor: '#8b5cf6',
       backgroundColor: 'rgba(139, 92, 246, 0.1)',
       fill: true,

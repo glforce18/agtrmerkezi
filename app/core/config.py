@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     # Redis ayarlari
     REDIS_HOST: str = "127.0.0.1"
     REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = ""  # Optional: Set in .env file if Redis requires authentication
     REDIS_DB: int = 0
     REDIS_MAX_CONNECTIONS: int = 20
     

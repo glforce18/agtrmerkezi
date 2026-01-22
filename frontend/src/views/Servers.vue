@@ -1,5 +1,8 @@
 <template>
   <div class="servers-page">
+    <!-- Maintenance Check -->
+    <MaintenanceOverlay feature="server_rental" />
+
     <!-- Subtle Background -->
     <div class="page-background">
       <div class="glow-orb orb-1"></div>
@@ -269,7 +272,7 @@
               <span class="map-name">{{ server.current_map || 'de_dust2' }}</span>
             </div>
             <!-- Live Status Indicator -->
-            <div :class="['status-indicator', server.status]">
+            <div :class="['status-indicator', server.status, { 'server-online-pulse': server.status === 'running' }]">
               <span class="status-dot"></span>
               <span class="status-text">{{ server.status === 'running' ? 'CANLI' : 'KAPALI' }}</span>
             </div>
@@ -311,7 +314,7 @@
               </div>
               <div class="player-bar">
                 <div
-                  class="player-bar-fill"
+                  class="player-bar-fill player-bar-animated"
                   :style="{ width: `${getPlayerPercentage(server)}%` }"
                   :class="getPlayerBarClass(server)"
                 ></div>
@@ -339,7 +342,7 @@
               <n-button
                 type="primary"
                 size="small"
-                class="connect-btn"
+                class="connect-btn muzzle-flash-hover recoil-click"
                 @click="quickConnect(server)"
               >
                 <template #icon><n-icon :component="Zap" /></template>
@@ -395,7 +398,7 @@
             type="primary"
             ghost
           >
-            Daha Fazla Yükle ({{ remainingCount }} kaldi)
+            Daha Fazla Yükle ({{ remainingCount }} kaldı)
           </n-button>
         </div>
       </div>
@@ -434,6 +437,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useMessage } from 'naive-ui'
+import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
 import {
   Server,
   Activity,
@@ -503,6 +507,9 @@ const SearchX = {
 }
 
 import { h } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const message = useMessage()
 
@@ -518,7 +525,14 @@ const currentPage = ref(1)
 const pageSize = ref(12)
 const useInfiniteScroll = ref(false)
 const infiniteScrollPage = ref(1)
-const favorites = ref(new Set(JSON.parse(localStorage.getItem('serverFavorites') || '[]')))
+const favorites = ref(new Set((() => {
+  try {
+    return JSON.parse(localStorage.getItem('serverFavorites') || '[]')
+  } catch (e) {
+    console.error('Failed to parse serverFavorites from localStorage:', e)
+    return []
+  }
+})()))
 const autoRefresh = ref(true)
 const refreshInterval = ref(30)
 const refreshCountdown = ref(30)
@@ -578,7 +592,7 @@ const sortOptions = [
 const serverMenuOptions = [
   { label: 'Sunucu Detayları', key: 'details', icon: () => h(Settings) },
   { label: 'Adresi Kopyala', key: 'copy', icon: () => h(Copy) },
-  { label: 'Steam ile Ac', key: 'steam', icon: () => h(ExternalLink) },
+  { label: 'Steam ile Aç', key: 'steam', icon: () => h(ExternalLink) },
   { type: 'divider', key: 'd1' },
   { label: 'Başlat', key: 'start', icon: () => h(Play) },
   { label: 'Durdur', key: 'stop', icon: () => h(Square) },
@@ -810,7 +824,7 @@ const confirmConnect = () => {
 const handleServerAction = async (key, server) => {
   switch (key) {
     case 'details':
-      window.location.href = `/servers/${server.id}`
+      router.push(`/servers/${server.id}`)
       break
     case 'copy':
       copyAddress(server)

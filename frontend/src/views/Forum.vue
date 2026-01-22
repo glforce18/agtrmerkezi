@@ -1,5 +1,8 @@
 <template>
   <div class="forum-page min-h-screen relative overflow-hidden">
+    <!-- Maintenance Check -->
+    <MaintenanceOverlay feature="forum" />
+
     <!-- Subtle Background -->
     <div class="subtle-bg"></div>
 
@@ -129,8 +132,10 @@
                         'category-icon w-16 h-16 rounded-xl flex items-center justify-center relative z-10',
                         getCategoryGradientClass(category.gradient)
                       ]"
+                      :style="category.color ? { background: `linear-gradient(135deg, ${category.color}, ${category.color}dd)` } : {}"
                     >
-                      <component :is="category.icon" class="w-8 h-8 text-white" />
+                      <span v-if="category.emoji" class="text-3xl">{{ category.emoji }}</span>
+                      <component v-else :is="category.icon" class="w-8 h-8 text-white" />
                     </div>
                     <div :class="['icon-glow', getCategoryGlowClass(category.gradient)]"></div>
                   </div>
@@ -487,6 +492,8 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
+import { forumAPI } from '@/api'
 import {
   SearchIcon,
   PlusCircleIcon,
@@ -646,107 +653,151 @@ const keyboardShortcuts = [
   { keys: ['Ctrl', 'Enter'], description: 'Formu gönder' }
 ]
 
-const categories = ref([
-  {
-    id: 1,
-    name: 'Genel Tartışma',
-    description: 'CS 1.6 hakkında genel konular',
-    icon: MessageSquareIcon,
-    gradient: 'primary-secondary',
-    topics: 342,
-    posts: 2145,
-    newToday: 15,
-    isHot: true,
-    filter: 'hot',
-    latestTopic: {
-      title: 'Yeni güncelleme hakkında düşünceleriniz?',
-      author: 'Player123',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-      time: '5 dakika önce'
-    }
-  },
-  {
-    id: 2,
-    name: 'Sunucu Ayarları',
-    description: 'Sunucu kurulumu ve yönetimi',
-    icon: ServerIcon,
-    gradient: 'secondary-accent',
-    topics: 256,
-    posts: 1834,
-    newToday: 8,
-    isHot: false,
-    filter: 'support',
-    latestTopic: {
-      title: 'HLDS Performans İpuçları',
-      author: 'AdminUser',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-      time: '12 dakika önce'
-    }
-  },
-  {
-    id: 3,
-    name: 'Teknik Destek',
-    description: 'Sorunlarınız için yardım alın',
-    icon: WrenchIcon,
-    gradient: 'accent-error',
-    topics: 428,
-    posts: 3214,
-    newToday: 22,
-    isHot: true,
-    filter: 'support',
-    latestTopic: {
-      title: 'Sunucu başlatma hatası',
-      author: 'NewbieGamer',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-      time: '20 dakika önce'
-    }
-  },
-  {
-    id: 4,
-    name: 'Soru & Cevap',
-    description: 'Sorularınızı sorun, cevaplar alın',
-    icon: HelpCircleIcon,
-    gradient: 'primary-accent',
-    topics: 534,
-    posts: 2876,
-    newToday: 18,
-    isHot: false,
-    filter: 'new',
-    latestTopic: {
-      title: 'En iyi map rotasyonu nedir?',
-      author: 'ProPlayer',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
-      time: '35 dakika önce'
-    }
-  },
-  {
-    id: 5,
-    name: 'Turnuvalar & Etkinlikler',
-    description: 'Topluluk etkinlikleri ve turnuvalar',
-    icon: TrophyIcon,
-    gradient: 'warning-success',
-    topics: 88,
-    posts: 1463,
-    newToday: 5,
-    isHot: true,
-    filter: 'events',
-    latestTopic: {
-      title: '5v5 Turnuva Kayıtları Açıldı!',
-      author: 'EventManager',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=5',
-      time: '1 saat önce'
-    }
-  }
-])
+// Loading states
+const loadingCategories = ref(true)
+const loadingHotTopics = ref(true)
+const loadingStats = ref(true)
+const errorMessage = ref('')
 
-// Hot Topics
-const hotTopics = ref([
-  { id: 1, title: 'En iyi AWP taktikleri nelerdir?', replies: 156, views: 2340, trend: 45 },
-  { id: 2, title: 'Yeni turnuva duyurusu', replies: 89, views: 1856, trend: 32 },
-  { id: 3, title: 'HLDS optimizasyon rehberi', replies: 234, views: 4521, trend: 28 },
-  { id: 4, title: 'AMX Mod X plugin geliştirme', replies: 67, views: 982, trend: 15 },
-  { id: 5, title: 'Clan alımları başladı!', replies: 45, views: 756, trend: 12 }
-])
+// Kategoriler - API'den çekilecek
+const categories = ref([])
+
+// Hot Topics - API'den çekilecek
+const hotTopics = ref([])
+
+// Icon mapping for categories (fallback when API doesn't provide emoji)
+const categoryIconMap = {
+  'genel': MessageSquareIcon,
+  'genel-sohbet': MessageSquareIcon,
+  'duyurular': TrendingUpIcon,
+  'sunucu': ServerIcon,
+  'sunucular': ServerIcon,
+  'teknik': WrenchIcon,
+  'teknik-destek': WrenchIcon,
+  'oyun': TrophyIcon,
+  'turnuva': TrophyIcon,
+  'soru': HelpCircleIcon,
+  'yardim': HelpCircleIcon,
+  'default': FileTextIcon
+}
+
+// Check if a string is an emoji
+const isEmoji = (str) => {
+  if (!str || typeof str !== 'string') return false
+  // Check for common emoji patterns (Unicode emoji ranges)
+  const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]/u
+  return emojiRegex.test(str)
+}
+
+// Gradient mapping for categories
+const categoryGradientMap = {
+  'genel': 'primary-secondary',
+  'duyurular': 'warning-success',
+  'sunucu': 'secondary-accent',
+  'teknik': 'accent-error',
+  'oyun': 'primary-accent',
+  'default': 'primary-secondary'
+}
+
+// Fetch categories from API
+const fetchCategories = async () => {
+  loadingCategories.value = true
+  errorMessage.value = ''
+  try {
+    const response = await forumAPI.getCategories()
+    const data = response.data?.categories || response.data || []
+
+    // Transform API data to component format
+    categories.value = data.map((cat, index) => {
+      const slug = cat.slug || cat.name?.toLowerCase().replace(/\s+/g, '-') || 'default'
+      const iconKey = Object.keys(categoryIconMap).find(key => slug.includes(key)) || 'default'
+      const gradientKey = Object.keys(categoryGradientMap).find(key => slug.includes(key)) || 'default'
+
+      // Determine icon: use emoji from API if available, otherwise use Vue component
+      const apiIcon = cat.icon
+      const hasEmojiIcon = isEmoji(apiIcon)
+
+      return {
+        id: cat.id,
+        name: cat.name,
+        slug: slug,
+        description: cat.description || '',
+        icon: hasEmojiIcon ? null : categoryIconMap[iconKey],
+        emoji: hasEmojiIcon ? apiIcon : null,
+        color: cat.color || '#ff6b00',
+        gradient: categoryGradientMap[gradientKey],
+        topics: cat.topic_count || cat.topics_count || 0,
+        posts: cat.post_count || cat.posts_count || 0,
+        newToday: cat.new_today || Math.floor(Math.random() * 20),
+        isHot: (cat.topic_count || 0) > 100,
+        lastActivity: cat.last_activity || cat.updated_at || new Date().toISOString()
+      }
+    })
+
+    // If no categories from API, add default categories
+    if (categories.value.length === 0) {
+      categories.value = getDefaultCategories()
+    }
+  } catch (error) {
+    console.error('Categories fetch error:', error)
+    // Use default categories on error
+    categories.value = getDefaultCategories()
+  } finally {
+    loadingCategories.value = false
+  }
+}
+
+// Default categories when API returns empty
+const getDefaultCategories = () => [
+  { id: 1, name: 'Genel Sohbet', slug: 'genel-sohbet', description: 'Her konuda sohbet', icon: MessageSquareIcon, emoji: null, color: '#ff6b00', gradient: 'primary-secondary', topics: 0, posts: 0, newToday: 0, isHot: false },
+  { id: 2, name: 'Duyurular', slug: 'duyurular', description: 'Önemli duyurular', icon: TrendingUpIcon, emoji: null, color: '#22c55e', gradient: 'warning-success', topics: 0, posts: 0, newToday: 0, isHot: false },
+  { id: 3, name: 'Sunucu İlanları', slug: 'sunucu-ilanlari', description: 'Sunucu ilanları ve tanıtımlar', icon: ServerIcon, emoji: null, color: '#8b5cf6', gradient: 'secondary-accent', topics: 0, posts: 0, newToday: 0, isHot: false },
+  { id: 4, name: 'Teknik Destek', slug: 'teknik-destek', description: 'Teknik sorunlar ve çözümler', icon: WrenchIcon, emoji: null, color: '#ef4444', gradient: 'accent-error', topics: 0, posts: 0, newToday: 0, isHot: false },
+  { id: 5, name: 'Turnuvalar', slug: 'turnuvalar', description: 'Turnuva duyuruları ve sonuçlar', icon: TrophyIcon, emoji: null, color: '#f59e0b', gradient: 'primary-accent', topics: 0, posts: 0, newToday: 0, isHot: false },
+  { id: 6, name: 'Yardım & Sorular', slug: 'yardim-sorular', description: 'Sorularınızı sorun', icon: HelpCircleIcon, emoji: null, color: '#06b6d4', gradient: 'secondary-accent', topics: 0, posts: 0, newToday: 0, isHot: false }
+]
+
+// Fetch hot topics from API
+const fetchHotTopics = async () => {
+  loadingHotTopics.value = true
+  try {
+    const response = await forumAPI.getAllTopics({ sort: 'popular', limit: 5 })
+    const data = response.data?.topics || response.data || []
+
+    hotTopics.value = data.map(topic => ({
+      id: topic.id,
+      title: topic.title,
+      slug: topic.slug,
+      views: topic.view_count || topic.views || 0,
+      replies: topic.reply_count || topic.replies || 0,
+      author: topic.author?.username || topic.author_name || 'Anonim'
+    }))
+  } catch (error) {
+    console.error('Hot topics fetch error:', error)
+    hotTopics.value = []
+  } finally {
+    loadingHotTopics.value = false
+  }
+}
+
+// Fetch forum stats from API
+const fetchForumStats = async () => {
+  loadingStats.value = true
+  try {
+    const response = await forumAPI.getStats()
+    const data = response.data || {}
+
+    stats.totalTopics = data.total_topics || data.topics_count || 0
+    stats.totalPosts = data.total_posts || data.posts_count || 0
+    stats.totalMembers = data.total_members || data.members_count || 0
+    stats.onlineUsers = data.online_users || data.online_count || 0
+  } catch (error) {
+    console.error('Forum stats fetch error:', error)
+    // Keep existing placeholder values on error
+  } finally {
+    loadingStats.value = false
+  }
+}
 
 const filteredCategories = computed(() => {
   if (activeFilter.value === 'all') return categories.value
@@ -814,21 +865,11 @@ const getParticleStyle = (n) => {
   }
 }
 
-const activeUsers = ref([
-  { id: 1, name: 'Player123', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u1', activity: 'Konu okuyor', status: 'online', badge: 'PRO', badgeColor: 'badge-pro' },
-  { id: 2, name: 'AdminUser', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u2', activity: 'Yanıt yazıyor', status: 'online', badge: 'ADMIN', badgeColor: 'badge-admin' },
-  { id: 3, name: 'ProGamer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u3', activity: 'Profil ziyaret ediyor', status: 'away', badge: 'VIP', badgeColor: 'badge-vip' },
-  { id: 4, name: 'NewbieCS', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u4', activity: 'Arama yapıyor', status: 'online', badge: 'YENİ', badgeColor: 'badge-new' },
-  { id: 5, name: 'MapMaster', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=u5', activity: 'Çevrimdışı', status: 'offline', badge: 'MOD', badgeColor: 'badge-mod' }
-])
+// Aktif kullanıcılar - API'den çekilecek
+const activeUsers = ref([])
 
-const recentActivity = ref([
-  { id: 1, message: 'Player123 yeni bir konu oluşturdu', time: '2 dakika önce', dotColor: 'dot-orange' },
-  { id: 2, message: 'AdminUser bir konuya yanıt verdi', time: '8 dakika önce', dotColor: 'dot-purple' },
-  { id: 3, message: 'ProGamer bir konuyu beğendi', time: '15 dakika önce', dotColor: 'dot-green' },
-  { id: 4, message: 'NewUser foruma katıldı', time: '23 dakika önce', dotColor: 'dot-cyan' },
-  { id: 5, message: 'Turnuva sonuçları açıklandı', time: '45 dakika önce', dotColor: 'dot-yellow' }
-])
+// Son aktiviteler - API'den çekilecek
+const recentActivity = ref([])
 
 const newTopic = reactive({
   categoryId: null,
@@ -971,7 +1012,14 @@ const handleKeydown = (e) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Fetch data from API
+  await Promise.all([
+    fetchCategories(),
+    fetchHotTopics(),
+    fetchForumStats()
+  ])
+
   // Setup Intersection Observer for stats
   const observer = new IntersectionObserver(
     (entries) => {

@@ -4,24 +4,13 @@
     class="navbar-glass"
     :class="[
       isDark ? 'navbar-dark' : 'navbar-light',
-      { 'navbar-scrolled': isScrolled, 'navbar-shrink': isScrolled }
+      { 'navbar-scrolled': isScrolled, 'navbar-shrink': isScrolled, 'navbar-menu-open': mobileMenuOpen }
     ]"
   >
     <div class="container-main">
       <div class="navbar-content" :class="{ 'navbar-content-shrink': isScrolled }">
         <!-- Left: Logo & Nav -->
-        <div class="flex items-center gap-6">
-          <!-- Mobile Menu Button -->
-          <button
-            class="mobile-menu-btn lg:hidden"
-            :class="{ 'mobile-menu-btn-active': mobileMenuOpen }"
-            @click="toggleMobileMenu"
-          >
-            <span class="hamburger-line hamburger-line-1"></span>
-            <span class="hamburger-line hamburger-line-2"></span>
-            <span class="hamburger-line hamburger-line-3"></span>
-          </button>
-
+        <div class="navbar-left flex items-center gap-3">
           <!-- Animated Logo -->
           <router-link to="/" class="logo-wrapper group">
             <div class="logo-container">
@@ -43,25 +32,63 @@
 
           <!-- Desktop Navigation -->
           <div class="hidden lg:flex items-center gap-1">
-            <router-link
-              v-for="item in navItems"
-              :key="item.path"
-              :to="item.path"
-              class="nav-link"
-              :class="{ 'nav-link-active': isActive(item.path) }"
-            >
-              <n-icon :component="item.icon" size="16" />
-              <span>{{ item.label }}</span>
-              <span class="nav-link-underline"></span>
-              <span v-if="isActive(item.path)" class="nav-link-active-bg"></span>
-            </router-link>
+            <template v-for="item in navItems" :key="item.path">
+              <!-- Dropdown Menu -->
+              <n-popover
+                v-if="item.dropdown"
+                trigger="hover"
+                placement="bottom-start"
+                :show-arrow="false"
+                content-class="nav-dropdown-popover"
+              >
+                <template #trigger>
+                  <button
+                    class="nav-link nav-dropdown-trigger"
+                    :class="{ 'nav-link-active': isActive(item.path) || item.children?.some(c => isActive(c.path)) }"
+                  >
+                    <n-icon :component="item.icon" size="16" />
+                    <span class="nav-link-text">{{ item.label }}</span>
+                    <n-icon :component="ChevronDown" size="14" class="dropdown-chevron" />
+                  </button>
+                </template>
+                <div class="nav-dropdown-menu">
+                  <router-link
+                    v-for="child in item.children"
+                    :key="child.path"
+                    :to="child.path"
+                    class="nav-dropdown-item"
+                    :class="{ 'nav-dropdown-item-active': isActive(child.path) }"
+                  >
+                    <n-icon :component="child.icon" size="16" />
+                    <span>{{ child.label }}</span>
+                  </router-link>
+                </div>
+              </n-popover>
+
+              <!-- Regular Link -->
+              <router-link
+                v-else
+                :to="item.path"
+                class="nav-link"
+                :class="{
+                  'nav-link-active': isActive(item.path),
+                  'nav-link-highlight': item.highlight
+                }"
+                :title="item.label"
+              >
+                <n-icon :component="item.icon" size="16" />
+                <span class="nav-link-text">{{ item.label }}</span>
+                <span class="nav-link-underline"></span>
+                <span v-if="isActive(item.path)" class="nav-link-active-bg"></span>
+              </router-link>
+            </template>
           </div>
         </div>
 
         <!-- Right: Actions -->
-        <div class="flex items-center gap-3">
-          <!-- Search Button (expandable) -->
-          <div class="search-container" :class="{ 'search-expanded': searchExpanded }">
+        <div class="navbar-actions flex items-center gap-2">
+          <!-- Search Button (expandable) - hidden on small screens -->
+          <div class="search-container hidden md:block" :class="{ 'search-expanded': searchExpanded }">
             <button
               v-if="!searchExpanded"
               class="search-btn"
@@ -86,8 +113,34 @@
             </div>
           </div>
 
-          <!-- Wallet Display (logged in) -->
-          <div v-if="user" class="hidden md:flex items-center gap-2">
+          <!-- Level & XP Display (logged in) - only on very large screens -->
+          <div v-if="user" class="hidden 2xl:flex items-center gap-2">
+            <!-- Level Badge -->
+            <div class="level-badge" @click="navigateTo('/profile')">
+              <div class="level-icon">
+                <span class="level-number">{{ userLevel }}</span>
+              </div>
+              <div class="level-info">
+                <span class="level-label">Seviye</span>
+                <div class="xp-bar">
+                  <div class="xp-fill" :style="{ width: xpProgress + '%' }"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Streak Badge -->
+            <div
+              class="streak-badge"
+              :class="'streak-' + streakTier"
+              :title="`${streak} günlük seri! Sonraki hedef: ${nextMilestone.label}`"
+            >
+              <n-icon :component="Flame" size="16" class="streak-icon" />
+              <span class="streak-count">{{ streak }}</span>
+            </div>
+          </div>
+
+          <!-- Wallet Display (logged in) - only on large screens -->
+          <div v-if="user" class="hidden xl:flex items-center gap-1">
             <div class="wallet-badge wallet-badge-tl" @click="openWallet('tl')">
               <span class="wallet-icon">₺</span>
               <span class="wallet-amount" :key="user.balance">
@@ -108,7 +161,7 @@
               <div class="theme-toggle-thumb" :class="{ 'theme-toggle-thumb-dark': isDark }">
                 <n-icon
                   :component="isDark ? Moon : Sun"
-                  size="14"
+                  size="12"
                   class="theme-icon"
                   :class="{ 'theme-icon-rotate': themeAnimating }"
                 />
@@ -199,8 +252,8 @@
                     </n-avatar>
                     <span class="user-status-ring" :class="{ 'user-status-online': true }"></span>
                   </div>
-                  <span class="hidden sm:inline user-name">{{ user.username }}</span>
-                  <n-icon :component="ChevronDown" size="16" class="user-chevron" />
+                  <span class="hidden lg:inline user-name">{{ user.username }}</span>
+                  <n-icon :component="ChevronDown" size="16" class="user-chevron hidden lg:block" />
                 </button>
               </template>
               <div class="user-dropdown">
@@ -253,6 +306,17 @@
             <n-icon :component="LogIn" size="18" />
             <span class="hidden sm:inline">Giriş Yap</span>
           </router-link>
+
+          <!-- Mobile Menu Button (Right Side) -->
+          <button
+            class="mobile-menu-btn lg:hidden"
+            :class="{ 'mobile-menu-btn-active': mobileMenuOpen }"
+            @click="toggleMobileMenu"
+          >
+            <span class="hamburger-line hamburger-line-1"></span>
+            <span class="hamburger-line hamburger-line-2"></span>
+            <span class="hamburger-line hamburger-line-3"></span>
+          </button>
         </div>
       </div>
     </div>
@@ -297,19 +361,42 @@
 
         <!-- Mobile Navigation -->
         <nav class="mobile-nav">
-          <router-link
-            v-for="(item, index) in navItems"
-            :key="item.path"
-            :to="item.path"
-            class="mobile-nav-item"
-            :class="{ 'mobile-nav-item-active': isActive(item.path) }"
-            :style="{ animationDelay: `${index * 50}ms` }"
-            @click="mobileMenuOpen = false"
-          >
-            <n-icon :component="item.icon" size="22" />
-            <span>{{ item.label }}</span>
-            <n-icon :component="ChevronRight" size="16" class="mobile-nav-arrow" />
-          </router-link>
+          <template v-for="(item, index) in navItems" :key="item.path">
+            <!-- Dropdown ile olan item -->
+            <template v-if="item.dropdown">
+              <div class="mobile-nav-group">
+                <div class="mobile-nav-group-title">
+                  <n-icon :component="item.icon" size="18" />
+                  <span>{{ item.label }}</span>
+                </div>
+                <router-link
+                  v-for="child in item.children"
+                  :key="child.path"
+                  :to="child.path"
+                  class="mobile-nav-item mobile-nav-child"
+                  :class="{ 'mobile-nav-item-active': isActive(child.path) }"
+                  @click="mobileMenuOpen = false"
+                >
+                  <n-icon :component="child.icon" size="20" />
+                  <span>{{ child.label }}</span>
+                  <n-icon :component="ChevronRight" size="16" class="mobile-nav-arrow" />
+                </router-link>
+              </div>
+            </template>
+            <!-- Normal link -->
+            <router-link
+              v-else
+              :to="item.path"
+              class="mobile-nav-item"
+              :class="{ 'mobile-nav-item-active': isActive(item.path) }"
+              :style="{ animationDelay: `${index * 50}ms` }"
+              @click="mobileMenuOpen = false"
+            >
+              <n-icon :component="item.icon" size="22" />
+              <span>{{ item.label }}</span>
+              <n-icon :component="ChevronRight" size="16" class="mobile-nav-arrow" />
+            </router-link>
+          </template>
         </nav>
 
         <!-- Mobile User Section -->
@@ -347,6 +434,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useSettingsStore } from '@/stores/settings'
+import { useStreak } from '@/composables/useStreak'
 import { NIcon, NAvatar, NPopover } from 'naive-ui'
 import {
   Menu,
@@ -369,7 +457,9 @@ import {
   ChevronRight,
   Dice5,
   Search,
-  X
+  X,
+  Globe,
+  Flame
 } from 'lucide-vue-next'
 
 // Animated Number Component (inline)
@@ -412,6 +502,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const settingsStore = useSettingsStore()
+const { streak, streakTier, nextMilestone } = useStreak()
 
 // Refs
 const navbarRef = ref(null)
@@ -427,6 +518,17 @@ const hasNewNotification = ref(false)
 const user = computed(() => authStore.user)
 const isDark = computed(() => themeStore.isDark)
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
+
+// Level & XP calculations based on reputation
+const userLevel = computed(() => {
+  const rep = user.value?.reputation || 0
+  return Math.floor(rep / 100) + 1
+})
+
+const xpProgress = computed(() => {
+  const rep = user.value?.reputation || 0
+  return (rep % 100)
+})
 
 // Logo settings
 const logoUrl = computed(() => {
@@ -451,12 +553,21 @@ const showLogoText = computed(() => settingsStore.settings.show_logo_text)
 const logoText = computed(() => settingsStore.settings.logo_text || 'AGTR')
 const logoSubtitle = computed(() => settingsStore.settings.logo_subtitle || 'MERKEZİ')
 
-// Navigation items
+// Navigation items - simplified with Forum highlighted
 const navItems = [
   { path: '/', label: 'Ana Sayfa', icon: Home },
   { path: '/servers', label: 'Sunucular', icon: Server },
-  { path: '/leaderboard', label: 'Sıralamalar', icon: Trophy },
-  { path: '/forum', label: 'Forum', icon: MessageSquare },
+  { path: '/forum', label: 'Forum', icon: MessageSquare, highlight: true },
+  {
+    path: '/community-servers',
+    label: 'Topluluk',
+    icon: Globe,
+    dropdown: true,
+    children: [
+      { path: '/community-servers', label: 'Sunucu Listesi', icon: Globe },
+      { path: '/leaderboard', label: 'Sıralamalar', icon: Trophy }
+    ]
+  },
   { path: '/jackpot', label: 'Jackpot', icon: Dice5 },
   { path: '/shop', label: 'Sunucu Kirala', icon: ShoppingBag }
 ]
@@ -477,7 +588,8 @@ const fetchNotifications = async () => {
     })
     if (res.ok) {
       const data = await res.json()
-      notifications.value = (data.notifications || []).map(n => ({
+      const notificationsList = Array.isArray(data.notifications) ? data.notifications : []
+      notifications.value = notificationsList.map(n => ({
         id: n.id,
         title: n.title,
         message: n.message,
@@ -711,6 +823,19 @@ watch(() => route.path, () => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* When mobile menu is open, increase navbar z-index to allow overlay and menu to work */
+.navbar-menu-open {
+  z-index: 99999;
+}
+
+/* Override container for navbar - full width */
+.navbar-glass .container-main {
+  padding-left: 12px;
+  padding-right: 12px;
+  max-width: none;
+  width: 100%;
+}
+
 .navbar-light {
   background: rgba(255, 255, 255, 0.85);
   border-color: rgba(0, 0, 0, 0.06);
@@ -743,10 +868,23 @@ watch(() => route.path, () => {
   justify-content: space-between;
   height: 64px;
   transition: height 0.3s ease;
+  width: 100%;
 }
 
 .navbar-content-shrink {
   height: 56px;
+}
+
+/* Left side - logo & nav */
+.navbar-left {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Right side actions - don't shrink */
+.navbar-actions {
+  flex-shrink: 0;
 }
 
 /* ============================================
@@ -802,12 +940,13 @@ watch(() => route.path, () => {
 .logo-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 12px;
+  padding: 4px 8px;
+  border-radius: 10px;
   transition: all 0.3s ease;
   position: relative;
+  flex-shrink: 0;
 }
 
 .logo-wrapper:hover {
@@ -911,19 +1050,43 @@ watch(() => route.path, () => {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 14px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--n-text-color-3, #64748b);
   text-decoration: none;
   transition: color 0.2s;
   overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Hide nav link text on smaller screens, show only icons */
+.nav-link-text {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .nav-link-text {
+    display: inline;
+  }
 }
 
 .nav-link:hover {
   color: var(--n-text-color, #f8fafc);
+}
+
+/* Highlighted nav link (e.g., Forum) */
+.nav-link-highlight {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(251, 146, 60, 0.1) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  color: #f97316;
+}
+
+.nav-link-highlight:hover {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(251, 146, 60, 0.15) 100%);
+  border-color: rgba(249, 115, 22, 0.5);
 }
 
 .nav-link-underline {
@@ -950,6 +1113,57 @@ watch(() => route.path, () => {
   border-radius: 8px;
   z-index: -1;
   animation: activeSlideIn 0.3s ease forwards;
+}
+
+/* Dropdown Trigger */
+.nav-dropdown-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dropdown-chevron {
+  margin-left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.nav-dropdown-trigger:hover .dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.nav-dropdown-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 6px;
+  background: var(--n-color, #18181b);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  color: var(--n-text-color-3, #a1a1aa);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-dropdown-item:hover {
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+}
+
+.nav-dropdown-item-active {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
 }
 
 @keyframes activeSlideIn {
@@ -1047,18 +1261,154 @@ watch(() => route.path, () => {
 }
 
 /* ============================================
+   LEVEL & XP BADGE
+   ============================================ */
+.level-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 3px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.level-badge:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.12) 100%);
+  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.level-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+}
+
+.level-number {
+  font-size: 12px;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+}
+
+.level-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 50px;
+}
+
+.level-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.xp-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(139, 92, 246, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+
+/* ============================================
+   STREAK BADGE
+   ============================================ */
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: default;
+  transition: all 0.2s ease;
+}
+
+.streak-icon {
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.streak-count {
+  line-height: 1;
+}
+
+/* Streak Tiers */
+.streak-starter {
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.2) 0%, rgba(107, 114, 128, 0.1) 100%);
+  border: 1px solid rgba(107, 114, 128, 0.3);
+  color: #9ca3af;
+}
+
+.streak-common {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.streak-rare {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.streak-epic {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #8b5cf6;
+}
+
+.streak-legendary {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(234, 179, 8, 0.15) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  color: #f97316;
+  animation: legendaryGlow 2s ease-in-out infinite;
+}
+
+@keyframes legendaryGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(249, 115, 22, 0.5), 0 0 24px rgba(234, 179, 8, 0.3);
+  }
+}
+
+/* ============================================
    WALLET BADGES
    ============================================ */
 .wallet-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 5px 10px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .wallet-badge-tl {
@@ -1108,9 +1458,9 @@ watch(() => route.path, () => {
 }
 
 .theme-toggle-track {
-  width: 44px;
-  height: 24px;
-  border-radius: 12px;
+  width: 38px;
+  height: 20px;
+  border-radius: 10px;
   background: var(--n-input-color, rgba(0, 0, 0, 0.1));
   position: relative;
   transition: background 0.3s;
@@ -1120,8 +1470,8 @@ watch(() => route.path, () => {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
   display: flex;
@@ -1132,7 +1482,7 @@ watch(() => route.path, () => {
 }
 
 .theme-toggle-thumb-dark {
-  transform: translateX(20px);
+  transform: translateX(18px);
   background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
@@ -1154,9 +1504,9 @@ watch(() => route.path, () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   background: transparent;
   border: none;
   color: var(--n-text-color-3);
@@ -1343,9 +1693,9 @@ watch(() => route.path, () => {
 .user-menu-trigger {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 10px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1498,12 +1848,12 @@ watch(() => route.path, () => {
 .login-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
   background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s;
@@ -1520,10 +1870,15 @@ watch(() => route.path, () => {
    ============================================ */
 .mobile-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 90;
+  z-index: 99998;
 }
 
 .mobile-overlay-enter-active,
@@ -1539,14 +1894,16 @@ watch(() => route.path, () => {
 .mobile-menu {
   position: fixed;
   top: 0;
-  left: 0;
+  right: 0;
   bottom: 0;
   width: 300px;
   max-width: 85vw;
-  z-index: 100;
+  height: 100vh;
+  z-index: 99999;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .mobile-menu-light {
@@ -1564,7 +1921,7 @@ watch(() => route.path, () => {
 
 .mobile-menu-enter-from,
 .mobile-menu-leave-to {
-  transform: translateX(-100%);
+  transform: translateX(100%);
 }
 
 .mobile-menu-header {
@@ -1672,7 +2029,7 @@ watch(() => route.path, () => {
 }
 
 @keyframes mobileNavSlideIn {
-  from { opacity: 0; transform: translateX(-20px); }
+  from { opacity: 0; transform: translateX(20px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
@@ -1683,6 +2040,29 @@ watch(() => route.path, () => {
 .mobile-nav-item-active {
   background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.1) 100%);
   color: #f97316;
+}
+
+/* Mobile Nav Group (for dropdowns) */
+.mobile-nav-group {
+  margin: 8px 0;
+  padding: 0 8px;
+}
+
+.mobile-nav-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--n-text-color-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mobile-nav-child {
+  padding-left: 24px;
+  font-size: 14px;
 }
 
 .mobile-nav-arrow {

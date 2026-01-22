@@ -6,6 +6,7 @@ Real-time server stats, notifications, chat
 import asyncio
 import json
 import logging
+import time
 from typing import Dict, Set
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -298,7 +299,7 @@ async def chat_ws(websocket: WebSocket):
                         await manager.broadcast_to_room(room, {
                             "type": "system",
                             "message": f"{username} odaya katıldı",
-                            "timestamp": asyncio.get_event_loop().time()
+                            "timestamp": time.time()
                         })
                 
                 elif action == "leave":
@@ -307,7 +308,7 @@ async def chat_ws(websocket: WebSocket):
                         await manager.broadcast_to_room(current_room, {
                             "type": "system",
                             "message": f"{username} odadan ayrıldı",
-                            "timestamp": asyncio.get_event_loop().time()
+                            "timestamp": time.time()
                         })
                         manager.leave_room(websocket, current_room)
                         current_room = None
@@ -321,7 +322,7 @@ async def chat_ws(websocket: WebSocket):
                                 "type": "message",
                                 "user": username,
                                 "message": text,
-                                "timestamp": asyncio.get_event_loop().time()
+                                "timestamp": time.time()
                             })
                             
             except json.JSONDecodeError:
@@ -332,7 +333,7 @@ async def chat_ws(websocket: WebSocket):
             await manager.broadcast_to_room(current_room, {
                 "type": "system",
                 "message": f"{username} bağlantısı koptu",
-                "timestamp": asyncio.get_event_loop().time()
+                "timestamp": time.time()
             })
             manager.leave_room(websocket, current_room)
         manager.disconnect(websocket, "chat")

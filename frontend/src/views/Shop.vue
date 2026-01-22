@@ -1,5 +1,8 @@
 <template>
   <div class="shop-page">
+    <!-- Maintenance Check -->
+    <MaintenanceOverlay feature="shop" />
+
     <!-- Subtle Background -->
     <div class="animated-bg">
       <div class="gradient-orbs">
@@ -47,8 +50,8 @@
                 <Banknote :size="20" />
               </div>
               <div class="toggle-content">
-                <span class="toggle-label">TL ile Ode</span>
-                <span class="toggle-desc">Turk Lirasi</span>
+                <span class="toggle-label">TL ile Öde</span>
+                <span class="toggle-desc">Türk Lirası</span>
               </div>
             </button>
             <button
@@ -60,7 +63,7 @@
                 <Shield :size="20" />
               </div>
               <div class="toggle-content">
-                <span class="toggle-label">Armor ile Ode</span>
+                <span class="toggle-label">Armor ile Öde</span>
                 <span class="toggle-desc">{{ ARMOR_RATE }}x Bonus</span>
               </div>
             </button>
@@ -98,7 +101,7 @@
           @click="viewMode = 'grid'"
         >
           <LayoutGrid :size="18" />
-          Kart Görünümu
+          Kart Görünümü
         </button>
         <button
           class="view-toggle-btn"
@@ -147,7 +150,7 @@
           @mousemove="handleCardMove"
         >
           <!-- Featured Badge -->
-          <div v-if="pkg.slug.includes('pro')" class="featured-badge">
+          <div v-if="pkg.slug.includes('pro')" class="featured-badge popular-badge-pulse">
             <Crown :size="14" />
             <span>En Popüler</span>
           </div>
@@ -241,7 +244,7 @@
               </div>
 
               <!-- Purchase Button -->
-              <button class="purchase-btn" @click="selectPackage(pkg)">
+              <button class="purchase-btn muzzle-flash-hover recoil-click" @click="selectPackage(pkg)">
                 <span class="btn-text">Satın Al</span>
                 <ShoppingCart :size="18" />
                 <div class="btn-shine"></div>
@@ -274,7 +277,7 @@
           </thead>
           <tbody>
             <tr>
-              <td>Slot Sayisi</td>
+              <td>Slot Sayısı</td>
               <td v-for="pkg in filteredPackages" :key="pkg.id + '-slots'">
                 <span class="table-value">{{ pkg.slots }}</span>
               </td>
@@ -324,7 +327,7 @@
         </div>
         <div class="rate-content">
           <h4>Armor ile Ödemede Avantaj</h4>
-          <p><strong>1 TL = {{ ARMOR_RATE }} Armor</strong> - Armor ile ödeme yaparak ekstra avantajlardan yararlanin</p>
+          <p><strong>1 TL = {{ ARMOR_RATE }} Armor</strong> - Armor ile ödeme yaparak ekstra avantajlardan yararlanın</p>
         </div>
         <router-link to="/wallet" class="rate-cta">
           Armor Yükle
@@ -335,7 +338,7 @@
       <!-- Testimonials Section -->
       <div class="testimonials-section">
         <div class="section-header">
-          <h2>Musterilerimiz Ne Diyor?</h2>
+          <h2>Müşterilerimiz Ne Diyor?</h2>
           <p>Binlerce memnun oyuncunun tercih ettigi sunucular</p>
         </div>
         <div class="testimonials-grid">
@@ -425,12 +428,12 @@
               <div class="form-group">
                 <label>
                   <Server :size="16" />
-                  Sunucu Adi
+                  Sunucu Adı
                 </label>
                 <input
                   v-model="serverName"
                   type="text"
-                  placeholder="Ornek: My AG Server"
+                  placeholder="Örnek: My AG Server"
                   class="form-input"
                   :class="{ error: serverName.length > 0 && serverName.length < 3 }"
                 />
@@ -443,7 +446,7 @@
               <div class="form-group">
                 <label>
                   <Calendar :size="16" />
-                  Sure Secin
+                  Süre Seçin
                 </label>
                 <div class="duration-grid">
                   <button
@@ -483,7 +486,7 @@
 
                 <!-- Visual Price Comparison Chart -->
                 <div class="price-chart" v-if="selectedPkg">
-                  <div class="chart-title">Fiyat Karşılaştırmasi</div>
+                  <div class="chart-title">Fiyat Karşılaştırması</div>
                   <div class="chart-bars">
                     <div
                       v-for="opt in durationOptions"
@@ -536,7 +539,7 @@
                   <span>{{ selectedPkg?.name }}</span>
                 </div>
                 <div class="summary-item">
-                  <span>Sunucu Adi</span>
+                  <span>Sunucu Adı</span>
                   <span>{{ serverName }}</span>
                 </div>
                 <div class="summary-item">
@@ -648,7 +651,7 @@
             <p>Sunucunuz başarıyla oluşturuldu</p>
             <div class="success-details" v-if="purchaseResult">
               <div class="detail-item">
-                <span>Sunucu Adi:</span>
+                <span>Sunucu Adı:</span>
                 <strong>{{ purchaseResult.server_info?.name }}</strong>
               </div>
               <div class="detail-item">
@@ -671,6 +674,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
 import {
   Banknote,
   Shield,

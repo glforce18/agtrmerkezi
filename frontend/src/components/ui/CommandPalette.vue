@@ -48,9 +48,20 @@
               </div>
             </div>
 
+            <!-- Loading State -->
+            <div v-else-if="isSearching" class="command-loading">
+              <div class="loading-spinner"></div>
+              <span>Aranıyor...</span>
+            </div>
+
             <!-- Empty State -->
-            <div v-else-if="query" class="command-empty">
+            <div v-else-if="query && query.length >= 2" class="command-empty">
               <span>"{{ query }}" için sonuç bulunamadı</span>
+            </div>
+
+            <!-- Hint for short query -->
+            <div v-else-if="query && query.length < 2" class="command-hint">
+              <span>Aramak için en az 2 karakter girin</span>
             </div>
 
             <!-- Footer -->
@@ -72,6 +83,8 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import api from '@/services/api'
+import { trackSearch } from '@/services/analytics'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -80,6 +93,8 @@ const isOpen = ref(false)
 const query = ref('')
 const activeIndex = ref(0)
 const inputRef = ref(null)
+const isSearching = ref(false)
+const searchResults = ref({ servers: [], users: [], topics: [] })
 
 // Define all available commands and pages
 const items = computed(() => {
@@ -126,8 +141,8 @@ const items = computed(() => {
   return baseItems
 })
 
-// Filter items based on query
-const filteredItems = computed(() => {
+// Filter static items based on query
+const filteredStaticItems = computed(() => {
   if (!query.value) return items.value
 
   const q = query.value.toLowerCase()
@@ -138,6 +153,94 @@ const filteredItems = computed(() => {
   })
 })
 
+// Combined filtered items (static + API results)
+const filteredItems = computed(() => {
+  const results = [...filteredStaticItems.value]
+
+  // Add server results
+  if (searchResults.value.servers?.length > 0) {
+    searchResults.value.servers.forEach(server => {
+      results.push({
+        id: `server-${server.id}`,
+        type: 'server',
+        title: server.name,
+        description: `${server.address} - ${server.players || 0} oyuncu`,
+        emoji: '🖥️',
+        action: () => router.push(`/servers/${server.id}`),
+        keywords: []
+      })
+    })
+  }
+
+  // Add user results
+  if (searchResults.value.users?.length > 0) {
+    searchResults.value.users.forEach(user => {
+      results.push({
+        id: `user-${user.id}`,
+        type: 'user',
+        title: user.username,
+        description: user.role || 'Üye',
+        emoji: '👤',
+        action: () => router.push(`/profile/${user.id}`),
+        keywords: []
+      })
+    })
+  }
+
+  // Add forum topic results
+  if (searchResults.value.topics?.length > 0) {
+    searchResults.value.topics.forEach(topic => {
+      results.push({
+        id: `topic-${topic.id}`,
+        type: 'topic',
+        title: topic.title,
+        description: topic.category_name || 'Forum',
+        emoji: '💬',
+        action: () => router.push(`/forum/topic/${topic.id}`),
+        keywords: []
+      })
+    })
+  }
+
+  return results
+})
+
+// Search API
+let searchTimeout = null
+const searchAPI = async (q) => {
+  if (!q || q.length < 2) {
+    searchResults.value = { servers: [], users: [], topics: [] }
+    return
+  }
+
+  isSearching.value = true
+  try {
+    const response = await api.get('/search', { q, limit: 5 })
+    searchResults.value = response || { servers: [], users: [], topics: [] }
+
+    // Track search for analytics
+    const totalResults = (response?.servers?.length || 0) +
+                        (response?.users?.length || 0) +
+                        (response?.topics?.length || 0)
+    trackSearch(q, totalResults)
+  } catch (error) {
+    console.error('Search failed:', error)
+    searchResults.value = { servers: [], users: [], topics: [] }
+  } finally {
+    isSearching.value = false
+  }
+}
+
+// Debounced search
+watch(query, (newQuery) => {
+  clearTimeout(searchTimeout)
+  if (newQuery && newQuery.length >= 2) {
+    searchTimeout = setTimeout(() => searchAPI(newQuery), 300)
+  } else {
+    searchResults.value = { servers: [], users: [], topics: [] }
+  }
+})
+
 // Group results by type
 const groupedResults = computed(() => {
   const groups = {}
@@ -145,8 +248,13 @@ const groupedResults = computed(() => {
     page: 'Sayfalar',
     action: 'Eylemler',
     admin: 'Admin',
-    server: 'Sunucular'
+    server: 'Sunucular',
+    user: 'Kullanıcılar',
+    topic: 'Forum Konuları'
   }
+
+  // Order of groups
+  const groupOrder = ['page', 'server', 'user', 'topic', 'action', 'admin']
 
   for (const item of filteredItems.value) {
     const groupName = typeLabels[item.type] || 'Diğer'
@@ -154,7 +262,16 @@ const groupedResults = computed(() => {
     groups[groupName].push(item)
   }
 
-  return groups
+  // Sort groups by order
+  const sortedGroups = {}
+  for (const type of groupOrder) {
+    const label = typeLabels[type]
+    if (groups[label]) {
+      sortedGroups[label] = groups[label]
+    }
+  }
+
+  return sortedGroups
 })
 
 // Get global index for keyboard navigation
@@ -383,10 +500,33 @@ defineExpose({ open, close, toggle })
   color: var(--text-secondary);
 }
 
-.command-empty {
+.command-empty,
+.command-hint {
   padding: 40px 20px;
   text-align: center;
   color: var(--text-secondary);
+}
+
+.command-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-top-color: #f97316;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .command-footer {

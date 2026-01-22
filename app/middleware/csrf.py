@@ -35,6 +35,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/api/admin/media",  # Admin media upload - protected by admin auth
             "/api/notifications",  # Notification actions
             "/api/user/avatar",  # Avatar upload
+            "/api/maintenance",  # Maintenance admin - protected by admin auth
             "/ws"  # WebSocket connections
         ]
     
@@ -66,8 +67,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 try:
                     form = await request.form()
                     header_token = form.get(self.CSRF_FORM_FIELD)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"CSRF form parse error: {e}")
         
         # Token kontrolü
         if not cookie_token or not header_token or cookie_token != header_token:

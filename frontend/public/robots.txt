@@ -1,0 +1,37 @@
+# AGTR Merkezi - Robots.txt
+# https://agtrmerkezi.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://agtrmerkezi.com/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /wallet
+Disallow: /profile
+Disallow: /oauth-callback
+
+# Allow important pages
+Allow: /servers
+Allow: /forum
+Allow: /shop
+Allow: /leaderboard
+Allow: /tournaments
+Allow: /clans
+Allow: /community-servers
+Allow: /jackpot
+Allow: /verify
+Allow: /login
+Allow: /register
+Allow: /terms
+Allow: /privacy
+Allow: /contact
+Allow: /support
+
+# Crawl-delay (optional, be respectful to servers)
+Crawl-delay: 1

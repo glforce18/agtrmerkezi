@@ -24,6 +24,7 @@ setup_logging(
 logger = get_logger(__name__)
 
 from app.api import (
+    activities,
     admin,
     analytics,
     assets,
@@ -33,11 +34,14 @@ from app.api import (
     forum,
     game_integration,
     games,
+    maintenance,
     media,
     notifications,
     payment_gateway,
     payments,
     plugin_market,
+    profile_customization,
+    scraper,
     security,
     server_management,
     servers,
@@ -181,11 +185,11 @@ def create_default_data():
         # Forum kategorileri
         if db.query(ForumCategory).count() == 0:
             categories = [
-                ForumCategory(name="Genel", slug="genel", description="Genel konular", icon="message-circle", color="#3b82f6"),
-                ForumCategory(name="Half-Life", slug="half-life", description="Half-Life tartismalari", icon="crosshair", color="#f97316"),
-                ForumCategory(name="Counter-Strike", slug="counter-strike", description="CS 1.6 tartismalari", icon="target", color="#22c55e"),
-                ForumCategory(name="Teknik Destek", slug="teknik-destek", description="Teknik yardim", icon="help-circle", color="#8b5cf6"),
-                ForumCategory(name="Duyurular", slug="duyurular", description="Resmi duyurular", icon="megaphone", color="#ef4444", is_announcement=True),
+                ForumCategory(name="Genel", slug="genel", description="Genel konular", icon="💬", color="#3b82f6"),
+                ForumCategory(name="Half-Life", slug="half-life", description="Half-Life tartismalari", icon="🎮", color="#f97316"),
+                ForumCategory(name="Counter-Strike", slug="counter-strike", description="CS 1.6 tartismalari", icon="🔫", color="#22c55e"),
+                ForumCategory(name="Teknik Destek", slug="teknik-destek", description="Teknik yardim", icon="🔧", color="#8b5cf6"),
+                ForumCategory(name="Duyurular", slug="duyurular", description="Resmi duyurular", icon="📢", color="#ef4444"),
             ]
             db.add_all(categories)
             logger.debug("Forum kategorileri oluşturuldu")
@@ -243,7 +247,12 @@ app = FastAPI(
 )
 
 # CORS middleware
-cors_origins = ["*"] if settings.DEBUG else [
+cors_origins = [
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+] if settings.DEBUG else [
     "https://agtrmerkezi.com",
     "https://www.agtrmerkezi.com",
     "http://localhost:3000",
@@ -318,6 +327,9 @@ app.include_router(social.router, prefix="/api/social", tags=["Social"])
 app.include_router(server_management.router, prefix="/api/management", tags=["Server Management"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(activities.router, prefix="/api/activities", tags=["Activities"])
+app.include_router(maintenance.router, prefix="/api/maintenance", tags=["Maintenance"])
+app.include_router(profile_customization.router, prefix="/api/profile/customization", tags=["Profile Customization"])
 
 # Extended APIs
 app.include_router(discord_bot.router, prefix="/api/discord", tags=["Discord Bot"])
@@ -326,6 +338,9 @@ app.include_router(plugin_market.router, prefix="/api/plugins", tags=["Plugin Ma
 app.include_router(media.router, tags=["Media Management"])
 app.include_router(smart_media.router, tags=["Smart Media"])
 app.include_router(banners.router, tags=["Banners & Advertisements"])
+
+# Community Servers & Scraper
+app.include_router(scraper.router, prefix="/api/community", tags=["Community Servers"])
 
 
 # ==================== HEALTH & STATUS ====================

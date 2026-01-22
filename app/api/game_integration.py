@@ -43,7 +43,7 @@ ALLOWED_SERVER_IPS = [
 ]
 
 # API Key (env'den alınabilir)
-GAME_API_KEY = getattr(settings, 'GAME_API_KEY', 'agtr-game-secret-key-2024')
+GAME_API_KEY = getattr(settings, 'GAME_API_KEY', '')
 
 
 # ============ Schemas ============
@@ -51,9 +51,9 @@ GAME_API_KEY = getattr(settings, 'GAME_API_KEY', 'agtr-game-secret-key-2024')
 class PlayerStats(BaseModel):
     """Oyun sonu istatistikleri"""
     steam_id: str = Field(..., description="Steam ID (STEAM_0:X:XXXXX)")
-    kills: int = Field(default=0, ge=0)
-    deaths: int = Field(default=0, ge=0)
-    headshots: int = Field(default=0, ge=0)
+    kills: int = Field(default=0, ge=0, le=100000)
+    deaths: int = Field(default=0, ge=0, le=100000)
+    headshots: int = Field(default=0, ge=0, le=100000)
     playtime_minutes: int = Field(default=0, ge=0)
     is_winner: bool = Field(default=False)
     is_mvp: bool = Field(default=False)

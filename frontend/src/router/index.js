@@ -28,6 +28,12 @@ const routes = [
     meta: { title: 'Sunucu Detayı' }
   },
   {
+    path: '/community-servers',
+    name: 'community-servers',
+    component: () => import('@/views/CommunityServers.vue'),
+    meta: { title: 'Topluluk Sunucuları' }
+  },
+  {
     path: '/forum',
     name: 'forum',
     component: () => import('@/views/Forum.vue'),
@@ -56,6 +62,30 @@ const routes = [
     name: 'leaderboard',
     component: () => import('@/views/Leaderboard.vue'),
     meta: { title: 'Sıralama' }
+  },
+  {
+    path: '/tournaments',
+    name: 'tournaments',
+    component: () => import('@/views/Tournaments.vue'),
+    meta: { title: 'Turnuvalar' }
+  },
+  {
+    path: '/tournaments/:id',
+    name: 'tournament-detail',
+    component: () => import('@/views/TournamentDetail.vue'),
+    meta: { title: 'Turnuva Detayı' }
+  },
+  {
+    path: '/clans',
+    name: 'clans',
+    component: () => import('@/views/Clans.vue'),
+    meta: { title: 'Klanlar' }
+  },
+  {
+    path: '/clans/:id',
+    name: 'clan-detail',
+    component: () => import('@/views/ClanDetail.vue'),
+    meta: { title: 'Klan Detayı' }
   },
   {
     path: '/jackpot',
@@ -146,6 +176,12 @@ const routes = [
     name: 'admin-forum',
     component: () => import('@/views/admin/Forum.vue'),
     meta: { title: 'Forum Yönetimi', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/maintenance',
+    name: 'admin-maintenance',
+    component: () => import('@/views/admin/Maintenance.vue'),
+    meta: { title: 'Bakım Modu', requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/login',

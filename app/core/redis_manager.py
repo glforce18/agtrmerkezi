@@ -29,8 +29,14 @@ class RedisManager:
     async def connect(self):
         """Connect to Redis"""
         try:
+            # Build connection URL with optional password
+            if settings.REDIS_PASSWORD:
+                redis_url = f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}"
+            else:
+                redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}"
+
             self.redis = await aioredis.from_url(
-                f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}",
+                redis_url,
                 encoding="utf-8",
                 decode_responses=True,
                 max_connections=20
@@ -67,12 +73,14 @@ class RedisManager:
             logger.error(f"Redis GET error: {e}")
             return None
 
-    async def set(self, key: str, value: str, expire: Optional[int] = None):
-        """Set value in Redis"""
+    async def set(self, key: str, value: str, expire: Optional[int] = None, ttl: Optional[int] = None):
+        """Set value in Redis. Accepts both 'expire' and 'ttl' parameters for compatibility."""
         if not self.redis:
             return
         try:
-            await self.redis.set(key, value, ex=expire)
+            # Use ttl if expire is not provided (for backward compatibility)
+            expiration = expire if expire is not None else ttl
+            await self.redis.set(key, value, ex=expiration)
         except RedisError as e:
             logger.error(f"Redis SET error: {e}")
 

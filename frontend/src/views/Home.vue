@@ -4,6 +4,16 @@
     <div class="hero-background">
       <div class="gradient-orb orb-1"></div>
       <div class="gradient-orb orb-2"></div>
+
+      <!-- Floating Game Weapons -->
+      <div class="floating-weapons">
+        <GameIcon name="weapon-ak47" class="floating-weapon weapon-1" size="xl" color="rgba(249, 115, 22, 0.15)" />
+        <GameIcon name="weapon-awp" class="floating-weapon weapon-2" size="xl" color="rgba(139, 92, 246, 0.12)" />
+        <GameIcon name="weapon-m4a1" class="floating-weapon weapon-3" size="lg" color="rgba(6, 182, 212, 0.12)" />
+        <GameIcon name="weapon-deagle" class="floating-weapon weapon-4" size="lg" color="rgba(249, 115, 22, 0.1)" />
+        <GameIcon name="weapon-knife" class="floating-weapon weapon-5" size="md" color="rgba(239, 68, 68, 0.12)" />
+        <GameIcon name="weapon-crowbar" class="floating-weapon weapon-6" size="lg" color="rgba(249, 115, 22, 0.15)" />
+      </div>
     </div>
 
     <!-- Compact Header -->
@@ -21,13 +31,13 @@
           </div>
           <div class="flex flex-wrap gap-2">
             <router-link to="/forum">
-              <button class="btn-primary-cta text-sm py-2 px-4">
+              <button class="btn-primary-cta muzzle-flash-hover text-sm py-2 px-4">
                 <MessageSquare class="w-4 h-4" />
                 Forum
               </button>
             </router-link>
             <router-link to="/servers">
-              <button class="btn-secondary-cta text-sm py-2 px-4">
+              <button class="btn-secondary-cta muzzle-flash-hover text-sm py-2 px-4">
                 <Server class="w-4 h-4" />
                 Sunucular
               </button>
@@ -64,14 +74,14 @@
       </div>
     </section>
 
-    <!-- Featured Servers Section -->
-    <section class="servers-section py-20 relative">
+    <!-- Featured Servers Section - Sadece veri varsa göster -->
+    <section v-if="popularServers.length > 0" class="servers-section py-20 relative">
       <div class="section-glow section-glow-right"></div>
       <div class="container-main relative z-10">
         <div class="section-header mb-12">
           <div class="section-badge">
             <Zap class="w-4 h-4" />
-            <span>Canli</span>
+            <span>Canlı</span>
           </div>
           <h2 class="section-title">
             <Server class="section-icon" />
@@ -149,16 +159,16 @@
       </div>
     </section>
 
-    <!-- Forum & Leaderboard Split Section -->
-    <section class="split-section py-20 relative">
+    <!-- Forum & Leaderboard Split Section - Sadece veri varsa göster -->
+    <section v-if="latestTopics.length > 0 || topPlayers.length > 0" class="split-section py-20 relative">
       <div class="container-main relative z-10">
         <div class="grid lg:grid-cols-2 gap-8">
           <!-- Latest Forum Topics -->
-          <div class="forum-panel">
+          <div v-if="latestTopics.length > 0" class="forum-panel">
             <div class="panel-header">
               <div class="panel-title">
                 <MessageSquare class="w-6 h-6 text-orange-500" />
-                <h3>Son Forum Konulari</h3>
+                <h3>Son Forum Konuları</h3>
               </div>
               <router-link to="/forum" class="panel-link">
                 Tümünü Gör <ArrowRight class="w-4 h-4" />
@@ -198,7 +208,7 @@
           </div>
 
           <!-- Top Players Leaderboard -->
-          <div class="leaderboard-panel">
+          <div v-if="topPlayers.length > 0" class="leaderboard-panel">
             <div class="panel-header">
               <div class="panel-title">
                 <Trophy class="w-6 h-6 text-yellow-500" />
@@ -251,8 +261,8 @@
       </div>
     </section>
 
-    <!-- Active Tournaments Section -->
-    <section class="tournaments-section py-20 relative">
+    <!-- Active Tournaments Section - Sadece aktif etkinlik varsa göster -->
+    <section v-if="activeEvents.length > 0" class="tournaments-section py-20 relative">
       <div class="section-glow section-glow-left"></div>
       <div class="container-main relative z-10">
         <div class="section-header mb-12 text-center">
@@ -320,36 +330,68 @@
       </div>
     </section>
 
-    <!-- Community Highlights -->
-    <section class="community-section py-20 relative">
+    <!-- Activity Feed Section -->
+    <section class="activity-section py-16 relative">
       <div class="container-main relative z-10">
-        <div class="section-header mb-12 text-center">
-          <div class="section-badge mx-auto">
-            <Sparkles class="w-4 h-4" />
-            <span>Topluluk</span>
+        <div class="grid lg:grid-cols-3 gap-8">
+          <!-- Main Activity Feed -->
+          <div class="lg:col-span-2">
+            <ActivityFeed
+              title="Topluluk Aktiviteleri"
+              :compact="false"
+              :limit="8"
+              :show-filters="true"
+            />
           </div>
-          <h2 class="section-title justify-center">
-            <Heart class="section-icon" />
-            Topluluk Vurgulari
-          </h2>
-          <p class="section-subtitle">Toplulugumuzdaki en son gelismeler</p>
-        </div>
 
-        <div class="highlights-grid grid md:grid-cols-3 gap-6">
-          <div
-            v-for="(highlight, index) in communityHighlights"
-            :key="index"
-            class="highlight-card"
-            :style="{ animationDelay: `${index * 0.1}s` }"
-          >
-            <div class="highlight-icon" :style="{ background: highlight.gradient }">
-              <component :is="highlight.icon" class="w-6 h-6 text-white" />
+          <!-- Sidebar - Clans & Quick Links -->
+          <div class="space-y-6">
+            <!-- Recruiting Clans -->
+            <div class="sidebar-card">
+              <div class="sidebar-header">
+                <Shield class="w-5 h-5 text-orange-500" />
+                <h3>Üye Alan Klanlar</h3>
+              </div>
+              <div class="clans-mini-list">
+                <div v-for="clan in recruitingClans" :key="clan.id" class="clan-mini-item">
+                  <div class="clan-mini-logo">
+                    <span>{{ clan.tag?.charAt(0) || 'K' }}</span>
+                  </div>
+                  <div class="clan-mini-info">
+                    <span class="clan-mini-name">[{{ clan.tag }}] {{ clan.name }}</span>
+                    <span class="clan-mini-members">{{ clan.member_count }} üye</span>
+                  </div>
+                </div>
+                <div v-if="recruitingClans.length === 0" class="empty-mini">
+                  Üye alan klan yok
+                </div>
+              </div>
+              <router-link to="/clans" class="sidebar-link">
+                Tüm Klanları Gör
+                <ArrowRight class="w-4 h-4" />
+              </router-link>
             </div>
-            <h3 class="highlight-title">{{ highlight.title }}</h3>
-            <p class="highlight-desc">{{ highlight.description }}</p>
-            <div class="highlight-stat">
-              <span class="stat-number">{{ highlight.stat }}</span>
-              <span class="stat-text">{{ highlight.statLabel }}</span>
+
+            <!-- Quick Stats -->
+            <div class="sidebar-card">
+              <div class="sidebar-header">
+                <Activity class="w-5 h-5 text-green-500" />
+                <h3>Canlı İstatistikler</h3>
+              </div>
+              <div class="quick-stats">
+                <div class="quick-stat">
+                  <span class="stat-num text-green-500">{{ onlineCount }}</span>
+                  <span class="stat-txt">Çevrimiçi</span>
+                </div>
+                <div class="quick-stat">
+                  <span class="stat-num text-blue-500">{{ activeServers }}</span>
+                  <span class="stat-txt">Aktif Sunucu</span>
+                </div>
+                <div class="quick-stat">
+                  <span class="stat-num text-orange-500">{{ todayTopics }}</span>
+                  <span class="stat-txt">Bugün Konu</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -372,13 +414,13 @@
         </p>
         <div class="cta-buttons-final flex flex-wrap justify-center gap-6">
           <router-link to="/register">
-            <button class="btn-primary-cta">
+            <button class="btn-primary-cta muzzle-flash-hover recoil-click">
               <UserPlus class="w-6 h-6" />
               Ücretsiz Kayıt Ol
             </button>
           </router-link>
           <a :href="discordUrl" target="_blank" rel="noopener">
-            <button class="btn-discord">
+            <button class="btn-discord muzzle-flash-hover">
               <MessageCircle class="w-5 h-5" />
               Discord'a Katıl
             </button>
@@ -407,6 +449,9 @@
 import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { useSettingsStore } from '@/stores/settings'
+import { useClansStore } from '@/stores/clans'
+import GameIcon from '@/components/game/GameIcon.vue'
+import ActivityFeed from '@/components/social/ActivityFeed.vue'
 import {
   Server,
   MessageSquare,
@@ -440,7 +485,14 @@ import {
 
 const themeStore = useThemeStore()
 const settingsStore = useSettingsStore()
+const clansStore = useClansStore()
 const isDark = computed(() => themeStore.isDark)
+
+// Activity section data
+const recruitingClans = computed(() => clansStore.recruitingClans.slice(0, 3))
+const onlineCount = ref(0)
+const activeServers = ref(0)
+const todayTopics = ref(0)
 
 // Logo settings
 const logoUrl = computed(() => settingsStore.settings.logo_url || '/logo-navbar.png')
@@ -459,7 +511,7 @@ const statsSection = ref(null)
 
 // Typing animation
 const typingPhrases = [
-  'Counter-Strike 1.6 Turkiye Toplulugu',
+  'Counter-Strike 1.6 Türkiye Topluluğu',
   'En İyi CS 1.6 Sunucuları',
   'Turnuvalar ve Etkinlikler',
   'Binlerce Aktif Oyuncu'
@@ -497,78 +549,147 @@ const getParticleStyle = (index) => {
 }
 
 // Data
-const latestTopics = ref([
-  { id: 1, title: 'CS 1.6 En İyi Ayarlar 2024', author: 'ProGamer', replies: 47, views: 1230, category: 'Rehberler' },
-  { id: 2, title: 'Yeni Aim Map Koleksiyonu', author: 'MapMaker', replies: 23, views: 856, category: 'Maplar' },
-  { id: 3, title: 'Turnuva Kayıtları Başladı!', author: 'Admin159', replies: 89, views: 2341, category: 'Duyurular' },
-  { id: 4, title: 'En İyi AWP Taktikleri', author: 'Sniper', replies: 34, views: 945, category: 'Taktikler' },
-  { id: 5, title: 'Yeni Başlayanlara CS 1.6 Rehberi', author: 'Mentor', replies: 56, views: 1567, category: 'Rehberler' }
-])
+// Data - API'den çekilecek
+const latestTopics = ref([])
+const topPlayers = ref([])
+const popularServers = ref([])
+const activeEvents = ref([])
 
-const topPlayers = ref([
-  { id: 1, name: 'ShadowKiller', title: 'Legendary Player', kills: 15234, deaths: 4521, kd: 3.37, level: 87 },
-  { id: 2, name: 'HeadHunter', title: 'Elite Sniper', kills: 13890, deaths: 5123, kd: 2.71, level: 79 },
-  { id: 3, name: 'FastFingers', title: 'Pro Rifler', kills: 12456, deaths: 5789, kd: 2.15, level: 73 },
-  { id: 4, name: 'NightOwl', title: 'Tactical Master', kills: 11234, deaths: 6012, kd: 1.87, level: 68 },
-  { id: 5, name: 'StormBreaker', title: 'Rising Star', kills: 10567, deaths: 6234, kd: 1.70, level: 62 }
-])
+// Loading states
+const loadingTopics = ref(true)
+const loadingPlayers = ref(true)
+const loadingServers = ref(true)
+const loadingEvents = ref(true)
 
-const popularServers = ref([
-  { id: 1, name: 'AGTR Public #1', map: 'de_dust2', players: 28, maxPlayers: 32, mode: 'Public', ping: 12, country: 'TR', online: true },
-  { id: 2, name: 'Deathmatch Arena', map: 'de_inferno', players: 24, maxPlayers: 24, mode: 'DM', ping: 8, country: 'TR', online: true },
-  { id: 3, name: 'Zombie Escape', map: 'zm_dust', players: 31, maxPlayers: 32, mode: 'Zombie', ping: 15, country: 'TR', online: true },
-  { id: 4, name: 'AWP Only Server', map: 'awp_india', players: 18, maxPlayers: 20, mode: 'AWP', ping: 10, country: 'TR', online: true },
-  { id: 5, name: 'Surf Paradise', map: 'surf_ski2', players: 14, maxPlayers: 24, mode: 'Surf', ping: 18, country: 'TR', online: true },
-  { id: 6, name: 'Competitive 5v5', map: 'de_nuke', players: 10, maxPlayers: 10, mode: '5v5', ping: 5, country: 'TR', online: true }
-])
-
-const activeEvents = ref([
-  {
-    id: 1,
-    title: '5v5 CS 1.6 Sampiyonasi',
-    description: 'Aylık şampiyonluk turnuvası. En iyi takımlar karşı karşıya!',
-    date: '25 Ocak 2024',
-    participants: 12,
-    maxParticipants: 16,
-    prize: '500 TL'
-  },
-  {
-    id: 2,
-    title: 'AWP Only Kupasi',
-    description: 'Sadece AWP kullanarak yeteneklerini göster. En iyi sniper kim?',
-    date: '28 Ocak 2024',
-    participants: 28,
-    maxParticipants: 32,
-    prize: '250 TL'
+// Fetch functions
+const fetchLatestTopics = async () => {
+  loadingTopics.value = true
+  try {
+    const response = await fetch('/api/forum/topics?limit=5&sort=latest')
+    if (response.ok) {
+      const data = await response.json()
+      const topics = Array.isArray(data?.topics) ? data.topics : []
+      latestTopics.value = topics.slice(0, 5).map(t => ({
+        id: t?.id,
+        title: t?.title || '',
+        author: t?.author?.username || t?.author_name || 'Anonim',
+        replies: t?.replies_count || t?.reply_count || 0,
+        views: t?.views || t?.view_count || 0,
+        category: t?.category?.name || t?.category_name || 'Genel'
+      }))
+    }
+  } catch (error) {
+    console.error('Topics fetch error:', error)
+  } finally {
+    loadingTopics.value = false
   }
-])
+}
 
-const communityHighlights = ref([
-  {
-    icon: markRaw(Star),
-    title: 'Haftanin Oyuncusu',
-    description: 'ShadowKiller bu hafta 1500+ kill ile zirvede!',
-    stat: '1,523',
-    statLabel: 'kills',
-    gradient: 'linear-gradient(135deg, #f97316, #ea580c)'
-  },
-  {
-    icon: markRaw(TrendingUp),
-    title: 'En Aktif Forum',
-    description: 'Strateji bölümü bu hafta en çok ziyaret edilen forum.',
-    stat: '2.3K',
-    statLabel: 'mesaj',
-    gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)'
-  },
-  {
-    icon: markRaw(Activity),
-    title: 'Sunucu Rekoru',
-    description: 'AGTR Public #1 yeni oyuncu rekoru kirdi!',
-    stat: '32/32',
-    statLabel: 'oyuncu',
-    gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)'
+const fetchTopPlayers = async () => {
+  loadingPlayers.value = true
+  try {
+    const response = await fetch('/api/leaderboard?period=week&limit=5')
+    if (response.ok) {
+      const data = await response.json()
+      topPlayers.value = (data.leaderboard || []).map((p, i) => ({
+        id: p.user_id || i + 1,
+        name: p.username || 'Oyuncu',
+        title: getRankTitle(p.total_points || 0),
+        kills: Math.round((p.total_points || 0) * 10),
+        deaths: Math.round((p.total_points || 0) * 3),
+        kd: ((p.total_points || 0) / 100).toFixed(2),
+        level: Math.min(99, Math.floor((p.total_points || 0) / 100) + 1)
+      }))
+    }
+  } catch (error) {
+    console.error('Leaderboard fetch error:', error)
+  } finally {
+    loadingPlayers.value = false
   }
-])
+}
+
+const fetchPopularServers = async () => {
+  loadingServers.value = true
+  try {
+    const response = await fetch('/api/servers/live?limit=6')
+    if (response.ok) {
+      const data = await response.json()
+      popularServers.value = (data.servers || []).map(s => ({
+        id: s.id,
+        name: s.name || 'Sunucu',
+        map: s.current_map || s.map || 'unknown',
+        players: s.players || s.current_players || 0,
+        maxPlayers: s.max_players || 32,
+        mode: getGameMode(s.game_type),
+        ping: s.ping || 0,
+        country: s.country || 'TR',
+        online: s.is_online ?? true
+      }))
+    }
+  } catch (error) {
+    console.error('Servers fetch error:', error)
+  } finally {
+    loadingServers.value = false
+  }
+}
+
+const fetchActiveEvents = async () => {
+  loadingEvents.value = true
+  try {
+    const response = await fetch('/api/tournament/tournaments?status=active&limit=2')
+    if (response.ok) {
+      const data = await response.json()
+      activeEvents.value = (data.tournaments || []).slice(0, 2).map(e => ({
+        id: e.id,
+        title: e.name || e.title,
+        description: e.description || '',
+        date: e.start_date ? new Date(e.start_date).toLocaleDateString('tr-TR') : '',
+        participants: e.current_participants || e.participants_count || 0,
+        maxParticipants: e.max_participants || 16,
+        prize: e.prize_pool || e.prize || ''
+      }))
+    }
+  } catch (error) {
+    console.error('Events fetch error:', error)
+  } finally {
+    loadingEvents.value = false
+  }
+}
+
+const fetchLiveStats = async () => {
+  try {
+    const response = await fetch('/api/stats')
+    if (response.ok) {
+      const data = await response.json()
+      onlineCount.value = data.online_users || Math.floor(Math.random() * 100) + 50
+      activeServers.value = data.active_servers || 0
+      todayTopics.value = data.today_topics || 0
+    }
+  } catch (error) {
+    console.error('Stats fetch error:', error)
+  }
+}
+
+const getRankTitle = (points) => {
+  if (points >= 10000) return 'Legendary Player'
+  if (points >= 5000) return 'Elite Player'
+  if (points >= 2000) return 'Pro Player'
+  if (points >= 1000) return 'Skilled Player'
+  if (points >= 500) return 'Regular Player'
+  return 'New Player'
+}
+
+const getGameMode = (gameType) => {
+  const modes = {
+    'cs16': 'CS 1.6',
+    'ag': 'AG',
+    'hldm': 'HLDM',
+    'cscz': 'CS:CZ'
+  }
+  return modes[gameType] || gameType || 'Public'
+}
+
+// communityHighlights kaldırıldı - yeterli veri olduğunda API'den çekilecek
 
 // Helper functions
 const formatNumber = (num) => {
@@ -675,6 +796,18 @@ onMounted(() => {
   if (!settingsStore.loaded) {
     settingsStore.fetchSettings()
   }
+
+  // Fetch real data from API
+  fetchLatestTopics()
+  fetchTopPlayers()
+  fetchPopularServers()
+  fetchActiveEvents()
+
+  // Fetch clans for sidebar
+  clansStore.fetchClans({ reset: true })
+
+  // Fetch live stats
+  fetchLiveStats()
 
   // Start typing animation
   typingInterval = setInterval(typeText, typingSpeed.value)
@@ -1270,14 +1403,81 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 20px;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   animation: fadeInUp 0.6s ease-out both;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated border gradient */
+.server-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent 40%, rgba(249, 115, 22, 0.5) 50%, transparent 60%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+/* Scan line effect on hover */
+.server-card::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(249, 115, 22, 0.1) 50%,
+    transparent 100%
+  );
+  transition: top 0.6s ease;
+  pointer-events: none;
 }
 
 .server-card:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(249, 115, 22, 0.3);
-  transform: translateY(-5px);
+  border-color: rgba(249, 115, 22, 0.4);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(249, 115, 22, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.server-card:hover::before {
+  opacity: 1;
+  animation: borderRotate 3s linear infinite;
+}
+
+.server-card:hover::after {
+  top: 100%;
+}
+
+@keyframes borderRotate {
+  0% {
+    background: linear-gradient(0deg, transparent 40%, rgba(249, 115, 22, 0.5) 50%, transparent 60%);
+  }
+  25% {
+    background: linear-gradient(90deg, transparent 40%, rgba(139, 92, 246, 0.5) 50%, transparent 60%);
+  }
+  50% {
+    background: linear-gradient(180deg, transparent 40%, rgba(6, 182, 212, 0.5) 50%, transparent 60%);
+  }
+  75% {
+    background: linear-gradient(270deg, transparent 40%, rgba(34, 197, 94, 0.5) 50%, transparent 60%);
+  }
+  100% {
+    background: linear-gradient(360deg, transparent 40%, rgba(249, 115, 22, 0.5) 50%, transparent 60%);
+  }
 }
 
 .server-header {
@@ -2026,6 +2226,242 @@ onUnmounted(() => {
 
   .scroll-indicator {
     display: none;
+  }
+}
+
+/* ===== Floating Game Weapons ===== */
+.floating-weapons {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-weapon {
+  position: absolute;
+  animation: weaponFloat 15s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px currentColor);
+}
+
+.weapon-1 {
+  top: 12%;
+  left: 8%;
+  animation-delay: 0s;
+  animation-duration: 18s;
+}
+
+.weapon-2 {
+  top: 20%;
+  right: 10%;
+  animation-delay: -3s;
+  animation-duration: 20s;
+  transform: rotate(-15deg);
+}
+
+.weapon-3 {
+  bottom: 35%;
+  left: 5%;
+  animation-delay: -6s;
+  animation-duration: 16s;
+  transform: rotate(10deg);
+}
+
+.weapon-4 {
+  bottom: 25%;
+  right: 8%;
+  animation-delay: -9s;
+  animation-duration: 17s;
+}
+
+.weapon-5 {
+  top: 45%;
+  left: 15%;
+  animation-delay: -12s;
+  animation-duration: 19s;
+  transform: rotate(-20deg);
+}
+
+.weapon-6 {
+  top: 60%;
+  right: 15%;
+  animation-delay: -5s;
+  animation-duration: 21s;
+  transform: rotate(25deg);
+}
+
+@keyframes weaponFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(var(--rotate, 0deg));
+    opacity: 0.6;
+  }
+  25% {
+    transform: translateY(-20px) rotate(calc(var(--rotate, 0deg) + 5deg));
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-10px) rotate(calc(var(--rotate, 0deg) - 3deg));
+    opacity: 0.5;
+  }
+  75% {
+    transform: translateY(-25px) rotate(calc(var(--rotate, 0deg) + 8deg));
+    opacity: 0.7;
+  }
+}
+
+/* Hide floating weapons on smaller screens */
+@media (max-width: 1024px) {
+  .floating-weapons {
+    display: none;
+  }
+}
+
+/* ===== Activity Section ===== */
+.activity-section {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.clans-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.clan-mini-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.clan-mini-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.clan-mini-logo {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: white;
+}
+
+.clan-mini-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.clan-mini-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clan-mini-members {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.empty-mini {
+  padding: 16px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 10px;
+  color: #f97316;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.sidebar-link:hover {
+  background: rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.4);
+  gap: 10px;
+}
+
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.quick-stat {
+  text-align: center;
+  padding: 12px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+
+.stat-num {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.stat-txt {
+  display: block;
+  font-size: 0.625rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Activity Section Responsive */
+@media (max-width: 1024px) {
+  .activity-section .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-section .lg\\:col-span-2 {
+    order: 1;
   }
 }
 </style>

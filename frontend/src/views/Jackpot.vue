@@ -1,5 +1,8 @@
 <template>
   <div class="jackpot-page">
+    <!-- Maintenance Check -->
+    <MaintenanceOverlay feature="jackpot" />
+
     <!-- Animated Background -->
     <div class="animated-bg">
       <div class="bg-glow glow-1"></div>
@@ -373,6 +376,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
 import {
   Trophy as TrophyIcon,
   Users as UsersIcon,

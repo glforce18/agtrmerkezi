@@ -164,7 +164,7 @@ class SessionManager:
         # Store session
         ttl = SessionManager.REMEMBER_ME_TTL if remember_me else SessionManager.SESSION_TTL
         session_key = SessionManager._get_session_key(session_id)
-        await redis_manager.set(session_key, json.dumps(session_data), ttl=ttl)
+        await redis_manager.set(session_key, json.dumps(session_data), expire=ttl)
 
         # Add to user's active sessions
         user_sessions_key = SessionManager._get_user_sessions_key(user_id)
@@ -200,7 +200,7 @@ class SessionManager:
 
             session_key = SessionManager._get_session_key(session_id)
             ttl = SessionManager.REMEMBER_ME_TTL if session_data.get("remember_me") else SessionManager.SESSION_TTL
-            await redis_manager.set(session_key, json.dumps(session_data), ttl=ttl)
+            await redis_manager.set(session_key, json.dumps(session_data), expire=ttl)
 
     @staticmethod
     async def delete_session(session_id: str):

@@ -3,14 +3,11 @@
     <!-- Trigger Button -->
     <button
       class="notification-trigger"
-      :class="{ 'has-unread': unreadCount > 0 }"
+      :class="{ 'has-unread': hasUnread }"
       @click="togglePanel"
     >
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      </svg>
-      <span v-if="unreadCount > 0" class="unread-badge">
+      <Bell class="w-5 h-5" />
+      <span v-if="hasUnread" class="unread-badge">
         {{ unreadCount > 99 ? '99+' : unreadCount }}
       </span>
     </button>
@@ -21,81 +18,189 @@
         <!-- Header -->
         <div class="panel-header">
           <h3>Bildirimler</h3>
-          <button
-            v-if="unreadCount > 0"
-            class="mark-all-read"
-            @click="markAllAsRead"
-          >
-            Tümünü Okundu İşaretle
-          </button>
+          <div class="header-actions">
+            <button
+              v-if="hasUnread"
+              class="mark-all-read"
+              @click="handleMarkAllAsRead"
+            >
+              Tümünü Okundu İşaretle
+            </button>
+            <button class="settings-btn" @click="toggleSound">
+              <VolumeX v-if="!settings.sound" class="w-4 h-4" />
+              <Volume2 v-else class="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <!-- Tabs -->
         <div class="panel-tabs">
           <button
-            v-for="tab in tabs"
-            :key="tab.id"
             class="tab-btn"
-            :class="{ active: activeTab === tab.id }"
-            @click="activeTab = tab.id"
+            :class="{ active: activeTab === 'all' }"
+            @click="activeTab = 'all'"
           >
-            {{ tab.label }}
-            <span v-if="tab.count > 0" class="tab-count">{{ tab.count }}</span>
+            Tümü
+          </button>
+          <button
+            class="tab-btn"
+            :class="{ active: activeTab === 'unread' }"
+            @click="activeTab = 'unread'"
+          >
+            Okunmamış
+            <span v-if="unreadCount > 0" class="tab-count">{{ unreadCount }}</span>
           </button>
         </div>
 
         <!-- Content -->
-        <div class="panel-content">
+        <div class="panel-content" ref="contentRef">
           <!-- Loading -->
-          <div v-if="loading" class="loading-state">
-            <div class="spinner"></div>
+          <div v-if="loading && notifications.length === 0" class="loading-state">
+            <n-spin size="small" />
             <span>Yükleniyor...</span>
           </div>
 
           <!-- Empty -->
-          <div v-else-if="filteredNotifications.length === 0" class="empty-state">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            <p>Bildirim yok</p>
+          <div v-else-if="displayedNotifications.length === 0" class="empty-state">
+            <BellOff class="w-12 h-12" />
+            <p v-if="activeTab === 'unread'">Okunmamış bildirim yok</p>
+            <p v-else>Henüz bildirim yok</p>
           </div>
 
           <!-- Notifications List -->
           <div v-else class="notifications-list">
-            <TransitionGroup name="list">
+            <!-- Grouped by Date -->
+            <template v-if="activeTab === 'all'">
+              <div v-if="groupedNotifications.today.length > 0" class="notification-group">
+                <div class="group-label">Bugün</div>
+                <div
+                  v-for="notification in groupedNotifications.today"
+                  :key="notification.id"
+                  class="notification-item"
+                  :class="{ unread: !notification.read_at }"
+                  @click="handleNotificationClick(notification)"
+                >
+                  <div class="notification-icon" :style="{ background: getIconBg(notification.type) }">
+                    <span>{{ getNotificationIcon(notification.type) }}</span>
+                  </div>
+                  <div class="notification-content">
+                    <p class="notification-title">{{ notification.title }}</p>
+                    <p class="notification-message">{{ notification.message }}</p>
+                    <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
+                  </div>
+                  <button class="delete-btn" @click.stop="handleDelete(notification.id)">
+                    <X class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="groupedNotifications.yesterday.length > 0" class="notification-group">
+                <div class="group-label">Dün</div>
+                <div
+                  v-for="notification in groupedNotifications.yesterday"
+                  :key="notification.id"
+                  class="notification-item"
+                  :class="{ unread: !notification.read_at }"
+                  @click="handleNotificationClick(notification)"
+                >
+                  <div class="notification-icon" :style="{ background: getIconBg(notification.type) }">
+                    <span>{{ getNotificationIcon(notification.type) }}</span>
+                  </div>
+                  <div class="notification-content">
+                    <p class="notification-title">{{ notification.title }}</p>
+                    <p class="notification-message">{{ notification.message }}</p>
+                    <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
+                  </div>
+                  <button class="delete-btn" @click.stop="handleDelete(notification.id)">
+                    <X class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="groupedNotifications.thisWeek.length > 0" class="notification-group">
+                <div class="group-label">Bu Hafta</div>
+                <div
+                  v-for="notification in groupedNotifications.thisWeek"
+                  :key="notification.id"
+                  class="notification-item"
+                  :class="{ unread: !notification.read_at }"
+                  @click="handleNotificationClick(notification)"
+                >
+                  <div class="notification-icon" :style="{ background: getIconBg(notification.type) }">
+                    <span>{{ getNotificationIcon(notification.type) }}</span>
+                  </div>
+                  <div class="notification-content">
+                    <p class="notification-title">{{ notification.title }}</p>
+                    <p class="notification-message">{{ notification.message }}</p>
+                    <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
+                  </div>
+                  <button class="delete-btn" @click.stop="handleDelete(notification.id)">
+                    <X class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="groupedNotifications.older.length > 0" class="notification-group">
+                <div class="group-label">Daha Eski</div>
+                <div
+                  v-for="notification in groupedNotifications.older"
+                  :key="notification.id"
+                  class="notification-item"
+                  :class="{ unread: !notification.read_at }"
+                  @click="handleNotificationClick(notification)"
+                >
+                  <div class="notification-icon" :style="{ background: getIconBg(notification.type) }">
+                    <span>{{ getNotificationIcon(notification.type) }}</span>
+                  </div>
+                  <div class="notification-content">
+                    <p class="notification-title">{{ notification.title }}</p>
+                    <p class="notification-message">{{ notification.message }}</p>
+                    <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
+                  </div>
+                  <button class="delete-btn" @click.stop="handleDelete(notification.id)">
+                    <X class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Unread Only -->
+            <template v-else>
               <div
-                v-for="notification in filteredNotifications"
+                v-for="notification in unreadNotifications"
                 :key="notification.id"
-                class="notification-item"
-                :class="{ unread: !notification.read }"
+                class="notification-item unread"
                 @click="handleNotificationClick(notification)"
               >
-                <div class="notification-icon" :class="notification.type">
-                  <component :is="getIcon(notification.type)" />
+                <div class="notification-icon" :style="{ background: getIconBg(notification.type) }">
+                  <span>{{ getNotificationIcon(notification.type) }}</span>
                 </div>
                 <div class="notification-content">
+                  <p class="notification-title">{{ notification.title }}</p>
                   <p class="notification-message">{{ notification.message }}</p>
                   <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
                 </div>
-                <button
-                  class="delete-btn"
-                  @click.stop="deleteNotification(notification.id)"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
+                <button class="delete-btn" @click.stop="handleDelete(notification.id)">
+                  <X class="w-4 h-4" />
                 </button>
               </div>
-            </TransitionGroup>
+            </template>
+
+            <!-- Load More -->
+            <div v-if="pagination.hasMore" class="load-more">
+              <button class="load-more-btn" @click="loadMore" :disabled="loading">
+                {{ loading ? 'Yükleniyor...' : 'Daha Fazla Yükle' }}
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Footer -->
         <div class="panel-footer">
-          <button class="view-all-btn" @click="viewAll">
-            Tümünü Gör
-          </button>
+          <router-link to="/notifications" class="view-all-btn" @click="closePanel">
+            Tüm Bildirimleri Gör
+            <ChevronRight class="w-4 h-4" />
+          </router-link>
         </div>
       </div>
     </Transition>
@@ -108,84 +213,96 @@
         @click="closePanel"
       ></div>
     </Transition>
+
+    <!-- Toast Notifications -->
+    <Teleport to="body">
+      <TransitionGroup name="toast" tag="div" class="toast-container">
+        <div
+          v-for="toast in toastQueue"
+          :key="toast.id"
+          class="toast-notification"
+          :class="[toast.priority]"
+          @click="handleToastClick(toast)"
+        >
+          <div class="toast-icon" :style="{ background: getIconBg(toast.type) }">
+            {{ getNotificationIcon(toast.type) }}
+          </div>
+          <div class="toast-content">
+            <span class="toast-title">{{ toast.title }}</span>
+            <span class="toast-message">{{ toast.message }}</span>
+          </div>
+          <button class="toast-close" @click.stop="dismissToast(toast.id)">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+      </TransitionGroup>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, h } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatDistanceToNow } from 'date-fns'
-import { tr } from 'date-fns/locale'
+import { storeToRefs } from 'pinia'
+import { Bell, BellOff, X, ChevronRight, Volume2, VolumeX } from 'lucide-vue-next'
+import { useNotificationsStore } from '@/stores/notifications'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const notificationsStore = useNotificationsStore()
+const authStore = useAuthStore()
 
-// State
+const {
+  notifications,
+  unreadCount,
+  hasUnread,
+  unreadNotifications,
+  groupedNotifications,
+  loading,
+  pagination,
+  settings
+} = storeToRefs(notificationsStore)
+
+const { getNotificationIcon, getNotificationColor } = notificationsStore
+
+// Local state
 const isPanelOpen = ref(false)
 const activeTab = ref('all')
-const loading = ref(false)
-const notifications = ref([])
-
-// Tabs configuration
-const tabs = computed(() => [
-  { id: 'all', label: 'Tümü', count: notifications.value.length },
-  { id: 'unread', label: 'Okunmamış', count: unreadCount.value },
-  { id: 'system', label: 'Sistem', count: notifications.value.filter(n => n.type === 'system').length },
-])
+const contentRef = ref(null)
+const toastQueue = ref([])
 
 // Computed
-const unreadCount = computed(() =>
-  notifications.value.filter(n => !n.read).length
-)
-
-const filteredNotifications = computed(() => {
-  let result = [...notifications.value]
-
-  switch (activeTab.value) {
-    case 'unread':
-      result = result.filter(n => !n.read)
-      break
-    case 'system':
-      result = result.filter(n => n.type === 'system')
-      break
+const displayedNotifications = computed(() => {
+  if (activeTab.value === 'unread') {
+    return unreadNotifications.value
   }
-
-  return result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  return notifications.value
 })
 
-// Icons based on notification type
-const getIcon = (type) => {
-  const icons = {
-    success: () => h('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-      h('path', { d: 'M22 11.08V12a10 10 0 1 1-5.93-9.14' }),
-      h('path', { d: 'M22 4L12 14.01l-3-3' })
-    ]),
-    error: () => h('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-      h('circle', { cx: 12, cy: 12, r: 10 }),
-      h('path', { d: 'M15 9l-6 6M9 9l6 6' })
-    ]),
-    warning: () => h('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-      h('path', { d: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z' }),
-      h('path', { d: 'M12 9v4M12 17h.01' })
-    ]),
-    info: () => h('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-      h('circle', { cx: 12, cy: 12, r: 10 }),
-      h('path', { d: 'M12 16v-4M12 8h.01' })
-    ]),
-    system: () => h('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-      h('path', { d: 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z' }),
-      h('circle', { cx: 12, cy: 12, r: 3 })
-    ])
-  }
-  return icons[type] || icons.info
+// Methods
+const getIconBg = (type) => {
+  const color = getNotificationColor(type)
+  return `${color}20`
 }
 
-// Format time
-const formatTime = (date) => {
-  if (!date) return ''
-  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: tr })
+const formatTime = (dateStr) => {
+  if (!dateStr) return ''
+
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now - date
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+
+  if (minutes < 1) return 'Az önce'
+  if (minutes < 60) return `${minutes} dk önce`
+  if (hours < 24) return `${hours} saat önce`
+  if (days < 7) return `${days} gün önce`
+
+  return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
 }
 
-// Actions
 const togglePanel = () => {
   isPanelOpen.value = !isPanelOpen.value
 }
@@ -194,103 +311,72 @@ const closePanel = () => {
   isPanelOpen.value = false
 }
 
-const markAllAsRead = async () => {
-  const token = localStorage.getItem('access_token')
-  if (!token) return
-
-  try {
-    const response = await fetch('/api/notifications/read-all', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-
-    if (response.ok) {
-      notifications.value.forEach(n => n.read = true)
-    }
-  } catch (error) {
-    // Error handled
-  }
-}
-
 const handleNotificationClick = async (notification) => {
-  // Mark as read via API if not already read
-  if (!notification.read) {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      try {
-        const response = await fetch(`/api/notifications/${notification.id}/read`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-
-        if (response.ok) {
-          notification.read = true
-        }
-      } catch (error) {
-        // Error handled
-      }
-    }
+  // Mark as read
+  if (!notification.read_at) {
+    await notificationsStore.markAsRead(notification.id)
   }
 
-  // Navigate if link exists
-  if (notification.link) {
-    router.push(notification.link)
+  // Navigate if has action URL
+  if (notification.action_url) {
     closePanel()
+    router.push(notification.action_url)
   }
 }
 
-const deleteNotification = async (id) => {
-  const token = localStorage.getItem('access_token')
-  if (!token) return
+const handleDelete = async (id) => {
+  await notificationsStore.deleteNotification(id)
+}
 
-  try {
-    const response = await fetch(`/api/notifications/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+const handleMarkAllAsRead = async () => {
+  await notificationsStore.markAllAsRead()
+}
 
-    if (response.ok) {
-      notifications.value = notifications.value.filter(n => n.id !== id)
+const toggleSound = () => {
+  notificationsStore.updateSettings({ sound: !settings.value.sound })
+}
+
+const loadMore = () => {
+  notificationsStore.loadMore()
+}
+
+// Toast functions
+const showToast = (notification) => {
+  if (isPanelOpen.value) return
+
+  toastQueue.value.push(notification)
+
+  setTimeout(() => {
+    dismissToast(notification.id)
+  }, 5000)
+}
+
+const dismissToast = (id) => {
+  const index = toastQueue.value.findIndex(t => t.id === id)
+  if (index !== -1) {
+    toastQueue.value.splice(index, 1)
+  }
+}
+
+const handleToastClick = (toast) => {
+  dismissToast(toast.id)
+
+  if (toast.action_url) {
+    router.push(toast.action_url)
+  } else {
+    isPanelOpen.value = true
+  }
+}
+
+// Watch for new notifications
+watch(() => notifications.value.length, (newLen, oldLen) => {
+  if (newLen > oldLen && notifications.value[0]) {
+    const newNotification = notifications.value[0]
+    if (!newNotification.read_at) {
+      showToast(newNotification)
     }
-  } catch (error) {
-    // Error handled
   }
-}
-
-const viewAll = () => {
-  router.push('/notifications')
-  closePanel()
-}
-
-// Load notifications
-const loadNotifications = async () => {
-  const token = localStorage.getItem('access_token')
-  if (!token) return
-
-  loading.value = true
-  try {
-    const response = await fetch('/api/notifications', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      // Map API response to component format
-      notifications.value = (data.notifications || data || []).map(n => ({
-        id: n.id,
-        type: n.type || 'info',
-        message: n.message || n.content,
-        created_at: n.created_at,
-        read: n.is_read || false,
-        link: n.link || n.action_url
-      }))
-    }
-  } catch (error) {
-    // Error handled
-  } finally {
-    loading.value = false
-  }
-}
+})
 
 // Close on escape
 const handleEscape = (e) => {
@@ -299,8 +385,16 @@ const handleEscape = (e) => {
   }
 }
 
+// Initialize when authenticated
+watch(() => authStore.isAuthenticated, async (isAuth) => {
+  if (isAuth) {
+    await notificationsStore.init()
+  } else {
+    notificationsStore.reset()
+  }
+}, { immediate: true })
+
 onMounted(() => {
-  loadNotifications()
   document.addEventListener('keydown', handleEscape)
 })
 
@@ -334,14 +428,18 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 
+.notification-trigger.has-unread {
+  color: #f97316;
+}
+
 .unread-badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 2px;
+  right: 2px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  background: var(--error-color, #ef4444);
+  background: #ef4444;
   border-radius: 9px;
   font-size: 11px;
   font-weight: 600;
@@ -349,6 +447,12 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 .notification-backdrop {
@@ -361,12 +465,12 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 380px;
-  max-height: 500px;
-  background: var(--bg-primary, #0f0f1a);
-  border: 1px solid var(--border-color, #2a2a4a);
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  width: 400px;
+  max-height: 560px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   z-index: 101;
   display: flex;
   flex-direction: column;
@@ -377,54 +481,88 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color, #2a2a4a);
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .mark-all-read {
   font-size: 12px;
-  color: var(--primary-color);
+  color: #f97316;
   background: none;
   border: none;
   cursor: pointer;
+  transition: opacity 0.2s;
 }
 
-.panel-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-color, #2a2a4a);
+.mark-all-read:hover {
+  opacity: 0.8;
 }
 
-.tab-btn {
-  padding: 6px 12px;
-  background: none;
+.settings-btn {
+  padding: 6px;
+  background: var(--bg-secondary);
   border: none;
   border-radius: 6px;
-  font-size: 13px;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.tab-btn:hover,
-.tab-btn.active {
-  background: var(--bg-secondary);
+.settings-btn:hover {
+  background: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
+.panel-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.tab-btn.active {
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+}
+
 .tab-count {
-  margin-left: 4px;
-  padding: 2px 6px;
-  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  background: #ef4444;
+  color: white;
   border-radius: 10px;
   font-size: 11px;
+  font-weight: 600;
 }
 
 .panel-content {
@@ -440,35 +578,41 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   gap: 12px;
 }
 
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--border-color);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .notifications-list {
-  padding: 8px;
+  padding: 12px;
+}
+
+.notification-group {
+  margin-bottom: 8px;
+}
+
+.group-label {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .notification-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 14px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  margin-bottom: 4px;
 }
 
 .notification-item:hover {
@@ -476,50 +620,57 @@ onUnmounted(() => {
 }
 
 .notification-item.unread {
-  background: rgba(var(--primary-rgb, 59, 130, 246), 0.1);
+  background: rgba(249, 115, 22, 0.05);
+  border-left: 3px solid #f97316;
 }
 
 .notification-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  font-size: 18px;
 }
-
-.notification-icon.success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-.notification-icon.error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-.notification-icon.warning { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-.notification-icon.info { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-.notification-icon.system { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
 
 .notification-content {
   flex: 1;
   min-width: 0;
 }
 
+.notification-title {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .notification-message {
   margin: 0 0 4px;
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .notification-time {
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
 }
 
 .delete-btn {
   opacity: 0;
-  padding: 4px;
+  padding: 6px;
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s;
 }
 
@@ -529,39 +680,72 @@ onUnmounted(() => {
 
 .delete-btn:hover {
   background: var(--bg-tertiary);
-  color: var(--error-color);
+  color: #ef4444;
+}
+
+.load-more {
+  padding: 12px;
+  text-align: center;
+}
+
+.load-more-btn {
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .panel-footer {
-  padding: 12px;
-  border-top: 1px solid var(--border-color, #2a2a4a);
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color);
 }
 
 .view-all-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   background: var(--bg-secondary);
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .view-all-btn:hover {
   background: var(--bg-tertiary);
+  color: #f97316;
 }
 
 /* Transitions */
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform 0.2s, opacity 0.2s;
+  transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
 .slide-enter-from,
 .slide-leave-to {
-  transform: translateY(-10px);
+  transform: translateY(-10px) scale(0.95);
   opacity: 0;
 }
 
@@ -575,19 +759,121 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-.list-enter-active,
-.list-leave-active {
-  transition: all 0.3s;
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 380px;
 }
 
-.list-enter-from {
-  opacity: 0;
-  transform: translateX(-20px);
+.toast-notification {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.list-leave-to {
-  opacity: 0;
-  transform: translateX(20px);
+.toast-notification:hover {
+  transform: translateX(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.toast-notification.urgent {
+  border-left: 4px solid #ef4444;
+}
+
+.toast-notification.high {
+  border-left: 4px solid #f97316;
+}
+
+.toast-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toast-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toast-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toast-close {
+  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toast-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Toast Animations */
+.toast-enter-active {
+  animation: toastIn 0.3s ease;
+}
+
+.toast-leave-active {
+  animation: toastOut 0.3s ease;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
 }
 
 /* Mobile */
@@ -599,8 +885,14 @@ onUnmounted(() => {
     left: 0;
     right: 0;
     width: 100%;
-    max-height: 70vh;
-    border-radius: 16px 16px 0 0;
+    max-height: 75vh;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .toast-container {
+    left: 16px;
+    right: 16px;
+    max-width: none;
   }
 }
 </style>

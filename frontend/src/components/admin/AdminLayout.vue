@@ -83,7 +83,8 @@ import {
   FileText,
   Megaphone,
   Palette,
-  MessageSquare
+  MessageSquare,
+  Wrench
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -127,6 +128,7 @@ const menuItems = [
   { path: '/admin/forum', label: 'Forum', icon: MessageSquare },
   { path: '/admin/media', label: 'Medya', icon: Image },
   { path: '/admin/pages', label: 'Sayfalar', icon: FileText },
+  { path: '/admin/maintenance', label: 'Bakım Modu', icon: Wrench },
   { path: '/admin/settings', label: 'Ayarlar', icon: Settings }
 ]
 

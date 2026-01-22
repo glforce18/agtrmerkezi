@@ -591,7 +591,7 @@ async def get_rankings(
     ensure_tournament_tables(db)
     
     rows = db.execute(text("""
-        SELECT e.*, u.username, u.avatar_url FROM elo_rankings e
+        SELECT e.*, u.username, u.avatar FROM elo_rankings e
         JOIN users u ON e.user_id = u.id
         WHERE e.game_type = :game
         ORDER BY e.elo_rating DESC

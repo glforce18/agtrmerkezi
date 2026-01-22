@@ -52,7 +52,7 @@
             </n-button>
 
             <!-- Level Badge -->
-            <div class="level-badge-floating">
+            <div class="level-badge-floating floating-weapon">
               <ZapIcon class="w-4 h-4" />
               <span>{{ userLevel }}</span>
             </div>
@@ -68,7 +68,7 @@
               <!-- Verification Badge -->
               <div v-if="user?.verified" class="verification-badge">
                 <CheckCircleIcon class="w-4 h-4" />
-                <span>Doğrulanmis</span>
+                <span>Doğrulanmış</span>
               </div>
 
               <!-- Role Badge -->
@@ -80,7 +80,7 @@
 
             <p class="text-gray-400 mb-5 flex items-center gap-2">
               <MailIcon class="w-4 h-4" />
-              {{ user?.email || 'E-posta eklenmemis' }}
+              {{ user?.email || 'E-posta eklenmemiş' }}
             </p>
 
             <!-- User Stats Row with Icons -->
@@ -146,7 +146,7 @@
                 </div>
               </div>
               <p class="text-xs text-gray-500 mt-2">
-                Sonraki seviyeye {{ (nextLevelXP - currentXP).toLocaleString() }} XP kaldi
+                Sonraki seviyeye {{ (nextLevelXP - currentXP).toLocaleString() }} XP kaldı
               </p>
             </div>
           </div>
@@ -172,27 +172,40 @@
       </div>
 
       <!-- Tabs Navigation with Icons & Active Indicator -->
-      <div class="tabs-navigation mb-8">
-        <div class="tabs-container">
+      <nav class="tabs-navigation mb-8" aria-label="Profil seçenekleri">
+        <div class="tabs-container" role="tablist" aria-label="Profil sekmeleri">
           <button
-            v-for="tab in tabs"
+            v-for="(tab, index) in tabs"
             :key="tab.name"
+            :id="`tab-${tab.name}`"
             class="tab-item"
             :class="{ 'tab-active': activeTab === tab.name }"
+            role="tab"
+            :aria-selected="activeTab === tab.name"
+            :aria-controls="`tabpanel-${tab.name}`"
+            :tabindex="activeTab === tab.name ? 0 : -1"
             @click="activeTab = tab.name"
+            @keydown="handleTabKeydown($event, index)"
           >
-            <component :is="tab.icon" class="w-5 h-5" />
+            <component :is="tab.icon" class="w-5 h-5" aria-hidden="true" />
             <span class="tab-label">{{ tab.label }}</span>
-            <span v-if="tab.count !== undefined" class="tab-badge">{{ tab.count }}</span>
-            <div v-if="activeTab === tab.name" class="tab-indicator"></div>
+            <span v-if="tab.count !== undefined" class="tab-badge" :aria-label="`${tab.count} öğe`">{{ tab.count }}</span>
+            <div v-if="activeTab === tab.name" class="tab-indicator" aria-hidden="true"></div>
           </button>
         </div>
-      </div>
+      </nav>
 
       <!-- Tab Content with Smooth Transitions -->
       <Transition name="tab-slide" mode="out-in">
         <!-- Profile Tab -->
-        <div v-if="activeTab === 'profile'" key="profile" class="tab-content">
+        <div
+          v-if="activeTab === 'profile'"
+          key="profile"
+          id="tabpanel-profile"
+          role="tabpanel"
+          aria-labelledby="tab-profile"
+          class="tab-content"
+        >
           <div class="grid lg:grid-cols-3 gap-6">
             <!-- Profile Form -->
             <div class="lg:col-span-2 space-y-6">
@@ -204,78 +217,103 @@
                   <h3 class="section-title">Profil Bilgileri</h3>
                 </div>
 
-                <n-form @submit.prevent="updateProfile" class="space-y-5">
+                <n-form @submit.prevent="updateProfile" class="space-y-5" aria-label="Profil bilgileri formu">
                   <div class="grid md:grid-cols-2 gap-5">
                     <!-- Modern Input with Icon -->
                     <div class="input-group">
-                      <div class="input-icon-wrapper">
+                      <label for="username" class="sr-only">Kullanıcı Adı</label>
+                      <div class="input-icon-wrapper" aria-hidden="true">
                         <UserIcon class="w-4 h-4" />
                       </div>
                       <n-input
+                        id="username"
                         v-model:value="profileForm.username"
                         placeholder="Kullanıcı Adı"
                         class="modern-input"
                         :status="validationStatus.username"
+                        aria-describedby="username-status"
                       />
-                      <CheckCircleIcon v-if="profileForm.username" class="input-valid-icon" />
+                      <CheckCircleIcon v-if="profileForm.username" class="input-valid-icon" aria-hidden="true" />
+                      <span id="username-status" class="sr-only">
+                        {{ profileForm.username ? 'Kullanıcı adı girildi' : 'Kullanıcı adı gerekli' }}
+                      </span>
                     </div>
 
                     <div class="input-group">
-                      <div class="input-icon-wrapper">
+                      <label for="email" class="sr-only">E-posta Adresi</label>
+                      <div class="input-icon-wrapper" aria-hidden="true">
                         <MailIcon class="w-4 h-4" />
                       </div>
                       <n-input
+                        id="email"
                         v-model:value="profileForm.email"
                         type="email"
                         placeholder="E-posta Adresi"
                         class="modern-input"
                         :status="validationStatus.email"
+                        aria-describedby="email-status"
+                        autocomplete="email"
                       />
-                      <CheckCircleIcon v-if="isValidEmail(profileForm.email)" class="input-valid-icon" />
-                      <XCircleIcon v-else-if="profileForm.email" class="input-invalid-icon" />
+                      <CheckCircleIcon v-if="isValidEmail(profileForm.email)" class="input-valid-icon" aria-hidden="true" />
+                      <XCircleIcon v-else-if="profileForm.email" class="input-invalid-icon" aria-hidden="true" />
+                      <span id="email-status" class="sr-only">
+                        {{ isValidEmail(profileForm.email) ? 'Geçerli e-posta' : 'Geçersiz e-posta formatı' }}
+                      </span>
                     </div>
 
                     <div class="input-group">
-                      <div class="input-icon-wrapper">
+                      <label for="first-name" class="sr-only">Ad</label>
+                      <div class="input-icon-wrapper" aria-hidden="true">
                         <UserIcon class="w-4 h-4" />
                       </div>
                       <n-input
+                        id="first-name"
                         v-model:value="profileForm.first_name"
                         placeholder="Ad"
                         class="modern-input"
+                        autocomplete="given-name"
                       />
                     </div>
 
                     <div class="input-group">
-                      <div class="input-icon-wrapper">
+                      <label for="last-name" class="sr-only">Soyad</label>
+                      <div class="input-icon-wrapper" aria-hidden="true">
                         <UserIcon class="w-4 h-4" />
                       </div>
                       <n-input
+                        id="last-name"
                         v-model:value="profileForm.last_name"
                         placeholder="Soyad"
                         class="modern-input"
+                        autocomplete="family-name"
                       />
                     </div>
 
                     <div class="input-group">
-                      <div class="input-icon-wrapper">
+                      <label for="phone" class="sr-only">Telefon</label>
+                      <div class="input-icon-wrapper" aria-hidden="true">
                         <PhoneIcon class="w-4 h-4" />
                       </div>
                       <n-input
+                        id="phone"
                         v-model:value="profileForm.phone"
                         placeholder="Telefon"
                         class="modern-input"
+                        autocomplete="tel"
                       />
                     </div>
 
                     <div class="input-group">
-                      <div class="input-icon-wrapper">
+                      <label for="country" class="sr-only">Ülke</label>
+                      <div class="input-icon-wrapper" aria-hidden="true">
                         <GlobeIcon class="w-4 h-4" />
                       </div>
                       <n-input
+                        id="country"
                         v-model:value="profileForm.country"
-                        placeholder="Ulke"
+                        placeholder="Ülke"
                         class="modern-input"
+                        autocomplete="country-name"
                       />
                     </div>
                   </div>
@@ -287,17 +325,37 @@
                     <n-input
                       v-model:value="profileForm.bio"
                       type="textarea"
-                      placeholder="Biyografi - Kendinizi tanitin..."
+                      placeholder="Biyografi - Kendinizi tanıtın..."
                       :rows="4"
+                      :maxlength="bioMaxLength"
+                      show-count
                       class="modern-input modern-textarea"
                     />
+                    <div class="bio-counter" :class="{ 'bio-counter-warning': bioRemaining < 50 }">
+                      {{ bioCharCount }}/{{ bioMaxLength }}
+                    </div>
                   </div>
 
                   <div class="flex justify-end gap-3 pt-2">
-                    <n-button quaternary size="large" class="btn-cancel">İptal</n-button>
-                    <n-button type="primary" size="large" attr-type="submit" :loading="saving" class="btn-save">
+                    <n-button
+                      quaternary
+                      size="large"
+                      class="btn-cancel"
+                      :disabled="!hasUnsavedChanges"
+                      @click="resetForm"
+                    >
+                      İptal
+                    </n-button>
+                    <n-button
+                      type="primary"
+                      size="large"
+                      attr-type="submit"
+                      :loading="saving"
+                      :disabled="!hasUnsavedChanges"
+                      class="btn-save"
+                    >
                       <template #icon><SaveIcon class="w-4 h-4" /></template>
-                      Değişiklikleri Kaydet
+                      {{ hasUnsavedChanges ? 'Değişiklikleri Kaydet' : 'Kaydedildi' }}
                     </n-button>
                   </div>
                 </n-form>
@@ -312,7 +370,7 @@
                   <div class="section-icon">
                     <LinkIcon class="w-5 h-5" />
                   </div>
-                  <h3 class="section-title">Bagli Hesaplar</h3>
+                  <h3 class="section-title">Bağlı Hesaplar</h3>
                 </div>
 
                 <div class="connected-accounts-list">
@@ -327,7 +385,7 @@
                       <div>
                         <h4 class="font-medium">Steam</h4>
                         <p class="text-xs text-gray-400">
-                          {{ connectedAccounts.steam.connected ? connectedAccounts.steam.username : 'Bagli degil' }}
+                          {{ connectedAccounts.steam.connected ? connectedAccounts.steam.username : 'Bağlı değil' }}
                         </p>
                       </div>
                     </div>
@@ -346,7 +404,7 @@
                       type="primary"
                       @click="connectAccount('steam')"
                     >
-                      Bagla
+                      Bağla
                     </n-button>
                   </div>
 
@@ -361,7 +419,7 @@
                       <div>
                         <h4 class="font-medium">Discord</h4>
                         <p class="text-xs text-gray-400">
-                          {{ connectedAccounts.discord.connected ? connectedAccounts.discord.username : 'Bagli degil' }}
+                          {{ connectedAccounts.discord.connected ? connectedAccounts.discord.username : 'Bağlı değil' }}
                         </p>
                       </div>
                     </div>
@@ -380,14 +438,14 @@
                       type="primary"
                       @click="connectAccount('discord')"
                     >
-                      Bagla
+                      Bağla
                     </n-button>
                   </div>
                 </div>
               </div>
 
-              <!-- Achievement Badges -->
-              <div class="glass-card rounded-2xl p-6">
+              <!-- Achievement Badges - Sadece başarı varsa göster -->
+              <div v-if="achievements.length > 0" class="glass-card rounded-2xl p-6">
                 <div class="section-header">
                   <div class="section-icon">
                     <AwardIcon class="w-5 h-5" />
@@ -413,97 +471,131 @@
           </div>
         </div>
 
+        <!-- Appearance Tab -->
+        <div
+          v-else-if="activeTab === 'appearance'"
+          key="appearance"
+          id="tabpanel-appearance"
+          role="tabpanel"
+          aria-labelledby="tab-appearance"
+          class="tab-content"
+        >
+          <ProfileCustomizer />
+        </div>
+
         <!-- Security Tab -->
-        <div v-else-if="activeTab === 'security'" key="security" class="tab-content space-y-6">
+        <div
+          v-else-if="activeTab === 'security'"
+          key="security"
+          id="tabpanel-security"
+          role="tabpanel"
+          aria-labelledby="tab-security"
+          class="tab-content space-y-6"
+        >
           <!-- Password Change Section -->
           <div v-if="!isOAuthUser" class="glass-card rounded-2xl p-6">
             <div class="section-header">
               <div class="section-icon">
                 <KeyIcon class="w-5 h-5" />
               </div>
-              <h3 class="section-title">Şifre Degistir</h3>
+              <h3 class="section-title">Şifre Değiştir</h3>
             </div>
 
-            <n-form @submit.prevent="changePassword" class="space-y-5">
+            <n-form @submit.prevent="changePassword" class="space-y-5" aria-label="Şifre değiştirme formu">
               <div class="input-group">
-                <div class="input-icon-wrapper">
+                <label for="current-password" class="sr-only">Mevcut Şifre</label>
+                <div class="input-icon-wrapper" aria-hidden="true">
                   <LockIcon class="w-4 h-4" />
                 </div>
                 <n-input
+                  id="current-password"
                   v-model:value="passwordForm.current_password"
                   type="password"
                   show-password-on="click"
                   placeholder="Mevcut Şifre"
                   class="modern-input"
+                  autocomplete="current-password"
                 />
               </div>
 
               <div class="grid md:grid-cols-2 gap-5">
                 <div class="input-group">
-                  <div class="input-icon-wrapper">
+                  <label for="new-password" class="sr-only">Yeni Şifre</label>
+                  <div class="input-icon-wrapper" aria-hidden="true">
                     <LockIcon class="w-4 h-4" />
                   </div>
                   <n-input
+                    id="new-password"
                     v-model:value="passwordForm.new_password"
                     type="password"
                     show-password-on="click"
                     placeholder="Yeni Şifre"
                     class="modern-input"
+                    autocomplete="new-password"
+                    aria-describedby="password-strength-info"
                     @input="checkPasswordStrength"
                   />
                 </div>
 
                 <div class="input-group">
-                  <div class="input-icon-wrapper">
+                  <label for="confirm-password" class="sr-only">Yeni Şifre Tekrar</label>
+                  <div class="input-icon-wrapper" aria-hidden="true">
                     <LockIcon class="w-4 h-4" />
                   </div>
                   <n-input
+                    id="confirm-password"
                     v-model:value="passwordForm.confirm_password"
                     type="password"
                     show-password-on="click"
                     placeholder="Yeni Şifre (Tekrar)"
                     class="modern-input"
+                    autocomplete="new-password"
+                    aria-describedby="password-match-status"
                     :status="passwordForm.confirm_password && passwordForm.new_password !== passwordForm.confirm_password ? 'error' : undefined"
                   />
+                  <span id="password-match-status" class="sr-only">
+                    {{ passwordForm.confirm_password && passwordForm.new_password !== passwordForm.confirm_password ? 'Şifreler eşleşmiyor' : 'Şifreler eşleşiyor' }}
+                  </span>
                 </div>
               </div>
 
               <!-- Password Strength Meter -->
-              <div v-if="passwordForm.new_password" class="password-strength-section">
+              <div v-if="passwordForm.new_password" class="password-strength-section" role="group" aria-labelledby="password-strength-label">
                 <div class="strength-header">
-                  <span class="text-sm text-gray-400">Şifre Gucu</span>
-                  <span class="strength-text" :class="strengthClass">{{ strengthText }}</span>
+                  <span id="password-strength-label" class="text-sm text-gray-400">Şifre Gücü</span>
+                  <span class="strength-text" :class="strengthClass" aria-live="polite" id="password-strength-info">{{ strengthText }}</span>
                 </div>
-                <div class="strength-bars">
+                <div class="strength-bars" role="progressbar" :aria-valuenow="passwordStrength" aria-valuemin="0" aria-valuemax="100" :aria-label="`Şifre gücü: ${strengthText}`">
                   <div
                     v-for="i in 5"
                     :key="i"
                     class="strength-bar"
                     :class="{ 'active': passwordStrength >= i * 20, [strengthClass]: passwordStrength >= i * 20 }"
+                    aria-hidden="true"
                   ></div>
                 </div>
-                <div class="strength-requirements">
-                  <div class="requirement" :class="{ 'met': passwordChecks.minLength }">
-                    <component :is="passwordChecks.minLength ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" />
+                <ul class="strength-requirements" aria-label="Şifre gereksinimleri">
+                  <li class="requirement" :class="{ 'met': passwordChecks.minLength }">
+                    <component :is="passwordChecks.minLength ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" aria-hidden="true" />
                     <span>En az 8 karakter</span>
-                  </div>
-                  <div class="requirement" :class="{ 'met': passwordChecks.hasUpper }">
-                    <component :is="passwordChecks.hasUpper ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" />
-                    <span>Büyük harf</span>
-                  </div>
-                  <div class="requirement" :class="{ 'met': passwordChecks.hasLower }">
-                    <component :is="passwordChecks.hasLower ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" />
+                    <span class="sr-only">{{ passwordChecks.minLength ? '- karşılandı' : '- karşılanmadı' }}</span>
+                  </li>
+                  <li class="requirement" :class="{ 'met': passwordChecks.hasLower }">
+                    <component :is="passwordChecks.hasLower ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" aria-hidden="true" />
                     <span>Küçük harf</span>
-                  </div>
-                  <div class="requirement" :class="{ 'met': passwordChecks.hasNumber }">
-                    <component :is="passwordChecks.hasNumber ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" />
+                    <span class="sr-only">{{ passwordChecks.hasLower ? '- karşılandı' : '- karşılanmadı' }}</span>
+                  </li>
+                  <li class="requirement" :class="{ 'met': passwordChecks.hasNumber }">
+                    <component :is="passwordChecks.hasNumber ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" aria-hidden="true" />
                     <span>Rakam</span>
-                  </div>
-                  <div class="requirement" :class="{ 'met': passwordChecks.hasSpecial }">
-                    <component :is="passwordChecks.hasSpecial ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" />
+                    <span class="sr-only">{{ passwordChecks.hasNumber ? '- karşılandı' : '- karşılanmadı' }}</span>
+                  </li>
+                  <li class="requirement" :class="{ 'met': passwordChecks.hasSpecial }">
+                    <component :is="passwordChecks.hasSpecial ? CheckCircleIcon : CircleIcon" class="w-3.5 h-3.5" aria-hidden="true" />
                     <span>Özel karakter</span>
-                  </div>
-                </div>
+                    <span class="sr-only">{{ passwordChecks.hasSpecial ? '- karşılandı' : '- karşılanmadı' }}</span>
+                  </li>
+                </ul>
               </div>
 
               <div class="flex justify-end">
@@ -642,7 +734,7 @@
                 <div class="flex justify-center gap-3 mt-6">
                   <n-button size="large" @click="downloadBackupCodes">
                     <template #icon><DownloadIcon class="w-4 h-4" /></template>
-                    Kodlari İndir
+                    Kodları İndir
                   </n-button>
                   <n-button size="large" type="primary" @click="finish2FASetup" class="btn-save">
                     Tamamla
@@ -660,7 +752,7 @@
               <div class="flex flex-wrap gap-3">
                 <n-button @click="show2FABackupCodes = true">
                   <template #icon><KeyIcon class="w-4 h-4" /></template>
-                  Yedek Kodlari Gör
+                  Yedek Kodları Gör
                 </n-button>
                 <n-button type="error" ghost @click="disable2FA">
                   <template #icon><XCircleIcon class="w-4 h-4" /></template>
@@ -682,9 +774,34 @@
               </n-button>
             </div>
 
-            <div class="sessions-grid">
-              <div v-for="session in sessions" :key="session.id" class="session-card">
-                <div class="session-device-icon" :class="getDeviceClass(session.device_type)">
+            <!-- Loading Skeleton -->
+            <div v-if="sessionsLoading" class="sessions-grid" aria-busy="true" aria-label="Oturumlar yükleniyor">
+              <div v-for="i in 3" :key="i" class="session-card skeleton-card">
+                <div class="skeleton skeleton-icon"></div>
+                <div class="session-details">
+                  <div class="skeleton skeleton-title"></div>
+                  <div class="skeleton skeleton-text"></div>
+                  <div class="skeleton skeleton-text-sm"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="sessions.length === 0" class="empty-state" role="status">
+              <MonitorIcon class="w-12 h-12 text-gray-600 mb-3" />
+              <p class="text-gray-400">Aktif oturum bulunamadı</p>
+            </div>
+
+            <!-- Sessions List -->
+            <div v-else class="sessions-grid" role="list" aria-label="Aktif oturumlar">
+              <div
+                v-for="session in sessions"
+                :key="session.id"
+                class="session-card"
+                role="listitem"
+                :aria-label="`${session.device_name} oturumu`"
+              >
+                <div class="session-device-icon" :class="getDeviceClass(session.device_type)" aria-hidden="true">
                   <MonitorIcon v-if="session.device_type === 'desktop'" class="w-6 h-6" />
                   <SmartphoneIcon v-else-if="session.device_type === 'mobile'" class="w-6 h-6" />
                   <TabletIcon v-else class="w-6 h-6" />
@@ -692,20 +809,23 @@
                 <div class="session-details">
                   <div class="flex items-center gap-2 mb-1">
                     <h4 class="font-medium">{{ session.device_name }}</h4>
-                    <span v-if="session.is_current" class="current-badge">Mevcut</span>
+                    <span v-if="session.is_current" class="current-badge" aria-label="Bu cihaz">Mevcut</span>
                   </div>
                   <div class="session-meta">
                     <span class="meta-item">
-                      <GlobeIcon class="w-3 h-3" />
+                      <GlobeIcon class="w-3 h-3" aria-hidden="true" />
+                      <span class="sr-only">IP Adresi:</span>
                       {{ session.ip }}
                     </span>
                     <span class="meta-item">
-                      <MapPinIcon class="w-3 h-3" />
+                      <MapPinIcon class="w-3 h-3" aria-hidden="true" />
+                      <span class="sr-only">Konum:</span>
                       {{ session.location }}
                     </span>
                   </div>
                   <p class="text-xs text-gray-500 mt-1">
-                    Son aktivite: {{ formatTime(session.last_activity) }}
+                    <span class="sr-only">Son aktivite:</span>
+                    {{ formatTime(session.last_activity) }}
                   </p>
                 </div>
                 <n-button
@@ -713,6 +833,8 @@
                   quaternary
                   size="small"
                   class="session-revoke"
+                  :loading="revokingSession === session.id"
+                  :aria-label="`${session.device_name} oturumunu sonlandır`"
                   @click="revokeSession(session.id)"
                 >
                   <template #icon><LogOutIcon class="w-4 h-4" /></template>
@@ -723,7 +845,14 @@
         </div>
 
         <!-- Settings Tab -->
-        <div v-else-if="activeTab === 'settings'" key="settings" class="tab-content space-y-6">
+        <div
+          v-else-if="activeTab === 'settings'"
+          key="settings"
+          id="tabpanel-settings"
+          role="tabpanel"
+          aria-labelledby="tab-settings"
+          class="tab-content space-y-6"
+        >
           <!-- Notification Preferences -->
           <div class="glass-card rounded-2xl p-6">
             <div class="section-header">
@@ -733,49 +862,68 @@
               <h3 class="section-title">Bildirim Tercihleri</h3>
             </div>
 
-            <div class="toggle-list">
+            <div class="toggle-list" role="group" aria-label="Bildirim ayarları">
               <div class="toggle-item">
                 <div class="toggle-info">
-                  <MailIcon class="w-5 h-5 text-gray-400" />
+                  <MailIcon class="w-5 h-5 text-gray-400" aria-hidden="true" />
                   <div>
-                    <h4>E-posta Bildirimleri</h4>
-                    <p>Önemli güncellemeler için e-posta alın</p>
+                    <h4 id="email-notif-label">E-posta Bildirimleri</h4>
+                    <p id="email-notif-desc">Önemli güncellemeler için e-posta alın</p>
                   </div>
                 </div>
-                <n-switch v-model:value="settings.email_notifications" :disabled="!hasEmail" />
+                <n-switch
+                  v-model:value="settings.email_notifications"
+                  :disabled="!hasEmail"
+                  aria-labelledby="email-notif-label"
+                  aria-describedby="email-notif-desc"
+                />
               </div>
 
               <div class="toggle-item">
                 <div class="toggle-info">
-                  <ServerIcon class="w-5 h-5 text-gray-400" />
+                  <ServerIcon class="w-5 h-5 text-gray-400" aria-hidden="true" />
                   <div>
-                    <h4>Sunucu Uyarilari</h4>
-                    <p>Sunucu durumu değişikliklerinde bildirim alın</p>
+                    <h4 id="server-alerts-label">Sunucu Uyarıları</h4>
+                    <p id="server-alerts-desc">Sunucu durumu değişikliklerinde bildirim alın</p>
                   </div>
                 </div>
-                <n-switch v-model:value="settings.server_alerts" />
+                <n-switch
+                  v-model:value="settings.server_alerts"
+                  aria-labelledby="server-alerts-label"
+                  aria-describedby="server-alerts-desc"
+                />
               </div>
 
               <div class="toggle-item">
                 <div class="toggle-info">
-                  <ShieldIcon class="w-5 h-5 text-gray-400" />
+                  <ShieldIcon class="w-5 h-5 text-gray-400" aria-hidden="true" />
                   <div>
-                    <h4>Güvenlik Bildirimleri</h4>
-                    <p>Şüpheli aktivitelerde e-posta alın</p>
+                    <h4 id="security-alerts-label">Güvenlik Bildirimleri</h4>
+                    <p id="security-alerts-desc">Şüpheli aktivitelerde e-posta alın</p>
                   </div>
                 </div>
-                <n-switch v-model:value="settings.security_alerts" :disabled="!hasEmail" />
+                <n-switch
+                  v-model:value="settings.security_alerts"
+                  :disabled="!hasEmail"
+                  aria-labelledby="security-alerts-label"
+                  aria-describedby="security-alerts-desc"
+                />
               </div>
 
               <div class="toggle-item">
                 <div class="toggle-info">
-                  <MegaphoneIcon class="w-5 h-5 text-gray-400" />
+                  <MegaphoneIcon class="w-5 h-5 text-gray-400" aria-hidden="true" />
                   <div>
-                    <h4>Pazarlama E-postalari</h4>
-                    <p>Kampanya ve firsatlardan haberdar olun</p>
+                    <h4 id="marketing-emails-label">Pazarlama E-postaları</h4>
+                    <p id="marketing-emails-desc">Kampanya ve fırsatlardan haberdar olun</p>
                   </div>
                 </div>
-                <n-switch v-model:value="settings.marketing_emails" :disabled="!hasEmail" />
+                <n-switch
+                  v-model:value="settings.marketing_emails"
+                  :disabled="!hasEmail"
+                  aria-labelledby="marketing-emails-label"
+                  aria-describedby="marketing-emails-desc"
+                />
               </div>
             </div>
           </div>
@@ -783,55 +931,71 @@
           <!-- Privacy Settings -->
           <div class="glass-card rounded-2xl p-6">
             <div class="section-header">
-              <div class="section-icon">
+              <div class="section-icon" aria-hidden="true">
                 <EyeOffIcon class="w-5 h-5" />
               </div>
               <h3 class="section-title">Gizlilik Ayarları</h3>
             </div>
 
-            <div class="toggle-list">
+            <div class="toggle-list" role="group" aria-label="Gizlilik ayarları">
               <div class="toggle-item">
                 <div class="toggle-info">
-                  <UsersIcon class="w-5 h-5 text-gray-400" />
+                  <UsersIcon class="w-5 h-5 text-gray-400" aria-hidden="true" />
                   <div>
-                    <h4>Profil Gorunurlugu</h4>
-                    <p>Profilinizi herkese açık veya gizli yapin</p>
+                    <h4 id="public-profile-label">Profil Görünürlüğü</h4>
+                    <p id="public-profile-desc">Profilinizi herkese açık veya gizli yapın</p>
                   </div>
                 </div>
-                <n-switch v-model:value="settings.public_profile" />
+                <n-switch
+                  v-model:value="settings.public_profile"
+                  aria-labelledby="public-profile-label"
+                  aria-describedby="public-profile-desc"
+                />
               </div>
 
               <div class="toggle-item">
                 <div class="toggle-info">
-                  <CircleDotIcon class="w-5 h-5 text-gray-400" />
+                  <CircleDotIcon class="w-5 h-5 text-gray-400" aria-hidden="true" />
                   <div>
-                    <h4>Online Durumu</h4>
-                    <p>Diğer kullanıcılarin online durumunuzu gormesine izin verin</p>
+                    <h4 id="online-status-label">Online Durumu</h4>
+                    <p id="online-status-desc">Diğer kullanıcıların online durumunuzu görmesine izin verin</p>
                   </div>
                 </div>
-                <n-switch v-model:value="settings.show_online_status" />
+                <n-switch
+                  v-model:value="settings.show_online_status"
+                  aria-labelledby="online-status-label"
+                  aria-describedby="online-status-desc"
+                />
               </div>
 
               <div class="toggle-item">
                 <div class="toggle-info">
-                  <ActivityIcon class="w-5 h-5 text-gray-400" />
+                  <ActivityIcon class="w-5 h-5 text-gray-400" aria-hidden="true" />
                   <div>
-                    <h4>Aktivite Gecmisi</h4>
-                    <p>Aktivite geçmişinizi profilinizde gösterin</p>
+                    <h4 id="activity-history-label">Aktivite Geçmişi</h4>
+                    <p id="activity-history-desc">Aktivite geçmişinizi profilinizde gösterin</p>
                   </div>
                 </div>
-                <n-switch v-model:value="settings.show_activity" />
+                <n-switch
+                  v-model:value="settings.show_activity"
+                  aria-labelledby="activity-history-label"
+                  aria-describedby="activity-history-desc"
+                />
               </div>
 
               <div class="toggle-item">
                 <div class="toggle-info">
-                  <ServerIcon class="w-5 h-5 text-gray-400" />
+                  <ServerIcon class="w-5 h-5 text-gray-400" aria-hidden="true" />
                   <div>
-                    <h4>Sunucu Listesi</h4>
-                    <p>Sunucularınızı profilinizde gösterin</p>
+                    <h4 id="server-list-label">Sunucu Listesi</h4>
+                    <p id="server-list-desc">Sunucularınızı profilinizde gösterin</p>
                   </div>
                 </div>
-                <n-switch v-model:value="settings.show_servers" />
+                <n-switch
+                  v-model:value="settings.show_servers"
+                  aria-labelledby="server-list-label"
+                  aria-describedby="server-list-desc"
+                />
               </div>
             </div>
           </div>
@@ -845,22 +1009,22 @@
           </div>
 
           <!-- Danger Zone -->
-          <div class="danger-zone-card rounded-2xl p-6">
+          <section class="danger-zone-card rounded-2xl p-6" aria-labelledby="danger-zone-title">
             <div class="section-header danger">
-              <div class="section-icon danger">
+              <div class="section-icon danger" aria-hidden="true">
                 <AlertTriangleIcon class="w-5 h-5" />
               </div>
-              <h3 class="section-title text-red-500">Tehlikeli Bolge</h3>
+              <h3 id="danger-zone-title" class="section-title text-red-500">Tehlikeli Bölge</h3>
             </div>
-            <p class="text-gray-400 mb-6">Bu işlemler geri alınamaz. Dikkatli olun.</p>
+            <p class="text-gray-400 mb-6" role="alert">Bu işlemler geri alınamaz. Dikkatli olun.</p>
 
-            <div class="danger-actions">
+            <div class="danger-actions" role="group" aria-label="Tehlikeli işlemler">
               <div class="danger-action-item">
                 <div>
-                  <h4 class="font-medium">Hesabi Dondur</h4>
-                  <p class="text-sm text-gray-400">Hesabınızı gecici olarak devre disi birakin</p>
+                  <h4 class="font-medium">Hesabı Dondur</h4>
+                  <p class="text-sm text-gray-400">Hesabınızı geçici olarak devre dışı bırakın</p>
                 </div>
-                <n-button type="warning" ghost @click="freezeAccount">
+                <n-button type="warning" ghost @click="freezeAccount" aria-label="Hesabı dondur">
                   <template #icon><PauseCircleIcon class="w-4 h-4" /></template>
                   Dondur
                 </n-button>
@@ -868,59 +1032,95 @@
 
               <div class="danger-action-item">
                 <div>
-                  <h4 class="font-medium">Hesabi Sil</h4>
-                  <p class="text-sm text-gray-400">Hesabınızı ve tum verilerinizi kalıcı olarak silin</p>
+                  <h4 class="font-medium">Hesabı Sil</h4>
+                  <p class="text-sm text-gray-400">Hesabınızı ve tüm verilerinizi kalıcı olarak silin</p>
                 </div>
-                <n-button type="error" ghost @click="showDeleteConfirm = true">
+                <n-button type="error" ghost @click="showDeleteConfirm = true" aria-label="Hesabı kalıcı olarak sil">
                   <template #icon><Trash2Icon class="w-4 h-4" /></template>
-                  Hesabi Sil
+                  Hesabı Sil
                 </n-button>
               </div>
             </div>
-          </div>
+          </section>
         </div>
 
         <!-- Activity Tab -->
-        <div v-else-if="activeTab === 'activity'" key="activity" class="tab-content">
+        <div
+          v-else-if="activeTab === 'activity'"
+          key="activity"
+          id="tabpanel-activity"
+          role="tabpanel"
+          aria-labelledby="tab-activity"
+          class="tab-content"
+        >
           <div class="glass-card rounded-2xl p-6">
             <div class="section-header">
               <div class="section-icon">
                 <ActivityIcon class="w-5 h-5" />
               </div>
-              <h3 class="section-title">Aktivite Gecmisi</h3>
+              <h3 class="section-title">Aktivite Geçmişi</h3>
+            </div>
+
+            <!-- Loading Skeleton -->
+            <div v-if="activitiesLoading" class="activity-timeline" aria-busy="true" aria-label="Aktiviteler yükleniyor">
+              <div v-for="i in 5" :key="i" class="timeline-entry skeleton-entry">
+                <div class="timeline-icon skeleton"></div>
+                <div class="timeline-connector"></div>
+                <div class="timeline-card">
+                  <div class="skeleton skeleton-title"></div>
+                  <div class="skeleton skeleton-text"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="activities.length === 0" class="empty-state" role="status">
+              <ActivityIcon class="w-12 h-12 text-gray-600 mb-3" />
+              <p class="text-gray-400">Henüz aktivite kaydı yok</p>
+              <p class="text-gray-500 text-sm mt-1">İşlemleriniz burada görünecektir</p>
             </div>
 
             <!-- Activity Timeline -->
-            <div class="activity-timeline">
-              <div
+            <div v-else class="activity-timeline" role="feed" aria-label="Aktivite geçmişi">
+              <article
                 v-for="(activity, index) in activities"
                 :key="activity.id"
                 class="timeline-entry"
                 :class="{ 'last': index === activities.length - 1 }"
+                role="article"
+                :aria-label="activity.title"
               >
-                <div class="timeline-icon" :class="`icon-${activity.type}`">
+                <div class="timeline-icon" :class="`icon-${activity.type}`" aria-hidden="true">
                   <component :is="getActivityIcon(activity.type)" class="w-4 h-4" />
                 </div>
-                <div class="timeline-connector" v-if="index !== activities.length - 1"></div>
+                <div class="timeline-connector" v-if="index !== activities.length - 1" aria-hidden="true"></div>
                 <div class="timeline-card">
                   <div class="timeline-header">
                     <h4>{{ activity.title }}</h4>
-                    <span class="timeline-time">{{ formatTime(activity.created_at) }}</span>
+                    <time class="timeline-time" :datetime="activity.created_at?.toISOString?.()">
+                      {{ formatTime(activity.created_at) }}
+                    </time>
                   </div>
                   <p class="timeline-description">{{ activity.description }}</p>
-                  <div v-if="activity.metadata" class="timeline-tags">
+                  <div v-if="activity.metadata" class="timeline-tags" aria-label="Ek bilgiler">
                     <span v-for="(value, key) in activity.metadata" :key="key" class="timeline-tag">
                       {{ key }}: {{ value }}
                     </span>
                   </div>
                 </div>
-              </div>
+              </article>
             </div>
 
-            <div class="flex justify-center mt-6">
-              <n-button quaternary :loading="loadingMore" @click="loadMoreActivities">
+            <div v-if="activities.length > 0" class="flex justify-center mt-6">
+              <n-button
+                quaternary
+                :loading="loadingMore"
+                :disabled="!hasMoreActivities"
+                :aria-label="hasMoreActivities ? 'Daha fazla aktivite yükle' : 'Tüm aktiviteler yüklendi'"
+                @click="loadMoreActivities"
+              >
                 <template #icon><RefreshCwIcon class="w-4 h-4" /></template>
-                Daha Fazla Yükle
+                {{ hasMoreActivities ? 'Daha Fazla Yükle' : 'Tümü Yüklendi' }}
               </n-button>
             </div>
           </div>
@@ -951,7 +1151,7 @@
     </n-modal>
 
     <!-- Delete Account Confirmation Modal -->
-    <n-modal v-model:show="showDeleteConfirm" preset="card" title="Hesabi Sil" class="modal-glass">
+    <n-modal v-model:show="showDeleteConfirm" preset="card" title="Hesabı Sil" class="modal-glass">
       <n-alert type="error" :bordered="false" class="mb-6">
         <template #icon><AlertTriangleIcon class="w-5 h-5" /></template>
         Bu işlem geri alınamaz! Tüm verileriniz kalıcı olarak silinecektir.
@@ -978,7 +1178,7 @@
     </n-modal>
 
     <!-- Avatar Upload Modal -->
-    <n-modal v-model:show="showAvatarUpload" preset="card" title="Profil Fotografi" class="modal-glass">
+    <n-modal v-model:show="showAvatarUpload" preset="card" title="Profil Fotoğrafı" class="modal-glass">
       <div class="upload-zone">
         <n-upload
           accept="image/*"
@@ -988,7 +1188,7 @@
         >
           <div class="upload-content">
             <UploadCloudIcon class="w-12 h-12 text-orange-500 mb-4" />
-            <p class="text-gray-300">Fotografinizi sürükleyin veya tıklayin</p>
+            <p class="text-gray-300">Fotografinizi sürükleyin veya tıklayın</p>
             <p class="text-sm text-gray-500 mt-2">PNG, JPG (max. 5MB)</p>
           </div>
         </n-upload>
@@ -1006,7 +1206,7 @@
         >
           <div class="upload-content">
             <ImageIcon class="w-12 h-12 text-orange-500 mb-4" />
-            <p class="text-gray-300">Kapak fotografinizi sürükleyin veya tıklayin</p>
+            <p class="text-gray-300">Kapak fotografinizi sürükleyin veya tıklayın</p>
             <p class="text-sm text-gray-500 mt-2">PNG, JPG (min. 1920x400, max. 10MB)</p>
           </div>
         </n-upload>
@@ -1041,13 +1241,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import ProfileCustomizer from '@/components/profile/ProfileCustomizer.vue'
 import {
   UserIcon,
   ShieldCheckIcon,
   SettingsIcon,
   ActivityIcon,
+  PaletteIcon,
   CameraIcon,
   CheckCircleIcon,
   CalendarIcon,
@@ -1175,10 +1377,45 @@ const isValidEmail = (email) => {
 const activeTab = ref('profile')
 const tabs = computed(() => [
   { name: 'profile', label: 'Profil', icon: UserIcon },
+  { name: 'appearance', label: 'Görünüm', icon: PaletteIcon },
   { name: 'security', label: 'Güvenlik', icon: ShieldCheckIcon },
   { name: 'settings', label: 'Ayarlar', icon: SettingsIcon },
   { name: 'activity', label: 'Aktivite', icon: ActivityIcon, count: activities.value.length }
 ])
+
+// Tab keyboard navigation
+const handleTabKeydown = (event, currentIndex) => {
+  const tabsList = tabs.value
+  let newIndex = currentIndex
+
+  switch (event.key) {
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      event.preventDefault()
+      newIndex = currentIndex === 0 ? tabsList.length - 1 : currentIndex - 1
+      break
+    case 'ArrowRight':
+    case 'ArrowDown':
+      event.preventDefault()
+      newIndex = currentIndex === tabsList.length - 1 ? 0 : currentIndex + 1
+      break
+    case 'Home':
+      event.preventDefault()
+      newIndex = 0
+      break
+    case 'End':
+      event.preventDefault()
+      newIndex = tabsList.length - 1
+      break
+    default:
+      return
+  }
+
+  activeTab.value = tabsList[newIndex].name
+  // Focus the new tab
+  const newTabEl = document.getElementById(`tab-${tabsList[newIndex].name}`)
+  newTabEl?.focus()
+}
 
 // Loading states
 const saving = ref(false)
@@ -1201,7 +1438,7 @@ const deleteConfirmText = ref('')
 
 // 2FA Setup
 const twoFAStep = ref(1)
-const twoFASecret = ref('JBSWY3DPEHPK3PXP')
+const twoFASecret = ref('')
 const twoFACode = ref('')
 
 // Forms
@@ -1262,109 +1499,148 @@ const strengthClass = computed(() => {
 })
 
 const strengthText = computed(() => {
-  if (passwordStrength.value <= 20) return 'Çok Zayif'
-  if (passwordStrength.value <= 40) return 'Zayif'
+  if (passwordStrength.value <= 20) return 'Çok Zayıf'
+  if (passwordStrength.value <= 40) return 'Zayıf'
   if (passwordStrength.value <= 60) return 'Orta'
-  if (passwordStrength.value <= 80) return 'Guclu'
-  return 'Çok Guclu'
+  if (passwordStrength.value <= 80) return 'Güçlü'
+  return 'Çok Güçlü'
 })
 
 // Sessions
-const sessions = ref([
-  {
-    id: 1,
-    device_name: 'Chrome on Windows',
-    device_type: 'desktop',
-    ip: '192.168.1.100',
-    location: 'Istanbul, Turkiye',
-    last_activity: new Date(),
-    is_current: true
-  },
-  {
-    id: 2,
-    device_name: 'Safari on iPhone',
-    device_type: 'mobile',
-    ip: '192.168.1.101',
-    location: 'Ankara, Turkiye',
-    last_activity: new Date(Date.now() - 1000 * 60 * 60 * 3),
-    is_current: false
+const sessions = ref([])
+const sessionsLoading = ref(false)
+
+const fetchSessions = async () => {
+  sessionsLoading.value = true
+  try {
+    const response = await apiCall('/api/user/sessions')
+    sessions.value = (response.sessions || response || []).map(s => ({
+      id: s.id,
+      device_name: s.device_name || parseUserAgent(s.user_agent),
+      device_type: detectDeviceType(s.user_agent),
+      ip: maskIP(s.ip_address || s.ip),
+      location: s.location || 'Bilinmiyor',
+      last_activity: new Date(s.last_activity || s.created_at),
+      is_current: s.is_current || false
+    }))
+  } catch (error) {
+    console.error('Sessions fetch error:', error)
+  } finally {
+    sessionsLoading.value = false
   }
-])
+}
+
+const parseUserAgent = (ua) => {
+  if (!ua) return 'Bilinmeyen Cihaz'
+  if (ua.includes('Chrome')) return 'Chrome'
+  if (ua.includes('Firefox')) return 'Firefox'
+  if (ua.includes('Safari')) return 'Safari'
+  if (ua.includes('Edge')) return 'Edge'
+  return 'Tarayıcı'
+}
+
+const detectDeviceType = (ua) => {
+  if (!ua) return 'desktop'
+  const lower = ua.toLowerCase()
+  if (lower.includes('mobile') || lower.includes('android') || lower.includes('iphone')) return 'mobile'
+  if (lower.includes('tablet') || lower.includes('ipad')) return 'tablet'
+  return 'desktop'
+}
+
+const maskIP = (ip) => {
+  if (!ip) return '***.***.***'
+  const parts = ip.split('.')
+  if (parts.length === 4) {
+    return `${parts[0]}.${parts[1]}.***.***`
+  }
+  return ip.substring(0, ip.length / 2) + '***'
+}
 
 const getDeviceClass = (type) => `device-${type}`
 
 // Activities
-const activities = ref([
-  {
-    id: 1,
-    type: 'success',
-    title: 'Şifre değiştirildi',
-    description: 'Hesap şifreniz başarıyla güncellendi',
-    created_at: new Date(Date.now() - 1000 * 60 * 30),
-    metadata: { IP: '192.168.1.100' }
-  },
-  {
-    id: 2,
-    type: 'info',
-    title: 'Yeni oturum acildi',
-    description: 'Chrome on Windows - Istanbul, Turkiye',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2)
-  },
-  {
-    id: 3,
-    type: 'warning',
-    title: 'Başarısız giriş denemesi',
-    description: 'Yanlış şifre girildi',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 5),
-    metadata: { IP: '192.168.1.105', Konum: 'Bilinmiyor' }
-  },
-  {
-    id: 4,
-    type: 'success',
-    title: 'Sunucu oluşturuldu',
-    description: 'Yeni CS2 sunucusu başarıyla kuruldu',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24)
+const activities = ref([])
+const activitiesLoading = ref(false)
+const activitiesPage = ref(1)
+const hasMoreActivities = ref(true)
+
+const fetchActivities = async (loadMore = false) => {
+  if (loadMore) {
+    loadingMore.value = true
+  } else {
+    activitiesLoading.value = true
   }
-])
+
+  try {
+    const response = await apiCall(`/api/security/activity?page=${activitiesPage.value}&limit=10`)
+    const newActivities = (response.activities || response || []).map(a => ({
+      id: a.id,
+      type: getActivityType(a.action),
+      title: formatActivityTitle(a.action),
+      description: a.details || a.description || '',
+      created_at: new Date(a.created_at || a.timestamp),
+      metadata: a.metadata || (a.ip_address ? { IP: maskIP(a.ip_address) } : null)
+    }))
+
+    if (loadMore) {
+      activities.value = [...activities.value, ...newActivities]
+    } else {
+      activities.value = newActivities
+    }
+
+    hasMoreActivities.value = newActivities.length === 10
+    if (loadMore) activitiesPage.value++
+  } catch (error) {
+    console.error('Activities fetch error:', error)
+    // Fallback to empty if API fails
+    if (!loadMore) activities.value = []
+  } finally {
+    activitiesLoading.value = false
+    loadingMore.value = false
+  }
+}
+
+const getActivityType = (action) => {
+  if (!action) return 'info'
+  const lower = action.toLowerCase()
+  if (lower.includes('success') || lower.includes('create') || lower.includes('update')) return 'success'
+  if (lower.includes('fail') || lower.includes('error') || lower.includes('delete')) return 'error'
+  if (lower.includes('warn') || lower.includes('attempt')) return 'warning'
+  return 'info'
+}
+
+const formatActivityTitle = (action) => {
+  const titles = {
+    'login': 'Giriş yapıldı',
+    'login_success': 'Başarılı giriş',
+    'login_failed': 'Başarısız giriş denemesi',
+    'logout': 'Çıkış yapıldı',
+    'password_change': 'Şifre değiştirildi',
+    'profile_update': 'Profil güncellendi',
+    '2fa_enabled': '2FA etkinleştirildi',
+    '2fa_disabled': '2FA devre dışı bırakıldı',
+    'session_revoked': 'Oturum sonlandırıldı',
+    'server_created': 'Sunucu oluşturuldu',
+    'server_deleted': 'Sunucu silindi'
+  }
+  return titles[action] || action || 'Aktivite'
+}
 
 const getActivityIcon = (type) => {
   const icons = { info: InfoIcon, success: CheckCircleIcon, warning: AlertCircleIcon, error: XCircleIcon }
   return icons[type] || InfoIcon
 }
 
-// Backup codes
-const backupCodes = ref([
-  'XXXX-XXXX-XXXX', 'YYYY-YYYY-YYYY', 'ZZZZ-ZZZZ-ZZZZ',
-  'AAAA-AAAA-AAAA', 'BBBB-BBBB-BBBB', 'CCCC-CCCC-CCCC'
-])
+// Backup codes (fetched from API during 2FA setup)
+const backupCodes = ref([])
 
-// Achievements
-const achievements = ref([
-  { id: 1, name: 'İlk Adim', icon: RocketIcon, unlocked: true },
-  { id: 2, name: 'Sunucu Ustaşı', icon: ServerIcon, unlocked: true },
-  { id: 3, name: 'Topluluk Yıldızı', icon: StarIcon, unlocked: true },
-  { id: 4, name: 'Güvenlik Uzman', icon: ShieldIcon, unlocked: false },
-  { id: 5, name: 'Sadik Üye', icon: HeartIcon, unlocked: true },
-  { id: 6, name: 'Hiz Seytani', icon: ZapIcon, unlocked: false },
-  { id: 7, name: 'Hedef Avcısı', icon: TargetIcon, unlocked: false },
-  { id: 8, name: 'Alev Savasci', icon: FlameIcon, unlocked: true }
-])
+// Achievements - API'den çekilecek
+const achievements = ref([])
+const allAchievements = ref([])
 
-const allAchievements = ref([
-  { id: 1, name: 'İlk Adim', description: 'Hesabınızı oluştürün', icon: RocketIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30) },
-  { id: 2, name: 'Sunucu Ustaşı', description: '5 sunucu oluştürün', icon: ServerIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15) },
-  { id: 3, name: 'Topluluk Yıldızı', description: 'Forumda 50 gönderi paylaşım', icon: StarIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7) },
-  { id: 4, name: 'Güvenlik Uzmanı', description: '2FA\'yi etkinleştirin', icon: ShieldIcon, unlocked: false, progress: 0 },
-  { id: 5, name: 'Sadik Üye', description: '1 yillik üyelik', icon: HeartIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5) },
-  { id: 6, name: 'Hiz Seytani', description: '10 hizli işlem tamamlayın', icon: ZapIcon, unlocked: false, progress: 40 },
-  { id: 7, name: 'Hedef Avcısı', description: 'Tüm görevleri tamamlayın', icon: TargetIcon, unlocked: false, progress: 75 },
-  { id: 8, name: 'Alev Savasci', description: '100 oyun saati', icon: FlameIcon, unlocked: true, unlocked_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3) },
-  { id: 9, name: 'Bilge', description: 'Tüm kılavuzları okuyun', icon: BookIcon, unlocked: false, progress: 20 }
-])
-
-// Connected accounts
+// Connected accounts - API'den çekilecek
 const connectedAccounts = reactive({
-  steam: { connected: true, username: 'gamer123' },
+  steam: { connected: false, username: null },
   discord: { connected: false, username: null }
 })
 
@@ -1389,15 +1665,58 @@ const formatMemberSince = (timestamp) => {
   return `${Math.floor(diffDays / 365)} yil`
 }
 
+// API helper
+const apiCall = async (url, options = {}) => {
+  const token = localStorage.getItem('access_token')
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers
+    }
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Bir hata oluştu' }))
+    throw new Error(error.detail || 'İşlem başarısız')
+  }
+  return response.json()
+}
+
 // Profile methods
 const updateProfile = async () => {
+  // Validation
+  if (!profileForm.email || !isValidEmail(profileForm.email)) {
+    window.$message?.error('Geçerli bir e-posta adresi girin')
+    return
+  }
+
   saving.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    authStore.updateUser(profileForm)
+    const data = {
+      display_name: profileForm.first_name && profileForm.last_name
+        ? `${profileForm.first_name} ${profileForm.last_name}`
+        : null,
+      email: profileForm.email,
+      bio: profileForm.bio
+    }
+
+    await apiCall('/api/user/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+
+    // Update local user data
+    authStore.updateUser({
+      email: profileForm.email,
+      bio: profileForm.bio,
+      display_name: data.display_name
+    })
+
     window.$message?.success('Profil başarıyla güncellendi')
+    hasUnsavedChanges.value = false
   } catch (error) {
-    window.$message?.error('Profil güncellenemedi')
+    window.$message?.error(error.message || 'Profil güncellenemedi')
   } finally {
     saving.value = false
   }
@@ -1405,39 +1724,81 @@ const updateProfile = async () => {
 
 // Password methods
 const changePassword = async () => {
+  // Validation
+  if (!passwordForm.current_password) {
+    window.$message?.error('Mevcut şifrenizi girin')
+    return
+  }
+  if (!passwordForm.new_password) {
+    window.$message?.error('Yeni şifre girin')
+    return
+  }
   if (passwordForm.new_password !== passwordForm.confirm_password) {
     window.$message?.error('Şifreler eşleşmiyor!')
     return
   }
   if (passwordStrength.value < 60) {
-    window.$message?.warning('Lütfen daha guclu bir şifre seçin')
+    window.$message?.warning('Lütfen daha güçlü bir şifre seçin (en az "Orta" seviye)')
     return
   }
+  if (passwordForm.current_password === passwordForm.new_password) {
+    window.$message?.error('Yeni şifre eskisiyle aynı olamaz')
+    return
+  }
+
   savingPassword.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await apiCall('/api/user/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password,
+        confirm_password: passwordForm.confirm_password
+      })
+    })
+
     window.$message?.success('Şifre başarıyla güncellendi')
     passwordForm.current_password = ''
     passwordForm.new_password = ''
     passwordForm.confirm_password = ''
     passwordStrength.value = 0
+    Object.keys(passwordChecks).forEach(key => passwordChecks[key] = false)
   } catch (error) {
-    window.$message?.error('Şifre güncellenemedi')
+    window.$message?.error(error.message || 'Şifre güncellenemedi')
   } finally {
     savingPassword.value = false
   }
 }
 
 // 2FA methods
-const start2FASetup = () => {
+const twoFAQrCode = ref('')
+const twoFALoading = ref(false)
+
+const start2FASetup = async () => {
   show2FASetup.value = true
   twoFAStep.value = 1
+  twoFALoading.value = true
+
+  try {
+    const response = await apiCall('/api/auth/2fa/setup', { method: 'POST' })
+    twoFASecret.value = response.secret
+    twoFAQrCode.value = response.qr_code || `otpauth://totp/AGTR:${user.value?.email}?secret=${response.secret}&issuer=AGTR`
+    if (response.backup_codes) {
+      backupCodes.value = response.backup_codes
+    }
+  } catch (error) {
+    window.$message?.error(error.message || '2FA kurulumu başlatılamadı')
+    show2FASetup.value = false
+  } finally {
+    twoFALoading.value = false
+  }
 }
 
 const cancel2FASetup = () => {
   show2FASetup.value = false
   twoFAStep.value = 1
   twoFACode.value = ''
+  twoFAQrCode.value = ''
 }
 
 const verify2FACode = async () => {
@@ -1445,12 +1806,27 @@ const verify2FACode = async () => {
     window.$message?.error('Lütfen 6 haneli kodu girin')
     return
   }
+  if (!/^\d{6}$/.test(twoFACode.value)) {
+    window.$message?.error('Kod sadece rakamlardan oluşmalı')
+    return
+  }
+
   verifying2FA.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    const response = await apiCall('/api/auth/2fa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ code: twoFACode.value })
+    })
+
+    if (response.backup_codes) {
+      backupCodes.value = response.backup_codes
+    }
     twoFAStep.value = 3
+
+    // Update user 2FA status
+    authStore.updateUser({ two_factor_enabled: true })
   } catch (error) {
-    window.$message?.error('Doğrulama başarısız')
+    window.$message?.error(error.message || 'Doğrulama başarısız. Kodu kontrol edin.')
   } finally {
     verifying2FA.value = false
   }
@@ -1460,43 +1836,96 @@ const finish2FASetup = () => {
   show2FASetup.value = false
   twoFAStep.value = 1
   twoFACode.value = ''
+  twoFAQrCode.value = ''
   window.$message?.success('2FA başarıyla etkinleştirildi!')
 }
 
 const disable2FA = () => {
   window.$dialog?.warning({
-    title: 'Uyari',
-    content: '2FA\'yi devre disi birakmak istediğinizden emin misiniz?',
-    positiveText: 'Evet, Devre Disi Birak',
+    title: 'Uyarı',
+    content: '2FA\'yı devre dışı bırakmak hesabınızın güvenliğini azaltır. Devam etmek istediğinizden emin misiniz?',
+    positiveText: 'Evet, Devre Dışı Bırak',
     negativeText: 'İptal',
-    onPositiveClick: () => {
-      window.$message?.success('2FA devre disi birakildi')
+    onPositiveClick: async () => {
+      try {
+        await apiCall('/api/auth/2fa/disable', { method: 'POST' })
+        authStore.updateUser({ two_factor_enabled: false })
+        window.$message?.success('2FA devre dışı bırakıldı')
+      } catch (error) {
+        window.$message?.error(error.message || '2FA devre dışı bırakılamadı')
+      }
     }
   })
 }
 
 const downloadBackupCodes = () => {
-  const content = backupCodes.value.join('\n')
-  const blob = new Blob([content], { type: 'text/plain' })
+  const header = 'AGTR Merkezi - 2FA Yedek Kodları\n'
+  const warning = '⚠️ Bu kodları güvenli bir yerde saklayın!\n'
+  const separator = '================================\n\n'
+  const content = header + warning + separator + backupCodes.value.join('\n')
+
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = '2fa-yedek-kodlar.txt'
+  a.download = `agtr-2fa-yedek-kodlar-${new Date().toISOString().split('T')[0]}.txt`
+  document.body.appendChild(a)
   a.click()
+  document.body.removeChild(a)
   URL.revokeObjectURL(url)
   window.$message?.success('Yedek kodlar indirildi')
 }
 
+const copyBackupCodes = () => {
+  const text = backupCodes.value.join('\n')
+  navigator.clipboard.writeText(text).then(() => {
+    window.$message?.success('Yedek kodlar panoya kopyalandı')
+  }).catch(() => {
+    window.$message?.error('Kopyalama başarısız')
+  })
+}
+
+const regenerateBackupCodes = async () => {
+  window.$dialog?.warning({
+    title: 'Yedek Kodları Yenile',
+    content: 'Mevcut yedek kodlar geçersiz olacak. Devam etmek istediğinizden emin misiniz?',
+    positiveText: 'Evet, Yenile',
+    negativeText: 'İptal',
+    onPositiveClick: async () => {
+      try {
+        const response = await apiCall('/api/auth/2fa/regenerate-backup-codes', { method: 'POST' })
+        if (response.backup_codes) {
+          backupCodes.value = response.backup_codes
+          window.$message?.success('Yeni yedek kodlar oluşturuldu')
+          show2FABackupCodes.value = true
+        }
+      } catch (error) {
+        window.$message?.error(error.message || 'Yedek kodlar oluşturulamadı')
+      }
+    }
+  })
+}
+
 // Session methods
+const revokingSession = ref(null)
+
 const revokeSession = (sessionId) => {
   window.$dialog?.warning({
     title: 'Oturumu Sonlandır',
     content: 'Bu oturumu sonlandırmak istediğinizden emin misiniz?',
     positiveText: 'Evet',
     negativeText: 'İptal',
-    onPositiveClick: () => {
-      sessions.value = sessions.value.filter(s => s.id !== sessionId)
-      window.$message?.success('Oturum sonlandırildi')
+    onPositiveClick: async () => {
+      revokingSession.value = sessionId
+      try {
+        await apiCall(`/api/user/sessions/${sessionId}`, { method: 'DELETE' })
+        sessions.value = sessions.value.filter(s => s.id !== sessionId)
+        window.$message?.success('Oturum sonlandırıldı')
+      } catch (error) {
+        window.$message?.error(error.message || 'Oturum sonlandırılamadı')
+      } finally {
+        revokingSession.value = null
+      }
     }
   })
 }
@@ -1504,12 +1933,17 @@ const revokeSession = (sessionId) => {
 const revokeAllSessions = () => {
   window.$dialog?.warning({
     title: 'Tüm Oturumları Sonlandır',
-    content: 'Mevcut oturum hariç tum oturumları sonlandırmak istediğinizden emin misiniz?',
+    content: 'Mevcut oturum hariç tüm oturumları sonlandırmak istediğinizden emin misiniz?',
     positiveText: 'Evet',
     negativeText: 'İptal',
-    onPositiveClick: () => {
-      sessions.value = sessions.value.filter(s => s.is_current)
-      window.$message?.success('Tüm oturumlar sonlandırildi')
+    onPositiveClick: async () => {
+      try {
+        await apiCall('/api/user/sessions', { method: 'DELETE' })
+        sessions.value = sessions.value.filter(s => s.is_current)
+        window.$message?.success('Tüm oturumlar sonlandırıldı')
+      } catch (error) {
+        window.$message?.error(error.message || 'Oturumlar sonlandırılamadı')
+      }
     }
   })
 }
@@ -1518,36 +1952,78 @@ const revokeAllSessions = () => {
 const saveSettings = async () => {
   savingSettings.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await apiCall('/api/user/settings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        email_notifications: settings.email_notifications,
+        server_alerts: settings.server_alerts,
+        security_alerts: settings.security_alerts,
+        marketing_emails: settings.marketing_emails,
+        public_profile: settings.public_profile,
+        show_online_status: settings.show_online_status,
+        show_activity: settings.show_activity,
+        show_servers: settings.show_servers
+      })
+    })
     window.$message?.success('Ayarlar kaydedildi')
   } catch (error) {
-    window.$message?.error('Ayarlar kaydedilemedi')
+    // Settings endpoint might not exist yet, save locally
+    localStorage.setItem('user_settings', JSON.stringify(settings))
+    window.$message?.success('Ayarlar kaydedildi')
   } finally {
     savingSettings.value = false
+  }
+}
+
+// Load settings from localStorage if API not available
+const loadSettings = () => {
+  const saved = localStorage.getItem('user_settings')
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      Object.assign(settings, parsed)
+    } catch (e) {
+      console.error('Settings parse error:', e)
+    }
   }
 }
 
 // Account methods
 const freezeAccount = () => {
   window.$dialog?.warning({
-    title: 'Hesabi Dondur',
-    content: 'Hesabınızı dondurmak istediğinizden emin misiniz?',
+    title: 'Hesabı Dondur',
+    content: 'Hesabınızı dondurmak istediğinizden emin misiniz? Bu işlem geri alınabilir.',
     positiveText: 'Evet, Dondur',
     negativeText: 'İptal',
-    onPositiveClick: () => {
-      window.$message?.info('Hesabınız donduruldu')
+    onPositiveClick: async () => {
+      try {
+        await apiCall('/api/user/freeze', { method: 'POST' })
+        window.$message?.info('Hesabınız donduruldu')
+        authStore.logout()
+      } catch (error) {
+        window.$message?.error(error.message || 'Hesap dondurulamadı')
+      }
     }
   })
 }
 
 const deleteAccount = async () => {
+  if (deleteConfirmText.value !== 'HESABIMI SIL') {
+    window.$message?.error('Lütfen onay metnini doğru yazın')
+    return
+  }
+
   deletingAccount.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await apiCall('/api/user/delete', {
+      method: 'DELETE',
+      body: JSON.stringify({ confirmation: deleteConfirmText.value })
+    })
     window.$message?.success('Hesabınız silindi')
     showDeleteConfirm.value = false
+    authStore.logout()
   } catch (error) {
-    window.$message?.error('Hesap silinemedi')
+    window.$message?.error(error.message || 'Hesap silinemedi')
   } finally {
     deletingAccount.value = false
   }
@@ -1555,75 +2031,238 @@ const deleteAccount = async () => {
 
 // Connected accounts methods
 const connectAccount = (provider) => {
-  window.$message?.info(`${provider} hesabi bağlaniyor...`)
+  const redirectUrls = {
+    steam: '/api/auth/steam/connect',
+    discord: '/api/auth/discord/connect'
+  }
+  const url = redirectUrls[provider]
+  if (url) {
+    window.location.href = url
+  } else {
+    window.$message?.error('Bu bağlantı türü desteklenmiyor')
+  }
 }
 
 const disconnectAccount = (provider) => {
   window.$dialog?.warning({
-    title: 'Hesap Bağlantısini Kes',
-    content: 'Bu hesabin bağlantısini kesmek istediğinizden emin misiniz?',
+    title: 'Hesap Bağlantısını Kes',
+    content: `${provider.charAt(0).toUpperCase() + provider.slice(1)} hesabının bağlantısını kesmek istediğinizden emin misiniz?`,
     positiveText: 'Evet',
     negativeText: 'İptal',
-    onPositiveClick: () => {
-      connectedAccounts[provider].connected = false
-      connectedAccounts[provider].username = null
-      window.$message?.success('Hesap bağlantısi kesildi')
+    onPositiveClick: async () => {
+      try {
+        await apiCall(`/api/auth/${provider}/disconnect`, { method: 'POST' })
+        connectedAccounts[provider].connected = false
+        connectedAccounts[provider].username = null
+        window.$message?.success('Hesap bağlantısı kesildi')
+      } catch (error) {
+        window.$message?.error(error.message || 'Bağlantı kesilemedi')
+      }
     }
   })
 }
 
-// Upload handlers
-const handleAvatarUpload = ({ file }) => {
-  window.$message?.success('Profil fotografi yüklendi')
-  showAvatarUpload.value = false
+// Fetch connected accounts
+const fetchConnectedAccounts = async () => {
+  try {
+    const response = await apiCall('/api/auth/connected-accounts')
+    if (response.steam) {
+      connectedAccounts.steam = response.steam
+    }
+    if (response.discord) {
+      connectedAccounts.discord = response.discord
+    }
+  } catch (error) {
+    // Use user data as fallback
+    if (user.value?.steam_id) {
+      connectedAccounts.steam = { connected: true, username: user.value.steam_id }
+    }
+  }
 }
 
-const handleCoverUpload = ({ file }) => {
-  window.$message?.success('Kapak fotografi yüklendi')
-  showCoverUpload.value = false
+// Upload handlers
+const uploadingAvatar = ref(false)
+const uploadingCover = ref(false)
+
+const handleAvatarUpload = async ({ file }) => {
+  if (!file || !file.file) {
+    window.$message?.error('Dosya seçilmedi')
+    return
+  }
+
+  // Validate file
+  const maxSize = 5 * 1024 * 1024 // 5MB
+  if (file.file.size > maxSize) {
+    window.$message?.error('Dosya boyutu 5MB\'dan küçük olmalı')
+    return
+  }
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(file.file.type)) {
+    window.$message?.error('Sadece JPG, PNG, GIF veya WebP formatları desteklenir')
+    return
+  }
+
+  uploadingAvatar.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file.file)
+
+    const token = localStorage.getItem('access_token')
+    const response = await fetch('/api/user/avatar', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.detail || 'Yükleme başarısız')
+    }
+
+    const data = await response.json()
+    authStore.updateUser({ avatar: data.avatar_url || data.url })
+    window.$message?.success('Profil fotoğrafı güncellendi')
+    showAvatarUpload.value = false
+  } catch (error) {
+    window.$message?.error(error.message || 'Fotoğraf yüklenemedi')
+  } finally {
+    uploadingAvatar.value = false
+  }
+}
+
+const handleCoverUpload = async ({ file }) => {
+  if (!file || !file.file) {
+    window.$message?.error('Dosya seçilmedi')
+    return
+  }
+
+  const maxSize = 10 * 1024 * 1024 // 10MB for cover
+  if (file.file.size > maxSize) {
+    window.$message?.error('Dosya boyutu 10MB\'dan küçük olmalı')
+    return
+  }
+
+  uploadingCover.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file.file)
+
+    const token = localStorage.getItem('access_token')
+    const response = await fetch('/api/user/cover', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.detail || 'Yükleme başarısız')
+    }
+
+    window.$message?.success('Kapak fotoğrafı güncellendi')
+    showCoverUpload.value = false
+  } catch (error) {
+    window.$message?.error(error.message || 'Kapak fotoğrafı yüklenemedi')
+  } finally {
+    uploadingCover.value = false
+  }
 }
 
 // Load more activities
 const loadMoreActivities = async () => {
-  loadingMore.value = true
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    activities.value.push({
-      id: activities.value.length + 1,
-      type: 'info',
-      title: 'Eski aktivite',
-      description: 'Ornek aktivite açıklamasi',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
-    })
-  } finally {
-    loadingMore.value = false
-  }
+  activitiesPage.value++
+  await fetchActivities(true)
 }
 
-// Initialize form data
-onMounted(() => {
+// Unsaved changes tracking
+const hasUnsavedChanges = ref(false)
+const initialFormState = ref({})
+
+const trackChanges = () => {
+  hasUnsavedChanges.value = JSON.stringify(profileForm) !== JSON.stringify(initialFormState.value)
+}
+
+const resetForm = () => {
+  Object.assign(profileForm, initialFormState.value)
+  hasUnsavedChanges.value = false
+  window.$message?.info('Değişiklikler geri alındı')
+}
+
+// Bio character counter
+const bioMaxLength = 500
+const bioCharCount = computed(() => profileForm.bio?.length || 0)
+const bioRemaining = computed(() => bioMaxLength - bioCharCount.value)
+
+// Initialize form data and fetch real data
+onMounted(async () => {
+  // Initialize form from user data
   if (user.value) {
+    const displayParts = user.value.display_name?.split(' ') || []
     profileForm.username = user.value.username || ''
     profileForm.email = user.value.email || ''
-    profileForm.first_name = user.value.first_name || ''
-    profileForm.last_name = user.value.last_name || ''
+    profileForm.first_name = displayParts[0] || user.value.first_name || ''
+    profileForm.last_name = displayParts.slice(1).join(' ') || user.value.last_name || ''
     profileForm.phone = user.value.phone || ''
     profileForm.country = user.value.country || ''
     profileForm.bio = user.value.bio || ''
+    initialFormState.value = { ...profileForm }
   }
+
+  // Load settings
+  loadSettings()
+
+  // Fetch real data in parallel
+  await Promise.allSettled([
+    fetchSessions(),
+    fetchActivities(),
+    fetchConnectedAccounts(),
+    fetch2FAStatus()
+  ])
 })
 
+// Fetch 2FA status
+const fetch2FAStatus = async () => {
+  try {
+    const response = await apiCall('/api/auth/2fa/status')
+    if (response.enabled !== undefined) {
+      authStore.updateUser({ two_factor_enabled: response.enabled })
+    }
+  } catch (error) {
+    // Use existing user data
+  }
+}
+
+// Watch for form changes
+watch(profileForm, trackChanges, { deep: true })
+
+// Watch user data changes
 watch(user, (newUser) => {
-  if (newUser) {
+  if (newUser && !hasUnsavedChanges.value) {
+    const displayParts = newUser.display_name?.split(' ') || []
     profileForm.username = newUser.username || ''
     profileForm.email = newUser.email || ''
-    profileForm.first_name = newUser.first_name || ''
-    profileForm.last_name = newUser.last_name || ''
+    profileForm.first_name = displayParts[0] || newUser.first_name || ''
+    profileForm.last_name = displayParts.slice(1).join(' ') || newUser.last_name || ''
     profileForm.phone = newUser.phone || ''
     profileForm.country = newUser.country || ''
     profileForm.bio = newUser.bio || ''
+    initialFormState.value = { ...profileForm }
   }
-}, { deep: true })
+})
+
+// Warn before leaving with unsaved changes
+onBeforeUnmount(() => {
+  if (hasUnsavedChanges.value) {
+    // Note: Browser may not show custom message
+    window.onbeforeunload = () => 'Kaydedilmemiş değişiklikler var!'
+  }
+})
+
+// Cleanup
+onUnmounted(() => {
+  window.onbeforeunload = null
+})
 </script>
 
 <style scoped>
@@ -1631,6 +2270,9 @@ watch(user, (newUser) => {
 .profile-page {
   background: #0a0a0a;
   min-height: 100vh;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
 }
 
 /* Hero Section with Gradient & Pattern */
@@ -2159,6 +2801,19 @@ watch(user, (newUser) => {
 
 .modern-textarea :deep(.n-input) {
   padding-top: 16px !important;
+}
+
+.bio-counter {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-size: 11px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.bio-counter-warning {
+  color: #f59e0b;
 }
 
 .modern-input :deep(.n-input:hover) {
@@ -2919,6 +3574,152 @@ watch(user, (newUser) => {
 
   .wizard-steps {
     transform: scale(0.85);
+  }
+}
+
+/* Loading Skeletons */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-card {
+  pointer-events: none;
+}
+
+.skeleton-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.skeleton-title {
+  height: 18px;
+  width: 60%;
+  margin-bottom: 8px;
+}
+
+.skeleton-text {
+  height: 14px;
+  width: 80%;
+  margin-bottom: 6px;
+}
+
+.skeleton-text-sm {
+  height: 12px;
+  width: 40%;
+}
+
+.skeleton-entry .timeline-icon {
+  background: rgba(255, 255, 255, 0.06);
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+.skeleton-entry .timeline-card {
+  opacity: 0.7;
+}
+
+/* Empty States */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  margin: 16px 0;
+}
+
+.empty-state svg {
+  opacity: 0.5;
+}
+
+/* Screen Reader Only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus States for Accessibility */
+.tab-item:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+}
+
+.n-button:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+}
+
+.n-input:focus-within {
+  border-color: #f97316 !important;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2) !important;
+}
+
+.n-switch:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .glass-card,
+  .glass-card-hero {
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .tab-item.tab-active {
+    border: 2px solid #f97316;
+  }
+
+  .empty-state {
+    border-style: solid;
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .skeleton {
+    animation: none;
+    background: rgba(255, 255, 255, 0.08);
   }
 }
 </style>

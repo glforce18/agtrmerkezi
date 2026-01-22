@@ -216,7 +216,7 @@ async def daily_report():
 
     from app.models.connection import SessionLocal
     from app.models.database import Payment, PaymentStatus, User
-    
+
     start = datetime.utcnow()
     yesterday = datetime.utcnow() - timedelta(days=1)
     db = SessionLocal()
@@ -226,14 +226,40 @@ async def daily_report():
             Payment.created_at >= yesterday,
             Payment.status == PaymentStatus.COMPLETED
         ).scalar() or 0
-        
+
         logger.info(f"Daily Report - New Users: {new_users}, Revenue: {new_payments} TL")
-        
+
         duration = (datetime.utcnow() - start).total_seconds() * 1000
         task_manager.log_execution("daily_report", "success", int(duration))
     except Exception as e:
         task_manager.log_execution("daily_report", "failed", error=str(e))
         logger.error(f"Daily report error: {e}")
+    finally:
+        db.close()
+
+
+async def scan_community_servers():
+    """Topluluk sunucularini tara - HL, CS 1.6, AG"""
+    from app.models.connection import SessionLocal
+    from app.services.server_scraper import run_scraper_task
+
+    start = datetime.utcnow()
+    db = SessionLocal()
+    try:
+        logger.info("Community server scan starting...")
+        result = await run_scraper_task(["ag", "cs16", "hldm"], db)
+
+        duration = (datetime.utcnow() - start).total_seconds() * 1000
+        task_manager.log_execution("scan_servers", "success", int(duration))
+
+        found = result.get("total_found", 0)
+        added = result.get("db_stats", {}).get("added", 0)
+        updated = result.get("db_stats", {}).get("updated", 0)
+        logger.info(f"Server scan complete - Found: {found}, Added: {added}, Updated: {updated}")
+
+    except Exception as e:
+        task_manager.log_execution("scan_servers", "failed", error=str(e))
+        logger.error(f"Server scan error: {e}")
     finally:
         db.close()
 
@@ -278,6 +304,13 @@ def init_scheduler():
         "daily_report",
         daily_report,
         CronTrigger(hour=9, minute=0)
+    )
+
+    # Her 30 dakikada topluluk sunucularini tara
+    task_manager.add_task(
+        "scan_servers",
+        scan_community_servers,
+        IntervalTrigger(minutes=30)
     )
 
     logger.info("All background tasks initialized")

@@ -1,5 +1,8 @@
 <template>
   <div class="wallet-page min-h-screen py-4">
+    <!-- Maintenance Check -->
+    <MaintenanceOverlay feature="payments" />
+
     <!-- Loading State -->
     <div v-if="!user" class="flex items-center justify-center min-h-[60vh]">
       <div class="text-center">
@@ -646,6 +649,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, h, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
 import { NTag } from 'naive-ui'
 import {
   Wallet as WalletIcon,

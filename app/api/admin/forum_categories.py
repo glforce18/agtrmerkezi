@@ -19,13 +19,25 @@ from app.models.forum import ForumCategory, ForumReply, ForumTopic
 router = APIRouter(prefix="/admin/forum", tags=["admin-forum"])
 
 
+# ============ Cache Helper ============
+
+async def invalidate_forum_cache():
+    """Forum cache'ini temizle (admin değişikliklerinde çağrılır)"""
+    try:
+        from app.core.redis_manager import redis_manager
+        await redis_manager.delete("forum:categories")
+    except Exception:
+        pass  # Cache silme hatası kritik değil
+
+
 # ============ Pydantic Schemas ============
 
 class CategoryCreate(BaseModel):
     name: str
     slug: Optional[str] = None
     description: Optional[str] = None
-    icon: Optional[str] = "fas fa-folder"
+    icon: Optional[str] = "📁"
+    color: Optional[str] = "#ff6b00"
     display_order: Optional[int] = 0
     is_active: Optional[bool] = True
 
@@ -35,6 +47,7 @@ class CategoryUpdate(BaseModel):
     slug: Optional[str] = None
     description: Optional[str] = None
     icon: Optional[str] = None
+    color: Optional[str] = None
     display_order: Optional[int] = None
     is_active: Optional[bool] = None
 
@@ -93,30 +106,36 @@ async def get_categories(
 ):
     """Tüm forum kategorilerini getir"""
     categories = db.query(ForumCategory).order_by(ForumCategory.display_order).all()
-    
+
     result = []
     for cat in categories:
         # Konu ve yanıt sayılarını hesapla
         topic_count = db.query(func.count(ForumTopic.id)).filter(
             ForumTopic.category_id == cat.id
         ).scalar() or 0
-        
+
         reply_count = db.query(func.count(ForumReply.id)).join(
             ForumTopic, ForumReply.topic_id == ForumTopic.id
         ).filter(ForumTopic.category_id == cat.id).scalar() or 0
-        
+
+        # Post count = topics + replies (consistent with public API)
+        post_count = topic_count + reply_count
+
         result.append({
             "id": cat.id,
             "name": cat.name,
             "slug": cat.slug,
             "description": cat.description,
-            "icon": cat.icon or "fas fa-folder",
+            "icon": cat.icon or "📁",
+            "color": cat.color or "#ff6b00",
             "display_order": cat.display_order or 0,
             "is_active": cat.is_visible,
+            "is_visible": cat.is_visible,
             "topic_count": topic_count,
-            "reply_count": reply_count
+            "reply_count": reply_count,
+            "post_count": post_count
         })
-    
+
     return {"categories": result}
 
 
@@ -167,7 +186,8 @@ async def create_category(
         name=data.name,
         slug=slug,
         description=data.description,
-        icon=data.icon or "fas fa-folder",
+        icon=data.icon or "📁",
+        color=data.color or "#ff6b00",
         display_order=data.display_order or 0,
         is_visible=data.is_active if data.is_active is not None else True
     )
@@ -175,7 +195,10 @@ async def create_category(
     db.add(category)
     db.commit()
     db.refresh(category)
-    
+
+    # Cache'i temizle
+    await invalidate_forum_cache()
+
     return {
         "message": "Kategori oluşturuldu",
         "category": {
@@ -222,16 +245,22 @@ async def update_category(
     
     if data.icon is not None:
         category.icon = data.icon
-    
+
+    if data.color is not None:
+        category.color = data.color
+
     if data.display_order is not None:
         category.display_order = data.display_order
-    
+
     if data.is_active is not None:
         category.is_visible = data.is_active
-    
+
     db.commit()
     db.refresh(category)
-    
+
+    # Cache'i temizle
+    await invalidate_forum_cache()
+
     return {
         "message": "Kategori güncellendi",
         "category": {
@@ -266,7 +295,10 @@ async def delete_category(
     
     db.delete(category)
     db.commit()
-    
+
+    # Cache'i temizle
+    await invalidate_forum_cache()
+
     return {"message": "Kategori silindi"}
 
 
@@ -283,4 +315,8 @@ async def reorder_categories(
             category.display_order = item["display_order"]
     
     db.commit()
+
+    # Cache'i temizle
+    await invalidate_forum_cache()
+
     return {"message": "Sıralama güncellendi"}

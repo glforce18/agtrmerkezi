@@ -85,7 +85,7 @@ async def save_upload_file(upload_file: UploadFile, destination_dir: Path) -> di
 
     if len(content) > MAX_FILE_SIZE:
         logger.error(f"❌ Dosya çok büyük: {len(content)} > {MAX_FILE_SIZE}")
-        raise HTTPException(status_code=400, detail="Dosya boyutu 5MB'dan büyük olamaz")
+        raise HTTPException(status_code=400, detail="Dosya boyutu 10MB'dan büyük olamaz")
 
     # Dosya türü kontrolü
     if not is_allowed_file(upload_file.filename):
@@ -248,10 +248,10 @@ async def delete_media(
     if not url.startswith("/static/"):
         raise HTTPException(status_code=400, detail="Geçersiz URL")
 
-    file_path = Path("/var/www/agtrmerkezi") / url.lstrip("/")
+    file_path = (Path("/var/www/agtrmerkezi") / url.lstrip("/")).resolve()
 
     # Güvenlik kontrolü - sadece images altındaki dosyalar silinebilir
-    if not str(file_path).startswith(str(UPLOAD_DIR)):
+    if not str(file_path).startswith(str(UPLOAD_DIR.resolve())):
         raise HTTPException(status_code=403, detail="Bu dosya silinemez")
 
     if file_path.exists():

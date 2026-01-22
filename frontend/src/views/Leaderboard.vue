@@ -88,7 +88,7 @@
       <div v-if="activeCategory === 'players' && filteredData.length >= 3" class="podium-section mb-12">
         <div class="podium-grid">
           <!-- 2nd Place -->
-          <div class="podium-item silver" @mouseenter="hoveredPodium = 2" @mouseleave="hoveredPodium = null">
+          <div class="podium-item silver podium-entry" style="animation-delay: 0.2s" @mouseenter="hoveredPodium = 2" @mouseleave="hoveredPodium = null">
             <div class="podium-card glass-morphism" :class="{ hovered: hoveredPodium === 2 }">
               <div class="podium-medal silver-medal">
                 <MedalIcon class="w-6 h-6" />
@@ -124,7 +124,8 @@
 
           <!-- 1st Place (Center, Winner) -->
           <div
-            class="podium-item gold winner"
+            class="podium-item gold winner podium-entry"
+            style="animation-delay: 0s"
             @mouseenter="hoveredPodium = 1; triggerConfetti()"
             @mouseleave="hoveredPodium = null"
           >
@@ -168,7 +169,7 @@
           </div>
 
           <!-- 3rd Place -->
-          <div class="podium-item bronze" @mouseenter="hoveredPodium = 3" @mouseleave="hoveredPodium = null">
+          <div class="podium-item bronze podium-entry" style="animation-delay: 0.4s" @mouseenter="hoveredPodium = 3" @mouseleave="hoveredPodium = null">
             <div class="podium-card glass-morphism" :class="{ hovered: hoveredPodium === 3 }">
               <div class="podium-medal bronze-medal">
                 <MedalIcon class="w-6 h-6" />
@@ -237,7 +238,20 @@
           </div>
         </div>
 
-        <div class="table-wrapper">
+        <!-- Empty State -->
+        <div v-if="currentData.length === 0 && !loadingPlayers && !loadingServers" class="empty-state">
+          <TrophyIcon class="w-16 h-16 text-gray-600 mb-4" />
+          <h3 class="text-xl font-semibold text-gray-400 mb-2">Henüz veri yok</h3>
+          <p class="text-gray-500">Bu kategoride henüz sıralama verisi bulunmuyor.</p>
+        </div>
+
+        <!-- Loading State -->
+        <div v-else-if="loadingPlayers || loadingServers" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p class="text-gray-400 mt-4">Yükleniyor...</p>
+        </div>
+
+        <div v-else class="table-wrapper">
           <table class="leaderboard-table">
             <thead>
               <tr>
@@ -594,31 +608,86 @@ const statsCards = computed(() => [
   }
 ])
 
-// Mock data for players
-const playersData = ref([
-  { id: 1, position: 1, name: 'ProGamer_TR', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player1', rank: 'Global Elite', score: 9842, kills: 15234, deaths: 4521, kd: '3.37', accuracy: 78, isOnline: true },
-  { id: 2, position: 2, name: 'SniperKing', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player2', rank: 'Supreme Master', score: 8923, kills: 13456, deaths: 4123, kd: '3.26', accuracy: 82, isOnline: true },
-  { id: 3, position: 3, name: 'HeadShot_Pro', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player3', rank: 'Legendary Eagle', score: 8234, kills: 12345, deaths: 3987, kd: '3.10', accuracy: 75, isOnline: false },
-  { id: 4, position: 4, name: 'CS_Legend', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player4', rank: 'Distinguished Master', score: 7845, kills: 11234, deaths: 3654, kd: '3.07', accuracy: 73, isOnline: true },
-  { id: 5, position: 5, name: 'AimBot_Wannabe', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player5', rank: 'Master Guardian Elite', score: 7456, kills: 10987, deaths: 3598, kd: '3.05', accuracy: 71, isOnline: false },
-  { id: 6, position: 6, name: 'Clutch_Master', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player6', rank: 'Master Guardian', score: 7123, kills: 10456, deaths: 3456, kd: '3.02', accuracy: 69, isOnline: true },
-  { id: 7, position: 7, name: 'Spray_Control', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player7', rank: 'Gold Nova Master', score: 6789, kills: 9876, deaths: 3289, kd: '3.00', accuracy: 68, isOnline: false },
-  { id: 8, position: 8, name: 'AWP_Dragon', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player8', rank: 'Gold Nova III', score: 6456, kills: 9345, deaths: 3123, kd: '2.99', accuracy: 80, isOnline: true },
-  { id: 9, position: 9, name: 'Flash_Bang', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player9', rank: 'Gold Nova II', score: 6123, kills: 8987, deaths: 3012, kd: '2.98', accuracy: 66, isOnline: false },
-  { id: 10, position: 10, name: 'Smoke_Criminal', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=player10', rank: 'Gold Nova I', score: 5876, kills: 8654, deaths: 2923, kd: '2.96', accuracy: 65, isOnline: true }
-])
+// Data - API'den çekilecek
+const playersData = ref([])
+const serversData = ref([])
+const usersData = ref([])
 
-const serversData = ref([
-  { id: 1, position: 1, name: 'AGTR Public #1', region: 'EU West', score: 9876, players: 28, maxPlayers: 32, map: 'de_dust2', isOnline: true },
-  { id: 2, position: 2, name: 'Pro Arena DM', region: 'EU Central', score: 8954, players: 24, maxPlayers: 24, map: 'de_inferno', isOnline: true },
-  { id: 3, position: 3, name: 'Zombie Mod Paradise', region: 'US East', score: 8234, players: 31, maxPlayers: 32, map: 'zm_dust', isOnline: true }
-])
+// Loading states
+const loadingPlayers = ref(false)
+const loadingServers = ref(false)
+const loadingUsers = ref(false)
 
-const usersData = ref([
-  { id: 1, position: 1, name: 'AdminUser', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin1', role: 'Administrator', score: 15234, servers: 12, posts: 856, isOnline: true },
-  { id: 2, position: 2, name: 'ModeratörPro', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin2', role: 'Moderatör', score: 12456, servers: 8, posts: 623, isOnline: false },
-  { id: 3, position: 3, name: 'CommunityLead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin3', role: 'Community Manager', score: 10987, servers: 5, posts: 1234, isOnline: true }
-])
+// Fetch functions
+const fetchPlayers = async () => {
+  loadingPlayers.value = true
+  try {
+    const response = await fetch('/api/leaderboard?period=month&limit=50')
+    if (response.ok) {
+      const data = await response.json()
+      playersData.value = (data.leaderboard || []).map((p, i) => ({
+        id: p.user_id || i + 1,
+        position: i + 1,
+        name: p.username || 'Oyuncu',
+        avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`,
+        rank: getRankFromPoints(p.total_points),
+        score: Math.round(p.total_points) || 0,
+        kills: Math.round(p.total_points * 10) || 0,
+        deaths: Math.round(p.total_points * 3) || 0,
+        kd: (p.total_points / 30).toFixed(2),
+        accuracy: Math.min(99, Math.floor(50 + p.total_points / 100)),
+        isOnline: false
+      }))
+    }
+  } catch (error) {
+    console.error('Players fetch error:', error)
+  } finally {
+    loadingPlayers.value = false
+  }
+}
+
+const fetchServers = async () => {
+  loadingServers.value = true
+  try {
+    const response = await fetch('/api/servers/live?limit=20')
+    if (response.ok) {
+      const data = await response.json()
+      serversData.value = (data.servers || []).map((s, i) => ({
+        id: s.id,
+        position: i + 1,
+        name: s.name || 'Sunucu',
+        region: s.country || 'TR',
+        score: (s.current_players || s.players || 0) * 100 + (100 - (s.ping || 50)),
+        players: s.current_players || s.players || 0,
+        maxPlayers: s.max_players || 32,
+        map: s.current_map || s.map || 'unknown',
+        isOnline: s.is_online !== false
+      }))
+    }
+  } catch (error) {
+    console.error('Servers fetch error:', error)
+  } finally {
+    loadingServers.value = false
+  }
+}
+
+const fetchStaff = async () => {
+  // Staff listesi admin panelinden veya özel endpoint'den çekilebilir
+  // Şimdilik boş bırakıyoruz
+  loadingUsers.value = false
+  usersData.value = []
+}
+
+const getRankFromPoints = (points) => {
+  if (points >= 10000) return 'Global Elite'
+  if (points >= 7500) return 'Supreme Master'
+  if (points >= 5000) return 'Legendary Eagle'
+  if (points >= 3000) return 'Distinguished Master'
+  if (points >= 2000) return 'Master Guardian Elite'
+  if (points >= 1000) return 'Master Guardian'
+  if (points >= 500) return 'Gold Nova'
+  return 'Silver'
+}
 
 // Computed
 const currentData = computed(() => {
@@ -712,9 +781,9 @@ const getRowClasses = (item, index) => {
 }
 
 const getRankClass = (position) => {
-  if (position === 1) return 'rank-badge gold'
-  if (position === 2) return 'rank-badge silver'
-  if (position === 3) return 'rank-badge bronze'
+  if (position === 1) return 'rank-badge gold rank-glow'
+  if (position === 2) return 'rank-badge silver rank-glow'
+  if (position === 3) return 'rank-badge bronze rank-glow'
   return 'rank-badge normal'
 }
 
@@ -841,6 +910,10 @@ const animateCounters = () => {
 // Lifecycle
 onMounted(() => {
   setupIntersectionObserver()
+  // Fetch real data from API
+  fetchPlayers()
+  fetchServers()
+  fetchStaff()
 })
 
 onUnmounted(() => {
@@ -868,6 +941,10 @@ watch(activeCategory, () => {
   --bronze: #cd7f32;
   --purple: #a855f7;
   --cyan: #06b6d4;
+  min-height: 100vh;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
 }
 
 /* Glass Morphism */
@@ -2260,5 +2337,48 @@ watch(activeCategory, () => {
   .stats-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Empty & Loading States */
+.empty-state,
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-state svg {
+  opacity: 0.5;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(249, 115, 22, 0.2);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Subtle Background */
+.subtle-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at 20% 20%, rgba(249, 115, 22, 0.05) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 </style>

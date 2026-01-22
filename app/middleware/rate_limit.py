@@ -5,6 +5,7 @@ Redis backend desteği (fallback: in-memory)
 """
 
 import asyncio
+import ipaddress
 import logging
 import time
 from collections import defaultdict
@@ -52,11 +53,24 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Gercek IP adresini al (proxy arkasinda bile)"""
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
-            return forwarded.split(",")[0].strip()
+            ip = forwarded.split(",")[0].strip()
+            if self._is_valid_ip(ip):
+                return ip
         real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
+        if real_ip and self._is_valid_ip(real_ip):
             return real_ip
-        return request.client.host if request.client else "unknown"
+        client_ip = request.client.host if request.client else "unknown"
+        if self._is_valid_ip(client_ip):
+            return client_ip
+        return "unknown"
+
+    def _is_valid_ip(self, ip: str) -> bool:
+        """Validate IP address format"""
+        try:
+            ipaddress.ip_address(ip)
+            return True
+        except ValueError:
+            return False
     
     async def cleanup_old_requests(self, ip: str):
         """Eski request kayitlarini temizle (sadece memory backend)"""

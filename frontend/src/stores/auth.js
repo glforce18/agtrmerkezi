@@ -113,8 +113,12 @@ export const useAuthStore = defineStore('auth', () => {
   async function refreshToken() {
     try {
       const response = await authAPI.refresh()
-      token.value = response.access_token
-      setAccessToken(response.access_token)
+      const accessToken = response.token || response.access_token
+      if (!accessToken) {
+        return false
+      }
+      token.value = accessToken
+      setAccessToken(accessToken)
       return true
     } catch (err) {
       // Token refresh failed

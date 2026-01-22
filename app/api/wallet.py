@@ -332,7 +332,7 @@ async def buy_armor_package(
         "base_armor": base_armor,
         "bonus_armor": bonus_armor,
         "total_armor": total_armor,
-        "tl_spent": package["price"],
+        "tl_spent": package["tl_amount"],
         "new_balance_real": tl_tx.balance_after,
         "new_balance_armor": armor_tx.balance_after
     }

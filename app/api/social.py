@@ -516,7 +516,7 @@ async def get_clan(clan_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, "Klan bulunamadı")
     
     members = db.execute(text("""
-        SELECT cm.*, u.username, u.avatar_url FROM clan_members cm
+        SELECT cm.*, u.username, u.avatar FROM clan_members cm
         JOIN users u ON cm.user_id = u.id
         WHERE cm.clan_id = :cid ORDER BY cm.role DESC, cm.joined_at
     """), {"cid": clan_id}).fetchall()
@@ -530,7 +530,7 @@ async def get_clan(clan_id: int, db: Session = Depends(get_db)):
             "wins": clan[12], "losses": clan[13], "points": clan[14]
         },
         "members": [{
-            "user_id": m[2], "role": m[3], "username": m[5], "avatar_url": m[6],
+            "user_id": m[2], "role": m[3], "username": m[5], "avatar": m[6],
             "joined_at": m[4].isoformat() if m[4] else None
         } for m in members]
     }
@@ -660,13 +660,13 @@ async def list_friends(
     ensure_social_tables(db)
     
     rows = db.execute(text("""
-        SELECT u.id, u.username, u.avatar_url, f.created_at FROM friendships f
+        SELECT u.id, u.username, u.avatar, f.created_at FROM friendships f
         JOIN users u ON (f.friend_id = u.id AND f.user_id = :uid) OR (f.user_id = u.id AND f.friend_id = :uid)
         WHERE f.status = 'accepted' AND u.id != :uid
     """), {"uid": current_user.id}).fetchall()
     
     friends = [{
-        "id": r[0], "username": r[1], "avatar_url": r[2],
+        "id": r[0], "username": r[1], "avatar": r[2],
         "since": r[3].isoformat() if r[3] else None
     } for r in rows]
     

@@ -424,10 +424,10 @@ async def delete_media(
     if not url.startswith("/static/"):
         raise HTTPException(status_code=400, detail="Geçersiz URL")
 
-    file_path = Path("/var/www/agtrmerkezi") / url.lstrip("/")
+    file_path = (Path("/var/www/agtrmerkezi") / url.lstrip("/")).resolve()
 
     # Güvenlik kontrolü
-    if not str(file_path).startswith(str(STATIC_DIR)):
+    if not str(file_path).startswith(str(STATIC_DIR.resolve())):
         raise HTTPException(status_code=403, detail="Bu dosya silinemez")
 
     if file_path.exists():

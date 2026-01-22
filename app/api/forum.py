@@ -76,35 +76,58 @@ async def get_categories(db: Session = Depends(get_db)):
     except Exception:
         pass  # Cache hatasi durumunda DB'den devam
 
-    # Tek sorguda topic count'lari al (N+1 sorunu cozumu)
+    # Tek sorguda topic ve reply count'lari al (N+1 sorunu cozumu)
     from sqlalchemy import func as sqlfunc
-    categories_with_counts = db.query(
-        ForumCategory,
+
+    # Topic count subquery
+    topic_counts = db.query(
+        ForumTopic.category_id,
         sqlfunc.count(ForumTopic.id).label('topic_count')
+    ).group_by(ForumTopic.category_id).subquery()
+
+    # Reply count subquery (posts = replies)
+    reply_counts = db.query(
+        ForumTopic.category_id,
+        sqlfunc.count(ForumReply.id).label('reply_count')
+    ).join(
+        ForumReply, ForumReply.topic_id == ForumTopic.id
+    ).group_by(ForumTopic.category_id).subquery()
+
+    # Main query
+    categories = db.query(
+        ForumCategory,
+        sqlfunc.coalesce(topic_counts.c.topic_count, 0).label('topic_count'),
+        sqlfunc.coalesce(reply_counts.c.reply_count, 0).label('reply_count')
     ).outerjoin(
-        ForumTopic, ForumTopic.category_id == ForumCategory.id
+        topic_counts, topic_counts.c.category_id == ForumCategory.id
+    ).outerjoin(
+        reply_counts, reply_counts.c.category_id == ForumCategory.id
     ).filter(
         ForumCategory.is_visible == True
-    ).group_by(
-        ForumCategory.id
     ).order_by(ForumCategory.display_order).all()
 
     result = []
-    for cat, topic_count in categories_with_counts:
+    for cat, topic_count, reply_count in categories:
+        # Post count = topic count + reply count
+        post_count = (topic_count or 0) + (reply_count or 0)
         result.append({
             "id": cat.id,
             "name": cat.name,
             "slug": cat.slug,
             "description": cat.description,
-            "icon": cat.icon or "fas fa-folder",
-            "topic_count": topic_count or 0
+            "icon": cat.icon or "📁",
+            "color": cat.color or "#ff6b00",
+            "display_order": cat.display_order or 0,
+            "topic_count": topic_count or 0,
+            "post_count": post_count,
+            "reply_count": reply_count or 0
         })
 
     response = {"categories": result}
 
     # Cache'e kaydet
     try:
-        await redis_manager.set(cache_key, json.dumps(response), ttl=CACHE_TTL)
+        await redis_manager.set(cache_key, json.dumps(response), expire=CACHE_TTL)
     except Exception:
         pass  # Cache yazma hatasi kritik degil
 
@@ -191,7 +214,7 @@ async def get_category_topics(
             "title": topic.title,
             "slug": topic.slug,
             "author_name": topic.author.username if topic.author else None,
-            "author_avatar": None,  # Add if you have avatar field
+            "author_avatar": topic.author.avatar if topic.author else None,
             "is_pinned": topic.is_pinned,
             "is_locked": topic.is_locked,
             "view_count": topic.view_count or 0,
@@ -281,7 +304,7 @@ async def get_topic(slug: str, db: Session = Depends(get_db)):
         } if topic.category else None,
         "author_id": topic.user_id,
         "author_name": topic.author.username if topic.author else None,
-        "author_avatar": None,
+        "author_avatar": topic.author.avatar if topic.author else None,
         "is_pinned": topic.is_pinned,
         "is_locked": topic.is_locked,
         "view_count": topic.view_count,
@@ -384,7 +407,7 @@ async def get_topic_replies(slug: str, db: Session = Depends(get_db)):
                 "content": r.content,
                 "author_id": r.user_id,
                 "author_name": r.author.username if r.author else None,
-                "author_avatar": None,
+                "author_avatar": r.author.avatar if r.author else None,
                 "created_at": r.created_at.isoformat() if r.created_at else None
             }
             for r in replies
@@ -470,10 +493,36 @@ async def get_forum_stats(db: Session = Depends(get_db)):
         ForumReply.is_active == True
     ).scalar() or 0
 
+    # Total posts = topics + replies
+    total_posts = topic_count + reply_count
+
+    # Total members
+    member_count = db.query(func.count(User.id)).scalar() or 0
+
+    # Online users - simplified
+    online_count = 0
+    try:
+        from datetime import datetime, timedelta
+        fifteen_min_ago = datetime.utcnow() - timedelta(minutes=15)
+        if hasattr(User, 'last_activity'):
+            online_count = db.query(func.count(User.id)).filter(
+                User.last_activity >= fifteen_min_ago
+            ).scalar() or 0
+    except Exception:
+        pass
+
     return {
         "categories": category_count,
         "topics": topic_count,
-        "replies": reply_count
+        "replies": reply_count,
+        "total_topics": topic_count,
+        "topics_count": topic_count,
+        "total_posts": total_posts,
+        "posts_count": total_posts,
+        "total_members": member_count,
+        "members_count": member_count,
+        "online_users": online_count,
+        "online_count": online_count
     }
 
 

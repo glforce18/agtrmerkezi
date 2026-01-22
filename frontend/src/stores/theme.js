@@ -60,22 +60,22 @@ export const useThemeStore = defineStore('theme', () => {
       // Font
       fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       fontWeightStrong: '700',
-      // Body colors
-      bodyColor: isDark.value ? '#18181c' : '#ffffff',
-      cardColor: isDark.value ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
-      modalColor: isDark.value ? '#1f1f23' : '#ffffff',
-      popoverColor: isDark.value ? '#1f1f23' : '#ffffff',
+      // Body colors - Softer & Eye-friendly
+      bodyColor: isDark.value ? '#1a1b21' : '#ffffff',
+      cardColor: isDark.value ? 'rgba(255, 255, 255, 0.025)' : '#ffffff',
+      modalColor: isDark.value ? '#22232a' : '#ffffff',
+      popoverColor: isDark.value ? '#22232a' : '#ffffff',
       tableColor: isDark.value ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
-      // Text colors
-      textColorBase: isDark.value ? '#e5e5e5' : '#1a1a1a',
-      textColor1: isDark.value ? '#ffffff' : '#18181b',
-      textColor2: isDark.value ? '#a1a1aa' : '#52525b',
-      textColor3: isDark.value ? '#71717a' : '#a1a1aa',
-      // Border colors
-      borderColor: isDark.value ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-      dividerColor: isDark.value ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+      // Text colors - Better contrast
+      textColorBase: isDark.value ? '#e8e8ec' : '#1a1a1a',
+      textColor1: isDark.value ? '#f3f4f6' : '#18181b',
+      textColor2: isDark.value ? '#9ca3af' : '#52525b',
+      textColor3: isDark.value ? '#6b7280' : '#a1a1aa',
+      // Border colors - Softer
+      borderColor: isDark.value ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.1)',
+      dividerColor: isDark.value ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)',
       // Hover colors
-      hoverColor: isDark.value ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+      hoverColor: isDark.value ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.05)',
       // Heights
       heightTiny: '28px',
       heightSmall: '32px',

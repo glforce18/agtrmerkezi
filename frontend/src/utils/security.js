@@ -3,6 +3,28 @@
  * XSS prevention, input sanitization, and validation
  */
 
+import DOMPurify from 'dompurify'
+
+// Configure DOMPurify
+DOMPurify.setConfig({
+  ALLOWED_TAGS: [
+    'b', 'i', 'u', 's', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li',
+    'blockquote', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'img', 'span', 'div', 'table', 'thead', 'tbody', 'tr', 'th', 'td'
+  ],
+  ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'target', 'rel'],
+  FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'input', 'button', 'object', 'embed'],
+  FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus']
+})
+
+/**
+ * Sanitize rich HTML content using DOMPurify
+ */
+export function sanitizeRichHtml(html) {
+  if (!html || typeof html !== 'string') return ''
+  return DOMPurify.sanitize(html)
+}
+
 /**
  * Sanitize HTML to prevent XSS attacks
  * @param {string} html - Raw HTML string
@@ -272,8 +294,60 @@ export function throttle(func, limit = 1000) {
   }
 }
 
+/**
+ * Initialize Content Security Policy (CSP) via meta tag
+ * Note: Server-side CSP headers are preferred and more secure
+ */
+export function initCSP() {
+  // Only add if not already present
+  if (document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
+    return
+  }
+
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: https: blob:",
+    "connect-src 'self' https://www.google-analytics.com wss: ws:",
+    "media-src 'self' blob:",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "base-uri 'self'"
+  ].join('; ')
+
+  const meta = document.createElement('meta')
+  meta.httpEquiv = 'Content-Security-Policy'
+  meta.content = csp
+  document.head.insertBefore(meta, document.head.firstChild)
+}
+
+/**
+ * Initialize all security features
+ */
+export function initSecurity() {
+  // Initialize CSP
+  initCSP()
+
+  // Prevent clickjacking
+  if (window.self !== window.top) {
+    console.warn('[Security] Clickjacking attempt detected')
+    document.body.innerHTML = '<h1>Bu sayfa iframe içinde görüntülenemez</h1>'
+    return
+  }
+
+  // Warn about insecure context in production
+  if (!isSecureContext() && window.location.hostname !== 'localhost') {
+    console.warn('[Security] Running in insecure context (HTTP)')
+  }
+
+  console.log('%c[Security] Initialized', 'color: #22c55e')
+}
+
 export default {
   sanitizeHtml,
+  sanitizeRichHtml,
   sanitizeInput,
   sanitizeUrl,
   isValidEmail,
@@ -286,5 +360,7 @@ export default {
   isSecureContext,
   generateNonce,
   debounce,
-  throttle
+  throttle,
+  initCSP,
+  initSecurity
 }

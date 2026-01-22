@@ -1,1056 +1,454 @@
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
-  <!-- ==================== OYUN İKONLARI ==================== -->
-  
-  <!-- Half-Life Lambda Logo -->
+  <!-- ==================== HALF-LIFE / CS 1.6 ANA LOGOLAR ==================== -->
+
+  <!-- Half-Life Lambda Logo - Detaylı -->
   <symbol id="icon-halflife" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M8 18 L12 6 L16 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M9.5 15 L14.5 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <defs>
+      <linearGradient id="hl-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#ff6b00"/>
+        <stop offset="100%" style="stop-color:#ff9500"/>
+      </linearGradient>
+    </defs>
+    <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1"/>
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
+    <path d="M7 19 L12 5 L17 19" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M9 15 L15 15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
   </symbol>
-  
-  <!-- Adrenaline Gamer (AG) - Lambda with speed lines -->
+
+  <!-- Adrenaline Gamer (AG) - Hız Çizgileri -->
   <symbol id="icon-ag" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M8 18 L12 6 L16 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M9.5 15 L14.5 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    <path d="M2 8 L5 8" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
-    <path d="M2 12 L4 12" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
-    <path d="M2 16 L5 16" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+    <path d="M7.5 18 L12 6 L16.5 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M9 15 L15 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <!-- Speed lines -->
+    <path d="M1 7 L4 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+    <path d="M0 10 L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+    <path d="M1 13 L4 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+    <path d="M0 16 L2 16" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
   </symbol>
-  
-  <!-- Counter-Strike 1.6 -->
+
+  <!-- Counter-Strike 1.6 Logo -->
   <symbol id="icon-cs16" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M7 12 L11 12 L11 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M13 8 L13 16 L17 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- C harfi -->
+    <path d="M8 8 C5 8 5 16 8 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <!-- S harfi -->
+    <path d="M13 8 C17 8 17 11 13 12 C17 13 17 16 13 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
   </symbol>
-  
-  <!-- CS Gun/Crosshair -->
+
+  <!-- CS Crosshair - Nişangah -->
   <symbol id="icon-cs-crosshair" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="12" cy="12" r="2" fill="currentColor"/>
-    <path d="M12 2 L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M12 18 L12 22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M2 12 L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M18 12 L22 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+    <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+    <path d="M12 3 L12 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M12 16 L12 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M3 12 L8 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M16 12 L21 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
   </symbol>
-  
-  <!-- Half-Life Deathmatch (HLDM) - Skull -->
+
+  <!-- Half-Life Deathmatch (HLDM) -->
   <symbol id="icon-hldm" viewBox="0 0 24 24">
+    <circle cx="12" cy="11" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <!-- Gözler -->
+    <ellipse cx="9" cy="10" rx="2" ry="2.5" fill="currentColor"/>
+    <ellipse cx="15" cy="10" rx="2" ry="2.5" fill="currentColor"/>
+    <!-- Diş yapısı -->
+    <path d="M8 15 L8 20 M10 15 L10 19 M12 15 L12 21 M14 15 L14 19 M16 15 L16 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- ==================== SİLAH İKONLARI - DETAYLI ==================== -->
+
+  <!-- AK-47 -->
+  <symbol id="icon-weapon-ak47" viewBox="0 0 32 32">
+    <path d="M2 18 L8 18 L8 16 L12 16 L12 14 L16 14 L16 12 L28 12 L30 14 L30 16 L28 16 L26 18 L22 18 L22 20 L18 20 L18 22 L14 22 L14 20 L10 20 L10 18 L6 18 L4 20 L2 20 Z" fill="currentColor"/>
+    <rect x="18" y="8" width="8" height="4" rx="1" fill="currentColor"/>
+    <path d="M14 22 L14 26 L16 28 L18 26 L18 22" fill="currentColor"/>
+  </symbol>
+
+  <!-- AWP Sniper -->
+  <symbol id="icon-weapon-awp" viewBox="0 0 32 32">
+    <path d="M1 16 L4 16 L4 14 L28 14 L30 12 L31 12 L31 14 L30 16 L28 16 L28 18 L24 18 L24 20 L20 20 L18 22 L16 22 L16 20 L12 20 L12 18 L4 18 L4 16" fill="currentColor"/>
+    <circle cx="28" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M26 10 L30 10 M28 8 L28 12" stroke="currentColor" stroke-width="0.75"/>
+    <rect x="10" y="20" width="4" height="6" rx="1" fill="currentColor"/>
+  </symbol>
+
+  <!-- M4A1 -->
+  <symbol id="icon-weapon-m4a1" viewBox="0 0 32 32">
+    <path d="M2 16 L6 16 L6 14 L10 14 L10 12 L26 12 L28 10 L30 12 L30 14 L28 14 L28 16 L24 16 L24 18 L20 18 L20 20 L16 20 L16 18 L8 18 L6 20 L4 20 L4 18 L2 18 Z" fill="currentColor"/>
+    <rect x="8" y="8" width="6" height="4" rx="1" fill="currentColor"/>
+    <path d="M12 20 L12 24 L14 26 L16 24 L16 20" fill="currentColor"/>
+  </symbol>
+
+  <!-- Desert Eagle -->
+  <symbol id="icon-weapon-deagle" viewBox="0 0 32 32">
+    <path d="M4 14 L20 14 L22 12 L24 12 L24 14 L22 16 L22 20 L18 20 L18 24 L14 24 L14 22 L10 22 L10 20 L6 20 L4 18 Z" fill="currentColor"/>
+    <rect x="6" y="10" width="4" height="4" fill="currentColor"/>
+  </symbol>
+
+  <!-- Knife / Bıçak -->
+  <symbol id="icon-weapon-knife" viewBox="0 0 32 32">
+    <path d="M6 26 L8 24 L10 24 L12 22 L28 6 L30 8 L14 24 L14 26 L12 28 L10 28 L8 26 Z" fill="currentColor"/>
+    <path d="M6 26 L4 28 L2 26 L4 24 L6 26" fill="currentColor"/>
+  </symbol>
+
+  <!-- Crowbar (Half-Life) -->
+  <symbol id="icon-weapon-crowbar" viewBox="0 0 32 32">
+    <path d="M4 4 L8 4 L8 6 L10 8 L10 24 L8 26 L8 28 L4 28 L4 26 L6 24 L6 8 L4 6 Z" fill="currentColor"/>
+    <path d="M8 4 L12 8 L10 10 L8 8" fill="currentColor"/>
+    <path d="M4 28 L8 32 L6 32 L2 28" fill="currentColor"/>
+  </symbol>
+
+  <!-- Gauss Gun (Half-Life) -->
+  <symbol id="icon-weapon-gauss" viewBox="0 0 32 32">
+    <rect x="2" y="12" width="24" height="8" rx="2" fill="currentColor"/>
+    <rect x="26" y="10" width="4" height="12" rx="1" fill="currentColor"/>
+    <circle cx="28" cy="16" r="2" fill="none" stroke="currentColor" stroke-width="1"/>
+    <rect x="6" y="20" width="6" height="8" rx="1" fill="currentColor"/>
+    <path d="M30 14 L32 12 L32 20 L30 18" fill="currentColor" opacity="0.6"/>
+  </symbol>
+
+  <!-- Crossbow (Half-Life) -->
+  <symbol id="icon-weapon-crossbow" viewBox="0 0 32 32">
+    <rect x="8" y="14" width="20" height="4" rx="1" fill="currentColor"/>
+    <path d="M4 8 L12 14 L12 18 L4 24 L6 24 L14 18 L14 14 L6 8 Z" fill="currentColor"/>
+    <circle cx="24" cy="16" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M22 16 L26 16 M24 14 L24 18" stroke="currentColor" stroke-width="0.5"/>
+  </symbol>
+
+  <!-- ==================== HUD ELEMENTLERİ ==================== -->
+
+  <!-- Health / Can -->
+  <symbol id="icon-hud-health" viewBox="0 0 24 24">
+    <path d="M12 21 C6 17 3 13 3 9 C3 6 5.5 4 8.5 4 C10 4 11.5 5 12 6 C12.5 5 14 4 15.5 4 C18.5 4 21 6 21 9 C21 13 18 17 12 21Z" fill="currentColor"/>
+    <path d="M10 10 L14 10 M12 8 L12 12" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Armor / Zırh -->
+  <symbol id="icon-hud-armor" viewBox="0 0 24 24">
+    <path d="M12 2 L21 6 L21 11 C21 16 17 20 12 22 C7 20 3 16 3 11 L3 6 Z" fill="currentColor"/>
+    <path d="M12 6 L12 18 M7 10 L17 10" stroke="#fff" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="12" cy="12" r="3" fill="none" stroke="#fff" stroke-width="1.5"/>
+  </symbol>
+
+  <!-- Ammo / Mermi -->
+  <symbol id="icon-hud-ammo" viewBox="0 0 24 24">
+    <rect x="8" y="3" width="8" height="18" rx="2" fill="currentColor"/>
+    <rect x="10" y="5" width="4" height="3" fill="#fff" opacity="0.3"/>
+    <path d="M9 21 L9 22 L15 22 L15 21" fill="currentColor"/>
+    <ellipse cx="12" cy="3" rx="3" ry="1" fill="currentColor"/>
+  </symbol>
+
+  <!-- Money / Para -->
+  <symbol id="icon-hud-money" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" fill="currentColor"/>
+    <path d="M12 6 L12 18 M9 8 C9 8 15 8 15 11 C15 14 9 14 9 14 C9 14 15 14 15 17" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Timer / Bomba Zamanlayıcı -->
+  <symbol id="icon-hud-timer" viewBox="0 0 24 24">
+    <circle cx="12" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M12 7 L12 13 L16 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <rect x="10" y="2" width="4" height="3" rx="1" fill="currentColor"/>
+    <path d="M8 4 L6 2 M16 4 L18 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- ==================== KILL FEED İKONLARI ==================== -->
+
+  <!-- Headshot -->
+  <symbol id="icon-kill-headshot" viewBox="0 0 24 24">
     <circle cx="12" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="9" cy="9" r="2" fill="currentColor"/>
-    <circle cx="15" cy="9" r="2" fill="currentColor"/>
-    <path d="M9 14 L9 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M12 14 L12 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M15 14 L15 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="12" cy="10" r="4" fill="none" stroke="currentColor" stroke-width="1"/>
+    <circle cx="12" cy="10" r="1.5" fill="currentColor"/>
+    <path d="M12 2 L12 5 M12 15 L12 18 M4 10 L7 10 M17 10 L20 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M12 18 L10 22 L12 21 L14 22 Z" fill="currentColor"/>
   </symbol>
-  
-  <!-- Team Fortress Classic -->
-  <symbol id="icon-tfc" viewBox="0 0 24 24">
-    <rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M8 6 L8 18" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M16 6 L16 18" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M3 12 L21 12" stroke="currentColor" stroke-width="1.5"/>
+
+  <!-- Kill Arrow -->
+  <symbol id="icon-kill-arrow" viewBox="0 0 24 24">
+    <path d="M5 12 L19 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M15 8 L19 12 L15 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="5" cy="12" r="2" fill="currentColor"/>
   </symbol>
-  
-  <!-- ==================== RANK TIER BADGES ==================== -->
-  
-  <!-- Legendary (Efsane) - Crown -->
+
+  <!-- Bomb -->
+  <symbol id="icon-kill-bomb" viewBox="0 0 24 24">
+    <circle cx="12" cy="14" r="8" fill="currentColor"/>
+    <rect x="10" y="4" width="4" height="4" rx="1" fill="currentColor"/>
+    <path d="M12 4 L12 2 L14 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M14 1 L16 2 L15 4" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="9" cy="12" r="1" fill="#fff" opacity="0.3"/>
+  </symbol>
+
+  <!-- Defuse -->
+  <symbol id="icon-kill-defuse" viewBox="0 0 24 24">
+    <circle cx="12" cy="14" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M8 14 L11 17 L16 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="10" y="4" width="4" height="3" rx="1" fill="currentColor"/>
+    <path d="M12 4 L12 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Kill Streak -->
+  <symbol id="icon-kill-streak" viewBox="0 0 24 24">
+    <path d="M12 2 L14 8 L20 8 L15 12 L17 18 L12 14 L7 18 L9 12 L4 8 L10 8 Z" fill="currentColor"/>
+    <circle cx="12" cy="10" r="2" fill="#fff" opacity="0.5"/>
+  </symbol>
+
+  <!-- ==================== RANK BADGES ==================== -->
+
+  <!-- Legendary -->
   <symbol id="icon-rank-legendary" viewBox="0 0 24 24">
-    <path d="M2 17 L4 8 L8 12 L12 6 L16 12 L20 8 L22 17 Z" fill="currentColor"/>
-    <rect x="2" y="17" width="20" height="4" rx="1" fill="currentColor"/>
+    <path d="M2 18 L4 8 L8 12 L12 4 L16 12 L20 8 L22 18 Z" fill="currentColor"/>
+    <rect x="2" y="18" width="20" height="4" rx="1" fill="currentColor"/>
     <circle cx="12" cy="4" r="2" fill="currentColor"/>
-    <circle cx="6" cy="10" r="1" fill="currentColor"/>
-    <circle cx="18" cy="10" r="1" fill="currentColor"/>
+    <circle cx="6" cy="10" r="1.5" fill="currentColor"/>
+    <circle cx="18" cy="10" r="1.5" fill="currentColor"/>
   </symbol>
-  
-  <!-- Master (Usta) - Diamond Star -->
+
+  <!-- Master -->
   <symbol id="icon-rank-master" viewBox="0 0 24 24">
     <path d="M12 2 L14.5 9 L22 9 L16 14 L18.5 22 L12 17 L5.5 22 L8 14 L2 9 L9.5 9 Z" fill="currentColor"/>
   </symbol>
-  
-  <!-- Diamond (Elmas) -->
+
+  <!-- Diamond -->
   <symbol id="icon-rank-diamond" viewBox="0 0 24 24">
-    <path d="M6 3 L18 3 L22 9 L12 21 L2 9 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M2 9 L22 9" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M12 3 L12 9 L12 21" stroke="currentColor" stroke-width="1"/>
-    <path d="M6 3 L9 9 L12 3 L15 9 L18 3" stroke="currentColor" stroke-width="1"/>
+    <path d="M6 3 L18 3 L22 9 L12 21 L2 9 Z" fill="currentColor"/>
+    <path d="M2 9 L22 9 M6 3 L9 9 L12 3 L15 9 L18 3 M12 9 L12 21" stroke="#fff" stroke-width="0.5" opacity="0.3"/>
   </symbol>
-  
-  <!-- Gold (Altın) - Medal -->
+
+  <!-- Gold -->
   <symbol id="icon-rank-gold" viewBox="0 0 24 24">
-    <circle cx="12" cy="14" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M9 2 L12 8 L15 2" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M12 10 L13.5 13 L17 13.5 L14.5 16 L15 19.5 L12 18 L9 19.5 L9.5 16 L7 13.5 L10.5 13 Z" fill="currentColor"/>
+    <circle cx="12" cy="14" r="8" fill="currentColor"/>
+    <path d="M9 2 L12 8 L15 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M12 10 L13.5 13 L17 13.5 L14.5 16 L15 19.5 L12 18 L9 19.5 L9.5 16 L7 13.5 L10.5 13 Z" fill="#fff" opacity="0.3"/>
   </symbol>
-  
-  <!-- Silver (Gümüş) - Shield -->
+
+  <!-- Silver -->
   <symbol id="icon-rank-silver" viewBox="0 0 24 24">
-    <path d="M12 2 L20 6 L20 12 C20 16 16 20 12 22 C8 20 4 16 4 12 L4 6 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M12 7 L12 17" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M8 12 L16 12" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M12 2 L20 6 L20 12 C20 16 16 20 12 22 C8 20 4 16 4 12 L4 6 Z" fill="currentColor"/>
+    <path d="M12 7 L12 17 M8 12 L16 12" stroke="#fff" stroke-width="1.5" opacity="0.3"/>
   </symbol>
-  
-  <!-- Bronze (Bronz) - Circle Badge -->
+
+  <!-- Bronze -->
   <symbol id="icon-rank-bronze" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1"/>
-    <circle cx="12" cy="12" r="3" fill="currentColor"/>
-  </symbol>
-  
-  <!-- ==================== UI İKONLARI ==================== -->
-  
-  <!-- Dashboard -->
-  <symbol id="icon-dashboard" viewBox="0 0 24 24">
-    <rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
-    <rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
-    <rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
-    <rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Users -->
-  <symbol id="icon-users" viewBox="0 0 24 24">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    <circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- User -->
-  <symbol id="icon-user" viewBox="0 0 24 24">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    <circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Server -->
-  <symbol id="icon-server" viewBox="0 0 24 24">
-    <rect x="2" y="2" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <rect x="2" y="14" width="20" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="6" cy="6" r="1" fill="currentColor"/>
-    <circle cx="6" cy="18" r="1" fill="currentColor"/>
-  </symbol>
-  
-  <!-- Payment/Wallet -->
-  <symbol id="icon-wallet" viewBox="0 0 24 24">
-    <path d="M21 4H3c-1 0-2 1-2 2v12c0 1 1 2 2 2h18c1 0 2-1 2-2V6c0-1-1-2-2-2z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M1 10h22" stroke="currentColor" stroke-width="2"/>
-    <circle cx="18" cy="15" r="2" fill="currentColor"/>
-  </symbol>
-  
-  <!-- Money/TL -->
-  <symbol id="icon-money" viewBox="0 0 24 24">
-    <path d="M12 1v22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Credit Card -->
-  <symbol id="icon-credit-card" viewBox="0 0 24 24">
-    <rect x="1" y="4" width="22" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M1 10h22" stroke="currentColor" stroke-width="2"/>
-    <path d="M5 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Forum/Chat -->
-  <symbol id="icon-forum" viewBox="0 0 24 24">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Announcement/Megaphone -->
-  <symbol id="icon-announcement" viewBox="0 0 24 24">
-    <path d="M19 10c0 3.5-3 6.5-3 6.5l-11-4v-5l11-4s3 3 3 6.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-    <path d="M5 7.5v9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    <path d="M5 16.5l2 4h3l-2-4" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Settings/Gear -->
-  <symbol id="icon-settings" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Security/Shield -->
-  <symbol id="icon-security" viewBox="0 0 24 24">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Package/Box -->
-  <symbol id="icon-package" viewBox="0 0 24 24">
-    <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Coupon/Ticket -->
-  <symbol id="icon-coupon" viewBox="0 0 24 24">
-    <path d="M2 9a3 3 0 0 1 3 3 3 3 0 0 1-3 3v4h20v-4a3 3 0 0 1 0-6V5H2z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M13 5v2m0 4v2m0 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Theme/Palette -->
-  <symbol id="icon-theme" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="12" cy="8" r="2" fill="currentColor"/>
-    <circle cx="8" cy="14" r="2" fill="currentColor"/>
-    <circle cx="16" cy="14" r="2" fill="currentColor"/>
-  </symbol>
-  
-  <!-- Content/Document -->
-  <symbol id="icon-content" viewBox="0 0 24 24">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Reports/Chart -->
-  <symbol id="icon-reports" viewBox="0 0 24 24">
-    <path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Trophy -->
-  <symbol id="icon-trophy" viewBox="0 0 24 24">
-    <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M6 3h12v8a6 6 0 0 1-12 0V3z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M12 17v4M8 21h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Leaderboard -->
-  <symbol id="icon-leaderboard" viewBox="0 0 24 24">
-    <rect x="4" y="10" width="5" height="11" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
-    <rect x="10" y="3" width="5" height="18" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
-    <rect x="16" y="7" width="5" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Search -->
-  <symbol id="icon-search" viewBox="0 0 24 24">
-    <circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Notification/Bell -->
-  <symbol id="icon-notification" viewBox="0 0 24 24">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Home -->
-  <symbol id="icon-home" viewBox="0 0 24 24">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Plus/Add -->
-  <symbol id="icon-plus" viewBox="0 0 24 24">
-    <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Minus -->
-  <symbol id="icon-minus" viewBox="0 0 24 24">
-    <path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Close/X -->
-  <symbol id="icon-close" viewBox="0 0 24 24">
-    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Check -->
-  <symbol id="icon-check" viewBox="0 0 24 24">
-    <path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Arrow Right -->
-  <symbol id="icon-arrow-right" viewBox="0 0 24 24">
-    <path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Arrow Left -->
-  <symbol id="icon-arrow-left" viewBox="0 0 24 24">
-    <path d="M19 12H5M12 19l-7-7 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Chevron Down -->
-  <symbol id="icon-chevron-down" viewBox="0 0 24 24">
-    <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Chevron Up -->
-  <symbol id="icon-chevron-up" viewBox="0 0 24 24">
-    <path d="M18 15l-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Edit/Pencil -->
-  <symbol id="icon-edit" viewBox="0 0 24 24">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Delete/Trash -->
-  <symbol id="icon-trash" viewBox="0 0 24 24">
-    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Eye/View -->
-  <symbol id="icon-eye" viewBox="0 0 24 24">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Eye Off -->
-  <symbol id="icon-eye-off" viewBox="0 0 24 24">
-    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M1 1l22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Copy -->
-  <symbol id="icon-copy" viewBox="0 0 24 24">
-    <rect x="9" y="9" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Download -->
-  <symbol id="icon-download" viewBox="0 0 24 24">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Upload -->
-  <symbol id="icon-upload" viewBox="0 0 24 24">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- External Link -->
-  <symbol id="icon-external-link" viewBox="0 0 24 24">
-    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Logout -->
-  <symbol id="icon-logout" viewBox="0 0 24 24">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Login -->
-  <symbol id="icon-login" viewBox="0 0 24 24">
-    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Clock/Time -->
-  <symbol id="icon-clock" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Calendar -->
-  <symbol id="icon-calendar" viewBox="0 0 24 24">
-    <rect x="3" y="4" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Star -->
-  <symbol id="icon-star" viewBox="0 0 24 24">
-    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Star Filled -->
-  <symbol id="icon-star-filled" viewBox="0 0 24 24">
-    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Heart -->
-  <symbol id="icon-heart" viewBox="0 0 24 24">
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Flag -->
-  <symbol id="icon-flag" viewBox="0 0 24 24">
-    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Pin -->
-  <symbol id="icon-pin" viewBox="0 0 24 24">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Mail -->
-  <symbol id="icon-mail" viewBox="0 0 24 24">
-    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M22 6l-10 7L2 6" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Globe -->
-  <symbol id="icon-globe" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Wifi -->
-  <symbol id="icon-wifi" viewBox="0 0 24 24">
-    <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Zap/Lightning -->
-  <symbol id="icon-zap" viewBox="0 0 24 24">
-    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Info -->
-  <symbol id="icon-info" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Warning/Alert Triangle -->
-  <symbol id="icon-warning" viewBox="0 0 24 24">
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Error/X Circle -->
-  <symbol id="icon-error" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Success/Check Circle -->
-  <symbol id="icon-success" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Menu/Hamburger -->
-  <symbol id="icon-menu" viewBox="0 0 24 24">
-    <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- More Horizontal -->
-  <symbol id="icon-more-h" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="1" fill="currentColor"/>
-    <circle cx="19" cy="12" r="1" fill="currentColor"/>
-    <circle cx="5" cy="12" r="1" fill="currentColor"/>
-  </symbol>
-  
-  <!-- More Vertical -->
-  <symbol id="icon-more-v" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="1" fill="currentColor"/>
-    <circle cx="12" cy="5" r="1" fill="currentColor"/>
-    <circle cx="12" cy="19" r="1" fill="currentColor"/>
-  </symbol>
-  
-  <!-- Filter -->
-  <symbol id="icon-filter" viewBox="0 0 24 24">
-    <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Refresh -->
-  <symbol id="icon-refresh" viewBox="0 0 24 24">
-    <path d="M23 4v6h-6M1 20v-6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Lock -->
-  <symbol id="icon-lock" viewBox="0 0 24 24">
-    <rect x="3" y="11" width="18" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Unlock -->
-  <symbol id="icon-unlock" viewBox="0 0 24 24">
-    <rect x="3" y="11" width="18" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M7 11V7a5 5 0 0 1 9.9-1" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Play -->
-  <symbol id="icon-play" viewBox="0 0 24 24">
-    <path d="M5 3l14 9-14 9V3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Pause -->
-  <symbol id="icon-pause" viewBox="0 0 24 24">
-    <rect x="6" y="4" width="4" height="16" fill="none" stroke="currentColor" stroke-width="2"/>
-    <rect x="14" y="4" width="4" height="16" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Stop -->
-  <symbol id="icon-stop" viewBox="0 0 24 24">
-    <rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Power -->
-  <symbol id="icon-power" viewBox="0 0 24 24">
-    <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Terminal -->
-  <symbol id="icon-terminal" viewBox="0 0 24 24">
-    <path d="M4 17l6-6-6-6M12 19h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Code -->
-  <symbol id="icon-code" viewBox="0 0 24 24">
-    <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Database -->
-  <symbol id="icon-database" viewBox="0 0 24 24">
-    <ellipse cx="12" cy="5" rx="9" ry="3" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Social: Discord -->
-  <symbol id="icon-discord" viewBox="0 0 24 24">
-    <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" fill="currentColor"/>
-  </symbol>
-  
-  <!-- Social: Steam -->
-  <symbol id="icon-steam" viewBox="0 0 24 24">
-    <path d="M12 2a10 10 0 0 0-10 10.002c0 4.378 2.817 8.102 6.74 9.45l.35-.76A4.498 4.498 0 0 1 12.001 18a4.5 4.5 0 0 1 4.5-4.5 4.5 4.5 0 0 1 .002 0l1.498-1.001A7.5 7.5 0 0 0 12 5a7.5 7.5 0 0 0-7.5 7.5c0 .171.006.341.018.51l1.476.99a4.5 4.5 0 0 1 8.012 2v.003a4.5 4.5 0 0 1-4.506 4.497c-.893 0-1.73-.26-2.433-.708l-.37.797A10 10 0 1 0 12 2z" fill="currentColor"/>
-    <circle cx="16.5" cy="13.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="9" cy="16" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
-  </symbol>
-  
-  <!-- Social: Twitch -->
-  <symbol id="icon-twitch" viewBox="0 0 24 24">
-    <path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Social: YouTube -->
-  <symbol id="icon-youtube" viewBox="0 0 24 24">
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="currentColor"/>
-  </symbol>
-  
-  <!-- Online Status Dot -->
-  <symbol id="icon-status-online" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="8" fill="#10b981"/>
-    <circle cx="12" cy="12" r="4" fill="#34d399"/>
-  </symbol>
-  
-  <!-- Offline Status Dot -->
-  <symbol id="icon-status-offline" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="8" fill="#6b7280"/>
-    <circle cx="12" cy="12" r="4" fill="#9ca3af"/>
-  </symbol>
-  
-  <!-- Maintenance Status -->
-  <symbol id="icon-status-maintenance" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="8" fill="#f59e0b"/>
-    <path d="M12 8v4M12 16h.01" stroke="#000" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Medal Gold -->
-  <symbol id="icon-medal-gold" viewBox="0 0 24 24">
-    <circle cx="12" cy="9" r="6" fill="#ffd700" stroke="#ffaa00" stroke-width="1"/>
-    <path d="M8 15l-2 7 6-3 6 3-2-7" fill="#ff6b00"/>
-    <text x="12" y="12" text-anchor="middle" font-size="8" font-weight="bold" fill="#000">1</text>
-  </symbol>
-  
-  <!-- Medal Silver -->
-  <symbol id="icon-medal-silver" viewBox="0 0 24 24">
-    <circle cx="12" cy="9" r="6" fill="#c0c0c0" stroke="#a0a0a0" stroke-width="1"/>
-    <path d="M8 15l-2 7 6-3 6 3-2-7" fill="#6b7280"/>
-    <text x="12" y="12" text-anchor="middle" font-size="8" font-weight="bold" fill="#000">2</text>
-  </symbol>
-  
-  <!-- Medal Bronze -->
-  <symbol id="icon-medal-bronze" viewBox="0 0 24 24">
-    <circle cx="12" cy="9" r="6" fill="#cd7f32" stroke="#b45309" stroke-width="1"/>
-    <path d="M8 15l-2 7 6-3 6 3-2-7" fill="#92400e"/>
-    <text x="12" y="12" text-anchor="middle" font-size="8" font-weight="bold" fill="#fff">3</text>
-  </symbol>
-  
-  <!-- Gamepad -->
-  <symbol id="icon-gamepad" viewBox="0 0 24 24">
-    <path d="M6 11h4M8 9v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    <circle cx="17" cy="10" r="1" fill="currentColor"/>
-    <circle cx="15" cy="12" r="1" fill="currentColor"/>
-    <path d="M2 15.5A2.5 2.5 0 0 0 4.5 18h15a2.5 2.5 0 0 0 2.5-2.5v-5A2.5 2.5 0 0 0 19.5 8h-15A2.5 2.5 0 0 0 2 10.5v5z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Crosshair (for games) -->
-  <symbol id="icon-crosshair" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M22 12h-4M6 12H2M12 6V2M12 22v-4" stroke="currentColor" stroke-width="2"/>
-    <circle cx="12" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Target -->
-  <symbol id="icon-target" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="12" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Award -->
-  <symbol id="icon-award" viewBox="0 0 24 24">
-    <circle cx="12" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Share -->
-  <symbol id="icon-share" viewBox="0 0 24 24">
-    <circle cx="18" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="6" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="18" cy="19" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Bookmark -->
-  <symbol id="icon-bookmark" viewBox="0 0 24 24">
-    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Tag -->
-  <symbol id="icon-tag" viewBox="0 0 24 24">
-    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="7" cy="7" r="1" fill="currentColor"/>
-  </symbol>
-  
-  <!-- Layers -->
-  <symbol id="icon-layers" viewBox="0 0 24 24">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- CPU -->
-  <symbol id="icon-cpu" viewBox="0 0 24 24">
-    <rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <rect x="9" y="9" width="6" height="6" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Image -->
-  <symbol id="icon-image" viewBox="0 0 24 24">
-    <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
-    <path d="M21 15l-5-5L5 21" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- File -->
-  <symbol id="icon-file" viewBox="0 0 24 24">
-    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M13 2v7h7" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Folder -->
-  <symbol id="icon-folder" viewBox="0 0 24 24">
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Activity -->
-  <symbol id="icon-activity" viewBox="0 0 24 24">
-    <path d="M22 12h-4l-3 9L9 3l-3 9H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Bar Chart -->
-  <symbol id="icon-bar-chart" viewBox="0 0 24 24">
-    <path d="M12 20V10M18 20V4M6 20v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Pie Chart -->
-  <symbol id="icon-pie-chart" viewBox="0 0 24 24">
-    <path d="M21.21 15.89A10 10 0 1 1 8 2.83M22 12A10 10 0 0 0 12 2v10z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Trending Up -->
-  <symbol id="icon-trending-up" viewBox="0 0 24 24">
-    <path d="M23 6l-9.5 9.5-5-5L1 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M17 6h6v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Trending Down -->
-  <symbol id="icon-trending-down" viewBox="0 0 24 24">
-    <path d="M23 18l-9.5-9.5-5 5L1 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M17 18h6v-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </symbol>
-  
-  <!-- Wrench (Support) -->
-  <symbol id="icon-wrench" viewBox="0 0 24 24">
-    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Tool -->
-  <symbol id="icon-tool" viewBox="0 0 24 24">
-    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Command -->
-  <symbol id="icon-command" viewBox="0 0 24 24">
-    <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Thumbs Up -->
-  <symbol id="icon-thumbs-up" viewBox="0 0 24 24">
-    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Thumbs Down -->
-  <symbol id="icon-thumbs-down" viewBox="0 0 24 24">
-    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Message Circle -->
-  <symbol id="icon-message-circle" viewBox="0 0 24 24">
-    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Reply -->
-  <symbol id="icon-reply" viewBox="0 0 24 24">
-    <path d="M9 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5l-5 5v-5z" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- At Sign -->
-  <symbol id="icon-at-sign" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-  
-  <!-- Hash -->
-  <symbol id="icon-hash" viewBox="0 0 24 24">
-    <path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="12" cy="12" r="10" fill="currentColor"/>
+    <circle cx="12" cy="12" r="6" fill="none" stroke="#fff" stroke-width="1" opacity="0.3"/>
+    <circle cx="12" cy="12" r="2" fill="#fff" opacity="0.3"/>
   </symbol>
 
-  <!-- ==================== ACHIEVEMENT BADGES ==================== -->
-  
-  <!-- First Win Achievement -->
+  <!-- ==================== ACHIEVEMENT İKONLARI ==================== -->
+
+  <!-- First Win -->
   <symbol id="icon-achievement-first-win" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="#10b981" opacity="0.2"/>
-    <circle cx="12" cy="12" r="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
-    <path d="M9 12l2 2 4-4" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="18" cy="6" r="3" fill="#fbbf24"/>
-    <text x="18" y="7.5" text-anchor="middle" font-size="5" font-weight="bold" fill="#000">1</text>
+    <path d="M6 4 L6 10 C6 14 9 17 12 17 C15 17 18 14 18 10 L18 4 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M4 4 L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M6 10 L4 12 L6 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M18 10 L20 12 L18 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M12 17 L12 20 L9 22 L15 22 L12 20" fill="currentColor"/>
+    <circle cx="12" cy="10" r="2" fill="currentColor"/>
   </symbol>
-  
-  <!-- 100 Kills Achievement -->
+
+  <!-- 100 Kills -->
   <symbol id="icon-achievement-100kills" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="#ef4444" opacity="0.2"/>
-    <circle cx="12" cy="12" r="10" fill="none" stroke="#ef4444" stroke-width="1.5"/>
-    <path d="M12 6v6l4 2" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
-    <text x="12" y="18" text-anchor="middle" font-size="6" font-weight="bold" fill="#ef4444">100</text>
-  </symbol>
-  
-  <!-- Tournament Champion -->
-  <symbol id="icon-achievement-champion" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="#fbbf24" opacity="0.2"/>
-    <circle cx="12" cy="12" r="10" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
-    <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
-    <path d="M6 3h12v8a6 6 0 0 1-12 0V3z" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
-    <path d="M12 17v3M9 20h6" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Veteran Player -->
-  <symbol id="icon-achievement-veteran" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="#8b5cf6" opacity="0.2"/>
-    <circle cx="12" cy="12" r="10" fill="none" stroke="#8b5cf6" stroke-width="1.5"/>
-    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#8b5cf6" stroke="#8b5cf6" stroke-width="1"/>
-  </symbol>
-  
-  <!-- Top 10 Finish -->
-  <symbol id="icon-achievement-top10" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="#3b82f6" opacity="0.2"/>
-    <circle cx="12" cy="12" r="10" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
-    <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="bold" fill="#3b82f6">10</text>
-  </symbol>
-  
-  <!-- Streak Achievement -->
-  <symbol id="icon-achievement-streak" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="#f97316" opacity="0.2"/>
-    <circle cx="12" cy="12" r="10" fill="none" stroke="#f97316" stroke-width="1.5"/>
-    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#f97316" stroke="#f97316" stroke-width="1"/>
-  </symbol>
-  
-  <!-- Early Supporter -->
-  <symbol id="icon-achievement-early" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="#06b6d4" opacity="0.2"/>
-    <circle cx="12" cy="12" r="10" fill="none" stroke="#06b6d4" stroke-width="1.5"/>
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="#06b6d4" stroke="#06b6d4" stroke-width="1"/>
-  </symbol>
-  
-  <!-- ==================== PAYMENT ICONS ==================== -->
-  
-  <!-- Papara -->
-  <symbol id="icon-payment-papara" viewBox="0 0 24 24">
-    <rect x="2" y="4" width="20" height="16" rx="2" fill="#7B68EE"/>
-    <text x="12" y="14" text-anchor="middle" font-size="7" font-weight="bold" fill="white">P</text>
-  </symbol>
-  
-  <!-- Bank Transfer -->
-  <symbol id="icon-payment-bank" viewBox="0 0 24 24">
-    <path d="M3 21h18M3 10h18M5 6l7-3 7 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M4 10v11M20 10v11M8 10v11M12 10v11M16 10v11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Credit Card (detailed) -->
-  <symbol id="icon-payment-card" viewBox="0 0 24 24">
-    <rect x="1" y="4" width="22" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M1 10h22" stroke="currentColor" stroke-width="2"/>
-    <rect x="4" y="14" width="5" height="3" rx="0.5" fill="currentColor" opacity="0.5"/>
-    <circle cx="18" cy="15.5" r="2" fill="none" stroke="currentColor" stroke-width="1"/>
-    <circle cx="16" cy="15.5" r="2" fill="none" stroke="currentColor" stroke-width="1"/>
-  </symbol>
-  
-  <!-- Crypto -->
-  <symbol id="icon-payment-crypto" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M9 8h6l-3 4 3 4H9l3-4-3-4z" fill="currentColor"/>
-  </symbol>
-  
-  <!-- TL (Turkish Lira) -->
-  <symbol id="icon-payment-tl" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M14 7v10M10 10l8-2M10 14l8-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Invoice -->
-  <symbol id="icon-invoice" viewBox="0 0 24 24">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M14 2v6h6M8 13h8M8 17h8M8 9h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Receipt -->
-  <symbol id="icon-receipt" viewBox="0 0 24 24">
-    <path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 3 2V2l-3 2-3-2-3 2-3-2-3 2-3-2z" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M8 10h8M8 14h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Percent/Discount -->
-  <symbol id="icon-percent" viewBox="0 0 24 24">
-    <circle cx="9" cy="9" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="15" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-  
-  <!-- Gift -->
-  <symbol id="icon-gift" viewBox="0 0 24 24">
-    <rect x="3" y="8" width="18" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M12 8v14M3 12h18" stroke="currentColor" stroke-width="2"/>
-    <path d="M12 8c-2-2-4-2-4 0s4 0 4 0 4 2 4 0-2-2-4 0" fill="none" stroke="currentColor" stroke-width="2"/>
-  </symbol>
-
-  <!-- ==================== OYUN GÖRSELLERİ (FASE 3: 13-17) ==================== -->
-
-  <!-- Map Preview Frame -->
-  <symbol id="icon-map-preview" viewBox="0 0 24 24">
-    <rect x="2" y="3" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M2 7h20" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="5" cy="5" r="1" fill="#ef4444"/>
-    <circle cx="8" cy="5" r="1" fill="#f59e0b"/>
-    <circle cx="11" cy="5" r="1" fill="#10b981"/>
-    <path d="M6 12l4-2 4 3 4-2" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-    <rect x="5" y="19" width="14" height="2" rx="1" fill="currentColor" opacity="0.5"/>
-  </symbol>
-
-  <!-- Map Dust2 (CS classic) -->
-  <symbol id="icon-map-dust2" viewBox="0 0 24 24">
-    <rect x="2" y="2" width="20" height="20" rx="2" fill="#d4a76a" fill-opacity="0.2"/>
-    <rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="#d4a76a" stroke-width="1.5"/>
-    <path d="M6 12h5v6h-5zM13 6h5v10h-5z" fill="#d4a76a" fill-opacity="0.3" stroke="#d4a76a" stroke-width="1"/>
-    <circle cx="8.5" cy="15" r="1.5" fill="#ef4444"/>
-    <circle cx="15.5" cy="11" r="1.5" fill="#3b82f6"/>
-    <text x="12" y="22" text-anchor="middle" font-size="3" fill="#d4a76a" font-weight="bold">DUST2</text>
-  </symbol>
-
-  <!-- Map Crossfire (HL classic) -->
-  <symbol id="icon-map-crossfire" viewBox="0 0 24 24">
-    <rect x="2" y="2" width="20" height="20" rx="2" fill="#4a5568" fill-opacity="0.2"/>
-    <rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="#4a5568" stroke-width="1.5"/>
-    <path d="M4 12h16M12 4v16" stroke="#ff6b00" stroke-width="2" stroke-linecap="round"/>
-    <rect x="6" y="6" width="4" height="4" fill="#ff6b00" fill-opacity="0.3"/>
-    <rect x="14" y="14" width="4" height="4" fill="#ff6b00" fill-opacity="0.3"/>
-    <circle cx="12" cy="12" r="2" fill="#ff6b00"/>
-    <text x="12" y="22" text-anchor="middle" font-size="2.5" fill="#4a5568" font-weight="bold">CROSSFIRE</text>
-  </symbol>
-
-  <!-- Map Bootcamp (AG classic) -->
-  <symbol id="icon-map-bootcamp" viewBox="0 0 24 24">
-    <rect x="2" y="2" width="20" height="20" rx="2" fill="#2d5a27" fill-opacity="0.2"/>
-    <rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="#2d5a27" stroke-width="1.5"/>
-    <path d="M4 8h6v8h-6zM14 8h6v8h-6z" fill="#2d5a27" fill-opacity="0.3" stroke="#2d5a27" stroke-width="1"/>
-    <path d="M10 12h4" stroke="#2d5a27" stroke-width="2" stroke-linecap="round"/>
-    <circle cx="7" cy="12" r="1.5" fill="#ef4444"/>
-    <circle cx="17" cy="12" r="1.5" fill="#3b82f6"/>
-    <text x="12" y="22" text-anchor="middle" font-size="2.5" fill="#2d5a27" font-weight="bold">BOOTCAMP</text>
-  </symbol>
-
-  <!-- Game Banner Frame -->
-  <symbol id="icon-game-banner" viewBox="0 0 24 24">
-    <rect x="1" y="5" width="22" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M1 9h22" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M5 7h8" stroke="currentColor" stroke-width="1" opacity="0.5"/>
-    <polygon points="8,12 8,17 13,14.5" fill="currentColor" opacity="0.7"/>
-    <rect x="15" y="12" width="5" height="2" rx="1" fill="currentColor" opacity="0.5"/>
-    <rect x="15" y="15" width="4" height="1" rx="0.5" fill="currentColor" opacity="0.3"/>
-  </symbol>
-
-  <!-- Splash Screen Logo Container -->
-  <symbol id="icon-splash-screen" viewBox="0 0 24 24">
-    <rect x="2" y="2" width="20" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="12" cy="10" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M10 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    <path d="M8 19h8" stroke="currentColor" stroke-width="1" opacity="0.5"/>
-    <path d="M12 5v-2M19 12h2M12 17v2M5 12h-2" stroke="currentColor" stroke-width="1" opacity="0.3"/>
-  </symbol>
-
-  <!-- Game Card Template -->
-  <symbol id="icon-game-card" viewBox="0 0 24 24">
-    <rect x="2" y="1" width="20" height="22" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <rect x="4" y="3" width="16" height="10" rx="1" fill="currentColor" opacity="0.1"/>
-    <path d="M12 6l2 4h-4l2-4z" fill="currentColor" opacity="0.5"/>
-    <rect x="4" y="15" width="10" height="2" rx="1" fill="currentColor" opacity="0.5"/>
-    <rect x="4" y="19" width="6" height="1" rx="0.5" fill="currentColor" opacity="0.3"/>
-    <circle cx="18" cy="19" r="2" fill="none" stroke="currentColor" stroke-width="1"/>
-  </symbol>
-
-  <!-- Game Selector -->
-  <symbol id="icon-game-selector" viewBox="0 0 24 24">
-    <rect x="2" y="4" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <rect x="9" y="4" width="6" height="6" rx="1" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1.5"/>
-    <rect x="16" y="4" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <rect x="2" y="14" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <rect x="9" y="14" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <rect x="16" y="14" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M12 10l-1.5 1.5h3L12 10z" fill="currentColor"/>
-  </symbol>
-
-  <!-- Fullscreen -->
-  <symbol id="icon-fullscreen" viewBox="0 0 24 24">
-    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </symbol>
-
-  <!-- Picture in Picture -->
-  <symbol id="icon-pip" viewBox="0 0 24 24">
-    <rect x="2" y="3" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <rect x="11" y="9" width="9" height="6" rx="1" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1"/>
-    <path d="M4 20h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-  </symbol>
-
-  <!-- Server Region/Location -->
-  <symbol id="icon-region" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="12" cy="8" r="2" fill="#ef4444"/>
+    <text x="12" y="16" font-size="8" font-weight="bold" text-anchor="middle" fill="currentColor">100</text>
+    <path d="M12 2 L13 5 L12 4 L11 5 Z" fill="currentColor"/>
   </symbol>
 
-  <!-- ==================== BONUS EFEKTLER (FASE 3: 25-26) ==================== -->
-
-  <!-- Confetti Burst -->
-  <symbol id="icon-confetti" viewBox="0 0 24 24">
-    <rect x="10" y="8" width="4" height="4" fill="#ef4444" transform="rotate(45 12 10)"/>
-    <rect x="4" y="4" width="3" height="3" fill="#3b82f6" transform="rotate(30 5 5)"/>
-    <rect x="17" y="5" width="3" height="3" fill="#10b981" transform="rotate(-20 18 6)"/>
-    <rect x="6" y="14" width="3" height="3" fill="#f59e0b" transform="rotate(15 7 15)"/>
-    <rect x="15" y="15" width="3" height="3" fill="#8b5cf6" transform="rotate(-30 16 16)"/>
-    <circle cx="12" cy="18" r="1.5" fill="#ec4899"/>
-    <circle cx="3" cy="10" r="1" fill="#06b6d4"/>
-    <circle cx="21" cy="12" r="1" fill="#f97316"/>
-    <path d="M12 4l1 2-1 2-1-2 1-2z" fill="#fbbf24"/>
+  <!-- Champion -->
+  <symbol id="icon-achievement-champion" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M12 6 L14 10 L18 10 L15 13 L16 17 L12 15 L8 17 L9 13 L6 10 L10 10 Z" fill="currentColor"/>
   </symbol>
 
-  <!-- Fireworks -->
-  <symbol id="icon-fireworks" viewBox="0 0 24 24">
-    <circle cx="12" cy="8" r="1" fill="#fbbf24"/>
-    <path d="M12 4v2M12 10v2M8 8h2M14 8h2M9 5l1.5 1.5M15 5l-1.5 1.5M9 11l1.5-1.5M15 11l-1.5-1.5" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="6" cy="16" r="0.8" fill="#ef4444"/>
-    <path d="M6 13v1.5M6 17.5v1.5M3 16h1.5M7.5 16h1.5M4 14l1 1M8 14l-1 1" stroke="#ef4444" stroke-width="1" stroke-linecap="round"/>
-    <circle cx="18" cy="18" r="0.8" fill="#3b82f6"/>
-    <path d="M18 15v1.5M18 19.5v1.5M15 18h1.5M19.5 18h1.5M16 16l1 1M20 16l-1 1" stroke="#3b82f6" stroke-width="1" stroke-linecap="round"/>
+  <!-- Veteran -->
+  <symbol id="icon-achievement-veteran" viewBox="0 0 24 24">
+    <rect x="4" y="8" width="16" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M8 8 L8 4 L16 4 L16 8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M4 12 L20 12" stroke="currentColor" stroke-width="1"/>
+    <circle cx="12" cy="15" r="2" fill="currentColor"/>
   </symbol>
 
-  <!-- Achievement Unlock Badge -->
+  <!-- Top 10 -->
+  <symbol id="icon-achievement-top10" viewBox="0 0 24 24">
+    <path d="M4 20 L4 14 L8 14 L8 20 M10 20 L10 10 L14 10 L14 20 M16 20 L16 6 L20 6 L20 20" fill="currentColor"/>
+    <path d="M2 20 L22 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Streak -->
+  <symbol id="icon-achievement-streak" viewBox="0 0 24 24">
+    <path d="M13 2 L10 10 L14 10 L11 22 L14 14 L10 14 Z" fill="currentColor"/>
+  </symbol>
+
+  <!-- Early Bird -->
+  <symbol id="icon-achievement-early" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M12 6 L12 12 L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+  </symbol>
+
+  <!-- Achievement Unlock -->
   <symbol id="icon-achievement-unlock" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-    <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2"/>
-    <path d="M12 6l1.5 3 3.5.5-2.5 2.5.5 3.5-3-1.5-3 1.5.5-3.5-2.5-2.5 3.5-.5L12 6z" fill="#fbbf24" stroke="#fbbf24" stroke-width="0.5"/>
-    <path d="M20 4l2 2-2 2" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M4 20l-2-2 2-2" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/>
+    <path d="M8 11 L8 7 C8 4 10 2 12 2 C14 2 16 4 16 7 L16 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="12" cy="16" r="2" fill="#fff" opacity="0.5"/>
   </symbol>
 
-  <!-- Level Up Arrow -->
+  <!-- Level Up -->
   <symbol id="icon-level-up" viewBox="0 0 24 24">
-    <path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M8 15l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
-    <path d="M10 18l2-2 2 2" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>
+    <path d="M12 4 L18 10 L15 10 L15 20 L9 20 L9 10 L6 10 Z" fill="currentColor"/>
+    <path d="M6 20 L18 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
   </symbol>
 
-  <!-- Victory Cup with Shine -->
+  <!-- Victory -->
   <symbol id="icon-victory" viewBox="0 0 24 24">
-    <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
-    <path d="M6 3h12v8a6 6 0 0 1-12 0V3z" fill="#fbbf24" fill-opacity="0.2" stroke="#fbbf24" stroke-width="1.5"/>
-    <path d="M12 17v3M9 20h6" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M8 8l2 1-1 2M16 8l-2 1 1 2" fill="none" stroke="#fbbf24" stroke-width="1" opacity="0.5"/>
-    <circle cx="12" cy="8" r="2" fill="#fbbf24"/>
+    <path d="M6 4 L6 10 C6 15 12 18 12 18 C12 18 18 15 18 10 L18 4 Z" fill="currentColor"/>
+    <path d="M10 9 L11 12 L12 9 L13 12 L14 9" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+    <path d="M12 18 L12 22 M9 20 L15 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
   </symbol>
 
-  <!-- Star Burst (for celebrations) -->
+  <!-- Star Burst -->
   <symbol id="icon-star-burst" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="4" fill="#fbbf24"/>
-    <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="12" cy="12" r="4" fill="currentColor"/>
+    <path d="M12 2 L12 6 M12 18 L12 22 M2 12 L6 12 M18 12 L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M5 5 L8 8 M16 16 L19 19 M5 19 L8 16 M16 8 L19 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
   </symbol>
 
   <!-- Sparkles -->
   <symbol id="icon-sparkles" viewBox="0 0 24 24">
-    <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-    <path d="M5 18l.75 2.25L8 21l-2.25.75L5 24l-.75-2.25L2 21l2.25-.75L5 18z" fill="currentColor" opacity="0.6"/>
-    <path d="M19 3l.5 1.5L21 5l-1.5.5L19 7l-.5-1.5L17 5l1.5-.5L19 3z" fill="currentColor" opacity="0.6"/>
+    <path d="M12 2 L13 8 L19 9 L13 10 L12 16 L11 10 L5 9 L11 8 Z" fill="currentColor"/>
+    <path d="M19 14 L20 17 L23 18 L20 19 L19 22 L18 19 L15 18 L18 17 Z" fill="currentColor" opacity="0.6"/>
+    <path d="M5 16 L6 18 L8 19 L6 20 L5 22 L4 20 L2 19 L4 18 Z" fill="currentColor" opacity="0.6"/>
   </symbol>
 
-  <!-- Party Popper -->
+  <!-- Party -->
   <symbol id="icon-party" viewBox="0 0 24 24">
-    <path d="M3 21l5-5" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
-    <path d="M6 18l2-8 8 8-8-2z" fill="#fbbf24" fill-opacity="0.3" stroke="#fbbf24" stroke-width="1.5"/>
-    <rect x="12" y="4" width="2" height="2" fill="#ef4444" transform="rotate(30 13 5)"/>
-    <rect x="16" y="6" width="2" height="2" fill="#3b82f6" transform="rotate(-20 17 7)"/>
-    <rect x="14" y="10" width="2" height="2" fill="#10b981" transform="rotate(45 15 11)"/>
-    <circle cx="18" cy="4" r="1" fill="#8b5cf6"/>
-    <circle cx="20" cy="9" r="1" fill="#ec4899"/>
-    <path d="M19 11l1 2" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M4 22 L8 8 L12 12 L8 8 L12 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="14" cy="6" r="2" fill="currentColor"/>
+    <circle cx="18" cy="10" r="1.5" fill="currentColor"/>
+    <circle cx="16" cy="14" r="1" fill="currentColor"/>
+    <circle cx="20" cy="8" r="1" fill="currentColor"/>
+    <path d="M18 16 L20 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
   </symbol>
 
-  <!-- ==================== TEMA İKONLARI (FASE 3: 29) ==================== -->
-
-  <!-- Sun (Light Theme) -->
-  <symbol id="icon-sun" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2"/>
-    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <!-- Confetti -->
+  <symbol id="icon-confetti" viewBox="0 0 24 24">
+    <rect x="4" y="4" width="3" height="3" rx="0.5" fill="currentColor" transform="rotate(15 5.5 5.5)"/>
+    <rect x="10" y="2" width="3" height="3" rx="0.5" fill="currentColor" transform="rotate(-20 11.5 3.5)"/>
+    <rect x="17" y="5" width="3" height="3" rx="0.5" fill="currentColor" transform="rotate(30 18.5 6.5)"/>
+    <rect x="2" y="12" width="3" height="3" rx="0.5" fill="currentColor" transform="rotate(-15 3.5 13.5)"/>
+    <rect x="19" y="14" width="3" height="3" rx="0.5" fill="currentColor" transform="rotate(45 20.5 15.5)"/>
+    <rect x="8" y="18" width="3" height="3" rx="0.5" fill="currentColor" transform="rotate(10 9.5 19.5)"/>
+    <rect x="15" y="19" width="3" height="3" rx="0.5" fill="currentColor" transform="rotate(-25 16.5 20.5)"/>
   </symbol>
 
-  <!-- Moon (Dark Theme) -->
-  <symbol id="icon-moon" viewBox="0 0 24 24">
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Fireworks -->
+  <symbol id="icon-fireworks" viewBox="0 0 24 24">
+    <circle cx="12" cy="8" r="2" fill="currentColor"/>
+    <path d="M12 8 L12 3 M12 8 L8 4 M12 8 L16 4 M12 8 L6 8 M12 8 L18 8 M12 8 L8 12 M12 8 L16 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="6" cy="16" r="1.5" fill="currentColor" opacity="0.6"/>
+    <path d="M6 16 L6 13 M6 16 L4 14 M6 16 L8 14 M6 16 L4 18 M6 16 L8 18" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+    <circle cx="18" cy="18" r="1.5" fill="currentColor" opacity="0.6"/>
+    <path d="M18 18 L18 15 M18 18 L16 16 M18 18 L20 16 M18 18 L16 20 M18 18 L20 20" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
   </symbol>
 
-  <!-- Theme Toggle -->
-  <symbol id="icon-theme-toggle" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M12 3v18" stroke="currentColor" stroke-width="1"/>
-    <path d="M12 3a9 9 0 0 1 0 18" fill="currentColor" opacity="0.3"/>
-    <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1"/>
-    <path d="M12 8v8" stroke="currentColor" stroke-width="0.75"/>
-    <path d="M12 8a4 4 0 0 1 0 8" fill="currentColor" opacity="0.5"/>
+  <!-- ==================== EFEKT İKONLARI ==================== -->
+
+  <!-- Muzzle Flash -->
+  <symbol id="icon-muzzle-flash" viewBox="0 0 24 24">
+    <path d="M12 12 L12 2 L14 6 L18 4 L15 8 L22 8 L16 10 L20 14 L14 12 L16 18 L12 14 L8 18 L10 12 L4 14 L8 10 L2 8 L9 8 L6 4 L10 6 Z" fill="currentColor"/>
   </symbol>
 
-  <!-- Contrast/Auto Theme -->
-  <symbol id="icon-theme-auto" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>
-    <circle cx="9" cy="10" r="1" fill="currentColor"/>
-    <circle cx="15" cy="10" r="1" fill="var(--bg-primary, white)"/>
-    <path d="M8 15c1 1 3 2 4 2s3-1 4-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Recoil Effect -->
+  <symbol id="icon-recoil" viewBox="0 0 24 24">
+    <path d="M12 22 L12 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M8 12 L12 8 L16 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6 16 L12 10 L18 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+    <path d="M4 20 L12 12 L20 20" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>
   </symbol>
 
-  <!-- Palette -->
-  <symbol id="icon-palette" viewBox="0 0 24 24">
+  <!-- XP Orb -->
+  <symbol id="icon-xp-orb" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.3"/>
+    <circle cx="12" cy="12" r="7" fill="currentColor" opacity="0.5"/>
+    <circle cx="12" cy="12" r="4" fill="currentColor"/>
+    <circle cx="10" cy="10" r="1.5" fill="#fff" opacity="0.5"/>
+  </symbol>
+
+  <!-- Server Pulse -->
+  <symbol id="icon-server-pulse" viewBox="0 0 24 24">
+    <rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+    <circle cx="8" cy="12" r="1.5" fill="currentColor"/>
+    <circle cx="8" cy="16" r="1.5" fill="currentColor"/>
+    <path d="M12 8 L18 8 M12 12 L16 12 M12 16 L18 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- ==================== OYUN TİPİ İKONLARI ==================== -->
+
+  <!-- Terrorist -->
+  <symbol id="icon-terrorist" viewBox="0 0 24 24">
+    <circle cx="12" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M7 14 L5 22 L12 19 L19 22 L17 14" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <circle cx="10" cy="8" r="1" fill="currentColor"/>
+    <circle cx="14" cy="8" r="1" fill="currentColor"/>
+    <path d="M10 11 L14 11" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- Counter-Terrorist -->
+  <symbol id="icon-counter-terrorist" viewBox="0 0 24 24">
+    <circle cx="12" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M12 3 L12 1 M9 4 L8 2 M15 4 L16 2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    <path d="M7 14 L5 22 L12 19 L19 22 L17 14" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <circle cx="10" cy="8" r="1" fill="currentColor"/>
+    <circle cx="14" cy="8" r="1" fill="currentColor"/>
+  </symbol>
+
+  <!-- Scientist (HL) -->
+  <symbol id="icon-scientist" viewBox="0 0 24 24">
+    <circle cx="12" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <rect x="9" y="7" width="6" height="3" rx="1" fill="none" stroke="currentColor" stroke-width="1"/>
+    <path d="M8 14 L6 22 L18 22 L16 14" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M10 16 L10 20 M14 16 L14 20" stroke="currentColor" stroke-width="1"/>
+  </symbol>
+
+  <!-- Security Guard (HL) -->
+  <symbol id="icon-security" viewBox="0 0 24 24">
+    <circle cx="12" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M7 4 L17 4 L17 6 L7 6 Z" fill="currentColor"/>
+    <path d="M8 14 L6 22 L18 22 L16 14" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <circle cx="10" cy="8" r="1" fill="currentColor"/>
+    <circle cx="14" cy="8" r="1" fill="currentColor"/>
+  </symbol>
+
+  <!-- ==================== UI İKONLARI ==================== -->
+
+  <!-- Play Button -->
+  <symbol id="icon-play" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="8" cy="9" r="1.5" fill="#ef4444"/>
-    <circle cx="12" cy="7" r="1.5" fill="#f59e0b"/>
-    <circle cx="16" cy="9" r="1.5" fill="#10b981"/>
-    <circle cx="17" cy="13" r="1.5" fill="#3b82f6"/>
-    <path d="M12 22c0-4 3-4 3-8a5 5 0 0 0-10 0c0 4 3 4 3 8" fill="currentColor" opacity="0.2"/>
+    <path d="M10 8 L16 12 L10 16 Z" fill="currentColor"/>
   </symbol>
 
-  <!-- Color Picker -->
-  <symbol id="icon-color-picker" viewBox="0 0 24 24">
-    <path d="M19 3l2 2-9 9-2-2 9-9z" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M10 12l-6 6 2 2 6-6" fill="none" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="6" cy="18" r="3" fill="currentColor" opacity="0.3"/>
-    <path d="M20 2l2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <!-- Connect -->
+  <symbol id="icon-connect" viewBox="0 0 24 24">
+    <circle cx="6" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <circle cx="18" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M9 12 L15 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M13 10 L15 12 L13 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- Refresh -->
+  <symbol id="icon-refresh" viewBox="0 0 24 24">
+    <path d="M4 12 C4 7.6 7.6 4 12 4 C15.4 4 18.3 6.1 19.4 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M20 12 C20 16.4 16.4 20 12 20 C8.6 20 5.7 17.9 4.6 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M16 9 L20 9 L20 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M8 15 L4 15 L4 19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- Copy -->
+  <symbol id="icon-copy" viewBox="0 0 24 24">
+    <rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M16 8 L16 6 C16 4.9 15.1 4 14 4 L6 4 C4.9 4 4 4.9 4 6 L4 14 C4 15.1 4.9 16 6 16 L8 16" fill="none" stroke="currentColor" stroke-width="1.5"/>
   </symbol>
 
 </svg>

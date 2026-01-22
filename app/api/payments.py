@@ -73,7 +73,7 @@ def create_notification(db: Session, user_id: int, type: str, title: str,
 
 def create_transaction(db: Session, user_id: int, type: str, amount: float,
                        description: str, payment_id: int = None, balance_before: float = 0,
-                       balance_after: float = 0):
+                       balance_after: float = 0, wallet_type: str = None):
     """Transaction kaydi olustur"""
     try:
         transaction = Transaction(
@@ -81,9 +81,11 @@ def create_transaction(db: Session, user_id: int, type: str, amount: float,
             type=type,
             amount=amount,
             description=description,
-            payment_id=payment_id,
+            reference_id=str(payment_id) if payment_id else None,
+            reference_type="payment",
             balance_before=balance_before,
-            balance_after=balance_after
+            balance_after=balance_after,
+            wallet_type=wallet_type
         )
         db.add(transaction)
     except Exception as e:

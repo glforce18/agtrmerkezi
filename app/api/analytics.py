@@ -8,7 +8,7 @@ import json
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -475,7 +475,7 @@ async def export_revenue(
 @router.post("/track")
 async def track_page_view(
     data: dict,
-    request,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """📊 Sayfa görüntüleme kaydet"""

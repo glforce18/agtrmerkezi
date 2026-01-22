@@ -1023,8 +1023,8 @@ const activeFormats = ref([])
 const typingTimeout = ref(null)
 const readingProgress = ref(0)
 
-// Current user (mock)
-const currentUserId = ref(999)
+// Current user - auth'dan gelecek
+const currentUserId = ref(null)
 
 // Category colors
 const categoryColors = {
@@ -1036,134 +1036,11 @@ const categoryColors = {
   6: '#eab308'  // Rehberler - Yellow
 }
 
-// Topic Data
-const topic = ref({
-  id: 1,
-  title: 'Yeni güncelleme hakkında dusunceleriniz?',
-  content: `Merhaba arkadaşlar,
+// Topic Data - API'den çekilecek
+const topic = ref(null)
 
-Yeni güncelleme ile birlikte gelen özellikleri denedim. Özellikle sunucu performansinda ciddi bir **iyilesme** var. Sizin dusunceleriniz neler?
-
-Ben özellikle su noktalari begendim:
-- Gelismis DDoS korumasi
-- Yeni admin paneli arayuzu
-- Otomatik yedekleme sistemi
-
-\`\`\`javascript
-// Ornek yapılandırma
-const config = {
-  ddosProtection: true,
-  autoBackup: '24h',
-  adminPanel: 'v2'
-};
-\`\`\`
-
-> Bu güncelleme gercekten cigir acici!
-
-Sizce en iyi özellik hangisi?`,
-  author: 'Player123',
-  authorId: 1,
-  authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
-  authorRole: 'Admin',
-  authorLevel: 42,
-  authorXpProgress: 75,
-  authorPosts: 1234,
-  authorLikes: 2341,
-  authorJoined: 'Ocak 2023',
-  authorOnline: true,
-  authorBadges: [
-    { id: 1, name: 'Kurucu', icon: 'crown', color: 'linear-gradient(135deg, #f97316, #ea580c)' },
-    { id: 2, name: 'Gelistirici', icon: 'code', color: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
-    { id: 3, name: 'VIP', icon: 'star', color: 'linear-gradient(135deg, #eab308, #ca8a04)' }
-  ],
-  categoryId: 1,
-  categoryName: 'Genel Tartisma',
-  created: '2 saat önce',
-  views: 234,
-  likes: 12,
-  isPinned: true,
-  isLocked: false,
-  isHot: true,
-  isEdited: false,
-  attachments: [
-    { id: 1, name: 'screenshot.png', size: '245 KB', url: '#' },
-    { id: 2, name: 'config.json', size: '2 KB', url: '#' }
-  ],
-  reactions: [
-    { emoji: '👍', count: 8, hasReacted: false },
-    { emoji: '❤️', count: 5, hasReacted: true },
-    { emoji: '🔥', count: 3, hasReacted: false }
-  ]
-})
-
-const replies = ref([
-  {
-    id: 1,
-    author: 'AdminUser',
-    authorId: 2,
-    authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
-    authorRole: 'Moderatör',
-    authorLevel: 38,
-    authorXpProgress: 60,
-    authorPosts: 856,
-    authorJoined: 'Mar 2023',
-    authorOnline: true,
-    created: '1 saat önce',
-    content: 'Kesinlikle katıliyorum! Yeni admin paneli gercekten çok kullanisli. Özellikle **sunucu metriklerini** canli olarak gorebilmek harika.\n\n```bash\n# Sunucu durumunu kontrol et\nserverstatus --live\n```',
-    likes: 5,
-    hasLiked: false,
-    isEdited: false,
-    reactions: [
-      { emoji: '👍', count: 3, hasReacted: false }
-    ]
-  },
-  {
-    id: 2,
-    author: 'ProGamer',
-    authorId: 3,
-    authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
-    authorRole: 'VIP Üye',
-    authorLevel: 27,
-    authorXpProgress: 45,
-    authorPosts: 623,
-    authorJoined: 'Haz 2023',
-    authorOnline: false,
-    created: '45 dakika önce',
-    content: 'DDoS korumasi sayesinde sunucum artik çok daha stabil çalışıyor. Gecen hafta büyük bir saldiri aldik ama hic kesinti olmadi. Harika bir güncelleme!',
-    likes: 8,
-    hasLiked: true,
-    isEdited: true,
-    quotedPost: {
-      id: 1,
-      author: 'AdminUser',
-      content: 'Kesinlikle katıliyorum! Yeni admin paneli gercekten çok kullanisli.'
-    },
-    reactions: [
-      { emoji: '🔥', count: 2, hasReacted: true },
-      { emoji: '💪', count: 1, hasReacted: false }
-    ]
-  },
-  {
-    id: 3,
-    author: 'NewbieCS',
-    authorId: 4,
-    authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
-    authorRole: 'Yeni Üye',
-    authorLevel: 5,
-    authorXpProgress: 30,
-    authorPosts: 42,
-    authorJoined: 'Ara 2024',
-    authorOnline: true,
-    created: '30 dakika önce',
-    content: 'Yeni başladım ama ben de çok memnunum. Dokümantasyon da çok iyi, kurulumu çok kolay yaptım. 😊',
-    likes: 3,
-    hasLiked: false,
-    isEdited: false,
-    reactions: [
-      { emoji: '😊', count: 2, hasReacted: false }
-    ]
-  }
-])
+// Yanıtlar - API'den çekilecek
+const replies = ref([])
 
 const newReply = ref('')
 
@@ -1701,31 +1578,14 @@ function checkUrlHash() {
   }
 }
 
-// Simulate typing users (mock)
-function simulateTypingUsers() {
-  const users = ['AdminUser', 'ProGamer']
-  const randomUser = users[Math.floor(Math.random() * users.length)]
-
-  if (Math.random() > 0.7 && typingUsers.value.length === 0) {
-    typingUsers.value.push(randomUser)
-    setTimeout(() => {
-      typingUsers.value = typingUsers.value.filter(u => u !== randomUser)
-    }, 3000)
-  }
-}
-
 // Lifecycle
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
   checkUrlHash()
   loadDraft()
 
-  // Simulate typing indicator periodically
-  const typingInterval = setInterval(simulateTypingUsers, 5000)
-
   onUnmounted(() => {
     window.removeEventListener('scroll', handleScroll)
-    clearInterval(typingInterval)
   })
 })
 

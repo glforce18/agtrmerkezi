@@ -6,6 +6,15 @@ import router from './router'
 // Naive UI - discrete API for composables
 import { createDiscreteApi } from 'naive-ui'
 
+// Error Tracking
+import { initErrorTracking } from './services/errorTracking'
+
+// Analytics
+import { initAnalytics } from './services/analytics'
+
+// Security
+import { initSecurity } from './utils/security'
+
 // Import minimal global styles
 import './style.css'
 
@@ -31,13 +40,13 @@ window.$loadingBar = loadingBar
 app.use(pinia)
 app.use(router)
 
-// Global error handler
-app.config.errorHandler = (err, _instance, _info) => {
-  // Log to external service in production
-  if (import.meta.env.DEV) {
-    console.error('Vue error:', err) // eslint-disable-line no-console
-  }
-  window.$message?.error('Bir hata oluştu')
-}
+// Initialize security (CSP, clickjacking protection)
+initSecurity()
+
+// Initialize error tracking (must be before mount)
+initErrorTracking(app)
+
+// Initialize analytics
+initAnalytics(router)
 
 app.mount('#app')

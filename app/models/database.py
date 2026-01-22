@@ -1656,3 +1656,83 @@ class ArmorExchangeRate(Base):
 
     display_order = Column(Integer, default=0)
     created_at = Column(DateTime, default=func.now())
+
+
+# ==================== COMMUNITY SERVERS (SCRAPED) ====================
+
+class CommunityServer(Base):
+    """Taranan topluluk sunuculari - Scraper tarafindan eklenir"""
+    __tablename__ = "community_servers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ip_address = Column(String(45), nullable=False)
+    port = Column(Integer, nullable=False)
+    name = Column(String(200))
+    game_type = Column(Enum(GameType), nullable=False)
+    game_dir = Column(String(50))  # valve, ag, cstrike, tfc
+
+    # Durum bilgileri
+    current_map = Column(String(64))
+    current_players = Column(Integer, default=0)
+    max_players = Column(Integer, default=0)
+    ping = Column(Integer, default=999)
+    is_online = Column(Boolean, default=True)
+    password_protected = Column(Boolean, default=False)
+
+    # Metadata
+    country = Column(String(3))  # TR, US, DE vs.
+    region = Column(String(50))  # Europe, Asia vs.
+    tags = Column(JSON, default=list)  # ["competitive", "public", "24/7"]
+
+    # Kaynak bilgisi
+    source = Column(String(50), default="scraper")  # scraper, manual, gametracker
+    is_verified = Column(Boolean, default=False)  # Admin onaylı mı?
+    is_featured = Column(Boolean, default=False)  # Öne çıkan sunucu
+
+    # İstatistikler
+    total_queries = Column(Integer, default=0)
+    avg_players = Column(Float, default=0)
+    uptime_percent = Column(Float, default=100)
+
+    # Zamanlar
+    first_seen = Column(DateTime, default=func.now())
+    last_seen = Column(DateTime, default=func.now())
+    last_query = Column(DateTime)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('ip_address', 'port', name='uq_community_server_addr'),
+        Index('idx_community_server_game', 'game_type'),
+        Index('idx_community_server_online', 'is_online'),
+        Index('idx_community_server_country', 'country'),
+    )
+
+    @property
+    def address(self) -> str:
+        return f"{self.ip_address}:{self.port}"
+
+
+class ServerScanLog(Base):
+    """Sunucu tarama loglari"""
+    __tablename__ = "server_scan_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    scan_type = Column(String(50), nullable=False)  # full, partial, single
+    game_types = Column(JSON)  # ["ag", "cs16", "hldm"]
+    total_scanned = Column(Integer, default=0)
+    online_found = Column(Integer, default=0)
+    new_servers = Column(Integer, default=0)
+    updated_servers = Column(Integer, default=0)
+    duration_seconds = Column(Float)
+    error_count = Column(Integer, default=0)
+    error_messages = Column(JSON)
+    started_at = Column(DateTime, default=func.now())
+    completed_at = Column(DateTime)
+    triggered_by = Column(String(50))  # scheduler, manual, api
+
+    @property
+    def success_rate(self) -> float:
+        if self.total_scanned == 0:
+            return 0
+        return (self.online_found / self.total_scanned) * 100
