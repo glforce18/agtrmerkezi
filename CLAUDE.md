@@ -383,6 +383,28 @@ Kategoriler oyunlara gore gruplandirildi:
 - Service Worker versiyonu: v19 (`frontend/public/sw.js`)
 - Game assets dizini: `/var/www/agtrmerkezi/static/assets/games/`
 
+## Health Check Script
+```bash
+# Tum kontrolleri calistir
+python scripts/health_check.py
+
+# Begeni sayilarini duzelt
+python scripts/health_check.py --fix-likes
+
+# Negatif degerleri duzelt
+python scripts/health_check.py --fix-negative
+
+# Tum sorunlari duzelt
+python scripts/health_check.py --fix-all
+```
+
+**Kontrol Edilen Alanlar:**
+- DATABASE-MODEL SYNC: Model-database kolon uyumu
+- DATA INTEGRITY: Negatif degerler, orphan kayitlar, count uyumsuzluklari
+- API ENDPOINTS: Kritik endpoint'lerin calismasi
+- SECURITY: .env izinleri, debug modu, CORS
+- PERFORMANCE: Tablo boyutlari
+
 ## Hizli Komutlar
 ```bash
 # Build & Restart
