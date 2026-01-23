@@ -519,6 +519,7 @@ class User(Base):
     balance = Column(Float, default=0.0)  # TL bakiye (gerçek para)
     balance_coin = Column(Float, default=0.0)  # Coin bakiye (sanal para)
     post_count = Column(Integer, default=0)
+    forum_post_count = Column(Integer, default=0)  # Forum post sayisi
     reputation = Column(Integer, default=0)
     
     # Leaderboard / Oyun istatistikleri
@@ -737,8 +738,12 @@ class ForumCategory(Base):
     min_role_to_post = Column(Enum(UserRole), default=UserRole.USER)
     topic_count = Column(Integer, default=0)
     post_count = Column(Integer, default=0)
+    last_topic_id = Column(Integer)  # Son konu ID
+    last_post_at = Column(DateTime)  # Son post zamani
+    is_locked = Column(Boolean, default=False)  # Kilitli kategori
+    is_hidden = Column(Boolean, default=False)  # Gizli kategori
     created_at = Column(DateTime, default=func.now())
-    
+
     # Relationships
     topics = relationship("ForumTopic", back_populates="category", lazy="dynamic")
     
