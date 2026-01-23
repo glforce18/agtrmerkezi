@@ -1,0 +1,969 @@
+================================================================================
+                    AGTR MERKEZI - PROJE DOKUMANTASYONU
+                    Half-Life & CS 1.6 Gaming Community Platform
+                              Versiyon: 5.4 Pro
+================================================================================
+
+SON GUNCELLEME: 22 Ocak 2026
+HAZIRLAYAN: Claude Opus 4.5 AI Assistant
+
+================================================================================
+                              1. GENEL BAKIS
+================================================================================
+
+AGTR Merkezi, Half-Life ve Counter-Strike 1.6 oyunculari icin gelistirilmis
+kapsamli bir topluluk platformudur. Platform, oyun sunucusu yonetimi, forum,
+turnuva sistemi, sanal cuzdan, klan yonetimi ve daha bircok ozellik sunar.
+
+CANLI SITE: https://agtrmerkezi.com
+TEKNOLOJI: Vue.js 3 (Frontend) + FastAPI (Backend) + MySQL + Redis
+
+================================================================================
+                           2. TEKNOLOJI STACK
+================================================================================
+
+BACKEND:
+--------
+- Python 3.13
+- FastAPI (Modern, async web framework)
+- SQLAlchemy (ORM)
+- Pydantic (Data validation)
+- PyMySQL (MySQL driver)
+- Redis (Caching, session, rate limiting)
+- Jose (JWT token)
+- Passlib + bcrypt (Password hashing)
+- APScheduler (Scheduled tasks)
+- WebSockets (Real-time communication)
+- Uvicorn (ASGI server)
+
+FRONTEND:
+---------
+- Vue.js 3 (Composition API)
+- Vite (Build tool)
+- Pinia (State management)
+- Vue Router 4 (Routing)
+- Naive UI (Component library)
+- Axios (HTTP client)
+- Chart.js (Grafikler)
+- WebSocket API (Real-time)
+
+VERITABANI:
+-----------
+- MySQL 8.0 (Ana veritabani)
+- Redis 7.x (Cache, session, queue)
+
+DEVOPS:
+-------
+- Systemd (Process management)
+- Nginx (Reverse proxy)
+- Let's Encrypt (SSL)
+- Docker (Opsiyonel deployment)
+
+================================================================================
+                           3. DIZIN YAPISI
+================================================================================
+
+/var/www/agtrmerkezi/
+|
+|-- app/                          # Backend ana dizini
+|   |-- api/                      # API endpoint'leri
+|   |   |-- admin/                # Admin API'leri
+|   |   |   |-- forum_categories.py
+|   |   |   |-- forum_moderation.py
+|   |   |   |-- forum_topics.py
+|   |   |   |-- pages.py
+|   |   |   |-- stats.py
+|   |   |-- activities.py         # Aktivite akisi
+|   |   |-- analytics.py          # Analitik
+|   |   |-- assets.py             # Asset yonetimi
+|   |   |-- auth.py               # Kimlik dogrulama
+|   |   |-- banners.py            # Banner yonetimi
+|   |   |-- discord_bot.py        # Discord entegrasyonu
+|   |   |-- forum.py              # Forum API
+|   |   |-- forum_gamification.py # Forum oyunlastirma
+|   |   |-- game_integration.py   # Oyun entegrasyonu
+|   |   |-- games.py              # Oyun API
+|   |   |-- leaderboard.py        # Liderlik tablosu & ELO
+|   |   |-- maintenance.py        # Bakim modu
+|   |   |-- media.py              # Medya yonetimi
+|   |   |-- notifications.py      # Bildirimler
+|   |   |-- payment_gateway.py    # Odeme gecidi
+|   |   |-- payments.py           # Odemeler
+|   |   |-- plugin_market.py      # Plugin marketi
+|   |   |-- profile_customization.py # Profil ozellestirme
+|   |   |-- roles.py              # Rol yonetimi
+|   |   |-- scraper.py            # Community sunucu tarayici
+|   |   |-- security.py           # Guvenlik API
+|   |   |-- server_management.py  # Sunucu yonetimi
+|   |   |-- servers.py            # Sunucu API
+|   |   |-- smart_media.py        # Akilli medya
+|   |   |-- social.py             # Sosyal ozellikler
+|   |   |-- system.py             # Sistem API
+|   |   |-- tournament.py         # Turnuva sistemi
+|   |   |-- user.py               # Kullanici API
+|   |   |-- user_favorites.py     # Kullanici favorileri
+|   |   |-- wallet.py             # Cuzdan API
+|   |   |-- websocket.py          # WebSocket API
+|   |
+|   |-- core/                     # Cekirdek moduller
+|   |   |-- config.py             # Konfigurasyonlar
+|   |   |-- security.py           # Guvenlik fonksiyonlari
+|   |   |-- logging_config.py     # Loglama
+|   |
+|   |-- middleware/               # Middleware'ler
+|   |   |-- admin_access.py       # Admin erisim kontrolu
+|   |   |-- cache_control.py      # Cache kontrolu
+|   |   |-- csrf.py               # CSRF korumasi
+|   |   |-- rate_limit.py         # Rate limiting
+|   |   |-- security_headers.py   # Guvenlik header'lari
+|   |
+|   |-- models/                   # Veritabani modelleri
+|   |   |-- connection.py         # DB baglanti
+|   |   |-- database.py           # SQLAlchemy modelleri (64 model)
+|   |   |-- forum.py              # Forum modelleri
+|   |   |-- games.py              # Oyun modelleri
+|   |   |-- assets.py             # Asset modelleri
+|   |
+|   |-- services/                 # Is mantigi servisleri
+|   |   |-- email.py              # Email servisi
+|   |   |-- forum_gamification.py # Forum oyunlastirma
+|   |   |-- forum_rewards.py      # Forum odulleri
+|   |   |-- i18n.py               # Coklu dil destegi
+|   |   |-- import_export.py      # Import/Export
+|   |   |-- jackpot.py            # Jackpot sistemi
+|   |   |-- monitor.py            # Sunucu izleme
+|   |   |-- search.py             # Arama servisi
+|   |   |-- server_scraper.py     # Sunucu tarayici
+|   |   |-- wallet.py             # Cuzdan servisi
+|   |   |-- webhooks.py           # Webhook servisi
+|   |
+|   |-- utils/                    # Yardimci fonksiyonlar
+|   |   |-- audit.py              # Denetim loglari
+|   |   |-- media_helpers.py      # Medya yardimcilari
+|   |   |-- request_helpers.py    # Request yardimcilari
+|   |
+|   |-- main.py                   # Ana uygulama giris noktasi
+|
+|-- frontend/                     # Frontend ana dizini
+|   |-- src/
+|   |   |-- api/                  # API client
+|   |   |   |-- index.js          # Axios instance & API calls
+|   |   |
+|   |   |-- assets/               # Statik dosyalar
+|   |   |
+|   |   |-- components/           # Vue componentleri
+|   |   |   |-- admin/            # Admin componentleri
+|   |   |   |-- auth/             # Auth componentleri
+|   |   |   |-- dashboard/        # Dashboard componentleri
+|   |   |   |-- effects/          # Gorsel efektler
+|   |   |   |-- game/             # Oyun componentleri
+|   |   |   |-- profile/          # Profil componentleri
+|   |   |   |-- realtime/         # Real-time componentleri
+|   |   |   |-- ui/               # UI componentleri
+|   |   |
+|   |   |-- composables/          # Vue 3 composable'lar
+|   |   |   |-- useApi.js         # API helper
+|   |   |   |-- useGameEffects.js # Oyun efektleri
+|   |   |   |-- useKeyboardShortcuts.js
+|   |   |   |-- useMaintenance.js # Bakim modu
+|   |   |   |-- usePWA.js         # PWA destegi
+|   |   |   |-- useRequireAuth.js # Auth kontrolu
+|   |   |   |-- useRequireSteam.js# Steam kontrolu
+|   |   |   |-- useSound.js       # Ses efektleri
+|   |   |   |-- useStreak.js      # Streak sistemi
+|   |   |   |-- useSWR.js         # SWR cache
+|   |   |   |-- useToast.js       # Bildirimler
+|   |   |   |-- useWebSocket.js   # WebSocket
+|   |   |
+|   |   |-- layouts/              # Sayfa layout'lari
+|   |   |   |-- DefaultLayout.vue
+|   |   |
+|   |   |-- router/               # Vue Router
+|   |   |   |-- index.js
+|   |   |
+|   |   |-- stores/               # Pinia store'lari
+|   |   |   |-- achievements.js   # Basarimlar
+|   |   |   |-- activity.js       # Aktiviteler
+|   |   |   |-- admin.js          # Admin state
+|   |   |   |-- auth.js           # Auth state
+|   |   |   |-- clans.js          # Klanlar
+|   |   |   |-- friends.js        # Arkadaslar
+|   |   |   |-- messages.js       # Mesajlar
+|   |   |   |-- notifications.js  # Bildirimler
+|   |   |   |-- realtime.js       # Real-time state
+|   |   |   |-- settings.js       # Ayarlar
+|   |   |   |-- theme.js          # Tema
+|   |   |   |-- tournaments.js    # Turnuvalar
+|   |   |   |-- ui.js             # UI state
+|   |   |
+|   |   |-- views/                # Sayfa componentleri
+|   |   |   |-- admin/            # Admin sayfalari
+|   |   |   |-- auth/             # Auth sayfalari
+|   |   |   |-- Home.vue          # Ana sayfa
+|   |   |   |-- Forum.vue         # Forum
+|   |   |   |-- Servers.vue       # Sunucular
+|   |   |   |-- ... (30+ sayfa)
+|   |   |
+|   |   |-- App.vue               # Ana Vue component
+|   |   |-- main.js               # Uygulama giris noktasi
+|   |   |-- style.css             # Global stiller
+|   |
+|   |-- package.json              # NPM bagimliliklar
+|   |-- vite.config.js            # Vite konfigurasyonu
+|
+|-- static/                       # Statik dosyalar
+|   |-- dist/                     # Build ciktisi
+|   |-- images/                   # Resimler
+|   |-- fonts/                    # Fontlar
+|
+|-- tests/                        # Test dosyalari
+|   |-- conftest.py               # Test fixtures
+|   |-- test_forum.py             # Forum testleri (58 test)
+|   |-- test_steam_features.py    # Steam testleri (32 test)
+|   |-- test_leaderboard.py       # Leaderboard testleri (27 test)
+|   |-- test_email_verification.py# Email testleri (20 test)
+|
+|-- migrations/                   # Veritabani migrasyonlari
+|-- alembic/                      # Alembic migrasyonlari
+|-- uploads/                      # Kullanici yuklemeleri
+|-- logs/                         # Log dosyalari
+|-- plugins/                      # Sunucu pluginleri
+
+================================================================================
+                        4. VERITABANI MODELLERI (64 TABLO)
+================================================================================
+
+KULLANICI & AUTH:
+-----------------
+- User                  : Ana kullanici tablosu
+- UserSession           : Oturum yonetimi
+- Role                  : Rol tanimlari
+- UserRoleAssignment    : Kullanici-rol iliskisi
+- TwoFactorAuth         : 2FA ayarlari
+- BackupCode            : 2FA yedek kodlar
+- OAuthAccount          : OAuth baglantilari (Steam, Discord, Google)
+- SecurityEvent         : Guvenlik olaylari
+- LoginHistory          : Giris gecmisi
+- DeviceSession         : Cihaz oturumlari
+- GDPRRequest           : GDPR talepleri
+- UserPreference        : Kullanici tercihleri
+- UserFavorite          : Favori sunucular (oyun)
+- UserFavoriteServer    : Favori sunucular (community)
+
+SUNUCU YONETIMI:
+----------------
+- GameServer            : Oyun sunuculari
+- ServerPackage         : Sunucu paketleri
+- ServerAction          : Sunucu islemleri
+- ResourceLog           : Kaynak kullanimlari
+- BackupLog             : Yedekleme kayitlari
+- RconLog               : RCON komut kayitlari
+- ConfigHistory         : Konfigurasyon gecmisi
+
+FORUM SISTEMI:
+--------------
+- ForumCategory         : Forum kategorileri
+- ForumTopic            : Forum konulari
+- ForumPost             : Forum postlari
+- ForumPostLike         : Post begenileri
+- ForumReply            : Yanitlar
+- ForumReport           : Sikayet raporlari
+- ForumTag              : Etiketler
+- ForumTopicTag         : Konu-etiket iliskisi
+- ForumMention          : Kullanici bahsetmeleri
+- ForumSubscription     : Konu takipleri
+- ForumBadge            : Forum rozetleri
+- UserForumBadge        : Kullanici rozetleri
+
+ODEME SISTEMI:
+--------------
+- Payment               : Odemeler
+- BankTransfer          : Banka transferleri
+- Transaction           : Cuzdan islemleri
+- Invoice               : Faturalar
+- Coupon                : Kuponlar
+
+DESTEK & SISTEM:
+----------------
+- SupportTicket         : Destek talepleri
+- TicketMessage         : Destek mesajlari
+- SystemLog             : Sistem loglari
+- Announcement          : Duyurular
+- SiteSettings          : Site ayarlari
+- AuditLog              : Denetim loglari
+- ScheduledTask         : Zamanlanmis gorevler
+- TaskLog               : Gorev loglari
+- Notification          : Bildirimler
+- Banner                : Banner'lar
+
+PLUGIN SISTEMI:
+---------------
+- Plugin                : Plugin tanimlari
+- ServerPlugin          : Sunucu-plugin iliskisi
+
+OYUN & TURNUVA:
+---------------
+- Clan                  : Klanlar
+- ClanMember            : Klan uyeleri
+- ClanInvite            : Klan davetleri
+- Tournament            : Turnuvalar
+- TournamentTeam        : Turnuva takimlari
+- TournamentMatch       : Turnuva maclari
+- TournamentParticipant : Turnuva katilimcilari
+- LeaderboardEntry      : Liderlik tablosu
+- CommunityServer       : Community sunuculari
+
+================================================================================
+                           5. API ENDPOINT'LERI
+================================================================================
+
+AUTHENTICATION (/api/auth):
+---------------------------
+POST   /register              - Kayit
+POST   /login                 - Giris
+POST   /logout                - Cikis
+POST   /refresh               - Token yenileme
+GET    /me                    - Mevcut kullanici
+POST   /forgot-password       - Sifre sifirlama
+POST   /reset-password        - Sifre degistirme
+POST   /verify-email          - Email dogrulama
+GET    /oauth/steam           - Steam OAuth
+GET    /oauth/discord         - Discord OAuth
+GET    /oauth/google          - Google OAuth
+POST   /2fa/enable            - 2FA etkinlestir
+POST   /2fa/verify            - 2FA dogrula
+POST   /2fa/disable           - 2FA devre disi
+
+USER (/api/user):
+-----------------
+GET    /profile               - Profil bilgileri
+PUT    /profile               - Profil guncelle
+GET    /profile/{username}    - Baska kullanici profili
+PUT    /avatar                - Avatar guncelle
+PUT    /password              - Sifre degistir
+GET    /sessions              - Aktif oturumlar
+DELETE /sessions/{id}         - Oturum sonlandir
+GET    /notifications         - Bildirimler
+PUT    /notifications/read    - Okundu isaretle
+GET    /activity              - Aktivite gecmisi
+
+WALLET (/api/wallet):
+---------------------
+GET    /balance               - Bakiye
+GET    /transactions          - Islem gecmisi
+POST   /deposit               - Para yukleme
+POST   /withdraw              - Para cekme
+
+SERVERS (/api/servers):
+-----------------------
+GET    /                      - Sunucu listesi
+GET    /{id}                  - Sunucu detay
+POST   /                      - Yeni sunucu
+PUT    /{id}                  - Sunucu guncelle
+DELETE /{id}                  - Sunucu sil
+POST   /{id}/start            - Sunucu baslat
+POST   /{id}/stop             - Sunucu durdur
+POST   /{id}/restart          - Sunucu yeniden baslat
+POST   /{id}/rcon             - RCON komutu
+GET    /{id}/players          - Oyuncu listesi
+GET    /{id}/logs             - Sunucu loglari
+GET    /{id}/stats            - Sunucu istatistikleri
+
+FORUM (/api/forum):
+-------------------
+GET    /categories            - Kategori listesi
+GET    /categories/{slug}     - Kategori detay
+GET    /topics                - Konu listesi
+GET    /topics/{id}           - Konu detay
+POST   /topics                - Yeni konu
+PUT    /topics/{id}           - Konu guncelle
+DELETE /topics/{id}           - Konu sil
+GET    /topics/{id}/posts     - Konu postlari
+POST   /topics/{id}/posts     - Yeni post
+PUT    /posts/{id}            - Post guncelle
+DELETE /posts/{id}            - Post sil
+POST   /posts/{id}/like       - Post begen
+POST   /posts/{id}/report     - Post sikayet
+GET    /search                - Forum arama
+GET    /tags                  - Etiket listesi
+POST   /topics/{id}/subscribe - Konu takip et
+
+LEADERBOARD (/api/leaderboard):
+-------------------------------
+GET    /                      - Liderlik tablosu
+GET    /elo                   - ELO siralamalari
+GET    /elo/tiers             - ELO tier'lari
+POST   /elo/join              - ELO sistemine katil
+GET    /steam/{steam_id}      - Steam kullanici istatistikleri
+
+GAMES (/api/games):
+-------------------
+GET    /types                 - Oyun turleri
+GET    /maps                  - Harita listesi
+GET    /mods                  - Mod listesi
+GET    /stats                 - Oyun istatistikleri
+
+TOURNAMENT (/api/tournament):
+-----------------------------
+GET    /                      - Turnuva listesi
+GET    /{id}                  - Turnuva detay
+POST   /                      - Yeni turnuva (Admin)
+POST   /{id}/register         - Turnuvaya kayit
+GET    /{id}/bracket          - Turnuva bracket
+GET    /{id}/matches          - Mac listesi
+
+SOCIAL (/api/social):
+---------------------
+GET    /friends               - Arkadas listesi
+POST   /friends/add           - Arkadas ekle
+DELETE /friends/{id}          - Arkadas cikar
+GET    /clans                 - Klan listesi
+GET    /clans/{id}            - Klan detay
+POST   /clans                 - Klan olustur
+POST   /clans/{id}/join       - Klana katil
+POST   /clans/{id}/leave      - Klandan ayril
+
+COMMUNITY SERVERS (/api/community):
+-----------------------------------
+GET    /servers               - Community sunucu listesi
+GET    /servers/{id}          - Sunucu detay
+POST   /servers               - Sunucu ekle
+PUT    /servers/{id}/vote     - Sunucu oyla
+POST   /scrape                - Sunuculari tara
+
+PAYMENTS (/api/payments):
+-------------------------
+POST   /create                - Odeme olustur
+GET    /history               - Odeme gecmisi
+POST   /bank-transfer         - Banka transferi bildirimi
+GET    /invoices              - Faturalar
+
+ADMIN (/api/admin):
+-------------------
+GET    /dashboard             - Admin dashboard
+GET    /users                 - Kullanici yonetimi
+PUT    /users/{id}            - Kullanici guncelle
+DELETE /users/{id}            - Kullanici sil
+GET    /servers               - Sunucu yonetimi
+GET    /payments              - Odeme yonetimi
+GET    /forum/categories      - Forum kategori yonetimi
+GET    /forum/topics          - Forum konu yonetimi
+POST   /announcements         - Duyuru olustur
+GET    /stats                 - Istatistikler
+POST   /maintenance/enable    - Bakim modu ac
+POST   /maintenance/disable   - Bakim modu kapat
+
+WEBSOCKET (/ws):
+----------------
+/ws/notifications             - Bildirim stream
+/ws/servers/{id}              - Sunucu canli veri
+/ws/chat/{room}               - Canli sohbet
+/ws/jackpot                   - Jackpot canli
+
+================================================================================
+                           6. FRONTEND SAYFALARI
+================================================================================
+
+GENEL SAYFALAR:
+---------------
+- Home.vue              : Ana sayfa (duyurular, istatistikler, sunucular)
+- Login.vue             : Giris sayfasi
+- Register.vue          : Kayit sayfasi
+- ForgotPassword.vue    : Sifre sifirlama
+- VerifyEmail.vue       : Email dogrulama
+- Profile.vue           : Kullanici profili
+- Dashboard.vue         : Kullanici paneli
+- NotFound.vue          : 404 sayfasi
+- Privacy.vue           : Gizlilik politikasi
+- Terms.vue             : Kullanim sartlari
+- Contact.vue           : Iletisim
+- Support.vue           : Destek
+
+OYUN SAYFALARI:
+---------------
+- Servers.vue           : Sunucu listesi ve yonetimi
+- ServerDetail.vue      : Sunucu detay sayfasi
+- CommunityServers.vue  : Community sunucu listesi
+- Leaderboard.vue       : Liderlik tablosu & ELO sistemi
+- Jackpot.vue           : Jackpot oyunu
+
+FORUM SAYFALARI:
+----------------
+- Forum.vue             : Forum ana sayfasi
+- ForumCategory.vue     : Kategori sayfasi
+- ForumTopic.vue        : Konu detay sayfasi
+
+TOPLULUK SAYFALARI:
+-------------------
+- Clans.vue             : Klan listesi
+- ClanDetail.vue        : Klan detay sayfasi
+- Tournaments.vue       : Turnuva listesi
+- TournamentDetail.vue  : Turnuva detay sayfasi
+
+MAGAZA & ODEME:
+---------------
+- Shop.vue              : Sunucu paketi satin alma
+- Wallet.vue            : Cuzdan yonetimi
+
+ADMIN SAYFALARI (/admin):
+-------------------------
+- Dashboard.vue         : Admin paneli
+- Users.vue             : Kullanici yonetimi
+- Servers.vue           : Sunucu yonetimi
+- Payments.vue          : Odeme yonetimi
+- Forum.vue             : Forum yonetimi
+- Banners.vue           : Banner yonetimi
+- Pages.vue             : Sayfa yonetimi
+- Media.vue             : Medya yonetimi
+- Packages.vue          : Paket yonetimi
+- Settings.vue          : Site ayarlari
+- Theme.vue             : Tema ayarlari
+- Maintenance.vue       : Bakim modu
+- Stats.vue             : Istatistik paneli
+
+================================================================================
+                           7. OZELLIKLER DETAYI
+================================================================================
+
+7.1 KULLANICI SISTEMI
+---------------------
+- Email/Sifre ile kayit
+- Steam, Discord, Google OAuth entegrasyonu
+- Iki faktorlu kimlik dogrulama (2FA)
+- Email dogrulama
+- Sifre sifirlama
+- Profil ozellestirme (avatar, banner, bio)
+- Oturum yonetimi (coklu cihaz)
+- Aktivite gecmisi
+- Bildirim sistemi
+- Rol tabanli yetkilendirme (User, Moderator, Admin, SuperAdmin)
+
+7.2 SUNUCU YONETIMI
+-------------------
+- Oyun sunucusu kiralama
+- Tek tikla sunucu baslat/durdur/yeniden baslat
+- RCON uzaktan yonetim
+- Canli oyuncu listesi
+- Sunucu log izleme
+- Kaynak kullanimi izleme (CPU, RAM, Disk)
+- Otomatik yedekleme
+- Plugin yukleme/yonetme
+- Konfigurasyon gecmisi
+- Canli sunucu istatistikleri
+
+7.3 FORUM SISTEMI
+-----------------
+- Kategoriler ve alt kategoriler
+- Konu ve yanit olusturma
+- Zengin metin editoru
+- Dosya/resim yukleme
+- Begeni sistemi
+- Sikayet/raporlama
+- Etiket sistemi
+- Bahsetme (@kullanici)
+- Konu takibi
+- Arama (tam metin)
+- Rozet sistemi
+- Oyunlastirma (XP, seviye, streak)
+- Moderasyon araclari
+- Otomatik spam filtresi
+- Yasakli kelime filtresi
+
+7.4 ELO & LIDERLIK TABLOSU
+--------------------------
+- ELO puanlama sistemi
+- Tier sistemi:
+  * Diamond (2000+ puan)
+  * Platinum (1600+ puan)
+  * Gold (1300+ puan)
+  * Silver (1000+ puan)
+  * Bronze (0+ puan)
+- Steam entegrasyonu
+- Oyun istatistikleri
+- Haftalik/aylik/tum zamanlar siralamasi
+
+7.5 TURNUVA SISTEMI
+-------------------
+- Turnuva olusturma
+- Tek eleme / Cift eleme formatlari
+- Takim kayit sistemi
+- Otomatik bracket olusturma
+- Mac sonuc girisi
+- Odul havuzu
+- Canli bracket guncelleme
+
+7.6 KLAN SISTEMI
+----------------
+- Klan olusturma
+- Uye yonetimi (Lider, Yetkili, Uye)
+- Klan davet sistemi
+- Klan istatistikleri
+- Klan sohbeti
+- Klan turnuvalari
+
+7.7 JACKPOT SISTEMI
+-------------------
+- Canli jackpot oyunu
+- Cuzdan entegrasyonu
+- WebSocket ile gercek zamanli
+- Adil sans algoritmalari
+- Oyun gecmisi
+
+7.8 CUZDAN SISTEMI
+------------------
+- Sanal bakiye
+- Para yukleme (Kredi karti, Banka transferi)
+- Para cekme
+- Islem gecmisi
+- Kupon sistemi
+- Otomatik odeme
+
+7.9 COMMUNITY SUNUCULARI
+------------------------
+- Sunucu listeleme
+- Sunucu ekleme (kullanici)
+- Oylama sistemi
+- Otomatik durum kontrolu
+- Sunucu istatistikleri
+- Favorilere ekleme
+
+7.10 BILDIRIM SISTEMI
+---------------------
+- Uygulama ici bildirimler
+- Email bildirimleri
+- WebSocket canli bildirimler
+- Bildirim tercihleri
+- Discord/Telegram webhook
+
+7.11 ADMIN PANELI
+-----------------
+- Dashboard (ozet istatistikler)
+- Kullanici yonetimi
+- Sunucu yonetimi
+- Odeme yonetimi
+- Forum yonetimi
+- Duyuru yonetimi
+- Banner yonetimi
+- Sayfa yonetimi
+- Site ayarlari
+- Tema ozellestirme
+- Bakim modu
+- Log izleme
+- Istatistik raporlari
+
+================================================================================
+                           8. GUVENLIK OZELLIKLERI
+================================================================================
+
+AUTHENTICATION:
+---------------
+- JWT token tabanli kimlik dogrulama
+- Bcrypt sifre hashleme
+- Token blacklisting
+- Oturum zaman asimi
+- Coklu oturum yonetimi
+- Hesap kilitleme (basarisiz giris)
+
+YETKILENDIRME:
+--------------
+- Rol tabanli erisim kontrolu (RBAC)
+- Endpoint bazli yetki kontrolu
+- Admin IP kisitlamasi
+- Steam hesabi gereksinimi (bazi ozellikler)
+
+KORUMA:
+-------
+- Rate limiting (Redis tabanli)
+- CSRF korumasi
+- XSS filtreleme
+- SQL injection korumasi (ORM)
+- IP blacklist/whitelist
+- Guvenlik header'lari (HSTS, CSP, X-Frame-Options)
+- HTTPS zorunlulugu
+
+DENETIM:
+--------
+- Giris gecmisi loglari
+- Admin islem loglari
+- Guvenlik olayi kayitlari
+- RCON komut loglari
+
+2FA:
+----
+- TOTP (Google Authenticator uyumlu)
+- Yedek kodlar
+- Admin icin zorunlu 2FA (opsiyonel)
+
+================================================================================
+                           9. KONFIGURASYONLAR
+================================================================================
+
+ORTAM DEGISKENLERI (.env):
+--------------------------
+# Uygulama
+APP_NAME=AGTR Merkezi
+DEBUG=False
+SECRET_KEY=<gizli-anahtar>
+
+# Veritabani
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=agtrmerkezi_user
+DB_PASSWORD=<sifre>
+DB_NAME=agtrmerkezi
+
+# Redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=<sifre>
+
+# OAuth
+STEAM_API_KEY=<steam-api-key>
+DISCORD_CLIENT_ID=<discord-client-id>
+DISCORD_CLIENT_SECRET=<discord-secret>
+GOOGLE_CLIENT_ID=<google-client-id>
+GOOGLE_CLIENT_SECRET=<google-secret>
+
+# Email
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=<email>
+SMTP_PASSWORD=<sifre>
+EMAIL_ENABLED=True
+
+# Webhook
+DISCORD_WEBHOOK_URL=<webhook-url>
+TELEGRAM_BOT_TOKEN=<bot-token>
+TELEGRAM_CHAT_ID=<chat-id>
+
+================================================================================
+                           10. KURULUM
+================================================================================
+
+GEREKSINIMLER:
+--------------
+- Python 3.11+
+- Node.js 18+
+- MySQL 8.0+
+- Redis 7.x+
+- Nginx
+
+KURULUM ADIMLARI:
+-----------------
+1. Repoyu klonla
+   git clone <repo-url> /var/www/agtrmerkezi
+
+2. Python bagimliliklar
+   pip install -r requirements.txt
+
+3. Frontend bagimliliklar
+   cd frontend && npm install
+
+4. .env dosyasini olustur
+   cp .env.example .env
+   # .env dosyasini duzenle
+
+5. Veritabanini olustur
+   mysql -u root -p < sql/schema.sql
+
+6. Frontend build
+   cd frontend && npm run build
+
+7. Servisi baslat
+   systemctl start agtrmerkezi
+
+DEVELOPMENT:
+------------
+# Backend
+uvicorn app.main:app --reload --port 8000
+
+# Frontend
+cd frontend && npm run dev
+
+================================================================================
+                           11. API KULLANIMI ORNEKLERI
+================================================================================
+
+GIRIS YAPMA:
+------------
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+Response:
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "user": {
+    "id": 1,
+    "username": "user",
+    "email": "user@example.com",
+    "role": "user"
+  }
+}
+
+SUNUCU LISTESI:
+---------------
+GET /api/servers
+Authorization: Bearer <token>
+
+Response:
+{
+  "servers": [
+    {
+      "id": 1,
+      "name": "CS 1.6 Public",
+      "ip": "185.171.25.137",
+      "port": 27015,
+      "players": 24,
+      "max_players": 32,
+      "map": "de_dust2",
+      "status": "online"
+    }
+  ]
+}
+
+FORUM KONU OLUSTURMA:
+---------------------
+POST /api/forum/topics
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "category_id": 1,
+  "title": "Yeni Konu Basligi",
+  "content": "Konu icerigi burada...",
+  "tags": ["cs16", "yardim"]
+}
+
+================================================================================
+                           12. WEBSOCKET KULLANIMI
+================================================================================
+
+BILDIRIM BAGLANTISI:
+--------------------
+const ws = new WebSocket('wss://agtrmerkezi.com/ws/notifications');
+
+ws.onmessage = (event) => {
+  const notification = JSON.parse(event.data);
+  console.log('Yeni bildirim:', notification);
+};
+
+SUNUCU CANLI VERI:
+------------------
+const ws = new WebSocket('wss://agtrmerkezi.com/ws/servers/1');
+
+ws.onmessage = (event) => {
+  const serverData = JSON.parse(event.data);
+  // players, status, map vb.
+};
+
+================================================================================
+                           13. TEST
+================================================================================
+
+TEST CALISTIRMA:
+----------------
+# Tum testler
+pytest
+
+# Belirli test dosyasi
+pytest tests/test_forum.py
+
+# Verbose
+pytest -v
+
+# Coverage raporu
+pytest --cov=app
+
+TEST SAYILARI:
+--------------
+- Forum testleri: 58 test
+- Steam feature testleri: 32 test
+- Leaderboard testleri: 27 test
+- Email verification testleri: 20 test
+- Toplam: 137+ test
+
+================================================================================
+                           14. PERFORMANS
+================================================================================
+
+OPTIMIZASYONLAR:
+----------------
+- Redis cache (API response, session)
+- Veritabani query optimizasyonu (N+1 fix)
+- Lazy loading (Frontend)
+- Code splitting (Vite)
+- Gzip compression
+- Static file caching
+- Database connection pooling
+- Async/await pattern
+
+OLCEKLENEBILIRLIK:
+------------------
+- Horizontal scaling (multiple workers)
+- Redis cluster desteği
+- Database replication desteği
+- CDN uyumu
+
+================================================================================
+                           15. LISANS & ILETISIM
+================================================================================
+
+Bu proje AGTR Gaming Community icin gelistirilmistir.
+Tum haklari saklidir.
+
+Website: https://agtrmerkezi.com
+Discord: https://discord.gg/agtr
+Email: info@agtrmerkezi.com
+
+================================================================================
+                           16. DEGISIKLIK GECMISI
+================================================================================
+
+v5.4 Pro (22 Ocak 2026):
+------------------------
+- Authentication kontrolleri ve login yonlendirmeleri
+- useRequireAuth composable
+- Kullanici favorileri API
+- Admin istatistik paneli
+- Email dogrulama sistemi
+- Leaderboard ELO sistemi
+- 166 test eklendi
+
+v5.3 (21 Ocak 2026):
+--------------------
+- Forum sistemi kapsamli iyilestirmeler (31 ozellik)
+- N+1 query fix
+- Arama API
+- Moderasyon araclari
+- Etiket ve bahsetme sistemi
+- XSS guvenlik
+- Oyunlastirma
+- WebSocket real-time
+- Otomatik moderasyon
+
+v5.2 (20 Ocak 2026):
+--------------------
+- Steam hesabi zorunlulugu (oyun ozellikleri)
+- Bakim modu
+- Bug fixes
+
+v5.1 (19 Ocak 2026):
+--------------------
+- Performance optimizasyonlari
+- UI/UX iyilestirmeleri
+- Turkce karakter duzeltmeleri
+
+v5.0 (16 Ocak 2026):
+--------------------
+- Ilk release
+- Temel ozellikler
+
+================================================================================
+                              SON
+================================================================================

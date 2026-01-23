@@ -80,3 +80,13 @@ credentials/
 *.key
 *.pem
 *.crt
+
+# Screenshots
+*.jpg
+*.png
+!frontend/public/*.png
+!static/**/*.png
+!static/**/*.jpg
+
+# Dynamic assets (scraped)
+static/assets/
