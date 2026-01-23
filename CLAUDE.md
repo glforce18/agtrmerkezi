@@ -383,27 +383,43 @@ Kategoriler oyunlara gore gruplandirildi:
 - Service Worker versiyonu: v19 (`frontend/public/sw.js`)
 - Game assets dizini: `/var/www/agtrmerkezi/static/assets/games/`
 
-## Health Check Script
+## Health Check Script v2.0 (91 Kontrol)
+
 ```bash
 # Tum kontrolleri calistir
 python scripts/health_check.py
 
-# Begeni sayilarini duzelt
-python scripts/health_check.py --fix-likes
-
-# Negatif degerleri duzelt
-python scripts/health_check.py --fix-negative
-
-# Tum sorunlari duzelt
-python scripts/health_check.py --fix-all
+# Fix komutlari
+python scripts/health_check.py --fix-likes      # Begeni sayaclarini duzelt
+python scripts/health_check.py --fix-replies    # Yanit sayaclarini duzelt
+python scripts/health_check.py --fix-negative   # Negatif degerleri sifirla
+python scripts/health_check.py --fix-orphans    # Orphan kayitlari temizle
+python scripts/health_check.py --clean-sessions # Eski oturumlari temizle
+python scripts/health_check.py --fix-all        # Tumunu duzelt
 ```
 
-**Kontrol Edilen Alanlar:**
-- DATABASE-MODEL SYNC: Model-database kolon uyumu
-- DATA INTEGRITY: Negatif degerler, orphan kayitlar, count uyumsuzluklari
-- API ENDPOINTS: Kritik endpoint'lerin calismasi
-- SECURITY: .env izinleri, debug modu, CORS
-- PERFORMANCE: Tablo boyutlari
+**12 Ana Kontrol Kategorisi:**
+
+| Kategori | Kontrol | Aciklama |
+|----------|---------|----------|
+| DATABASE-MODEL SYNC | 8 | Model-veritabani sutun uyumu |
+| DATA INTEGRITY | 12 | Negatif degerler, orphan kayitlar, count dogrulugu |
+| SECURITY | 15 | Dosya izinleri, XSS, SQL injection, kod tarama |
+| API ENDPOINTS | 10 | Public/auth endpoint'ler, response sureleri |
+| SYSTEM RESOURCES | 8 | Disk, RAM, CPU, process kontrolu |
+| DATABASE PERFORMANCE | 10 | Tablo boyutlari, index kullanimi, baglantılar |
+| REDIS | 6 | Baglanti, bellek, key sayilari |
+| SSL CERTIFICATE | 4 | Sertifika gecerliligi, sure kontrolu |
+| BACKUP | 5 | Yedek dosyalari, yas kontrolu |
+| USER ACTIVITY | 5 | Aktif kullanicilar, kayit istatistikleri |
+| FRONTEND | 5 | Build dosyalari, asset boyutlari |
+| TIMESTAMP | 3 | Tarih tutarliligi kontrolu |
+
+**Otomatik Fix Islemleri:**
+- Like/reply count senkronizasyonu
+- Negatif degerleri sifirlama
+- Orphan forum like kayitlarini temizleme
+- 30+ gun onceki anonim oturumlari silme
 
 ## Hizli Komutlar
 ```bash
