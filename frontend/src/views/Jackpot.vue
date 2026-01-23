@@ -241,7 +241,7 @@
         </div>
 
         <div class="bet-form">
-          <div class="bet-input-group">
+          <div class="bet-input-group" :class="{ 'bet-input-error': betValidation.hasError, 'bet-input-success': betValidation.isValid }">
             <div class="input-icon">
               <CoinsIcon :size="20" />
             </div>
@@ -252,8 +252,12 @@
               :max="maxBet"
               placeholder="Bahis miktarı"
               class="bet-input"
+              @input="validateBetAmount"
             />
             <span class="input-suffix">ARMOR</span>
+          </div>
+          <div v-if="betValidation.message" class="bet-validation-message" :class="{ 'bet-validation-error': betValidation.hasError }">
+            {{ betValidation.message }}
           </div>
 
           <div class="quick-bets">
@@ -386,7 +390,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useMessage } from 'naive-ui'
 import { useAuthStore } from '@/stores/auth'
 import { useRequireSteam } from '@/composables/useRequireSteam'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
@@ -409,6 +414,7 @@ import {
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
+const message = useMessage()
 const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
 
 // State
@@ -417,6 +423,9 @@ const players = ref([])
 const recentRounds = ref([])
 const betAmount = ref(100)
 const betting = ref(false)
+
+// Bet validation
+const betValidation = reactive({ hasError: false, isValid: false, message: '' })
 const isSpinning = ref(false)
 const winner = ref(null)
 const showFairnessModal = ref(false)
@@ -429,6 +438,21 @@ const countdown = ref(0)
 let reconnectTimeout = null
 let heartbeatInterval = null
 let isUnmounting = false
+let isMounted = false // Track component mount state for async operations
+let isReconnecting = false // Prevent reconnect race condition
+
+// Animation frame tracking for cleanup
+let animationFrameId = null
+let nestedAnimationFrameId = null // Track nested animation frame
+
+// AudioContext singleton for sound effects
+let sharedAudioContext = null
+const getAudioContext = () => {
+  if (!sharedAudioContext) {
+    sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)()
+  }
+  return sharedAudioContext
+}
 
 // Constants - defaults, overridden by API
 const DEFAULT_MIN_BET = 10
@@ -576,6 +600,31 @@ const getPlayerColor = (index) => {
   return colors[index % colors.length]
 }
 
+const validateBetAmount = () => {
+  const amount = betAmount.value
+  if (!amount || amount === 0) {
+    betValidation.hasError = false
+    betValidation.isValid = false
+    betValidation.message = ''
+  } else if (amount < minBet.value) {
+    betValidation.hasError = true
+    betValidation.isValid = false
+    betValidation.message = `Minimum bahis: ${minBet.value} ARMOR`
+  } else if (amount > maxBet.value) {
+    betValidation.hasError = true
+    betValidation.isValid = false
+    betValidation.message = `Maksimum bahis: ${maxBet.value} ARMOR`
+  } else if (amount > balance.value) {
+    betValidation.hasError = true
+    betValidation.isValid = false
+    betValidation.message = `Yetersiz bakiye. Mevcut: ${formatArmor(balance.value)} ARMOR`
+  } else {
+    betValidation.hasError = false
+    betValidation.isValid = true
+    betValidation.message = ''
+  }
+}
+
 const getSegmentStyle = (player, index) => {
   const totalAngle = 360
   const playerAngle = (player.win_chance / 100) * totalAngle
@@ -659,13 +708,16 @@ const placeBet = async () => {
       // Refresh round info
       await fetchCurrentRound()
       // Update balance
-      authStore.fetchUser()
+      authStore.fetchUser().catch(err => {
+        console.error('Failed to fetch user after bet:', err)
+      })
+      message.success('Bahis başarıyla yapıldı')
     } else {
       const error = await res.json()
-      alert(error.detail || 'Bahis yapılamadı')
+      message.error(error.detail || 'Bahis yapılamadı')
     }
   } catch (e) {
-    alert('Bahis yapılırken hata oluştu')
+    message.error('Bahis yapılırken hata oluştu')
   } finally {
     betting.value = false
   }
@@ -673,17 +725,23 @@ const placeBet = async () => {
 
 // WebSocket connection
 const connectWebSocket = () => {
+  // Don't connect if component is unmounting
+  if (isUnmounting || !isMounted) return
+
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const wsUrl = `${protocol}//${window.location.host}/ws/jackpot`
 
   ws.value = new WebSocket(wsUrl)
 
   ws.value.onopen = () => {
+    // Check if component is still mounted before sending auth
+    if (!isMounted || isUnmounting) return
+
     wsConnected.value = true
 
     // Authenticate if logged in
     const token = localStorage.getItem('access_token')
-    if (token) {
+    if (token && ws.value && ws.value.readyState === WebSocket.OPEN) {
       ws.value.send(JSON.stringify({ action: 'auth', token }))
     }
   }
@@ -699,9 +757,15 @@ const connectWebSocket = () => {
 
   ws.value.onclose = () => {
     wsConnected.value = false
-    // Reconnect after 3 seconds if not unmounting
-    if (!isUnmounting) {
-      reconnectTimeout = setTimeout(connectWebSocket, 3000)
+    // Reconnect after 3 seconds if not unmounting and not already reconnecting
+    if (!isUnmounting && !isReconnecting) {
+      isReconnecting = true
+      reconnectTimeout = setTimeout(() => {
+        isReconnecting = false
+        if (!isUnmounting) {
+          connectWebSocket()
+        }
+      }, 3000)
     }
   }
 
@@ -722,7 +786,9 @@ const handleWebSocketMessage = (message) => {
       handleNewBet(message.data)
       // Tur bilgisini güncelle
       if (message.data) {
-        fetchCurrentRound()
+        fetchCurrentRound().catch(err => {
+          console.error('Failed to fetch current round after new bet:', err)
+        })
       }
       break
 
@@ -845,6 +911,12 @@ const startSpinAnimation = (data) => {
   const startOffset = spinnerOffset.value
 
   const animate = () => {
+    // Check if component is unmounting
+    if (isUnmounting) {
+      animationFrameId = null
+      return
+    }
+
     const elapsed = Date.now() - startTime
     const progress = Math.min(elapsed / duration, 1)
 
@@ -861,24 +933,33 @@ const startSpinAnimation = (data) => {
     }
 
     if (progress < 1) {
-      requestAnimationFrame(animate)
+      animationFrameId = requestAnimationFrame(animate)
     } else {
+      animationFrameId = null
       isSpinning.value = false
       playWinSound()
     }
   }
 
   // Bir sonraki frame'de başlat (DOM güncellemesi için bekle)
-  requestAnimationFrame(() => {
-    requestAnimationFrame(animate)
+  animationFrameId = requestAnimationFrame(() => {
+    // Check if component is still mounted
+    if (isUnmounting) {
+      animationFrameId = null
+      return
+    }
+    nestedAnimationFrameId = requestAnimationFrame(animate)
   })
 }
 
-// Ses efektleri
+// Ses efektleri - using shared AudioContext singleton
 const playTickSound = () => {
   // Basit tick sesi
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+    const audioContext = getAudioContext()
+    if (audioContext.state === 'suspended') {
+      audioContext.resume()
+    }
     const oscillator = audioContext.createOscillator()
     const gainNode = audioContext.createGain()
 
@@ -900,7 +981,10 @@ const playTickSound = () => {
 const playWinSound = () => {
   // Kazanma sesi
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+    const audioContext = getAudioContext()
+    if (audioContext.state === 'suspended') {
+      audioContext.resume()
+    }
     const oscillator = audioContext.createOscillator()
     const gainNode = audioContext.createGain()
 
@@ -946,10 +1030,14 @@ const showWinner = (data) => {
   playWinSound()
 
   // History'yi güncelle
-  fetchHistory()
+  fetchHistory().catch(err => {
+    console.error('Failed to fetch history after winner:', err)
+  })
 
   // Bakiye güncelle
-  authStore.fetchUser()
+  authStore.fetchUser().catch(err => {
+    console.error('Failed to fetch user after winner:', err)
+  })
 }
 
 const closeWinnerDisplay = () => {
@@ -966,9 +1054,15 @@ const startHeartbeat = () => {
 }
 
 onMounted(() => {
-  // İlk veri yükle
-  fetchCurrentRound()
-  fetchHistory()
+  isMounted = true
+
+  // İlk veri yükle with error handling
+  fetchCurrentRound().catch(err => {
+    console.error('Failed to fetch current round on mount:', err)
+  })
+  fetchHistory().catch(err => {
+    console.error('Failed to fetch history on mount:', err)
+  })
 
   // WebSocket bağlan
   connectWebSocket()
@@ -977,6 +1071,19 @@ onMounted(() => {
 
 onUnmounted(() => {
   isUnmounting = true
+  isMounted = false
+
+  // Cancel any pending animation frames
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+
+  // Cancel nested animation frame
+  if (nestedAnimationFrameId) {
+    cancelAnimationFrame(nestedAnimationFrameId)
+    nestedAnimationFrameId = null
+  }
 
   // Heartbeat interval temizle
   if (heartbeatInterval) {
@@ -990,10 +1097,24 @@ onUnmounted(() => {
     reconnectTimeout = null
   }
 
+  // Reset reconnecting state
+  isReconnecting = false
+
   // WebSocket kapat
   if (ws.value) {
     ws.value.close()
     ws.value = null
+  }
+
+  // Close shared AudioContext to free resources - check state before closing
+  if (sharedAudioContext && sharedAudioContext.state !== 'closed') {
+    sharedAudioContext.close().catch(err => {
+      // Only log if it's not an expected close error
+      if (err.name !== 'InvalidStateError') {
+        console.error('Failed to close AudioContext:', err)
+      }
+    })
+    sharedAudioContext = null
   }
 })
 </script>
@@ -2500,5 +2621,31 @@ onUnmounted(() => {
   .quick-btn {
     padding: 12px 16px;
   }
+}
+
+/* Bet Validation Styles */
+.bet-input-error .bet-input {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.bet-input-success .bet-input {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2) !important;
+}
+
+.bet-validation-message {
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.bet-validation-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 </style>

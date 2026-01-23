@@ -186,7 +186,10 @@ export const userApi = {
       method: 'POST',
       headers: getAuthHeaders(),
       body: formData
-    }).then(handleResponse)
+    }).then(handleResponse).catch(error => {
+      console.error('Upload failed:', error)
+      throw error
+    })
   },
 
   // Balance

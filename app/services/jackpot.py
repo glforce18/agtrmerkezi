@@ -82,17 +82,8 @@ class JackpotService:
         ip_address: str = None,
         user_agent: str = None
     ) -> JackpotBet:
-        """Bahis yap"""
-        # Tur kontrolü
-        round = self.get_or_create_round()
-
-        if round.status not in [JackpotStatus.WAITING, JackpotStatus.ACTIVE]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Bu tura bahis yapılamaz"
-            )
-
-        # Miktar kontrolü
+        """Bahis yap - Database-level locking ile race condition onleme"""
+        # Miktar kontrolü (lock öncesi)
         if amount < self.MIN_BET:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -110,43 +101,87 @@ class JackpotService:
         if not user:
             raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
 
-        # Coin bakiye kontrolü ve düşürme
-        self.wallet.deduct_balance(
-            user_id=user_id,
-            amount=amount,
-            wallet_type=WalletType.COIN,
-            transaction_type=TransactionType.JACKPOT.value,
-            description=f"Jackpot #{round.round_number} bahisi",
-            reference_id=str(round.id),
-            reference_type="jackpot",
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
+        try:
+            # Database-level locking ile tur al - race condition önleme
+            round = self.db.query(JackpotGame).filter(
+                JackpotGame.status.in_([JackpotStatus.WAITING, JackpotStatus.ACTIVE])
+            ).with_for_update(nowait=False).first()
 
-        # Bilet hesaplama (1 Armor = 1 bilet)
-        ticket_count = int(amount)
-        ticket_start = int(round.total_pot) + 1
-        ticket_end = ticket_start + ticket_count - 1
+            if not round:
+                # Yeni tur oluştur (lock ile)
+                round = self.get_or_create_round()
+                # Yeni oluşturulan turu da kilitle
+                round = self.db.query(JackpotGame).filter(
+                    JackpotGame.id == round.id
+                ).with_for_update(nowait=False).first()
 
-        # Bahis oluştur
-        bet = JackpotBet(
-            game_id=round.id,
-            user_id=user_id,
-            amount=amount,
-            ticket_start=ticket_start,
-            ticket_end=ticket_end
-        )
-        self.db.add(bet)
+            if round.status not in [JackpotStatus.WAITING, JackpotStatus.ACTIVE]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Bu tura bahis yapılamaz"
+                )
 
-        # Tur bilgilerini güncelle
-        round.total_pot = (round.total_pot or 0) + amount
-        round.participant_count = (round.participant_count or 0) + 1
+            # Savepoint oluştur - wallet deduction ve bet creation atomik olsun
+            # Eğer bet oluşturma başarısız olursa, wallet deduction da geri alınır
+            self.db.begin_nested()
 
-        # NOT: Status değişikliği jackpot_manager tarafından yapılacak
-        # 2+ benzersiz oyuncu olduğunda manager ACTIVE'e geçirecek
+            try:
+                # Coin bakiye kontrolü ve düşürme (wallet service kendi lock'unu kullanır)
+                self.wallet.deduct_balance(
+                    user_id=user_id,
+                    amount=amount,
+                    wallet_type=WalletType.COIN,
+                    transaction_type=TransactionType.JACKPOT.value,
+                    description=f"Jackpot #{round.round_number} bahisi",
+                    reference_id=str(round.id),
+                    reference_type="jackpot",
+                    ip_address=ip_address,
+                    user_agent=user_agent
+                )
 
-        self.db.commit()
-        self.db.refresh(bet)
+                # Bilet hesaplama (1 Armor = 1 bilet) - atomik okuma/yazma
+                current_pot = round.total_pot or 0
+                ticket_count = int(amount)
+                ticket_start = int(current_pot) + 1
+                ticket_end = ticket_start + ticket_count - 1
+
+                # Bahis oluştur
+                bet = JackpotBet(
+                    game_id=round.id,
+                    user_id=user_id,
+                    amount=amount,
+                    ticket_start=ticket_start,
+                    ticket_end=ticket_end
+                )
+                self.db.add(bet)
+
+                # Tur bilgilerini güncelle - atomik
+                round.total_pot = current_pot + amount
+                round.participant_count = (round.participant_count or 0) + 1
+
+                # NOT: Status değişikliği jackpot_manager tarafından yapılacak
+                # 2+ benzersiz oyuncu olduğunda manager ACTIVE'e geçirecek
+
+                # Savepoint commit - nested transaction başarılı
+                self.db.commit()
+            except Exception as nested_error:
+                # Savepoint rollback - wallet deduction da geri alınır
+                self.db.rollback()
+                raise nested_error
+
+            self.db.commit()
+            self.db.refresh(bet)
+
+        except HTTPException:
+            self.db.rollback()
+            raise
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Jackpot bahis hatasi: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Bahis işlemi sırasında bir hata oluştu"
+            )
 
         # Kazanma şansını hesapla
         win_chance = (ticket_count / int(round.total_pot)) * 100
@@ -243,14 +278,18 @@ class JackpotService:
         for bet in bets:
             is_winner = bet.user_id == winning_bet.user_id
 
-            # Kullanıcının history kaydını bul veya oluştur
+            # Kullanıcının history kaydını bul veya oluştur - with_for_update ile race condition önleme
             history = self.db.query(JackpotHistory).filter(
                 JackpotHistory.user_id == bet.user_id
-            ).first()
+            ).with_for_update().first()
 
             if not history:
                 history = JackpotHistory(user_id=bet.user_id)
                 self.db.add(history)
+                self.db.flush()  # ID ataması için flush, sonra lock al
+                history = self.db.query(JackpotHistory).filter(
+                    JackpotHistory.user_id == bet.user_id
+                ).with_for_update().first()
 
             # İstatistikleri güncelle
             history.total_games_played = (history.total_games_played or 0) + 1

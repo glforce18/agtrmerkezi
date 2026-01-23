@@ -24,6 +24,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def format_avatar_url(avatar_path: str) -> str:
+    """Format avatar path to full URL with proper prefix"""
+    if not avatar_path:
+        return None
+    if avatar_path.startswith(('http://', 'https://', '/')):
+        return avatar_path
+    # Avatars are stored in /static/images/
+    return f"/static/images/{avatar_path}"
+
+
 # ==================== CONSTANTS ====================
 
 # ELO Tier thresholds
@@ -185,8 +195,11 @@ async def get_leaderboard(
     if tier and tier in ELO_TIERS:
         tier_data = ELO_TIERS[tier]
         # Find the next tier's min elo
+        # ELO_TIERS is ordered from highest (Diamond) to lowest (Bronze)
         tier_list = list(ELO_TIERS.items())
         tier_index = [t[0] for t in tier_list].index(tier)
+        # tier_index=0 is the highest tier (Diamond), so no upper bound needed
+        # For other tiers, the previous index has the next higher tier's min
         if tier_index > 0:
             next_tier_min = tier_list[tier_index - 1][1]["min"]
             query = query.filter(
@@ -194,6 +207,7 @@ async def get_leaderboard(
                 User.elo < next_tier_min
             )
         else:
+            # Highest tier (Diamond) - only filter by minimum, no upper bound
             query = query.filter(User.elo >= tier_data["min"])
 
     # Get total count
@@ -263,7 +277,7 @@ async def get_elo_rankings(
             "rank": i + 1,
             "user_id": user.id,
             "username": user.username,
-            "avatar": user.avatar,
+            "avatar": format_avatar_url(user.avatar),
             "elo": user.elo,
             "tier": tier_info.name,
             "tier_color": tier_info.color,
@@ -294,18 +308,28 @@ async def join_elo_system(
             tier=tier_info
         )
 
-    # Initialize ELO for the user (already has default values from model)
+    # Initialize ELO for the user with row-level lock to prevent concurrent updates
+    # Re-fetch the user with FOR UPDATE lock to ensure atomic update
+    user = db.query(User).filter(User.id == current_user.id).with_for_update().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Kullanici bulunamadi"
+        )
+
     # Just mark them as participating by ensuring default values are set
-    if current_user.elo is None:
-        current_user.elo = DEFAULT_ELO
-    if current_user.wins is None:
-        current_user.wins = 0
-    if current_user.losses is None:
-        current_user.losses = 0
-    if current_user.kd_ratio is None:
-        current_user.kd_ratio = 0.0
+    if user.elo is None:
+        user.elo = DEFAULT_ELO
+    if user.wins is None:
+        user.wins = 0
+    if user.losses is None:
+        user.losses = 0
+    if user.kd_ratio is None:
+        user.kd_ratio = 0.0
 
     db.commit()
+    db.refresh(user)
+    current_user = user  # Update reference for logging and response
 
     tier_info = get_tier_for_elo(current_user.elo)
 
@@ -391,11 +415,14 @@ async def get_leaderboard_stats(
     total_games = total_wins  # Each game produces one win
 
     # Tier distribution
+    # ELO_TIERS is ordered from highest (Diamond) to lowest (Bronze)
     tier_distribution = {}
     for tier_name, tier_data in ELO_TIERS.items():
         tier_list = list(ELO_TIERS.items())
         tier_index = [t[0] for t in tier_list].index(tier_name)
 
+        # tier_index=0 is the highest tier (Diamond), so no upper bound needed
+        # For other tiers, the previous index has the next higher tier's min
         if tier_index > 0:
             next_tier_min = tier_list[tier_index - 1][1]["min"]
             count = participants.filter(
@@ -403,6 +430,7 @@ async def get_leaderboard_stats(
                 User.elo < next_tier_min
             ).count()
         else:
+            # Highest tier (Diamond) - only filter by minimum, no upper bound
             count = participants.filter(User.elo >= tier_data["min"]).count()
 
         tier_distribution[tier_name] = {
@@ -498,7 +526,7 @@ async def get_user_elo_stats(
     return {
         "user_id": user.id,
         "username": user.username,
-        "avatar": user.avatar,
+        "avatar": format_avatar_url(user.avatar),
         "elo": user.elo or DEFAULT_ELO,
         "tier": {
             "name": tier_info.name,

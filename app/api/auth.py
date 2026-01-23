@@ -36,6 +36,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def format_avatar_url(avatar_path: str) -> str:
+    """Format avatar path to full URL with proper prefix"""
+    if not avatar_path:
+        return None
+    if avatar_path.startswith(('http://', 'https://', '/')):
+        return avatar_path
+    # Avatars are stored in /static/images/
+    return f"/static/images/{avatar_path}"
+
+
 class RegisterRequest(BaseModel):
     username: str
     email: EmailStr
@@ -154,14 +164,31 @@ def check_login_attempts(db: Session, user: User) -> bool:
     return True
 
 
-def increment_login_attempts(db: Session, user: User):
+def increment_login_attempts(db: Session, user: User, ip_address: str = None, user_agent: str = None):
     """Basarisiz giris denemesini kaydet"""
     user.login_attempts = (user.login_attempts or 0) + 1
-    
+
+    # Security event logging - detailed
+    logger.warning(
+        f"SECURITY_EVENT: Failed login attempt | "
+        f"user={user.username} | "
+        f"user_id={user.id} | "
+        f"attempt_count={user.login_attempts} | "
+        f"ip={ip_address or 'unknown'} | "
+        f"user_agent={user_agent[:100] if user_agent else 'unknown'}"
+    )
+
     if user.login_attempts >= settings.MAX_LOGIN_ATTEMPTS:
         user.lockout_until = datetime.utcnow() + timedelta(minutes=settings.LOGIN_LOCKOUT_MINUTES)
-        logger.warning(f"Hesap kilitlendi: {user.username} - {user.login_attempts} basarisiz deneme")
-    
+        logger.error(
+            f"SECURITY_EVENT: Account locked | "
+            f"user={user.username} | "
+            f"user_id={user.id} | "
+            f"failed_attempts={user.login_attempts} | "
+            f"lockout_minutes={settings.LOGIN_LOCKOUT_MINUTES} | "
+            f"ip={ip_address or 'unknown'}"
+        )
+
     db.commit()
 
 
@@ -268,7 +295,7 @@ async def register(request: Request, data: RegisterRequest, db: Session = Depend
             "username": user.username,
             "email": user.email,
             "display_name": user.display_name,
-            "avatar": user.avatar,
+            "avatar": format_avatar_url(user.avatar),
             "role": user.role.value,
             "status": user.status.value,
             "balance": float(user.balance or 0),
@@ -290,33 +317,46 @@ async def login(request: Request, response: Response, data: LoginRequest, db: Se
     user = db.query(User).filter(
         (User.username == data.username.lower()) | (User.email == data.username.lower())
     ).first()
-    
+
     if not user:
-        logger.warning(f"Basarisiz giris denemesi - kullanici bulunamadi: {data.username} - IP: {client_ip}")
+        # Security event logging - user not found
+        logger.warning(
+            f"SECURITY_EVENT: Login attempt for non-existent user | "
+            f"attempted_username={data.username} | "
+            f"ip={client_ip or 'unknown'} | "
+            f"user_agent={user_agent[:100] if user_agent else 'unknown'}"
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Kullanici adi veya sifre hatali")
     
     # Hesap kilitli mi kontrol et
     if not check_login_attempts(db, user):
         remaining = (user.lockout_until - datetime.utcnow()).seconds // 60
-        logger.warning(f"Kilitli hesaba giris denemesi: {user.username} - IP: {client_ip}")
+        # Security event logging - locked account attempt
+        logger.warning(
+            f"SECURITY_EVENT: Login attempt on locked account | "
+            f"user={user.username} | "
+            f"user_id={user.id} | "
+            f"lockout_remaining_minutes={remaining} | "
+            f"ip={client_ip or 'unknown'} | "
+            f"user_agent={user_agent[:100] if user_agent else 'unknown'}"
+        )
         raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS, 
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Hesabiniz gecici olarak kilitlendi. {remaining} dakika sonra tekrar deneyin."
         )
     
     # Sifre kontrolu
     if not verify_password(data.password, user.password_hash):
-        increment_login_attempts(db, user)
+        increment_login_attempts(db, user, ip_address=client_ip, user_agent=user_agent)
         remaining_attempts = settings.MAX_LOGIN_ATTEMPTS - user.login_attempts
-        logger.warning(f"Basarisiz giris denemesi: {user.username} - IP: {client_ip} - Kalan: {remaining_attempts}")
-        
+
         log_audit(db, user.id, "login_failed", "user", user.id,
                   new_values={"reason": "wrong_password", "attempts": user.login_attempts},
                   ip_address=client_ip, user_agent=user_agent)
-        
+
         if remaining_attempts > 0:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Kullanici adi veya sifre hatali. {remaining_attempts} deneme hakkiniz kaldi."
             )
         else:
@@ -357,7 +397,14 @@ async def login(request: Request, response: Response, data: LoginRequest, db: Se
         )
         
         if not valid:
-            increment_login_attempts(db, user)
+            increment_login_attempts(db, user, ip_address=client_ip, user_agent=user_agent)
+            # Security event logging - 2FA failure
+            logger.warning(
+                f"SECURITY_EVENT: Failed 2FA attempt | "
+                f"user={user.username} | "
+                f"user_id={user.id} | "
+                f"ip={client_ip or 'unknown'}"
+            )
             log_audit(db, user.id, "2fa_failed", "user", user.id, ip_address=client_ip, user_agent=user_agent)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Gecersiz 2FA kodu")
         
@@ -408,7 +455,7 @@ async def login(request: Request, response: Response, data: LoginRequest, db: Se
             "username": user.username,
             "email": user.email,
             "display_name": user.display_name,
-            "avatar": user.avatar,
+            "avatar": format_avatar_url(user.avatar),
             "role": user.role.value,
             "status": user.status.value,
             "balance": float(user.balance or 0),
@@ -463,7 +510,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user_re
         "username": current_user.username,
         "email": current_user.email,
         "display_name": current_user.display_name,
-        "avatar": current_user.avatar,
+        "avatar": format_avatar_url(current_user.avatar),
         "role": current_user.role.value,
         "status": current_user.status.value,
         "balance": float(current_user.balance or 0),
@@ -591,20 +638,48 @@ class ResetPasswordRequest(BaseModel):
 
 @router.post("/forgot-password")
 async def forgot_password(request: Request, data: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    """Sifre sifirlama istegi"""
+    """Sifre sifirlama istegi - Rate limited"""
+    from app.core.security import check_rate_limit
+
+    client_ip = request.client.host if request.client else "unknown"
+
+    # Rate limiting: maksimum 5 istek / 15 dakika (IP bazli)
+    rate_limit_key = f"password_reset:ip:{client_ip}"
+    if check_rate_limit(rate_limit_key, limit=5, window=900):  # 15 dakika
+        logger.warning(
+            f"SECURITY_EVENT: Password reset rate limit exceeded | "
+            f"ip={client_ip} | "
+            f"email={data.email}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Cok fazla sifre sifirlama istegi. Lutfen 15 dakika sonra tekrar deneyin."
+        )
+
+    # Rate limiting: email bazli - ayni email icin 3 istek / 1 saat
+    email_rate_key = f"password_reset:email:{data.email.lower()}"
+    if check_rate_limit(email_rate_key, limit=3, window=3600):  # 1 saat
+        logger.warning(
+            f"SECURITY_EVENT: Password reset rate limit exceeded (email) | "
+            f"ip={client_ip} | "
+            f"email={data.email}"
+        )
+        # Ayni mesaji ver (guvenlik - email var mi belli etme)
+        return {"success": True, "message": "E-posta adresinize sifirlama linki gonderildi"}
+
     user = db.query(User).filter(User.email == data.email).first()
-    
+
     # Kullanici yoksa bile ayni mesaji ver (guvenlik)
     if not user:
         logger.info(f"Sifre sifirlama istegi: bilinmeyen email {data.email}")
         return {"success": True, "message": "E-posta adresinize sifirlama linki gonderildi"}
-    
+
     # Sifirlama token'i olustur
     reset_token = secrets.token_urlsafe(32)
     user.reset_token = reset_token
     user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
     db.commit()
-    
+
     # Email gonder
     reset_url = f"{settings.SITE_URL}/reset-password?token={reset_token}"
     try:
@@ -617,10 +692,9 @@ async def forgot_password(request: Request, data: ForgotPasswordRequest, db: Ses
     except Exception as e:
         logger.error(f"Email gonderim hatasi: {e}")
         # Email hatasi olsa bile kullaniciya hata gosterme (guvenlik)
-    
-    client_ip = request.client.host if request.client else None
+
     log_audit(db, user.id, "password_reset_requested", "user", user.id, ip_address=client_ip)
-    
+
     return {"success": True, "message": "E-posta adresinize sifirlama linki gonderildi"}
 
 
@@ -767,7 +841,7 @@ async def login_with_2fa(request: Request, response: Response, data: TwoFactorLo
             "username": user.username,
             "email": user.email,
             "display_name": user.display_name,
-            "avatar": user.avatar,
+            "avatar": format_avatar_url(user.avatar),
             "role": user.role.value,
             "status": user.status.value,
             "balance": float(user.balance or 0),
@@ -906,7 +980,10 @@ async def oauth_callback(
             username_base = normalized.get("username", f"{provider}_user")
             # Remove quotes if present (Steam sometimes returns quoted names)
             username_base = username_base.strip('"\'')
-            username = username_base.lower().replace(" ", "_")[:20]
+            username_clean = username_base.lower().replace(" ", "_")
+            if len(username_clean) > 20:
+                logger.warning(f"Username truncated: {username_clean[:20]}")
+            username = username_clean[:20]
 
             # Benzersiz kullanici adi
             existing = db.query(User).filter(User.username == username).first()

@@ -4,13 +4,16 @@ Discord OAuth, Steam OAuth, Clan/Team System, Achievement System
 """
 import hashlib
 import json
+import logging
 import os
 from typing import Optional
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -18,7 +21,22 @@ from app.core.security import get_current_user, get_current_user_with_steam
 from app.models.connection import get_db
 from app.models.database import User
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+# ============================================================================
+# URL VALIDATION HELPER
+# ============================================================================
+
+def validate_url(url: str) -> bool:
+    """URL'nin gecerli olup olmadigini kontrol et"""
+    if not url:
+        return True
+    parsed = urlparse(url)
+    return parsed.scheme in ('http', 'https') and bool(parsed.netloc)
+
 
 # ============================================================================
 # CONFIGURATION (from settings, loaded from .env)
@@ -159,7 +177,8 @@ def ensure_social_tables(db: Session):
         """))
         
         db.commit()
-    except Exception:
+    except Exception as e:
+        logger.error(f"Sosyal tablolar oluşturulurken hata: {e}")
         db.rollback()
 
 
@@ -239,7 +258,11 @@ async def discord_callback(
     email = discord_user.get("email")
     avatar = discord_user.get("avatar")
     avatar_url = f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar}.png" if avatar else None
-    
+
+    # URL dogrulama
+    if avatar_url and not validate_url(avatar_url):
+        raise HTTPException(status_code=400, detail="Gecersiz avatar URL")
+
     # Mevcut bağlantı var mı?
     existing = db.execute(text("""
         SELECT user_id FROM social_connections 
@@ -358,7 +381,11 @@ async def steam_callback(request: Request, db: Session = Depends(get_db)):
     
     username = steam_user.get("personaname")
     avatar = steam_user.get("avatarfull")
-    
+
+    # URL dogrulama
+    if avatar and not validate_url(avatar):
+        raise HTTPException(status_code=400, detail="Gecersiz avatar URL")
+
     # Mevcut bağlantı var mı?
     existing = db.execute(text("""
         SELECT user_id FROM social_connections 
@@ -430,21 +457,27 @@ async def list_clans(
 ):
     """📋 Klan listesi"""
     ensure_social_tables(db)
-    
-    q = "SELECT * FROM clans WHERE is_public = TRUE"
-    p = {}
-    
+
+    # SQL Injection koruması: Parameterized query ile güvenli arama
+    # LIKE wildcardları escape edilerek injection önlenir
+    params = {"limit": 50}
+
+    conditions = ["is_public = TRUE"]
+
     if search:
-        q += " AND (name LIKE :s OR tag LIKE :s)"
-        p["s"] = f"%{search}%"
-    
+        # LIKE pattern için özel karakterleri escape et
+        safe_search = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        conditions.append("(name LIKE :search_pattern ESCAPE '\\\\' OR tag LIKE :search_pattern ESCAPE '\\\\')")
+        params["search_pattern"] = f"%{safe_search}%"
+
     if recruiting is not None:
-        q += " AND is_recruiting = :r"
-        p["r"] = recruiting
-    
-    q += " ORDER BY points DESC, member_count DESC LIMIT 50"
-    
-    rows = db.execute(text(q), p).fetchall()
+        conditions.append("is_recruiting = :recruiting")
+        params["recruiting"] = recruiting
+
+    where_clause = " AND ".join(conditions)
+    query = text(f"SELECT * FROM clans WHERE {where_clause} ORDER BY points DESC, member_count DESC LIMIT :limit")
+
+    rows = db.execute(query, params).fetchall()
     clans = [{
         "id": r[0], "name": r[1], "tag": r[2], "description": r[3],
         "logo_url": r[4], "color": r[6], "is_recruiting": bool(r[9]),
@@ -682,18 +715,18 @@ async def send_friend_request(
 ):
     """➕ Arkadaşlık isteği gönder"""
     ensure_social_tables(db)
-    
+
     friend_id = data.get("user_id")
-    
+
     if friend_id == current_user.id:
         return JSONResponse(status_code=400, content={"success": False, "detail": "Kendinize istek gönderemezsiniz"})
-    
+
     # Zaten arkadaş mı?
     existing = db.execute(text("""
-        SELECT status FROM friendships 
+        SELECT status FROM friendships
         WHERE (user_id = :uid AND friend_id = :fid) OR (user_id = :fid AND friend_id = :uid)
     """), {"uid": current_user.id, "fid": friend_id}).fetchone()
-    
+
     if existing:
         if existing[0] == "accepted":
             return JSONResponse(status_code=400, content={"success": False, "detail": "Zaten arkadaşsınız"})
@@ -701,12 +734,19 @@ async def send_friend_request(
             return JSONResponse(status_code=400, content={"success": False, "detail": "Bekleyen istek var"})
         elif existing[0] == "blocked":
             return JSONResponse(status_code=400, content={"success": False, "detail": "Bu kullanıcı engellenmiş"})
-    
-    db.execute(text("""
-        INSERT INTO friendships (user_id, friend_id, status) VALUES (:uid, :fid, 'pending')
-    """), {"uid": current_user.id, "fid": friend_id})
-    db.commit()
-    
+
+    # Race condition koruması: UNIQUE constraint ihlali IntegrityError fırlatır
+    # Eşzamanlı istekler veritabanı seviyesinde engellenir
+    try:
+        db.execute(text("""
+            INSERT INTO friendships (user_id, friend_id, status) VALUES (:uid, :fid, 'pending')
+        """), {"uid": current_user.id, "fid": friend_id})
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        logger.warning(f"Race condition: Kullanıcı {current_user.id} -> {friend_id} arkadaşlık isteği zaten var")
+        return JSONResponse(status_code=400, content={"success": False, "detail": "Bekleyen istek var"})
+
     return {"success": True, "message": "Arkadaşlık isteği gönderildi"}
 
 

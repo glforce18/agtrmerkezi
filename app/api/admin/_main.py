@@ -191,8 +191,8 @@ class User2FARequest(BaseModel):
 
 def log_admin_audit(db: Session, admin_id: int, action: str, entity_type: str = None,
                     entity_id: int = None, old_values: dict = None, new_values: dict = None,
-                    ip_address: str = None):
-    """Admin islem logu"""
+                    ip_address: str = None, user_agent: str = None):
+    """Admin islem logu - comprehensive audit trail for admin operations"""
     try:
         audit = AuditLog(
             user_id=admin_id,
@@ -201,12 +201,37 @@ def log_admin_audit(db: Session, admin_id: int, action: str, entity_type: str = 
             entity_id=entity_id,
             old_values=old_values,
             new_values=new_values,
-            ip_address=ip_address
+            ip_address=ip_address,
+            user_agent=user_agent
         )
         db.add(audit)
         db.commit()
+
+        # Security event logging for critical admin actions
+        critical_actions = [
+            "user_ban", "user_unban", "user_delete", "user_password_reset",
+            "user_2fa_reset", "user_2fa_require", "permission_change",
+            "server_delete", "backup_delete", "settings_change"
+        ]
+
+        if action in critical_actions:
+            logger.warning(
+                f"ADMIN_AUDIT_CRITICAL: {action} | "
+                f"admin_id={admin_id} | "
+                f"entity_type={entity_type} | "
+                f"entity_id={entity_id} | "
+                f"ip={ip_address}"
+            )
+        else:
+            logger.info(
+                f"ADMIN_AUDIT: {action} | "
+                f"admin_id={admin_id} | "
+                f"entity_type={entity_type} | "
+                f"entity_id={entity_id} | "
+                f"ip={ip_address}"
+            )
     except Exception as e:
-        logger.error(f"Audit log hatasi: {e}")
+        logger.error(f"Audit log hatasi: {e}", exc_info=True)
 
 
 # ==================== DASHBOARD ====================
@@ -398,9 +423,13 @@ async def get_user(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Kullanici bulunamadi")
-    
-    servers = db.query(GameServer).filter(GameServer.owner_id == user_id).all()
-    payments = db.query(Payment).filter(Payment.user_id == user_id).order_by(desc(Payment.created_at)).limit(10).all()
+
+    try:
+        servers = db.query(GameServer).filter(GameServer.owner_id == user_id).all()
+        payments = db.query(Payment).filter(Payment.user_id == user_id).order_by(desc(Payment.created_at)).limit(10).all()
+    except Exception as e:
+        logger.error(f"Admin query error: {e}")
+        servers, payments = [], []
     
     return {
         "user": {

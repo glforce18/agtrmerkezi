@@ -47,7 +47,7 @@
               :class="social.class"
               :title="social.name"
             >
-              <div class="social-icon" v-html="social.icon"></div>
+              <div class="social-icon" v-html="DOMPurify.sanitize(social.icon)"></div>
               <span class="social-tooltip">{{ social.name }}</span>
             </a>
           </div>
@@ -303,6 +303,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
+import DOMPurify from 'dompurify'
 import { useThemeStore } from '@/stores/theme'
 import { useSettingsStore } from '@/stores/settings'
 

@@ -3,19 +3,52 @@
  * Offline support and caching strategy
  */
 
-const CACHE_NAME = 'agtr-v1'
-const STATIC_CACHE = 'agtr-static-v1'
-const DYNAMIC_CACHE = 'agtr-dynamic-v1'
+const CACHE_VERSION = 19
+const CACHE_NAME = `agtr-v${CACHE_VERSION}`
+const STATIC_CACHE = `agtr-static-v${CACHE_VERSION}`
+const DYNAMIC_CACHE = `agtr-dynamic-v${CACHE_VERSION}`
+const API_CACHE = `agtr-api-v${CACHE_VERSION}`
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/favicon.ico',
+  '/logo-navbar.png'
 ]
 
 // API routes to use network-first strategy
 const API_ROUTES = ['/api/']
+
+// API endpoints that can be cached for offline access (read-only, public data)
+// IMPORTANT: Use $ to match exact endpoints, avoid caching dynamic data
+const CACHEABLE_API_PATTERNS = [
+  /\/api\/public\/settings$/,
+  /\/api\/forum\/categories$/,  // Only cache category list, NOT category/{id}/topics
+  /\/api\/packages$/,
+  /\/api\/announcements$/,
+  /\/api\/servers$/,
+  /\/api\/forum\/trending$/,
+  /\/api\/health$/
+]
+
+// API endpoints that should NEVER be cached (always fetch fresh)
+const NEVER_CACHE_PATTERNS = [
+  /\/api\/forum\/categories\/[^/]+\/topics/,  // Category topics - always fresh
+  /\/api\/forum\/topics\/\d+$/,               // Single topic - always fresh
+  /\/api\/auth\//,                            // Auth endpoints
+  /\/api\/user\//,                            // User data
+  /\/api\/wallet\//                           // Wallet data
+]
+
+// Cache TTL for different API types (in seconds)
+const API_CACHE_TTL = {
+  default: 60,  // 1 minute
+  settings: 300,  // 5 minutes
+  categories: 300,  // 5 minutes
+  static: 3600  // 1 hour
+}
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
@@ -31,12 +64,13 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean old caches
 self.addEventListener('activate', (event) => {
+  const currentCaches = [STATIC_CACHE, DYNAMIC_CACHE, API_CACHE]
   event.waitUntil(
     caches.keys()
       .then((keys) => {
         return Promise.all(
           keys
-            .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
+            .filter((key) => key.startsWith('agtr-') && !currentCaches.includes(key))
             .map((key) => {
               console.log('[SW] Removing old cache:', key)
               return caches.delete(key)
@@ -58,9 +92,24 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome-extension and other non-http(s) requests
   if (!url.protocol.startsWith('http')) return
 
-  // API requests: Network first, fallback to cache
+  // API requests: Check if cacheable, use appropriate strategy
   if (API_ROUTES.some(route => url.pathname.startsWith(route))) {
-    event.respondWith(networkFirst(request))
+    // Check if this endpoint should NEVER be cached
+    const shouldNeverCache = NEVER_CACHE_PATTERNS.some(pattern => pattern.test(url.pathname))
+    if (shouldNeverCache) {
+      // Always fetch fresh data for dynamic endpoints
+      event.respondWith(networkOnly(request))
+      return
+    }
+
+    const isCacheable = CACHEABLE_API_PATTERNS.some(pattern => pattern.test(url.pathname))
+    if (isCacheable) {
+      // Cacheable API: stale-while-revalidate for fast offline access
+      event.respondWith(staleWhileRevalidateApi(request))
+    } else {
+      // Non-cacheable API: network first
+      event.respondWith(networkFirst(request))
+    }
     return
   }
 
@@ -101,6 +150,20 @@ async function cacheFirst(request) {
   } catch (error) {
     console.log('[SW] Cache first failed:', error)
     return new Response('Offline', { status: 503 })
+  }
+}
+
+// Network only strategy - always fetch fresh, never cache
+async function networkOnly(request) {
+  try {
+    const response = await fetch(request)
+    return response
+  } catch (error) {
+    console.log('[SW] Network only failed:', error)
+    return new Response(JSON.stringify({ error: 'Network error', offline: true }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 }
 
@@ -159,6 +222,55 @@ async function staleWhileRevalidate(request) {
     .catch(() => null)
 
   return cached || fetchPromise
+}
+
+// Stale-while-revalidate for API requests with metadata
+async function staleWhileRevalidateApi(request) {
+  const cache = await caches.open(API_CACHE)
+  const cached = await cache.match(request)
+
+  // Start network fetch in background
+  const fetchPromise = fetch(request)
+    .then(async (response) => {
+      if (response.ok) {
+        // Clone response and add timestamp metadata
+        const responseToCache = response.clone()
+        const headers = new Headers(responseToCache.headers)
+        headers.set('sw-cached-at', Date.now().toString())
+
+        const body = await responseToCache.blob()
+        const newResponse = new Response(body, {
+          status: responseToCache.status,
+          statusText: responseToCache.statusText,
+          headers: headers
+        })
+
+        cache.put(request, newResponse)
+      }
+      return response
+    })
+    .catch((error) => {
+      console.log('[SW] API fetch failed, using cache:', error)
+      return null
+    })
+
+  // If we have cached response, return it immediately
+  if (cached) {
+    // Check if cache is stale (optional: could add TTL check here)
+    return cached
+  }
+
+  // No cache, wait for network
+  const networkResponse = await fetchPromise
+  if (networkResponse) {
+    return networkResponse
+  }
+
+  // Both cache and network failed
+  return new Response(JSON.stringify({ error: 'Offline', offline: true }), {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' }
+  })
 }
 
 // Push notification handler

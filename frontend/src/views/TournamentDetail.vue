@@ -228,7 +228,7 @@
           <div v-if="activeTab === 'info'" class="info-tab">
             <div class="description-section">
               <h3>Turnuva Hakkında</h3>
-              <div class="description" v-html="tournament.description || 'Açıklama bulunmuyor.'"></div>
+              <div class="description" v-html="sanitizedDescription"></div>
             </div>
 
             <div class="details-grid">
@@ -330,7 +330,7 @@
 
           <!-- Rules Tab -->
           <div v-if="activeTab === 'rules'" class="rules-tab">
-            <div v-if="tournament.rules" class="rules-content" v-html="tournament.rules"></div>
+            <div v-if="tournament.rules" class="rules-content" v-html="sanitizedRules"></div>
             <div v-else class="no-rules">
               <FileText class="w-12 h-12 text-gray-500" />
               <p>Kurallar henüz yayınlanmadı.</p>
@@ -353,6 +353,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMessage } from 'naive-ui'
+import DOMPurify from 'dompurify'
 import {
   Trophy,
   Calendar,
@@ -447,6 +448,15 @@ const canRegister = computed(() => {
          !tournament.value.is_registered &&
          (tournament.value.participants_count || 0) < tournament.value.max_participants &&
          authStore.isAuthenticated
+})
+
+// Sanitized HTML content to prevent XSS
+const sanitizedDescription = computed(() => {
+  return DOMPurify.sanitize(tournament.value?.description || 'Açıklama bulunmuyor.')
+})
+
+const sanitizedRules = computed(() => {
+  return DOMPurify.sanitize(tournament.value?.rules || '')
 })
 
 // Methods

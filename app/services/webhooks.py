@@ -6,10 +6,33 @@ Discord, Telegram ve custom webhook destegi
 import asyncio
 import logging
 from datetime import datetime
+from typing import Optional
 
 import aiohttp
 
 logger = logging.getLogger(__name__)
+
+# Shared session for connection pooling
+_session: Optional[aiohttp.ClientSession] = None
+_session_lock = asyncio.Lock()
+
+
+async def get_session() -> aiohttp.ClientSession:
+    """Get or create shared aiohttp session for connection pooling"""
+    global _session
+    async with _session_lock:
+        if _session is None or _session.closed:
+            _session = aiohttp.ClientSession()
+    return _session
+
+
+async def close_session():
+    """Close the shared session (call on application shutdown)"""
+    global _session
+    async with _session_lock:
+        if _session is not None and not _session.closed:
+            await _session.close()
+            _session = None
 
 
 class WebhookManager:
@@ -48,15 +71,15 @@ class WebhookManager:
             payload["embeds"] = embeds
         
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload) as response:
-                    if response.status in [200, 204]:
-                        logger.info("Discord webhook sent successfully")
-                        return {"success": True}
-                    else:
-                        text = await response.text()
-                        logger.error(f"Discord webhook failed: {response.status} - {text}")
-                        return {"success": False, "error": text}
+            session = await get_session()
+            async with session.post(url, json=payload) as response:
+                if response.status in [200, 204]:
+                    logger.info("Discord webhook sent successfully")
+                    return {"success": True}
+                else:
+                    text = await response.text()
+                    logger.error(f"Discord webhook failed: {response.status} - {text}")
+                    return {"success": False, "error": text}
         except Exception as e:
             logger.error(f"Discord webhook error: {e}")
             return {"success": False, "error": str(e)}
@@ -71,15 +94,15 @@ class WebhookManager:
         }
         
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload) as response:
-                    result = await response.json()
-                    if result.get("ok"):
-                        logger.info("Telegram message sent successfully")
-                        return {"success": True}
-                    else:
-                        logger.error(f"Telegram error: {result}")
-                        return {"success": False, "error": result.get("description")}
+            session = await get_session()
+            async with session.post(url, json=payload) as response:
+                result = await response.json()
+                if result.get("ok"):
+                    logger.info("Telegram message sent successfully")
+                    return {"success": True}
+                else:
+                    logger.error(f"Telegram error: {result}")
+                    return {"success": False, "error": result.get("description")}
         except Exception as e:
             logger.error(f"Telegram error: {e}")
             return {"success": False, "error": str(e)}
@@ -91,15 +114,15 @@ class WebhookManager:
             default_headers.update(headers)
         
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, headers=default_headers) as response:
-                    if response.status < 400:
-                        logger.info(f"Custom webhook sent: {url}")
-                        return {"success": True, "status": response.status}
-                    else:
-                        text = await response.text()
-                        logger.error(f"Custom webhook failed: {response.status}")
-                        return {"success": False, "error": text}
+            session = await get_session()
+            async with session.post(url, json=payload, headers=default_headers) as response:
+                if response.status < 400:
+                    logger.info(f"Custom webhook sent: {url}")
+                    return {"success": True, "status": response.status}
+                else:
+                    text = await response.text()
+                    logger.error(f"Custom webhook failed: {response.status}")
+                    return {"success": False, "error": text}
         except Exception as e:
             logger.error(f"Custom webhook error: {e}")
             return {"success": False, "error": str(e)}
@@ -127,11 +150,15 @@ class WebhookManager:
                 result = await self.send_custom(webhook["url"], {"event": event_type, "data": data})
             
             results[name] = result
-            
+
             if result.get("success"):
                 webhook["sent_count"] += 1
                 webhook["last_sent"] = datetime.utcnow()
-        
+            else:
+                webhook["error_count"] = webhook.get("error_count", 0) + 1
+                webhook["last_error"] = result.get("error")
+                logger.error(f"Webhook '{name}' failed: {result.get('error')}")
+
         return results
     
     def _create_discord_embed(self, event_type: str, data: dict) -> dict:

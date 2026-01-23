@@ -186,7 +186,7 @@ async def my_payments(
 @router.post("/select-method")
 async def select_payment_method(data: PaymentMethodSelect, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
     """Odeme yontemi sec"""
-    payment = db.query(Payment).filter(Payment.id == data.payment_id, Payment.user_id == current_user.id, Payment.status == PaymentStatus.PENDING).first()
+    payment = db.query(Payment).filter(Payment.id == data.payment_id, Payment.user_id == current_user.id, Payment.status == PaymentStatus.PENDING).with_for_update().first()
     if not payment:
         raise HTTPException(status_code=404, detail="Bekleyen odeme bulunamadi")
     
@@ -201,81 +201,101 @@ async def select_payment_method(data: PaymentMethodSelect, request: Request, db:
     
     # Kupon uygula (varsa)
     if data.coupon_code and not payment.coupon_code:
+        # Lock the coupon row before checking and modifying usage
         coupon = db.query(Coupon).filter(
             Coupon.code == data.coupon_code.upper(),
             Coupon.is_active == True
-        ).first()
-        
+        ).with_for_update().first()
+
         if coupon:
             # Kupon gecerliligi kontrol
             now = datetime.utcnow()
             if coupon.valid_from and coupon.valid_from > now:
-                pass  # Henuz gecerli degil
+                raise HTTPException(status_code=400, detail="Bu kupon henuz gecerli degil")
             elif coupon.valid_until and coupon.valid_until < now:
-                pass  # Suresi dolmus
+                raise HTTPException(status_code=400, detail="Bu kuponun suresi dolmus")
             elif coupon.usage_limit and coupon.usage_count >= coupon.usage_limit:
-                pass  # Kullanim limiti dolmus
+                raise HTTPException(status_code=400, detail="Bu kupon kullanim limitine ulasmis")
             elif coupon.min_amount and payment.amount < coupon.min_amount:
-                pass  # Minimum tutar saglanmadi
+                raise HTTPException(status_code=400, detail=f"Bu kupon minimum {coupon.min_amount} TL odeme icin gecerli")
             else:
                 # Kupon gecerli, uygula
                 payment.original_amount = payment.amount
                 payment.coupon_code = coupon.code
                 payment.coupon_id = coupon.id
-                
+
                 if coupon.discount_type == "percent":
                     discount = payment.amount * (coupon.discount_value / 100)
                     if coupon.max_discount:
                         discount = min(discount, coupon.max_discount)
                 else:
                     discount = coupon.discount_value
-                
+
                 payment.discount_amount = round(discount, 2)
                 payment.amount = round(payment.amount - discount, 2)
-                
+
                 coupon.usage_count += 1
     
     if method == PaymentMethod.BALANCE:
         if current_user.balance < payment.amount:
             raise HTTPException(status_code=400, detail=f"Yetersiz bakiye. Mevcut: {current_user.balance} TL, Gerekli: {payment.amount} TL")
-        
-        balance_before = current_user.balance
-        current_user.balance -= payment.amount
-        balance_after = current_user.balance
-        
-        payment.status = PaymentStatus.COMPLETED
-        payment.completed_at = datetime.utcnow()
-        
-        # Transaction kaydet
-        create_transaction(db, current_user.id, "payment", -payment.amount,
-                          payment.description, payment.id, balance_before, balance_after)
-        
-        # Sunucu varsa aktif et
-        if payment.server_id:
-            server = db.query(GameServer).filter(GameServer.id == payment.server_id).first()
-            if server:
-                server.status = ServerStatus.RUNNING
-                server.expires_at = datetime.utcnow() + timedelta(days=30 * payment.months)
-                
-                # Fatura olustur
-                create_invoice(db, payment, current_user)
-        
-        # Audit log
-        log_audit(db, current_user.id, "payment_balance", "payment", payment.id,
-                  new_values={"amount": payment.amount, "method": "balance"},
-                  ip_address=client_ip)
-        
-        # Bildirim
-        create_notification(db, current_user.id, "payment",
-                           "Odeme Tamamlandi",
-                           f"{payment.amount} TL tutarindaki odemeniz bakiyeden alindi.",
-                           f"/payments/{payment.id}")
-        
-        db.commit()
-        
-        logger.info(f"Bakiye odemesi: {current_user.username} - {payment.amount} TL")
-        
-        return {"success": True, "message": "Odeme bakiyeden alindi", "new_balance": current_user.balance}
+
+        try:
+            # Transaction basla - atomik islem icin
+            # Kullaniciyi kilitle (row-level lock) - race condition onleme
+            locked_user = db.query(User).filter(User.id == current_user.id).with_for_update().first()
+            if not locked_user:
+                raise HTTPException(status_code=404, detail="Kullanici bulunamadi")
+
+            # Bakiye tekrar kontrol (lock sonrasi)
+            if locked_user.balance < payment.amount:
+                raise HTTPException(status_code=400, detail=f"Yetersiz bakiye. Mevcut: {locked_user.balance} TL, Gerekli: {payment.amount} TL")
+
+            balance_before = locked_user.balance
+            locked_user.balance -= payment.amount
+            balance_after = locked_user.balance
+
+            payment.status = PaymentStatus.COMPLETED
+            payment.completed_at = datetime.utcnow()
+
+            # Transaction kaydet
+            create_transaction(db, locked_user.id, "payment", -payment.amount,
+                              payment.description, payment.id, balance_before, balance_after)
+
+            # Sunucu varsa aktif et
+            if payment.server_id:
+                server = db.query(GameServer).filter(GameServer.id == payment.server_id).with_for_update().first()
+                if server:
+                    server.status = ServerStatus.RUNNING
+                    server.expires_at = datetime.utcnow() + timedelta(days=30 * payment.months)
+
+                    # Fatura olustur
+                    create_invoice(db, payment, locked_user)
+
+            # Audit log
+            log_audit(db, locked_user.id, "payment_balance", "payment", payment.id,
+                      new_values={"amount": payment.amount, "method": "balance"},
+                      ip_address=client_ip)
+
+            # Bildirim
+            create_notification(db, locked_user.id, "payment",
+                               "Odeme Tamamlandi",
+                               f"{payment.amount} TL tutarindaki odemeniz bakiyeden alindi.",
+                               f"/payments/{payment.id}")
+
+            db.commit()
+
+            logger.info(f"Bakiye odemesi: {locked_user.username} - {payment.amount} TL")
+
+            return {"success": True, "message": "Odeme bakiyeden alindi", "new_balance": locked_user.balance}
+
+        except HTTPException:
+            db.rollback()
+            raise
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Odeme islemi hatasi: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Odeme islemi sirasinda bir hata olustu")
     
     elif method == PaymentMethod.BANK_TRANSFER:
         log_audit(db, current_user.id, "payment_bank_selected", "payment", payment.id,
@@ -301,7 +321,7 @@ def create_invoice(db: Session, payment: Payment, user: User):
     """Fatura olustur"""
     try:
         invoice_number = f"INV-{datetime.utcnow().strftime('%Y%m')}-{payment.id:06d}"
-        
+
         invoice = Invoice(
             payment_id=payment.id,
             user_id=user.id,
@@ -317,6 +337,8 @@ def create_invoice(db: Session, payment: Payment, user: User):
         logger.info(f"Fatura olusturuldu: {invoice_number}")
     except Exception as e:
         logger.error(f"Fatura olusturma hatasi: {e}")
+        # Don't set payment as completed if invoice fails
+        payment.invoice_error = str(e)
 
 
 @router.post("/bank-transfer-notify")
@@ -326,13 +348,13 @@ async def notify_bank_transfer(data: BankTransferInfo, db: Session = Depends(get
         Payment.user_id == current_user.id,
         Payment.method == PaymentMethod.BANK_TRANSFER,
         Payment.status == PaymentStatus.PENDING
-    ).first()
-    
+    ).with_for_update().first()
+
     if not payment:
         raise HTTPException(status_code=404, detail="Bekleyen havale odemesi bulunamadi")
-    
-    # Mevcut bildirim varsa guncelle
-    existing = db.query(BankTransfer).filter(BankTransfer.payment_id == payment.id).first()
+
+    # Mevcut bildirim varsa guncelle - lock to prevent concurrent duplicate creation
+    existing = db.query(BankTransfer).filter(BankTransfer.payment_id == payment.id).with_for_update().first()
     if existing:
         existing.sender_name = data.sender_name
         existing.sender_iban = data.sender_iban
@@ -416,41 +438,43 @@ async def get_payment(payment_id: int, db: Session = Depends(get_db), current_us
 @router.post("/apply-coupon")
 async def apply_coupon(data: CouponApplyRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
     """Kupon uygula"""
+    # Lock the payment row before modifying
     payment = db.query(Payment).filter(
         Payment.id == data.payment_id,
         Payment.user_id == current_user.id,
         Payment.status == PaymentStatus.PENDING
-    ).first()
-    
+    ).with_for_update().first()
+
     if not payment:
         raise HTTPException(status_code=404, detail="Bekleyen odeme bulunamadi")
-    
+
     if payment.coupon_code:
         raise HTTPException(status_code=400, detail="Bu odemeye zaten kupon uygulanmis")
-    
+
+    # Lock the coupon row before checking and modifying usage_count
     coupon = db.query(Coupon).filter(
         Coupon.code == data.coupon_code.upper(),
         Coupon.is_active == True
-    ).first()
-    
+    ).with_for_update().first()
+
     if not coupon:
         raise HTTPException(status_code=404, detail="Gecersiz kupon kodu")
-    
+
     # Gecerlilik kontrolleri
     now = datetime.utcnow()
     if coupon.valid_from and coupon.valid_from > now:
         raise HTTPException(status_code=400, detail="Bu kupon henuz gecerli degil")
-    
+
     if coupon.valid_until and coupon.valid_until < now:
         raise HTTPException(status_code=400, detail="Bu kuponun suresi dolmus")
-    
+
     if coupon.usage_limit and coupon.usage_count >= coupon.usage_limit:
         raise HTTPException(status_code=400, detail="Bu kuponun kullanim limiti dolmus")
-    
+
     if coupon.min_amount and payment.amount < coupon.min_amount:
         raise HTTPException(status_code=400, detail=f"Bu kupon minimum {coupon.min_amount} TL odeme icin gecerli")
-    
-    # Kullanici daha once kullanmis mi?
+
+    # Kullanici daha once kullanmis mi? (coupon already locked above)
     if coupon.single_use_per_user:
         used = db.query(Payment).filter(
             Payment.user_id == current_user.id,
@@ -459,22 +483,22 @@ async def apply_coupon(data: CouponApplyRequest, request: Request, db: Session =
         ).first()
         if used:
             raise HTTPException(status_code=400, detail="Bu kuponu daha once kullandiniz")
-    
+
     # Kuponu uygula
     payment.original_amount = payment.amount
     payment.coupon_code = coupon.code
     payment.coupon_id = coupon.id
-    
+
     if coupon.discount_type == "percent":
         discount = payment.amount * (coupon.discount_value / 100)
         if coupon.max_discount:
             discount = min(discount, coupon.max_discount)
     else:
         discount = min(coupon.discount_value, payment.amount)
-    
+
     payment.discount_amount = round(discount, 2)
     payment.amount = round(payment.original_amount - discount, 2)
-    
+
     coupon.usage_count += 1
     
     client_ip = request.client.host if request.client else None
@@ -498,21 +522,22 @@ async def apply_coupon(data: CouponApplyRequest, request: Request, db: Session =
 @router.delete("/remove-coupon/{payment_id}")
 async def remove_coupon(payment_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
     """Kuponu kaldir"""
+    # Lock the payment row before modifying
     payment = db.query(Payment).filter(
         Payment.id == payment_id,
         Payment.user_id == current_user.id,
         Payment.status == PaymentStatus.PENDING
-    ).first()
-    
+    ).with_for_update().first()
+
     if not payment:
         raise HTTPException(status_code=404, detail="Bekleyen odeme bulunamadi")
-    
+
     if not payment.coupon_code:
         raise HTTPException(status_code=400, detail="Bu odemede kupon yok")
-    
-    # Kupon kullanim sayisini dusur
+
+    # Kupon kullanim sayisini dusur - lock the coupon row before modifying
     if payment.coupon_id:
-        coupon = db.query(Coupon).filter(Coupon.id == payment.coupon_id).first()
+        coupon = db.query(Coupon).filter(Coupon.id == payment.coupon_id).with_for_update().first()
         if coupon and coupon.usage_count > 0:
             coupon.usage_count -= 1
     
@@ -682,27 +707,28 @@ async def toggle_auto_renew(data: AutoRenewRequest, request: Request, db: Sessio
 @router.post("/cancel/{payment_id}")
 async def cancel_payment(payment_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
     """Bekleyen odemeyi iptal et"""
+    # Lock the payment row before modifying status
     payment = db.query(Payment).filter(
         Payment.id == payment_id,
         Payment.user_id == current_user.id,
         Payment.status == PaymentStatus.PENDING
-    ).first()
-    
+    ).with_for_update().first()
+
     if not payment:
         raise HTTPException(status_code=404, detail="Iptal edilebilir odeme bulunamadi")
-    
-    # Kupon kullanim sayisini dusur
+
+    # Kupon kullanim sayisini dusur - lock the coupon row before modifying
     if payment.coupon_id:
-        coupon = db.query(Coupon).filter(Coupon.id == payment.coupon_id).first()
+        coupon = db.query(Coupon).filter(Coupon.id == payment.coupon_id).with_for_update().first()
         if coupon and coupon.usage_count > 0:
             coupon.usage_count -= 1
-    
+
     payment.status = PaymentStatus.CANCELLED
     payment.cancelled_at = datetime.utcnow()
-    
-    # Sunucu varsa pending'e al
+
+    # Sunucu varsa pending'e al - lock the server row before modifying
     if payment.server_id:
-        server = db.query(GameServer).filter(GameServer.id == payment.server_id).first()
+        server = db.query(GameServer).filter(GameServer.id == payment.server_id).with_for_update().first()
         if server and server.status == ServerStatus.PENDING:
             server.status = ServerStatus.CANCELLED
     
