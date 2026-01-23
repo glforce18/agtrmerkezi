@@ -759,13 +759,18 @@ class ForumTopic(Base):
     content = Column(Text)  # Konu icerigi
     is_active = Column(Boolean, default=True, index=True)  # Aktif/silindi - siralama icin index
     is_pinned = Column(Boolean, default=False, index=True)  # Pinned topics siralama icin
-    is_locked = Column(Boolean, default=False)
-    is_featured = Column(Boolean, default=False)
+    is_sticky = Column(Boolean, default=False)  # Sticky topics
+    is_locked = Column(Boolean, default=False, index=True)
+    is_featured = Column(Boolean, default=False, index=True)
+    is_solved = Column(Boolean, default=False)  # Cozulmus konu
     view_count = Column(Integer, default=0, index=True)  # Popular topics siralama icin
     reply_count = Column(Integer, default=0)
+    likes = Column(Integer, default=0)  # Begeni sayisi
     last_post_id = Column(Integer)
     last_post_at = Column(DateTime, index=True)  # Son aktivite siralama icin
     last_post_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    last_reply_id = Column(Integer)  # Son yanit ID
+    last_reply_at = Column(DateTime)  # Son yanit zamani
     created_at = Column(DateTime, default=func.now(), index=True)  # Yeni konular siralama icin
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -837,9 +842,11 @@ class ForumReply(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    parent_reply_id = Column(Integer, ForeignKey("forum_replies.id", ondelete="SET NULL"), index=True)  # Nested replies
     content = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True, index=True)
     is_best_answer = Column(Boolean, default=False)  # Best answer feature
+    likes = Column(Integer, default=0)  # Begeni sayisi
     created_at = Column(DateTime, default=func.now(), index=True)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -854,6 +861,7 @@ class ForumReply(Base):
     # Relationships
     topic = relationship("ForumTopic", backref="replies")
     author = relationship("User", back_populates="forum_replies")
+    parent_reply = relationship("ForumReply", remote_side=[id], backref="child_replies")
 
 
 class ForumReportStatus(enum.Enum):
