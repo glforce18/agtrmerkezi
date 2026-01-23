@@ -761,6 +761,7 @@ class HealthChecker:
 
         backup_dirs = [
             '/var/www/backups',
+            '/var/www/agtrmerkezi/backups',
             '/var/www/agtrmerkezi_backup*',
             '/root/backups'
         ]
@@ -772,13 +773,20 @@ class HealthChecker:
         if found_backups:
             self.add_result("backup", "Backup directories", "ok", f"{len(found_backups)} found")
 
-            # Check latest backup age
+            # Check latest backup age (check both directories and .sql files inside)
             latest_time = 0
-            for backup_dir in found_backups:
+            for backup_path in found_backups:
                 try:
-                    mtime = os.path.getmtime(backup_dir)
+                    # Check the directory/file itself
+                    mtime = os.path.getmtime(backup_path)
                     if mtime > latest_time:
                         latest_time = mtime
+                    # Also check for .sql files inside directories
+                    if os.path.isdir(backup_path):
+                        for sql_file in glob.glob(os.path.join(backup_path, '*.sql')):
+                            sql_mtime = os.path.getmtime(sql_file)
+                            if sql_mtime > latest_time:
+                                latest_time = sql_mtime
                 except:
                     pass
 
