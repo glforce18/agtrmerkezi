@@ -36,6 +36,12 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/api/notifications",  # Notification actions
             "/api/user/avatar",  # Avatar upload
             "/api/maintenance",  # Maintenance admin - protected by admin auth
+            "/api/forum",  # Forum API - protected by JWT auth
+            "/api/jackpot",  # Jackpot API - protected by JWT auth
+            "/api/tournaments",  # Tournament API - protected by JWT auth
+            "/api/clans",  # Clans API - protected by JWT auth
+            "/api/leaderboard",  # Leaderboard API - protected by JWT auth
+            "/api/errors",  # Error reporting
             "/ws"  # WebSocket connections
         ]
     
