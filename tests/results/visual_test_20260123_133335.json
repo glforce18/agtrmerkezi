@@ -1,0 +1,282 @@
+[
+  {
+    "category": "screenshot",
+    "name": "Screenshot: forum",
+    "status": "pass",
+    "detail": "forum_20260123_133310.png",
+    "timestamp": "2026-01-23T13:33:13.167929"
+  },
+  {
+    "category": "screenshot",
+    "name": "Screenshot: forum_category",
+    "status": "pass",
+    "detail": "forum_category_20260123_133313.png",
+    "timestamp": "2026-01-23T13:33:14.211086"
+  },
+  {
+    "category": "screenshot",
+    "name": "Screenshot: jackpot",
+    "status": "pass",
+    "detail": "jackpot_20260123_133314.png",
+    "timestamp": "2026-01-23T13:33:15.066157"
+  },
+  {
+    "category": "screenshot",
+    "name": "Screenshot: tournaments",
+    "status": "pass",
+    "detail": "tournaments_20260123_133315.png",
+    "timestamp": "2026-01-23T13:33:15.539207"
+  },
+  {
+    "category": "screenshot",
+    "name": "Screenshot: leaderboard",
+    "status": "pass",
+    "detail": "leaderboard_20260123_133315.png",
+    "timestamp": "2026-01-23T13:33:16.501484"
+  },
+  {
+    "category": "screenshot",
+    "name": "Screenshot: clans",
+    "status": "pass",
+    "detail": "clans_20260123_133316.png",
+    "timestamp": "2026-01-23T13:33:17.085383"
+  },
+  {
+    "category": "screenshot",
+    "name": "Screenshot: login",
+    "status": "pass",
+    "detail": "login_20260123_133317.png",
+    "timestamp": "2026-01-23T13:33:17.649368"
+  },
+  {
+    "category": "screenshot",
+    "name": "Screenshot: register",
+    "status": "pass",
+    "detail": "register_20260123_133317.png",
+    "timestamp": "2026-01-23T13:33:18.524289"
+  },
+  {
+    "category": "screenshot",
+    "name": "Screenshot: profile",
+    "status": "pass",
+    "detail": "profile_20260123_133318.png",
+    "timestamp": "2026-01-23T13:33:19.507160"
+  },
+  {
+    "category": "screenshot",
+    "name": "Screenshot: shop",
+    "status": "pass",
+    "detail": "shop_20260123_133319.png",
+    "timestamp": "2026-01-23T13:33:20.837785"
+  },
+  {
+    "category": "responsive",
+    "name": "desktop/home",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:21.248368"
+  },
+  {
+    "category": "responsive",
+    "name": "desktop/forum",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:22.239051"
+  },
+  {
+    "category": "responsive",
+    "name": "desktop/jackpot",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:23.255931"
+  },
+  {
+    "category": "responsive",
+    "name": "mobile/home",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:23.927867"
+  },
+  {
+    "category": "responsive",
+    "name": "mobile/forum",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:24.471742"
+  },
+  {
+    "category": "responsive",
+    "name": "mobile/jackpot",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:24.714955"
+  },
+  {
+    "category": "header",
+    "name": "Logo",
+    "status": "warn",
+    "detail": "Gorunmuyor",
+    "timestamp": "2026-01-23T13:33:25.298649"
+  },
+  {
+    "category": "header",
+    "name": "Navigation",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:25.551671"
+  },
+  {
+    "category": "header",
+    "name": "Login Button",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:25.563206"
+  },
+  {
+    "category": "header",
+    "name": "Search",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:25.569393"
+  },
+  {
+    "category": "header",
+    "name": "Menu Items",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:25.688325"
+  },
+  {
+    "category": "login_form",
+    "name": "Username Field",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:26.197845"
+  },
+  {
+    "category": "login_form",
+    "name": "Password Field",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:26.209139"
+  },
+  {
+    "category": "login_form",
+    "name": "Submit Button",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:26.220007"
+  },
+  {
+    "category": "login_form",
+    "name": "Remember Me",
+    "status": "warn",
+    "detail": "Hidden",
+    "timestamp": "2026-01-23T13:33:26.227624"
+  },
+  {
+    "category": "login_form",
+    "name": "Register Link",
+    "status": "pass",
+    "detail": "",
+    "timestamp": "2026-01-23T13:33:26.234713"
+  },
+  {
+    "category": "images",
+    "name": "Broken images: forum",
+    "status": "warn",
+    "detail": "3 kirik",
+    "timestamp": "2026-01-23T13:33:26.830190"
+  },
+  {
+    "category": "images",
+    "name": "Broken images: forum_category",
+    "status": "warn",
+    "detail": "3 kirik",
+    "timestamp": "2026-01-23T13:33:27.207768"
+  },
+  {
+    "category": "images",
+    "name": "Broken images: jackpot",
+    "status": "warn",
+    "detail": "3 kirik",
+    "timestamp": "2026-01-23T13:33:27.340569"
+  },
+  {
+    "category": "images",
+    "name": "Broken images: tournaments",
+    "status": "warn",
+    "detail": "3 kirik",
+    "timestamp": "2026-01-23T13:33:27.484215"
+  },
+  {
+    "category": "images",
+    "name": "Broken images: leaderboard",
+    "status": "warn",
+    "detail": "3 kirik",
+    "timestamp": "2026-01-23T13:33:27.565350"
+  },
+  {
+    "category": "errors",
+    "name": "Console errors",
+    "status": "warn",
+    "detail": "6 hata",
+    "timestamp": "2026-01-23T13:33:34.065901"
+  },
+  {
+    "category": "errors",
+    "name": "Error detail",
+    "status": "info",
+    "detail": "The Content Security Policy directive 'frame-ancestors' is i",
+    "timestamp": "2026-01-23T13:33:34.065928"
+  },
+  {
+    "category": "errors",
+    "name": "Error detail",
+    "status": "info",
+    "detail": "The Content Security Policy directive 'frame-ancestors' is i",
+    "timestamp": "2026-01-23T13:33:34.065932"
+  },
+  {
+    "category": "errors",
+    "name": "Error detail",
+    "status": "info",
+    "detail": "The Content Security Policy directive 'frame-ancestors' is i",
+    "timestamp": "2026-01-23T13:33:34.065934"
+  },
+  {
+    "category": "performance",
+    "name": "Load time: forum",
+    "status": "pass",
+    "detail": "0.31s",
+    "timestamp": "2026-01-23T13:33:34.429035"
+  },
+  {
+    "category": "performance",
+    "name": "Load time: forum_category",
+    "status": "pass",
+    "detail": "0.22s",
+    "timestamp": "2026-01-23T13:33:34.652877"
+  },
+  {
+    "category": "performance",
+    "name": "Load time: jackpot",
+    "status": "pass",
+    "detail": "0.11s",
+    "timestamp": "2026-01-23T13:33:34.760348"
+  },
+  {
+    "category": "performance",
+    "name": "Load time: tournaments",
+    "status": "pass",
+    "detail": "0.09s",
+    "timestamp": "2026-01-23T13:33:34.853846"
+  },
+  {
+    "category": "performance",
+    "name": "Load time: leaderboard",
+    "status": "pass",
+    "detail": "0.11s",
+    "timestamp": "2026-01-23T13:33:34.967743"
+  }
+]
