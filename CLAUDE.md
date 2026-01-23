@@ -421,6 +421,45 @@ python scripts/health_check.py --fix-all        # Tumunu duzelt
 - Orphan forum like kayitlarini temizleme
 - 30+ gun onceki anonim oturumlari silme
 
+## Visual Test Suite v1.0 (30 Test)
+
+```bash
+# Tum gorsel testleri calistir
+python scripts/visual_tests.py
+
+# Hizli test (10 test)
+python scripts/visual_tests.py --quick
+
+# Sadece screenshot al
+python scripts/visual_tests.py --screenshots
+
+# Mobile testler
+python scripts/visual_tests.py --mobile
+
+# Form testleri
+python scripts/visual_tests.py --forms
+```
+
+**30 Gorsel Test Ozelligi:**
+
+| No | Kategori | Test |
+|----|----------|------|
+| 1-2 | Screenshot | Capture & comparison |
+| 3-6 | Responsive | Desktop, tablet, mobile, landscape |
+| 7-9 | Elements | Header, footer, forum visibility |
+| 10-12 | Forms | Login, register, validation |
+| 13-15 | Navigation | Links, breadcrumbs, back-to-top |
+| 16-18 | Images | Broken, alt text, lazy loading |
+| 19-21 | Interaction | Buttons, dropdowns, modals |
+| 22-24 | UX | Loading states, animations, hover |
+| 25-27 | Errors | Console, 404 page, network |
+| 28-30 | A11Y | Load time, contrast, keyboard |
+
+**Output Dizinleri:**
+- Screenshots: `/var/www/agtrmerkezi/tests/screenshots/`
+- References: `/var/www/agtrmerkezi/tests/screenshots/reference/`
+- Results: `/var/www/agtrmerkezi/tests/results/`
+
 ## Hizli Komutlar
 ```bash
 # Build & Restart
