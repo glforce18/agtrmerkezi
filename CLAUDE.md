@@ -348,6 +348,15 @@ entity.field = new_value
 db.commit()
 ```
 
+**CSRF Exempt APIs (23 Ocak 2026):**
+JWT ile korunan API'ler CSRF'den exempt edildi (`app/middleware/csrf.py`):
+- `/api/forum` - Forum islemleri (like, reply, vb.)
+- `/api/jackpot` - Jackpot bahis
+- `/api/tournaments` - Turnuva kayit
+- `/api/clans` - Klan islemleri
+- `/api/leaderboard` - Leaderboard guncellemeleri
+- `/api/errors` - Hata raporlama
+
 ### Forum Kategori Organizasyonu (23 Ocak 2026)
 Kategoriler oyunlara gore gruplandirildi:
 
