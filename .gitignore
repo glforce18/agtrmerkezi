@@ -90,3 +90,7 @@ credentials/
 
 # Dynamic assets (scraped)
 static/assets/
+
+# Test outputs
+tests/results/
+backups/*.sql

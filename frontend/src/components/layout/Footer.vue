@@ -241,7 +241,7 @@
       </div>
 
       <!-- Partner Logos Section -->
-      <div class="partners-section">
+      <div v-if="partners.length > 0" class="partners-section">
         <h4 class="partners-title">Partnerlerimiz</h4>
         <div class="partners-logos">
           <a
@@ -475,12 +475,8 @@ const legalLinks = [
   { path: '/contact', label: 'İletişim' }
 ]
 
-// Partners (mock data)
-const partners = ref([
-  { name: 'Partner 1', logo: '/images/partners/partner1.png', url: '#' },
-  { name: 'Partner 2', logo: '/images/partners/partner2.png', url: '#' },
-  { name: 'Partner 3', logo: '/images/partners/partner3.png', url: '#' }
-])
+// Partners (will be loaded from API/settings when available)
+const partners = ref([])
 
 // Fetch settings on mount
 onMounted(() => {
