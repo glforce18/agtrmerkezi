@@ -3755,10 +3755,10 @@ async def like_topic(topic_id: str, db: Session = Depends(get_db), current_user:
             db.execute(text(
                 "DELETE FROM forum_likes WHERE user_id = :uid AND content_type = 'topic' AND content_id = :cid"
             ), {"uid": current_user.id, "cid": topic.id})
-            if topic.likes and topic.likes > 0:
-                topic.likes -= 1
+            # Prevent negative likes
+            topic.likes = max(0, (topic.likes or 0) - 1)
             db.commit()
-            return {"message": "Begeni kaldirildi", "likes": topic.likes or 0, "has_liked": False}
+            return {"message": "Begeni kaldirildi", "likes": topic.likes, "has_liked": False}
 
         # Add new like (prevent duplicates with INSERT IGNORE)
         db.execute(text(
@@ -3806,8 +3806,8 @@ async def unlike_topic(topic_id: str, db: Session = Depends(get_db), current_use
     ), {"uid": current_user.id, "cid": topic.id})
 
     if result.rowcount > 0:
-        if topic.likes and topic.likes > 0:
-            topic.likes -= 1
+        # Prevent negative likes
+        topic.likes = max(0, (topic.likes or 0) - 1)
         db.commit()
 
     return {"message": "Begeni kaldirildi", "likes": topic.likes or 0, "has_liked": False}
@@ -3834,10 +3834,10 @@ async def like_reply(reply_id: int, db: Session = Depends(get_db), current_user:
             db.execute(text(
                 "DELETE FROM forum_likes WHERE user_id = :uid AND content_type = 'reply' AND content_id = :cid"
             ), {"uid": current_user.id, "cid": reply.id})
-            if reply.likes and reply.likes > 0:
-                reply.likes -= 1
+            # Prevent negative likes
+            reply.likes = max(0, (reply.likes or 0) - 1)
             db.commit()
-            return {"message": "Begeni kaldirildi", "likes": reply.likes or 0, "has_liked": False}
+            return {"message": "Begeni kaldirildi", "likes": reply.likes, "has_liked": False}
 
         # Add new like (prevent duplicates with INSERT IGNORE)
         db.execute(text(
@@ -3880,8 +3880,8 @@ async def unlike_reply(reply_id: int, db: Session = Depends(get_db), current_use
     ), {"uid": current_user.id, "cid": reply.id})
 
     if result.rowcount > 0:
-        if reply.likes and reply.likes > 0:
-            reply.likes -= 1
+        # Prevent negative likes
+        reply.likes = max(0, (reply.likes or 0) - 1)
         db.commit()
 
     return {"message": "Begeni kaldirildi", "likes": reply.likes or 0, "has_liked": False}
