@@ -28,6 +28,32 @@
 
 ## Son Buyuk Guncellemeler
 
+### Test Suite & Bug Fixes (23 Ocak 2026)
+Kapsamli test altyapisi ve bug fix'ler:
+
+**Health Check v2.0 (91 Kontrol):**
+- 12 ana kategori: Database sync, data integrity, security, API, system resources
+- Fix komutlari: `--fix-likes`, `--fix-replies`, `--fix-negative`, `--fix-all`
+- Calistirma: `python scripts/health_check.py`
+
+**Visual Test Suite v1.0 (30 Test, 80 Passed):**
+- Screenshot capture & comparison
+- Responsive testler (desktop, tablet, mobile)
+- Form validation, navigation, A11Y testleri
+- Calistirma: `python scripts/visual_tests.py`
+
+**Duzeltilen Buglar:**
+- Footer partner kirik resimleri kaldirildi
+- Form validation button state kontrolleri
+- Screenshot comparison dinamik sayfa toleransi
+- CSP/network error toleranslari
+
+**Yeni Dosyalar:**
+- `scripts/health_check.py` - Backend/DB test suite
+- `scripts/visual_tests.py` - Playwright gorsel testler
+- `tests/screenshots/` - Test screenshot'lari
+- `backups/` - Veritabani yedekleri
+
 ### Forum Sistemi (22 Ocak 2026) - Commit 4264de6
 31 yeni ozellik eklendi:
 
