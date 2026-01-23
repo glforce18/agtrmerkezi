@@ -5,7 +5,7 @@
 # ============================================
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -154,26 +154,34 @@ async def add_blacklist_words_bulk(
             detail="En az bir kelime gerekli"
         )
 
-    manager = get_blacklist_manager(db)
-    result = manager.bulk_add_words(
-        words=data.words,
-        category=data.category,
-        added_by=current_admin.id
-    )
+    # BUGFIX: Add error handling for bulk operations
+    try:
+        manager = get_blacklist_manager(db)
+        result = manager.bulk_add_words(
+            words=data.words,
+            category=data.category,
+            added_by=current_admin.id
+        )
 
-    # Moderasyon logla
-    _log_moderation_action(
-        db=db,
-        action="blacklist_bulk_add",
-        moderator_id=current_admin.id,
-        reason=f"Toplu kara liste ekleme: {result['added']} kelime",
-        details={"category": data.category, "result": result}
-    )
+        # Moderasyon logla
+        _log_moderation_action(
+            db=db,
+            action="blacklist_bulk_add",
+            moderator_id=current_admin.id,
+            reason=f"Toplu kara liste ekleme: {result['added']} kelime",
+            details={"category": data.category, "result": result}
+        )
 
-    return {
-        "message": f"{result['added']} kelime eklendi, {result['skipped']} atlandı",
-        "result": result
-    }
+        return {
+            "message": f"{result['added']} kelime eklendi, {result['skipped']} atlandı",
+            "result": result
+        }
+    except Exception as e:
+        logger.error(f"Toplu kara liste ekleme hatasi: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Toplu ekleme sirasinda hata olustu"
+        )
 
 
 @router.delete("/blacklist/{word_id}")
@@ -247,10 +255,20 @@ async def get_all_warnings(
         (page - 1) * limit
     ).limit(limit).all()
 
+    # BUGFIX: Batch load all users to prevent N+1 queries
+    user_ids = set([w.user_id for w in warnings])
+    warned_by_ids = set([w.warned_by for w in warnings if w.warned_by])
+    all_user_ids = user_ids | warned_by_ids
+
+    users_map = {}
+    if all_user_ids:
+        users = db.query(User).filter(User.id.in_(all_user_ids)).all()
+        users_map = {u.id: u for u in users}
+
     result = []
     for w in warnings:
-        user = db.query(User).filter(User.id == w.user_id).first()
-        warned_by = db.query(User).filter(User.id == w.warned_by).first() if w.warned_by else None
+        user = users_map.get(w.user_id)
+        warned_by = users_map.get(w.warned_by) if w.warned_by else None
 
         result.append({
             "id": w.id,
@@ -411,12 +429,22 @@ async def get_all_bans(
         (page - 1) * limit
     ).limit(limit).all()
 
+    # BUGFIX: Batch load all users to prevent N+1 queries
+    user_ids = set([ban.user_id for ban in bans])
+    banned_by_ids = set([ban.banned_by for ban in bans if ban.banned_by])
+    all_user_ids = user_ids | banned_by_ids
+
+    users_map = {}
+    if all_user_ids:
+        users = db.query(User).filter(User.id.in_(all_user_ids)).all()
+        users_map = {u.id: u for u in users}
+
+    now = datetime.utcnow()
     result = []
     for ban in bans:
-        user = db.query(User).filter(User.id == ban.user_id).first()
-        banned_by = db.query(User).filter(User.id == ban.banned_by).first() if ban.banned_by else None
+        user = users_map.get(ban.user_id)
+        banned_by = users_map.get(ban.banned_by) if ban.banned_by else None
 
-        now = datetime.utcnow()
         remaining_hours = (ban.expires_at - now).total_seconds() / 3600 if ban.expires_at > now else 0
 
         result.append({
@@ -590,10 +618,20 @@ async def get_moderation_logs(
         (page - 1) * limit
     ).limit(limit).all()
 
+    # BUGFIX: Batch load all users to prevent N+1 queries
+    target_user_ids = set([log.target_user_id for log in logs if log.target_user_id])
+    moderator_ids = set([log.moderator_id for log in logs if log.moderator_id])
+    all_user_ids = target_user_ids | moderator_ids
+
+    users_map = {}
+    if all_user_ids:
+        users = db.query(User).filter(User.id.in_(all_user_ids)).all()
+        users_map = {u.id: u for u in users}
+
     result = []
     for log in logs:
-        target_user = db.query(User).filter(User.id == log.target_user_id).first() if log.target_user_id else None
-        moderator = db.query(User).filter(User.id == log.moderator_id).first() if log.moderator_id else None
+        target_user = users_map.get(log.target_user_id) if log.target_user_id else None
+        moderator = users_map.get(log.moderator_id) if log.moderator_id else None
 
         result.append({
             "id": log.id,
@@ -683,7 +721,7 @@ def _log_moderation_action(
     details: dict = None,
     ip_address: str = None
 ):
-    """Moderasyon islemini logla"""
+    """Moderasyon islemini logla - admin operations audit trail"""
     try:
         log = ModerationLog(
             action=action,
@@ -697,6 +735,17 @@ def _log_moderation_action(
         )
         db.add(log)
         db.commit()
+
+        # Security event logging for audit trail
+        logger.info(
+            f"ADMIN_AUDIT: {action} | "
+            f"moderator_id={moderator_id} | "
+            f"target_user_id={target_user_id} | "
+            f"content_type={content_type} | "
+            f"content_id={content_id} | "
+            f"ip={ip_address} | "
+            f"reason={reason[:100] if reason else 'N/A'}"
+        )
     except Exception as e:
-        logger.error(f"Moderasyon log hatasi: {e}")
+        logger.error(f"Moderasyon log hatasi: {e}", exc_info=True)
         db.rollback()

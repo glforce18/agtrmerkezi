@@ -14,17 +14,18 @@ from app.services.wallet import get_wallet_service
 logger = logging.getLogger(__name__)
 
 
-# Puan ayarları
-REWARD_TOPIC_CREATE = 5.0  # Konu açma
-REWARD_REPLY_CREATE = 2.0  # Yorum yapma
-REWARD_LIKE_RECEIVED = 1.0  # Beğeni alma
-REWARD_FIRST_TOPIC = 10.0  # İlk konu bonusu
-REWARD_FIRST_REPLY = 5.0  # İlk yorum bonusu
+# Puan ayarları (Armor cinsinden)
+REWARD_TOPIC_CREATE = 10.0  # Konu açma: 10 Armor
+REWARD_REPLY_CREATE = 5.0   # Yorum yapma: 5 Armor
+REWARD_LIKE_RECEIVED = 1.0  # Beğeni alma: 1 Armor
+REWARD_FIRST_TOPIC = 50.0   # İlk konu bonusu: 50 Armor
+REWARD_FIRST_REPLY = 25.0   # İlk yorum bonusu: 25 Armor
+REWARD_BEST_ANSWER = 25.0   # En iyi cevap: 25 Armor
 
 # Günlük limitler
-DAILY_TOPIC_LIMIT = 5  # Günde max 5 konu
-DAILY_REPLY_LIMIT = 20  # Günde max 20 yorum
-DAILY_LIKE_LIMIT = 10  # Günde max 10 beğeni ödülü
+DAILY_TOPIC_LIMIT = 10   # Günde max 10 konu
+DAILY_REPLY_LIMIT = 50   # Günde max 50 yorum
+DAILY_LIKE_LIMIT = 20    # Günde max 20 beğeni ödülü
 
 
 class ForumRewardService:
@@ -51,7 +52,6 @@ class ForumRewardService:
                 return None
 
             # İlk konu kontrolü
-            user = self.db.query(User).filter(User.id == user_id).first()
             from app.models.forum import ForumTopic
             topic_count = self.db.query(ForumTopic).filter(
                 ForumTopic.user_id == user_id
@@ -171,6 +171,37 @@ class ForumRewardService:
 
         except Exception as e:
             logger.error(f"Forum like reward error: {e}")
+            return None
+
+    def reward_best_answer(
+        self,
+        user_id: int,
+        reply_id: int,
+        topic_id: int
+    ) -> Optional[float]:
+        """
+        En iyi cevap seçilme ödülü
+        Returns: Verilen ödül miktarı veya None
+        """
+        try:
+            reward = REWARD_BEST_ANSWER
+            description = f"En iyi cevap ödülü (konu #{topic_id})"
+
+            self.wallet.add_balance(
+                user_id=user_id,
+                amount=reward,
+                wallet_type=WalletType.COIN,
+                transaction_type=TransactionType.BONUS.value,
+                description=description,
+                reference_id=str(reply_id),
+                reference_type="forum_best_answer"
+            )
+
+            logger.info(f"Best answer ödülü: user={user_id}, reply={reply_id}, topic={topic_id}")
+            return reward
+
+        except Exception as e:
+            logger.error(f"Forum best answer reward error: {e}")
             return None
 
     def _check_daily_limit(self, user_id: int, reward_type: str) -> bool:

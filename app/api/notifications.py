@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.logging_config import get_logger
 from app.core.security import get_current_user_required
-from app.models.connection import get_db
+from app.models.connection import db_session, get_db
 from app.models.database import User, UserRole
 from app.services.email import email_service
 
@@ -112,20 +112,26 @@ async def get_notifications(
     """📋 Bildirimler"""
     ensure_notification_tables(db)
     
-    q = "SELECT * FROM notifications WHERE user_id = :uid AND is_archived = FALSE"
+    q = """SELECT id, user_id, type, title, message, link, is_read, is_email_sent, created_at, read_at, is_archived
+           FROM notifications WHERE user_id = :uid AND is_archived = FALSE"""
     p = {"uid": current_user.id, "lim": limit}
-    
+
     if unread_only:
         q += " AND is_read = FALSE"
-    
+
     q += " ORDER BY created_at DESC LIMIT :lim"
-    
+
     rows = db.execute(text(q), p).fetchall()
     notifications = [{
-        "id": r[0], "title": r[2], "message": r[3],
-        "type": r[4], "action_url": r[5], "action_text": r[6],
-        "icon": r[7], "is_read": bool(r[8]),
-        "created_at": r[11].isoformat() if r[11] else None
+        "id": r[0],
+        "title": r[3],
+        "message": r[4],
+        "type": r[2],
+        "action_url": r[5],  # link column
+        "action_text": None,
+        "icon": None,
+        "is_read": bool(r[6]) if r[6] is not None else False,
+        "created_at": r[8].isoformat() if r[8] else None
     } for r in rows]
     
     # Okunmamış sayısı
@@ -213,7 +219,7 @@ async def cleanup_old_notifications(
     ensure_notification_tables(db)
 
     # 30 günden eski bildirimleri arşivle
-    result = db.execute(text("""
+    db.execute(text("""
         UPDATE notifications SET is_archived = TRUE
         WHERE user_id = :uid
         AND is_archived = FALSE
@@ -403,13 +409,32 @@ async def send_push_notification(db: Session, user_id: int, title: str, body: st
                     vapid_claims={"sub": f"mailto:{VAPID_EMAIL}"}
                 )
             except WebPushException as e:
-                # Subscription geçersiz, sil
-                if e.response and e.response.status_code in [404, 410]:
-                    db.execute(text(
-                        "DELETE FROM push_subscriptions WHERE endpoint = :ep"
-                    ), {"ep": sub[0]})
+                if e.response is not None:
+                    status_code = e.response.status_code
+                    # 404/410: Subscription artik gecerli degil, sil
+                    if status_code in [404, 410]:
+                        db.execute(text(
+                            "DELETE FROM push_subscriptions WHERE endpoint = :ep"
+                        ), {"ep": sub[0]})
+                        db.commit()
+                        logger.info(f"Gecersiz push subscription silindi: {sub[0][:50]}...")
+                    # 401: VAPID authentication hatasi
+                    elif status_code == 401:
+                        logger.error(f"VAPID authentication hatasi: {e}")
+                    # 429: Rate limit asildi
+                    elif status_code == 429:
+                        logger.warning(f"Push rate limit asildi, beklemek gerekiyor: {e}")
+                        break  # Diger subscriptionlari da etkileyebilir
+                    # 5xx: Push servisi hatasi
+                    elif status_code >= 500:
+                        logger.warning(f"Push servisi hatasi ({status_code}): {e}")
+                    else:
+                        logger.error(f"Beklenmeyen WebPush hatasi ({status_code}): {e}")
+                else:
+                    # Response yok, baglanti hatasi olabilir
+                    logger.error(f"WebPush baglanti hatasi: {e}")
     except ImportError:
-        pass  # pywebpush yüklü değil
+        pass  # pywebpush yuklu degil
     except Exception as e:
         logger.error(f"Push error: {e}")
 
@@ -525,33 +550,42 @@ async def send_broadcast(
     broadcast_id = r.lastrowid
     db.commit()
     
-    # Background'da gönder
-    background_tasks.add_task(send_broadcast_notifications, db, broadcast_id, title, message, target_type, target_value)
-    
+    # Background'da gönder (db session'i background task icinde olusturulacak)
+    background_tasks.add_task(send_broadcast_notifications, broadcast_id, title, message, target_type, target_value)
+
     return {"success": True, "broadcast_id": broadcast_id, "message": "Bildirimler gönderiliyor"}
 
 
-async def send_broadcast_notifications(db: Session, broadcast_id: int, title: str, message: str, target_type: str, target_value: str):
-    """Toplu bildirimleri gönder"""
-    if target_type == "all":
-        users = db.execute(text("SELECT id FROM users WHERE status = 'active'")).fetchall()
-    elif target_type == "role":
-        users = db.execute(text("SELECT id FROM users WHERE role = :role"), {"role": target_value}).fetchall()
-    else:
-        user_ids = target_value.split(",") if target_value else []
-        users = [(int(uid),) for uid in user_ids]
-    
-    count = 0
-    for user in users:
-        await create_notification(db, user[0], title, message, "system", send_push=True)
-        count += 1
-    
-    # Güncelle
-    db.execute(text("""
-        UPDATE broadcast_notifications SET sent_count = :count, sent_at = NOW()
-        WHERE id = :id
-    """), {"count": count, "id": broadcast_id})
-    db.commit()
+async def send_broadcast_notifications(broadcast_id: int, title: str, message: str, target_type: str, target_value: str):
+    """Toplu bildirimleri gönder - kendi db session'ini olusturur"""
+    try:
+        with db_session() as db:
+            if target_type == "all":
+                users = db.execute(text("SELECT id FROM users WHERE status = 'active'")).fetchall()
+            elif target_type == "role":
+                users = db.execute(text("SELECT id FROM users WHERE role = :role"), {"role": target_value}).fetchall()
+            else:
+                user_ids = target_value.split(",") if target_value else []
+                users = [(int(uid),) for uid in user_ids]
+
+            count = 0
+            for user in users:
+                try:
+                    await create_notification(db, user[0], title, message, "system", send_push=True)
+                    count += 1
+                except Exception as e:
+                    logger.error(f"Broadcast bildirim hatasi (user_id={user[0]}): {e}")
+                    continue
+
+            # Güncelle
+            db.execute(text("""
+                UPDATE broadcast_notifications SET sent_count = :count, sent_at = NOW()
+                WHERE id = :id
+            """), {"count": count, "id": broadcast_id})
+            db.commit()
+            logger.info(f"Broadcast tamamlandi: {count} kullaniciya bildirim gonderildi (broadcast_id={broadcast_id})")
+    except Exception as e:
+        logger.error(f"Broadcast gorevi basarisiz (broadcast_id={broadcast_id}): {e}")
 
 
 @router.get("/broadcast/history")

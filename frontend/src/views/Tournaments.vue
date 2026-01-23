@@ -160,6 +160,17 @@
           <span>Turnuvalar yükleniyor...</span>
         </div>
 
+        <!-- Error State -->
+        <div v-else-if="error && tournaments.length === 0" class="error-state">
+          <AlertCircle class="w-16 h-16 text-red-500" />
+          <h3>Bir Hata Oluştu</h3>
+          <p>{{ error }}</p>
+          <n-button type="primary" @click="retryFetch">
+            <template #icon><RefreshCw class="w-4 h-4" /></template>
+            Tekrar Dene
+          </n-button>
+        </div>
+
         <!-- Empty State -->
         <div v-else-if="filteredTournaments.length === 0" class="empty-state">
           <Trophy class="w-16 h-16 text-gray-500" />
@@ -196,7 +207,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
@@ -212,7 +223,9 @@ import {
   Circle,
   Zap,
   CheckCircle,
-  User
+  User,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-vue-next'
 import { useTournamentsStore, TournamentStatus, GameType } from '@/stores/tournaments'
 import { useAuthStore } from '@/stores/auth'
@@ -230,6 +243,7 @@ const {
   activeTournaments,
   myTournaments,
   loading,
+  error,
   pagination
 } = storeToRefs(tournamentsStore)
 
@@ -302,6 +316,10 @@ const loadMore = () => {
   tournamentsStore.loadMore()
 }
 
+const retryFetch = () => {
+  tournamentsStore.init()
+}
+
 const formatDate = (dateStr) => {
   if (!dateStr) return 'TBA'
   return new Date(dateStr).toLocaleDateString('tr-TR', {
@@ -323,6 +341,13 @@ const formatPrize = (amount) => {
 
 onMounted(() => {
   tournamentsStore.init()
+})
+
+onUnmounted(() => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+    searchTimeout = null
+  }
 })
 </script>
 
@@ -568,7 +593,8 @@ onMounted(() => {
 }
 
 .loading-state,
-.empty-state {
+.empty-state,
+.error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -579,14 +605,26 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
-.empty-state h3 {
+.empty-state h3,
+.error-state h3 {
   margin: 0;
   font-size: 20px;
   color: var(--text-primary);
 }
 
-.empty-state p {
+.empty-state p,
+.error-state p {
   margin: 0;
+}
+
+.error-state {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+}
+
+.error-state h3 {
+  color: #ef4444;
 }
 
 .tournaments-grid {

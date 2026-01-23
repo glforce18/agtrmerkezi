@@ -46,14 +46,18 @@ export const useMessagesStore = defineStore('messages', () => {
     error.value = null
     try {
       const response = await api.get('/messages/conversations')
-      conversations.value = response.conversations || response || []
+      // Ensure conversations is always an array
+      const convList = response?.conversations || response
+      conversations.value = Array.isArray(convList) ? convList : []
 
       // Update unread counts
-      conversations.value.forEach(conv => {
-        if (conv.unread_count) {
-          unreadCounts.value[conv.id] = conv.unread_count
-        }
-      })
+      if (conversations.value.length > 0) {
+        conversations.value.forEach(conv => {
+          if (conv && conv.unread_count) {
+            unreadCounts.value[conv.id] = conv.unread_count
+          }
+        })
+      }
     } catch (e) {
       console.error('Failed to fetch conversations:', e)
       error.value = 'Konuşmalar yüklenemedi'

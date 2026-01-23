@@ -23,8 +23,8 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <n-switch v-model:value="autoRefresh" size="small" />
-          <n-button quaternary circle size="small" @click="refreshServers" :loading="loading">
+          <n-switch v-model:value="autoRefresh" size="small" aria-label="Otomatik yenilemeyi aç/kapat" />
+          <n-button quaternary circle size="small" @click="refreshServers" :loading="loading" aria-label="Sunucuları yenile">
             <template #icon>
               <n-icon :component="RefreshCw" size="16" :class="{ 'spin-animation': loading }" />
             </template>
@@ -43,6 +43,7 @@
             clearable
             size="large"
             class="search-input"
+            aria-label="Sunucu arama"
           >
             <template #prefix>
               <n-icon :component="Search" />
@@ -62,6 +63,7 @@
               clearable
               size="small"
               class="filter-select"
+              aria-label="Oyun tipi filtresi"
             />
           </div>
 
@@ -76,6 +78,7 @@
               filterable
               size="small"
               class="filter-select"
+              aria-label="Harita filtresi"
             />
           </div>
 
@@ -89,6 +92,7 @@
               clearable
               size="small"
               class="filter-select"
+              aria-label="Oyuncu sayısı filtresi"
             />
           </div>
 
@@ -102,22 +106,25 @@
               clearable
               size="small"
               class="filter-select"
+              aria-label="Bölge filtresi"
             />
           </div>
 
           <!-- Status Filter -->
           <div class="filter-group">
             <label class="filter-label">Durum</label>
-            <n-button-group size="small">
+            <n-button-group size="small" role="group" aria-label="Durum filtresi">
               <n-button
                 :type="filters.status === 'all' ? 'primary' : 'default'"
                 @click="filters.status = 'all'"
+                aria-label="Tüm sunucuları göster"
               >
                 Tümü
               </n-button>
               <n-button
                 :type="filters.status === 'running' ? 'success' : 'default'"
                 @click="filters.status = 'running'"
+                aria-label="Aktif sunucuları göster"
               >
                 <template #icon><n-icon :component="Circle" class="pulse-green" /></template>
                 Aktif
@@ -125,6 +132,7 @@
               <n-button
                 :type="filters.status === 'stopped' ? 'error' : 'default'"
                 @click="filters.status = 'stopped'"
+                aria-label="Pasif sunucuları göster"
               >
                 <template #icon><n-icon :component="Circle" /></template>
                 Pasif
@@ -153,16 +161,18 @@
           </div>
 
           <div class="view-toggle">
-            <n-button-group size="small">
+            <n-button-group size="small" role="group" aria-label="Görünüm seçenekleri">
               <n-button
                 :type="viewMode === 'grid' ? 'primary' : 'default'"
                 @click="viewMode = 'grid'"
+                aria-label="Izgara görünümü"
               >
                 <template #icon><n-icon :component="Grid" /></template>
               </n-button>
               <n-button
                 :type="viewMode === 'list' ? 'primary' : 'default'"
                 @click="viewMode = 'list'"
+                aria-label="Liste görünümü"
               >
                 <template #icon><n-icon :component="List" /></template>
               </n-button>
@@ -282,16 +292,18 @@
                 <button
                   class="favorite-btn disabled"
                   @click.stop="toggleFavorite(server.id)"
+                  aria-label="Favorilere ekle (giriş gerekli)"
                 >
                   <n-icon :component="Heart" />
                 </button>
               </template>
-              Giris yaparak favorilere ekleyebilirsiniz
+              Giriş yaparak favorilere ekleyebilirsiniz
             </n-tooltip>
             <button
               v-else
               :class="['favorite-btn', { active: favorites.has(server.id) }]"
               @click.stop="toggleFavorite(server.id)"
+              :aria-label="favorites.has(server.id) ? 'Favorilerden kaldır' : 'Favorilere ekle'"
             >
               <n-icon :component="favorites.has(server.id) ? HeartFilled : Heart" />
             </button>
@@ -309,7 +321,7 @@
             <div class="server-address">
               <n-icon :component="Globe" size="14" />
               <span>{{ server.ip }}:{{ server.port }}</span>
-              <n-button text size="tiny" @click="copyAddress(server)">
+              <n-button text size="tiny" @click="copyAddress(server)" aria-label="Adresi kopyala">
                 <n-icon :component="Copy" />
               </n-button>
             </div>
@@ -356,17 +368,18 @@
                 size="small"
                 class="connect-btn muzzle-flash-hover recoil-click"
                 @click="quickConnect(server)"
+                aria-label="Sunucuya hızlı bağlan"
               >
                 <template #icon><n-icon :component="Zap" /></template>
                 Hızlı Bağlan
               </n-button>
-              <router-link :to="`/servers/${server.id}`">
-                <n-button size="small" quaternary>
+              <router-link :to="`/servers/${server.id}`" :aria-label="`${server.name} sunucu detayları`">
+                <n-button size="small" quaternary aria-label="Sunucu ayarları">
                   <template #icon><n-icon :component="Settings" /></template>
                 </n-button>
               </router-link>
               <n-dropdown :options="serverMenuOptions" @select="(key) => handleServerAction(key, server)">
-                <n-button size="small" quaternary>
+                <n-button size="small" quaternary aria-label="Daha fazla seçenek">
                   <template #icon><n-icon :component="MoreVertical" /></template>
                 </n-button>
               </n-dropdown>
@@ -390,7 +403,7 @@
 
       <!-- Pagination / Infinite Scroll -->
       <div class="pagination-section" v-if="filteredServers.length > 0">
-        <n-switch v-model:value="useInfiniteScroll" size="small">
+        <n-switch v-model:value="useInfiniteScroll" size="small" aria-label="Sonsuz scroll ve sayfalama arasında geçiş yap">
           <template #checked>Sonsuz Scroll</template>
           <template #unchecked>Sayfalama</template>
         </n-switch>
@@ -447,7 +460,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, h } from 'vue'
 import { useMessage } from 'naive-ui'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
 import { useRequireAuth } from '@/composables/useRequireAuth'
@@ -520,7 +533,6 @@ const SearchX = {
   }
 }
 
-import { h } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -746,7 +758,7 @@ const toggleSort = (field) => {
 }
 
 const toggleFavorite = async (serverId) => {
-  if (!requireAuth({ message: 'Favorilere eklemek icin giris yapmaniz gerekiyor' })) return
+  if (!requireAuth({ message: 'Favorilere eklemek için giriş yapmanız gerekiyor' })) return
 
   // Toggle local state
   if (favorites.value.has(serverId)) {

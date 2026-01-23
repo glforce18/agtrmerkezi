@@ -189,7 +189,7 @@
 
           <!-- Login Form -->
           <form @submit.prevent="handleLogin" class="login-form">
-            <div class="input-group" :class="{ 'focused': focusedInput === 'username', 'has-value': form.username }">
+            <div class="input-group" :class="{ 'focused': focusedInput === 'username', 'has-value': form.username, 'has-error': usernameValidation.status === 'error', 'has-success': usernameValidation.status === 'success' }">
               <div class="input-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -199,9 +199,9 @@
                 id="login-username"
                 type="text"
                 v-model="form.username"
-                placeholder="Kullanıcı Adı"
+                placeholder="Kullanıcı Adı veya E-posta"
                 @focus="focusedInput = 'username'"
-                @blur="focusedInput = null"
+                @blur="focusedInput = null; validateUsername()"
                 @keydown.tab.exact="focusedInput = 'password'"
                 autocomplete="username"
                 aria-label="Kullanıcı Adı"
@@ -209,8 +209,16 @@
               />
               <div class="input-glow"></div>
             </div>
+            <transition name="shake">
+              <div v-if="usernameValidation.message" class="validation-error">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <span>{{ usernameValidation.message }}</span>
+              </div>
+            </transition>
 
-            <div class="input-group" :class="{ 'focused': focusedInput === 'password', 'has-value': form.password }">
+            <div class="input-group" :class="{ 'focused': focusedInput === 'password', 'has-value': form.password, 'has-error': passwordValidation.status === 'error', 'has-success': passwordValidation.status === 'success' }">
               <div class="input-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
@@ -222,7 +230,7 @@
                 v-model="form.password"
                 placeholder="Şifre"
                 @focus="focusedInput = 'password'"
-                @blur="focusedInput = null"
+                @blur="focusedInput = null; validatePassword()"
                 autocomplete="current-password"
                 aria-label="Şifre"
                 aria-required="true"
@@ -243,6 +251,14 @@
               </button>
               <div class="input-glow"></div>
             </div>
+            <transition name="shake">
+              <div v-if="passwordValidation.message" class="validation-error">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <span>{{ passwordValidation.message }}</span>
+              </div>
+            </transition>
 
             <!-- Remember Me & Forgot Password -->
             <div class="form-options">
@@ -270,7 +286,7 @@
             <button
               type="submit"
               class="login-btn"
-              :disabled="loading || !form.username || !form.password"
+              :disabled="loading || !isFormValid"
               :class="{ 'loading': loading }"
             >
               <span v-if="!loading">Giriş Yap</span>
@@ -375,6 +391,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+// computed is now used for isFormValid
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { loginRateLimiter, sanitizeInput } from '@/utils/security'
@@ -408,8 +425,57 @@ const form = reactive({
   remember: false
 })
 
+// Form validation
+const usernameValidation = reactive({ status: undefined, message: '' })
+const passwordValidation = reactive({ status: undefined, message: '' })
+
+const validateUsername = () => {
+  const value = form.username.trim()
+  if (value.length === 0) {
+    usernameValidation.status = undefined
+    usernameValidation.message = ''
+  } else if (value.length < 3) {
+    usernameValidation.status = 'error'
+    usernameValidation.message = 'Kullanici adi en az 3 karakter olmalidir'
+  } else if (value.includes('@')) {
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(value)) {
+      usernameValidation.status = 'error'
+      usernameValidation.message = 'Gecerli bir e-posta adresi girin'
+    } else {
+      usernameValidation.status = 'success'
+      usernameValidation.message = ''
+    }
+  } else {
+    usernameValidation.status = 'success'
+    usernameValidation.message = ''
+  }
+}
+
+const validatePassword = () => {
+  if (form.password.length === 0) {
+    passwordValidation.status = undefined
+    passwordValidation.message = ''
+  } else if (form.password.length < 6) {
+    passwordValidation.status = 'error'
+    passwordValidation.message = 'Sifre en az 6 karakter olmalidir'
+  } else {
+    passwordValidation.status = 'success'
+    passwordValidation.message = ''
+  }
+}
+
+const isFormValid = computed(() => {
+  return form.username.trim().length >= 3 &&
+         form.password.length >= 6 &&
+         usernameValidation.status !== 'error' &&
+         passwordValidation.status !== 'error'
+})
+
 // Particle animation
 let particleAnimationId = null
+let statsAnimationId = null
 let particles = []
 let resizeHandler = null
 
@@ -490,11 +556,11 @@ const animateStats = () => {
     animatedStats.uptime = (targets.uptime * easeOut).toFixed(1)
 
     if (progress < 1) {
-      requestAnimationFrame(animate)
+      statsAnimationId = requestAnimationFrame(animate)
     }
   }
 
-  animate()
+  statsAnimationId = requestAnimationFrame(animate)
 }
 
 // OTP handling
@@ -634,12 +700,22 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Cancel particle animation
   if (particleAnimationId) {
     cancelAnimationFrame(particleAnimationId)
+    particleAnimationId = null
   }
+  // Cancel stats animation
+  if (statsAnimationId) {
+    cancelAnimationFrame(statsAnimationId)
+    statsAnimationId = null
+  }
+  // Remove window event listeners
   if (resizeHandler) {
     window.removeEventListener('resize', resizeHandler)
+    resizeHandler = null
   }
+  // Clear particles array
   particles = []
 })
 </script>
@@ -1186,6 +1262,38 @@ onUnmounted(() => {
 
 .input-group.has-value input {
   border-color: rgba(249, 115, 22, 0.5);
+}
+
+.input-group.has-error input {
+  border-color: #ef4444;
+}
+
+.input-group.has-error .input-icon {
+  color: #ef4444;
+}
+
+.input-group.has-success input {
+  border-color: #22c55e;
+}
+
+.input-group.has-success .input-icon {
+  color: #22c55e;
+}
+
+.validation-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #ef4444;
+}
+
+.validation-error svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .input-icon {

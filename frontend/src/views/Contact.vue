@@ -21,8 +21,11 @@
                   type="text"
                   placeholder="Ad Soyad"
                   class="input input-bordered bg-base-200"
+                  :class="{ 'input-error': validation.name.status === 'error', 'input-success': validation.name.status === 'success' }"
+                  @blur="validateName"
                   required
                 />
+                <p v-if="validation.name.message" class="text-error text-sm mt-1">{{ validation.name.message }}</p>
               </div>
 
               <div class="form-control">
@@ -34,15 +37,24 @@
                   type="email"
                   placeholder="ornek@email.com"
                   class="input input-bordered bg-base-200"
+                  :class="{ 'input-error': validation.email.status === 'error', 'input-success': validation.email.status === 'success' }"
+                  @blur="validateEmail"
                   required
                 />
+                <p v-if="validation.email.message" class="text-error text-sm mt-1">{{ validation.email.message }}</p>
               </div>
 
               <div class="form-control">
                 <label class="label">
                   <span class="label-text">Konu</span>
                 </label>
-                <select v-model="form.subject" class="select select-bordered bg-base-200" required>
+                <select
+                  v-model="form.subject"
+                  class="select select-bordered bg-base-200"
+                  :class="{ 'select-error': validation.subject.status === 'error', 'select-success': validation.subject.status === 'success' }"
+                  @change="validateSubject"
+                  required
+                >
                   <option value="">Konu Secin</option>
                   <option value="general">Genel Soru</option>
                   <option value="support">Teknik Destek</option>
@@ -50,6 +62,7 @@
                   <option value="partnership">Is Birligi</option>
                   <option value="other">Diğer</option>
                 </select>
+                <p v-if="validation.subject.message" class="text-error text-sm mt-1">{{ validation.subject.message }}</p>
               </div>
 
               <div class="form-control">
@@ -59,12 +72,19 @@
                 <textarea
                   v-model="form.message"
                   class="textarea textarea-bordered bg-base-200 h-32"
-                  placeholder="Mesajinizi yazın..."
+                  :class="{ 'textarea-error': validation.message.status === 'error', 'textarea-success': validation.message.status === 'success' }"
+                  placeholder="Mesajinizi yazın... (min 20 karakter)"
+                  @blur="validateMessage"
                   required
                 ></textarea>
+                <div class="flex justify-between mt-1">
+                  <p v-if="validation.message.message" class="text-error text-sm">{{ validation.message.message }}</p>
+                  <span v-else></span>
+                  <span class="text-sm opacity-60">{{ form.message.length }} karakter</span>
+                </div>
               </div>
 
-              <button type="submit" class="btn-gaming w-full" :disabled="loading">
+              <button type="submit" class="btn-gaming w-full" :disabled="loading || !isFormValid">
                 <span v-if="loading" class="loading loading-spinner loading-sm"></span>
                 <span v-else>Mesaj Gönder</span>
               </button>
@@ -137,7 +157,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 
 const loading = ref(false)
 const submitted = ref(false)
@@ -147,6 +167,63 @@ const form = reactive({
   email: '',
   subject: '',
   message: ''
+})
+
+// Validation state
+const validation = reactive({
+  name: { status: '', message: '' },
+  email: { status: '', message: '' },
+  subject: { status: '', message: '' },
+  message: { status: '', message: '' }
+})
+
+const validateName = () => {
+  const trimmed = form.name.trim()
+  if (trimmed.length === 0) {
+    validation.name = { status: '', message: '' }
+  } else if (trimmed.length < 2) {
+    validation.name = { status: 'error', message: 'Ad en az 2 karakter olmalidir' }
+  } else {
+    validation.name = { status: 'success', message: '' }
+  }
+}
+
+const validateEmail = () => {
+  const trimmed = form.email.trim()
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (trimmed.length === 0) {
+    validation.email = { status: '', message: '' }
+  } else if (!emailRegex.test(trimmed)) {
+    validation.email = { status: 'error', message: 'Gecerli bir e-posta adresi girin' }
+  } else {
+    validation.email = { status: 'success', message: '' }
+  }
+}
+
+const validateSubject = () => {
+  if (form.subject === '') {
+    validation.subject = { status: 'error', message: 'Lutfen bir konu secin' }
+  } else {
+    validation.subject = { status: 'success', message: '' }
+  }
+}
+
+const validateMessage = () => {
+  const trimmed = form.message.trim()
+  if (trimmed.length === 0) {
+    validation.message = { status: '', message: '' }
+  } else if (trimmed.length < 20) {
+    validation.message = { status: 'error', message: 'Mesaj en az 20 karakter olmalidir' }
+  } else {
+    validation.message = { status: 'success', message: '' }
+  }
+}
+
+const isFormValid = computed(() => {
+  return form.name.trim().length >= 2 &&
+         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) &&
+         form.subject !== '' &&
+         form.message.trim().length >= 20
 })
 
 const handleSubmit = async () => {

@@ -16,8 +16,36 @@ from sqlalchemy.orm import Session
 from app.core.security import get_current_user
 from app.models.connection import get_db
 from app.models.database import User, UserRole
+from app.core.redis_manager import redis_manager
 
 router = APIRouter()
+
+# Cache TTL constants
+DASHBOARD_CACHE_TTL = 60  # 1 minute for dashboard
+CHARTS_CACHE_TTL = 300  # 5 minutes for charts
+PLAYERS_CACHE_TTL = 120  # 2 minutes for player stats
+PAGE_VIEWS_CACHE_TTL = 180  # 3 minutes for page views
+
+
+async def get_cached_or_compute(cache_key: str, ttl: int, compute_func):
+    """Generic cache helper - returns cached data or computes and caches it"""
+    try:
+        cached = await redis_manager.get(cache_key)
+        if cached:
+            return json.loads(cached)
+    except Exception:
+        pass  # Cache miss or error, continue to compute
+
+    # Compute the result
+    result = compute_func()
+
+    # Cache the result
+    try:
+        await redis_manager.set(cache_key, json.dumps(result, default=str), expire=ttl)
+    except Exception:
+        pass  # Cache write error, not critical
+
+    return result
 
 # ============================================================================
 # DATABASE TABLES
@@ -84,70 +112,75 @@ async def get_dashboard(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """📊 Dashboard verileri"""
+    """📊 Dashboard verileri - Redis cached (1 dakika)"""
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
         raise HTTPException(403, "Yetkiniz yok")
-    
+
     ensure_analytics_tables(db)
-    
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    week_ago = today - timedelta(days=7)
-    month_ago = today - timedelta(days=30)
-    
-    dashboard = {}
-    
-    # Kullanıcı sayıları
-    dashboard["total_users"] = db.execute(text("SELECT COUNT(*) FROM users")).fetchone()[0]
-    dashboard["new_users_today"] = db.execute(text(
-        "SELECT COUNT(*) FROM users WHERE created_at > :today"
-    ), {"today": today}).fetchone()[0]
-    dashboard["new_users_week"] = db.execute(text(
-        "SELECT COUNT(*) FROM users WHERE created_at > :week"
-    ), {"week": week_ago}).fetchone()[0]
-    
-    # Sunucu sayıları
-    dashboard["total_servers"] = db.execute(text("SELECT COUNT(*) FROM game_servers")).fetchone()[0]
-    dashboard["online_servers"] = db.execute(text(
-        "SELECT COUNT(*) FROM game_servers WHERE status = 'online'"
-    )).fetchone()[0]
-    
-    # Gelir (varsa payment_transactions tablosu)
-    try:
-        dashboard["revenue_today"] = float(db.execute(text("""
-            SELECT COALESCE(SUM(amount), 0) FROM payment_transactions 
-            WHERE status = 'success' AND completed_at > :today
-        """), {"today": today}).fetchone()[0])
-        
-        dashboard["revenue_month"] = float(db.execute(text("""
-            SELECT COALESCE(SUM(amount), 0) FROM payment_transactions 
-            WHERE status = 'success' AND completed_at > :month
-        """), {"month": month_ago}).fetchone()[0])
-    except Exception:
-        dashboard["revenue_today"] = 0
-        dashboard["revenue_month"] = 0
-    
-    # Forum aktivitesi
-    try:
-        dashboard["forum_topics_today"] = db.execute(text(
-            "SELECT COUNT(*) FROM forum_topics WHERE created_at > :today"
+
+    cache_key = "analytics:dashboard"
+
+    def compute_dashboard():
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        week_ago = today - timedelta(days=7)
+        month_ago = today - timedelta(days=30)
+
+        dashboard = {}
+
+        # Kullanıcı sayıları
+        dashboard["total_users"] = db.execute(text("SELECT COUNT(*) FROM users")).fetchone()[0]
+        dashboard["new_users_today"] = db.execute(text(
+            "SELECT COUNT(*) FROM users WHERE created_at > :today"
         ), {"today": today}).fetchone()[0]
-        
-        dashboard["forum_posts_today"] = db.execute(text(
-            "SELECT COUNT(*) FROM forum_replies WHERE created_at > :today"
-        ), {"today": today}).fetchone()[0]
-    except Exception:
-        dashboard["forum_topics_today"] = 0
-        dashboard["forum_posts_today"] = 0
-    
-    # Aktif oyuncu sayısı
-    try:
-        dashboard["active_players"] = db.execute(text(
-            "SELECT COALESCE(SUM(current_players), 0) FROM game_servers WHERE status = 'online'"
+        dashboard["new_users_week"] = db.execute(text(
+            "SELECT COUNT(*) FROM users WHERE created_at > :week"
+        ), {"week": week_ago}).fetchone()[0]
+
+        # Sunucu sayıları
+        dashboard["total_servers"] = db.execute(text("SELECT COUNT(*) FROM game_servers")).fetchone()[0]
+        dashboard["online_servers"] = db.execute(text(
+            "SELECT COUNT(*) FROM game_servers WHERE status = 'online'"
         )).fetchone()[0]
-    except Exception:
-        dashboard["active_players"] = 0
-    
-    return {"success": True, "dashboard": dashboard}
+
+        # Gelir (varsa payment_transactions tablosu)
+        try:
+            dashboard["revenue_today"] = float(db.execute(text("""
+                SELECT COALESCE(SUM(amount), 0) FROM payment_transactions
+                WHERE status = 'success' AND completed_at > :today
+            """), {"today": today}).fetchone()[0])
+
+            dashboard["revenue_month"] = float(db.execute(text("""
+                SELECT COALESCE(SUM(amount), 0) FROM payment_transactions
+                WHERE status = 'success' AND completed_at > :month
+            """), {"month": month_ago}).fetchone()[0])
+        except Exception:
+            dashboard["revenue_today"] = 0
+            dashboard["revenue_month"] = 0
+
+        # Forum aktivitesi
+        try:
+            dashboard["forum_topics_today"] = db.execute(text(
+                "SELECT COUNT(*) FROM forum_topics WHERE created_at > :today"
+            ), {"today": today}).fetchone()[0]
+
+            dashboard["forum_posts_today"] = db.execute(text(
+                "SELECT COUNT(*) FROM forum_replies WHERE created_at > :today"
+            ), {"today": today}).fetchone()[0]
+        except Exception:
+            dashboard["forum_topics_today"] = 0
+            dashboard["forum_posts_today"] = 0
+
+        # Aktif oyuncu sayısı
+        try:
+            dashboard["active_players"] = db.execute(text(
+                "SELECT COALESCE(SUM(current_players), 0) FROM game_servers WHERE status = 'online'"
+            )).fetchone()[0]
+        except Exception:
+            dashboard["active_players"] = 0
+
+        return {"success": True, "dashboard": dashboard}
+
+    return await get_cached_or_compute(cache_key, DASHBOARD_CACHE_TTL, compute_dashboard)
 
 
 @router.get("/dashboard/charts")
@@ -156,55 +189,63 @@ async def get_dashboard_charts(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """📈 Dashboard grafikleri"""
+    """📈 Dashboard grafikleri - Redis cached (5 dakika)"""
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
         raise HTTPException(403, "Yetkiniz yok")
-    
+
+    # Limit days parameter to prevent expensive queries
+    days = min(days, 90)
+
     ensure_analytics_tables(db)
-    
-    since = datetime.now() - timedelta(days=days)
-    charts = {}
-    
-    # Günlük yeni kullanıcılar
-    rows = db.execute(text("""
-        SELECT DATE(created_at) as day, COUNT(*) as count
-        FROM users WHERE created_at > :since
-        GROUP BY DATE(created_at) ORDER BY day
-    """), {"since": since}).fetchall()
-    charts["users_by_day"] = [{"date": str(r[0]), "count": r[1]} for r in rows]
-    
-    # Günlük gelir
-    try:
+
+    cache_key = f"analytics:charts:{days}"
+
+    def compute_charts():
+        since = datetime.now() - timedelta(days=days)
+        charts = {}
+
+        # Günlük yeni kullanıcılar
         rows = db.execute(text("""
-            SELECT DATE(completed_at) as day, SUM(amount) as total
-            FROM payment_transactions 
-            WHERE status = 'success' AND completed_at > :since
-            GROUP BY DATE(completed_at) ORDER BY day
+            SELECT DATE(created_at) as day, COUNT(*) as count
+            FROM users WHERE created_at > :since
+            GROUP BY DATE(created_at) ORDER BY day
         """), {"since": since}).fetchall()
-        charts["revenue_by_day"] = [{"date": str(r[0]), "amount": float(r[1])} for r in rows]
-    except Exception:
-        charts["revenue_by_day"] = []
-    
-    # Sunucu durumu dağılımı
-    rows = db.execute(text("""
-        SELECT status, COUNT(*) as count FROM game_servers GROUP BY status
-    """)).fetchall()
-    charts["server_status"] = [{"status": r[0], "count": r[1]} for r in rows]
-    
-    # Oyun türü dağılımı
-    rows = db.execute(text("""
-        SELECT game_type, COUNT(*) as count FROM game_servers GROUP BY game_type
-    """)).fetchall()
-    charts["servers_by_game"] = [{"game": r[0], "count": r[1]} for r in rows]
-    
-    # En aktif sunucular
-    rows = db.execute(text("""
-        SELECT id, name, current_players, max_players FROM game_servers
-        WHERE status = 'online' ORDER BY current_players DESC LIMIT 10
-    """)).fetchall()
-    charts["top_servers"] = [{"id": r[0], "name": r[1], "players": r[2], "max": r[3]} for r in rows]
-    
-    return {"success": True, "charts": charts}
+        charts["users_by_day"] = [{"date": str(r[0]), "count": r[1]} for r in rows]
+
+        # Günlük gelir
+        try:
+            rows = db.execute(text("""
+                SELECT DATE(completed_at) as day, SUM(amount) as total
+                FROM payment_transactions
+                WHERE status = 'success' AND completed_at > :since
+                GROUP BY DATE(completed_at) ORDER BY day
+            """), {"since": since}).fetchall()
+            charts["revenue_by_day"] = [{"date": str(r[0]), "amount": float(r[1])} for r in rows]
+        except Exception:
+            charts["revenue_by_day"] = []
+
+        # Sunucu durumu dağılımı
+        rows = db.execute(text("""
+            SELECT status, COUNT(*) as count FROM game_servers GROUP BY status
+        """)).fetchall()
+        charts["server_status"] = [{"status": r[0], "count": r[1]} for r in rows]
+
+        # Oyun türü dağılımı
+        rows = db.execute(text("""
+            SELECT game_type, COUNT(*) as count FROM game_servers GROUP BY game_type
+        """)).fetchall()
+        charts["servers_by_game"] = [{"game": r[0], "count": r[1]} for r in rows]
+
+        # En aktif sunucular
+        rows = db.execute(text("""
+            SELECT id, name, current_players, max_players FROM game_servers
+            WHERE status = 'online' ORDER BY current_players DESC LIMIT 10
+        """)).fetchall()
+        charts["top_servers"] = [{"id": r[0], "name": r[1], "players": r[2], "max": r[3]} for r in rows]
+
+        return {"success": True, "charts": charts}
+
+    return await get_cached_or_compute(cache_key, CHARTS_CACHE_TTL, compute_charts)
 
 
 # ============================================================================
@@ -218,27 +259,77 @@ async def get_player_stats(
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    """🎮 Oyuncu istatistikleri"""
+    """🎮 Oyuncu istatistikleri - Redis cached (2 dakika)"""
     ensure_analytics_tables(db)
-    
-    q = "SELECT * FROM player_stats WHERE 1=1"
+
+    # Limit the limit parameter to prevent large result sets
+    limit = min(limit, 500)
+
+    # Set query timeout (5 seconds) for analytics queries
+    db.execute(text("SET SESSION MAX_EXECUTION_TIME = 5000"))
+
+    # Use whitelist for sort parameter to prevent SQL injection
+    sort_whitelist = {"score", "kills", "kd", "playtime", "recent"}
+    if sort not in sort_whitelist:
+        sort = "score"
+
+    # Cache key based on parameters
+    cache_key = f"analytics:players:{server_id or 'all'}:{sort}:{limit}"
+
+    # Check cache
+    try:
+        cached = await redis_manager.get(cache_key)
+        if cached:
+            return json.loads(cached)
+    except Exception:
+        pass
+
     p = {"lim": limit}
-    
+
+    # Build query with parameterized values only
     if server_id:
-        q += " AND server_id = :sid"
         p["sid"] = server_id
-    
-    # Sıralama
-    sort_map = {
-        "score": "score DESC",
-        "kills": "kills DESC",
-        "kd": "(kills / GREATEST(deaths, 1)) DESC",
-        "playtime": "playtime_minutes DESC",
-        "recent": "last_seen DESC"
-    }
-    q += f" ORDER BY {sort_map.get(sort, 'score DESC')} LIMIT :lim"
-    
-    rows = db.execute(text(q), p).fetchall()
+        if sort == "kd":
+            rows = db.execute(text(
+                "SELECT * FROM player_stats WHERE server_id = :sid ORDER BY (kills / GREATEST(deaths, 1)) DESC LIMIT :lim"
+            ), p).fetchall()
+        elif sort == "kills":
+            rows = db.execute(text(
+                "SELECT * FROM player_stats WHERE server_id = :sid ORDER BY kills DESC LIMIT :lim"
+            ), p).fetchall()
+        elif sort == "playtime":
+            rows = db.execute(text(
+                "SELECT * FROM player_stats WHERE server_id = :sid ORDER BY playtime_minutes DESC LIMIT :lim"
+            ), p).fetchall()
+        elif sort == "recent":
+            rows = db.execute(text(
+                "SELECT * FROM player_stats WHERE server_id = :sid ORDER BY last_seen DESC LIMIT :lim"
+            ), p).fetchall()
+        else:  # default: score
+            rows = db.execute(text(
+                "SELECT * FROM player_stats WHERE server_id = :sid ORDER BY score DESC LIMIT :lim"
+            ), p).fetchall()
+    else:
+        if sort == "kd":
+            rows = db.execute(text(
+                "SELECT * FROM player_stats ORDER BY (kills / GREATEST(deaths, 1)) DESC LIMIT :lim"
+            ), p).fetchall()
+        elif sort == "kills":
+            rows = db.execute(text(
+                "SELECT * FROM player_stats ORDER BY kills DESC LIMIT :lim"
+            ), p).fetchall()
+        elif sort == "playtime":
+            rows = db.execute(text(
+                "SELECT * FROM player_stats ORDER BY playtime_minutes DESC LIMIT :lim"
+            ), p).fetchall()
+        elif sort == "recent":
+            rows = db.execute(text(
+                "SELECT * FROM player_stats ORDER BY last_seen DESC LIMIT :lim"
+            ), p).fetchall()
+        else:  # default: score
+            rows = db.execute(text(
+                "SELECT * FROM player_stats ORDER BY score DESC LIMIT :lim"
+            ), p).fetchall()
     
     players = [{
         "id": r[0], "steam_id": r[1], "username": r[2], "server_id": r[3],
@@ -247,8 +338,16 @@ async def get_player_stats(
         "score": r[8], "kd_ratio": round(r[4] / max(r[5], 1), 2),
         "last_seen": r[9].isoformat() if r[9] else None
     } for r in rows]
-    
-    return {"success": True, "players": players}
+
+    result = {"success": True, "players": players}
+
+    # Cache the result
+    try:
+        await redis_manager.set(cache_key, json.dumps(result), expire=PLAYERS_CACHE_TTL)
+    except Exception:
+        pass
+
+    return result
 
 
 @router.get("/players/{steam_id}")
@@ -310,40 +409,64 @@ async def get_revenue_report(
     """💰 Gelir raporu"""
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
         raise HTTPException(403, "Yetkiniz yok")
-    
+
     # Tarih aralığı
     if not start_date:
         start = datetime.now() - timedelta(days=30)
     else:
         start = datetime.strptime(start_date, "%Y-%m-%d")
-    
+
     if not end_date:
         end = datetime.now()
     else:
         end = datetime.strptime(end_date, "%Y-%m-%d")
-    
+
     try:
-        # Grup bazında
+        # Grup bazında - SQL injection'a karşı whitelist kullan
+        allowed_group_by = {"day", "week", "month"}
+        if group_by not in allowed_group_by:
+            group_by = "day"
+
+        # Set query timeout (5 seconds) for long-running queries
+        db.execute(text("SET SESSION MAX_EXECUTION_TIME = 5000"))
+
+        # Parameterized query - group_sql is from whitelist, not user input
         if group_by == "day":
-            group_sql = "DATE(completed_at)"
+            rows = db.execute(text("""
+                SELECT DATE(completed_at) as period,
+                       COUNT(*) as transaction_count,
+                       SUM(amount) as total,
+                       AVG(amount) as average,
+                       gateway
+                FROM payment_transactions
+                WHERE status = 'success' AND completed_at BETWEEN :start AND :end
+                GROUP BY DATE(completed_at), gateway
+                ORDER BY period
+            """), {"start": start, "end": end}).fetchall()
         elif group_by == "week":
-            group_sql = "YEARWEEK(completed_at)"
-        elif group_by == "month":
-            group_sql = "DATE_FORMAT(completed_at, '%Y-%m')"
+            rows = db.execute(text("""
+                SELECT YEARWEEK(completed_at) as period,
+                       COUNT(*) as transaction_count,
+                       SUM(amount) as total,
+                       AVG(amount) as average,
+                       gateway
+                FROM payment_transactions
+                WHERE status = 'success' AND completed_at BETWEEN :start AND :end
+                GROUP BY YEARWEEK(completed_at), gateway
+                ORDER BY period
+            """), {"start": start, "end": end}).fetchall()
         else:
-            group_sql = "DATE(completed_at)"
-        
-        rows = db.execute(text(f"""
-            SELECT {group_sql} as period, 
-                   COUNT(*) as transaction_count,
-                   SUM(amount) as total,
-                   AVG(amount) as average,
-                   gateway
-            FROM payment_transactions 
-            WHERE status = 'success' AND completed_at BETWEEN :start AND :end
-            GROUP BY {group_sql}, gateway
-            ORDER BY period
-        """), {"start": start, "end": end}).fetchall()
+            rows = db.execute(text("""
+                SELECT DATE_FORMAT(completed_at, '%Y-%m') as period,
+                       COUNT(*) as transaction_count,
+                       SUM(amount) as total,
+                       AVG(amount) as average,
+                       gateway
+                FROM payment_transactions
+                WHERE status = 'success' AND completed_at BETWEEN :start AND :end
+                GROUP BY DATE_FORMAT(completed_at, '%Y-%m'), gateway
+                ORDER BY period
+            """), {"start": start, "end": end}).fetchall()
         
         report = [{
             "period": str(r[0]), "transactions": r[1],
@@ -502,30 +625,38 @@ async def get_page_views(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """📊 Sayfa görüntüleme istatistikleri"""
+    """📊 Sayfa görüntüleme istatistikleri - Redis cached (3 dakika)"""
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
         raise HTTPException(403, "Yetkiniz yok")
-    
+
+    # Limit days parameter
+    days = min(days, 30)
+
     ensure_analytics_tables(db)
-    
-    since = datetime.now() - timedelta(days=days)
-    
-    # En çok görüntülenen sayfalar
-    rows = db.execute(text("""
-        SELECT page_path, COUNT(*) as views FROM page_views
-        WHERE viewed_at > :since
-        GROUP BY page_path ORDER BY views DESC LIMIT 20
-    """), {"since": since}).fetchall()
-    
-    top_pages = [{"path": r[0], "views": r[1]} for r in rows]
-    
-    # Günlük toplam
-    rows = db.execute(text("""
-        SELECT DATE(viewed_at) as day, COUNT(*) as views FROM page_views
-        WHERE viewed_at > :since
-        GROUP BY DATE(viewed_at) ORDER BY day
-    """), {"since": since}).fetchall()
-    
-    daily = [{"date": str(r[0]), "views": r[1]} for r in rows]
-    
-    return {"success": True, "top_pages": top_pages, "daily": daily}
+
+    cache_key = f"analytics:page_views:{days}"
+
+    def compute_page_views():
+        since = datetime.now() - timedelta(days=days)
+
+        # En çok görüntülenen sayfalar
+        rows = db.execute(text("""
+            SELECT page_path, COUNT(*) as views FROM page_views
+            WHERE viewed_at > :since
+            GROUP BY page_path ORDER BY views DESC LIMIT 20
+        """), {"since": since}).fetchall()
+
+        top_pages = [{"path": r[0], "views": r[1]} for r in rows]
+
+        # Günlük toplam
+        rows = db.execute(text("""
+            SELECT DATE(viewed_at) as day, COUNT(*) as views FROM page_views
+            WHERE viewed_at > :since
+            GROUP BY DATE(viewed_at) ORDER BY day
+        """), {"since": since}).fetchall()
+
+        daily = [{"date": str(r[0]), "views": r[1]} for r in rows]
+
+        return {"success": True, "top_pages": top_pages, "daily": daily}
+
+    return await get_cached_or_compute(cache_key, PAGE_VIEWS_CACHE_TTL, compute_page_views)

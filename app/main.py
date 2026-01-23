@@ -32,6 +32,7 @@ from app.api import (
     banners,
     discord_bot,
     forum,
+    game_assets,
     game_integration,
     games,
     leaderboard,
@@ -104,7 +105,7 @@ async def lifespan(app: FastAPI):
         await redis_manager.connect()
         logger.info("Redis bağlantısı kuruldu")
     except Exception as e:
-        logger.warning(f"Redis bağlantısı kurulamadı: {e}")
+        logger.error(f"Redis bağlantısı kurulamadı: {e}", exc_info=True)
 
     # Scheduler başlat
     try:
@@ -112,7 +113,7 @@ async def lifespan(app: FastAPI):
         task_scheduler.start()
         logger.info("Scheduler başlatıldı")
     except Exception as e:
-        logger.warning(f"Scheduler başlatılamadı: {e}")
+        logger.error(f"Scheduler başlatılamadı: {e}", exc_info=True)
 
     # WebSocket heartbeat cleanup task
     try:
@@ -126,7 +127,7 @@ async def lifespan(app: FastAPI):
     # Jackpot Manager başlat
     try:
         from app.tasks.jackpot_manager import start_jackpot_manager
-        asyncio.create_task(start_jackpot_manager())
+        await start_jackpot_manager()
         logger.info("Jackpot manager başlatıldı")
     except Exception as e:
         logger.warning(f"Jackpot manager başlatılamadı: {e}")
@@ -171,6 +172,7 @@ def create_default_data():
 
     try:
         # Superadmin kontrolü
+        logger.debug("Superadmin kontrolü yapılıyor...")
         admin_user = db.query(User).filter(User.role == UserRole.SUPERADMIN).first()
         if not admin_user:
             admin_user = User(
@@ -182,10 +184,14 @@ def create_default_data():
                 balance=1000.0
             )
             db.add(admin_user)
-            logger.debug("Superadmin oluşturuldu")
+            logger.info(f"Superadmin oluşturuldu: {settings.DEFAULT_ADMIN_USERNAME}")
+        else:
+            logger.debug(f"Mevcut superadmin bulundu: {admin_user.username}")
 
         # Forum kategorileri
-        if db.query(ForumCategory).count() == 0:
+        logger.debug("Forum kategorileri kontrol ediliyor...")
+        category_count = db.query(ForumCategory).count()
+        if category_count == 0:
             categories = [
                 ForumCategory(name="Genel", slug="genel", description="Genel konular", icon="💬", color="#3b82f6"),
                 ForumCategory(name="Half-Life", slug="half-life", description="Half-Life tartismalari", icon="🎮", color="#f97316"),
@@ -194,10 +200,14 @@ def create_default_data():
                 ForumCategory(name="Duyurular", slug="duyurular", description="Resmi duyurular", icon="📢", color="#ef4444"),
             ]
             db.add_all(categories)
-            logger.debug("Forum kategorileri oluşturuldu")
+            logger.info(f"Forum kategorileri oluşturuldu: {len(categories)} kategori")
+        else:
+            logger.debug(f"Mevcut forum kategorileri: {category_count}")
 
         # Sunucu paketleri
-        if db.query(ServerPackage).count() == 0:
+        logger.debug("Sunucu paketleri kontrol ediliyor...")
+        package_count = db.query(ServerPackage).count()
+        if package_count == 0:
             packages = [
                 # CS 1.6
                 ServerPackage(slug="cs16_starter", name="CS 1.6 Starter", game_type=GameType.CS16, slots=12, features=["basic_plugins"], price_monthly=50.0, description="Baslangic CS 1.6", display_order=1),
@@ -213,26 +223,37 @@ def create_default_data():
                 ServerPackage(slug="hldm_ultimate", name="HLDM Ultimate", game_type=GameType.HLDM, slots=32, features=["basic_plugins", "rcon_access", "anticheat", "custom_domain", "priority_support"], price_monthly=120.0, description="Profesyonel HLDM", display_order=9),
             ]
             db.add_all(packages)
-            logger.debug("Sunucu paketleri oluşturuldu")
+            logger.info(f"Sunucu paketleri oluşturuldu: {len(packages)} paket")
+        else:
+            logger.debug(f"Mevcut sunucu paketleri: {package_count}")
 
         # Site ayarlari
-        if db.query(SiteSettings).count() == 0:
+        logger.debug("Site ayarları kontrol ediliyor...")
+        site_settings_count = db.query(SiteSettings).count()
+        if site_settings_count == 0:
             site_settings = SiteSettings(
                 site_name="AGTR Merkezi",
                 site_description="Turkiye'nin en iyi Half-Life ve CS 1.6 platformu"
             )
             db.add(site_settings)
-            logger.debug("Site ayarları oluşturuldu")
+            logger.info("Site ayarları oluşturuldu")
+        else:
+            logger.debug("Mevcut site ayarları bulundu")
 
         # Varsayılan roller
-        from app.api.roles import initialize_default_roles
-        initialize_default_roles(db)
-        logger.debug("Varsayılan roller oluşturuldu")
+        logger.debug("Varsayılan roller kontrol ediliyor...")
+        try:
+            from app.api.roles import initialize_default_roles
+            initialize_default_roles(db)
+            logger.debug("Varsayılan roller işlendi")
+        except Exception as role_error:
+            logger.warning(f"Varsayılan rol oluşturma uyarısı: {role_error}")
 
         db.commit()
+        logger.debug("Varsayılan veriler başarıyla kaydedildi")
 
     except Exception as e:
-        logger.error(f"Varsayılan veri oluşturma hatası: {e}")
+        logger.error(f"Varsayılan veri oluşturma hatası: {type(e).__name__}: {e}", exc_info=True)
         db.rollback()
     finally:
         db.close()
@@ -347,6 +368,9 @@ app.include_router(banners.router, tags=["Banners & Advertisements"])
 
 # Community Servers & Scraper
 app.include_router(scraper.router, prefix="/api/community", tags=["Community Servers"])
+
+# Game Assets & Scrapers
+app.include_router(game_assets.router, prefix="/api", tags=["Game Assets"])
 
 
 # ==================== HEALTH & STATUS ====================

@@ -15,10 +15,8 @@
 
               <!-- Main Content -->
               <main class="page-wrapper">
-                <router-view v-slot="{ Component }">
-                  <transition name="page-slide" mode="out-in">
-                    <component :is="Component" />
-                  </transition>
+                <router-view v-slot="{ Component, route }">
+                  <component :is="Component" :key="route.fullPath" />
                 </router-view>
               </main>
 
@@ -30,6 +28,9 @@
 
               <!-- Chat Manager (Messaging System) -->
               <ChatManager ref="chatManager" />
+
+              <!-- Toast Notifications -->
+              <ToastContainer />
             </div>
           </n-loading-bar-provider>
         </n-dialog-provider>
@@ -46,6 +47,7 @@ import Navbar from '@/components/layout/Navbar.vue'
 import Footer from '@/components/layout/Footer.vue'
 import CommandPalette from '@/components/ui/CommandPalette.vue'
 import ChatManager from '@/components/social/ChatManager.vue'
+import ToastContainer from '@/components/ToastContainer.vue'
 
 const authStore = useAuthStore()
 const themeStore = useThemeStore()

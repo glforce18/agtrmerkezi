@@ -32,7 +32,7 @@
           <div class="flex flex-col items-center gap-2">
             <button
               class="btn-join-elo"
-              @click="$router.push({ name: 'Login', query: { redirect: $route.fullPath } })"
+              @click="$router.push({ name: 'login', query: { redirect: $route.fullPath } })"
             >
               <UserIcon class="w-5 h-5" />
               Giris Yap

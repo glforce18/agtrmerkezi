@@ -79,13 +79,24 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def get_client_ip(request: Request) -> Optional[str]:
+    """Safely extract client IP from request with full null checking"""
+    if request is None:
+        return None
+    if request.client is None:
+        return None
+    if not hasattr(request.client, 'host'):
+        return None
+    return request.client.host
+
+
 def create_session(db: Session, user_id: int, token: str, request: Request) -> UserSession:
     """Kullanici oturumu olustur"""
     session = UserSession(
         user_id=user_id,
         token_hash=hash_token(token),
-        ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent", "")[:500],
+        ip_address=get_client_ip(request),
+        user_agent=request.headers.get("user-agent", "")[:500] if request else "",
         expires_at=datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     db.add(session)
@@ -130,7 +141,12 @@ def blacklist_ip(ip: str, reason: str = "", duration: int = 3600):
     """IP'yi blacklist'e ekle"""
     try:
         redis_set(f"blacklist:ip:{ip}", reason, duration)
-        logger.info(f"IP blacklisted: {ip} - {reason}")
+        logger.warning(
+            f"SECURITY_EVENT: IP blacklisted | "
+            f"ip={ip} | "
+            f"reason={reason} | "
+            f"duration_seconds={duration}"
+        )
     except Exception as e:
         logger.error(f"IP blacklist hatasi: {e}")
 
@@ -148,7 +164,10 @@ def unblacklist_ip(ip: str):
     """IP'yi blacklist'ten cikar"""
     try:
         redis_delete(f"blacklist:ip:{ip}")
-        logger.info(f"IP unblacklisted: {ip}")
+        logger.info(
+            f"SECURITY_EVENT: IP unblacklisted | "
+            f"ip={ip}"
+        )
     except Exception as e:
         logger.error(f"IP unblacklist hatasi: {e}")
 
@@ -159,7 +178,16 @@ def check_rate_limit(key: str, limit: int = 100, window: int = 60) -> bool:
     """Rate limit kontrolu - True ise limit asilmis"""
     try:
         count = redis_incr(f"ratelimit:{key}", window)
-        return count > limit
+        if count > limit:
+            logger.warning(
+                f"SECURITY_EVENT: Rate limit exceeded | "
+                f"key={key} | "
+                f"count={count} | "
+                f"limit={limit} | "
+                f"window_seconds={window}"
+            )
+            return True
+        return False
     except Exception as e:
         logger.error(f"Rate limit kontrol hatasi: {e}")
         return False
@@ -183,8 +211,8 @@ async def get_current_user_optional(
     db: Session = Depends(get_db)
 ) -> Optional[User]:
     """Mevcut kullaniciyi getir (opsiyonel - login olmadan da calisir)"""
-    # IP kontrolu
-    client_ip = request.client.host if request.client else None
+    # IP kontrolu - full null safety
+    client_ip = get_client_ip(request)
     if client_ip and is_ip_blacklisted(client_ip) and not is_ip_whitelisted(client_ip):
         raise HTTPException(status_code=403, detail="IP adresiniz engellenmis")
 
@@ -210,18 +238,31 @@ async def get_current_user_optional(
     if not user_id:
         return None
 
-    # Session kontrolu
+    # Type-safe user_id conversion
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Invalid user_id in token: {user_id} - {e}")
+        return None
+
+    # Session kontrolu with proper time comparison
     token_hash = hash_token(token)
+    current_time = datetime.utcnow()
     session = db.query(UserSession).filter(
         UserSession.token_hash == token_hash,
-        UserSession.expires_at > datetime.utcnow()
+        UserSession.expires_at > current_time
     ).first()
 
     if not session:
         return None
 
+    # Extra validation: ensure expires_at is in the future
+    if session.expires_at and session.expires_at <= current_time:
+        logger.warning(f"Session expired for user_id: {user_id_int}")
+        return None
+
     # Kullanici getir
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    user = db.query(User).filter(User.id == user_id_int).first()
 
     if not user or user.status != UserStatus.ACTIVE:
         return None
@@ -235,49 +276,63 @@ async def get_current_user(
     db: Session = Depends(get_db)
 ) -> Optional[User]:
     """Mevcut kullaniciyi getir (opsiyonel)"""
-    # IP kontrolu
-    client_ip = request.client.host if request.client else None
+    # IP kontrolu - full null safety
+    client_ip = get_client_ip(request)
     if client_ip and is_ip_blacklisted(client_ip) and not is_ip_whitelisted(client_ip):
+        logger.warning(f"Blacklisted IP attempt: {client_ip}")
         raise HTTPException(status_code=403, detail="IP adresiniz engellenmis")
-    
+
     token = None
-    
+
     # Header'dan token al
     if credentials:
         token = credentials.credentials
-    
+
     # Cookie'den token al
     if not token:
         token = request.cookies.get("access_token")
-    
+
     if not token:
         return None
-    
+
     # Token decode et
     payload = decode_token(token)
     if not payload:
         return None
-    
+
     user_id = payload.get("sub")
     if not user_id:
         return None
-    
-    # Session kontrolu
+
+    # Type-safe user_id conversion
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Invalid user_id in token: {user_id} - {e}")
+        return None
+
+    # Session kontrolu with proper time comparison
     token_hash = hash_token(token)
+    current_time = datetime.utcnow()
     session = db.query(UserSession).filter(
         UserSession.token_hash == token_hash,
-        UserSession.expires_at > datetime.utcnow()
+        UserSession.expires_at > current_time
     ).first()
-    
+
     if not session:
         return None
-    
+
+    # Extra validation: ensure expires_at is in the future
+    if session.expires_at and session.expires_at <= current_time:
+        logger.warning(f"Session expired for user_id: {user_id_int}")
+        return None
+
     # Kullanici getir
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    
+    user = db.query(User).filter(User.id == user_id_int).first()
+
     if not user or user.status != UserStatus.ACTIVE:
         return None
-    
+
     return user
 
 
@@ -372,30 +427,43 @@ def get_current_user_from_token(db: Session, token: str) -> Optional[User]:
     """Token'dan kullanıcıyı getir (middleware için senkron versiyon)"""
     if not token:
         return None
-    
+
     # Token decode et
     payload = decode_token(token)
     if not payload:
         return None
-    
+
     user_id = payload.get("sub")
     if not user_id:
         return None
-    
-    # Session kontrolu
+
+    # Type-safe user_id conversion
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Invalid user_id in token (sync): {user_id} - {e}")
+        return None
+
+    # Session kontrolu with proper time comparison
     token_hash = hash_token(token)
+    current_time = datetime.utcnow()
     session = db.query(UserSession).filter(
         UserSession.token_hash == token_hash,
-        UserSession.expires_at > datetime.utcnow()
+        UserSession.expires_at > current_time
     ).first()
-    
+
     if not session:
         return None
-    
+
+    # Extra validation: ensure expires_at is in the future
+    if session.expires_at and session.expires_at <= current_time:
+        logger.warning(f"Session expired for user_id (sync): {user_id_int}")
+        return None
+
     # Kullanici getir
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    
+    user = db.query(User).filter(User.id == user_id_int).first()
+
     if not user or user.status != UserStatus.ACTIVE:
         return None
-    
+
     return user

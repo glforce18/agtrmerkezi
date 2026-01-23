@@ -1,728 +1,449 @@
 <template>
-  <div class="min-h-screen category-page">
-    <!-- Animated Background Elements -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-      <div class="bg-orb bg-orb-1"></div>
-      <div class="bg-orb bg-orb-2"></div>
-      <div class="bg-orb bg-orb-3"></div>
-      <div class="bg-grid"></div>
-    </div>
+  <ForumLayout
+    :show-right-sidebar="true"
+    class="forum-page"
+  >
+    <!-- Left Sidebar: Category Navigation -->
+    <template #sidebar-left>
+      <ForumSidebar
+        :categories="allCategories"
+        :active-category="categoryId"
+        :stats="sidebarStats"
+        @category-click="handleCategoryClick"
+      />
+    </template>
 
-    <div class="container-custom py-8 relative z-10">
-      <!-- Enhanced Breadcrumb with Animated Transitions -->
-      <Transition name="breadcrumb-slide" appear>
-        <nav class="breadcrumb-container mb-6">
-          <div class="breadcrumb-inner">
-            <TransitionGroup name="breadcrumb-item" tag="div" class="flex items-center gap-2">
-              <button
-                key="home"
-                @click="router.push('/forum')"
-                class="breadcrumb-item group"
-              >
-                <div class="breadcrumb-icon-wrapper">
-                  <HomeIcon class="w-4 h-4" />
-                </div>
-                <span class="breadcrumb-text">Forum</span>
-                <div class="breadcrumb-arrow">
-                  <ChevronRightIcon class="w-4 h-4" />
-                </div>
-              </button>
-
-              <div key="current" class="breadcrumb-current">
-                <div class="current-icon-pulse"></div>
-                <FolderIcon class="w-4 h-4 text-orange-500 mr-2 relative z-10" />
-                <span class="text-orange-500 font-medium">{{ category?.name }}</span>
-              </div>
-            </TransitionGroup>
-          </div>
-
-          <!-- Online Users Indicator -->
-          <div class="online-users-indicator">
-            <div class="online-dot"></div>
-            <UsersIcon class="w-4 h-4" />
-            <span class="online-count">{{ onlineUsers }}</span>
-            <span class="online-label">çevrimiçi</span>
-          </div>
-        </nav>
-      </Transition>
-
-      <!-- Category Hero Section with Stats Overlay -->
-      <Transition name="hero-fade" appear>
-        <section class="category-hero mb-8">
-          <div class="hero-background">
-            <div class="hero-gradient"></div>
-            <div class="hero-pattern"></div>
-            <div class="hero-shine"></div>
-          </div>
-
-          <div class="hero-content">
-            <div class="flex flex-col lg:flex-row items-start lg:items-center gap-6">
-              <!-- Category Icon with Animation -->
-              <div class="category-icon-wrapper">
-                <div
-                  :class="[
-                    'category-icon',
-                    category?.gradient ? getCategoryGradient(category.gradient) : 'bg-gradient-to-br from-orange-500 to-purple-500'
-                  ]"
-                >
-                  <component :is="category?.icon || MessageSquareIcon" class="w-10 h-10 text-white" />
-                </div>
-                <div class="icon-ring"></div>
-                <div class="icon-ring delay-500"></div>
-                <div class="icon-ring delay-1000"></div>
-                <div class="icon-particles">
-                  <span v-for="n in 6" :key="n" class="particle" :style="{ '--i': n }"></span>
-                </div>
-              </div>
-
-              <!-- Category Info -->
-              <div class="flex-1">
-                <div class="hero-badge-row">
-                  <span class="category-type-badge">
-                    <LayersIcon class="w-3.5 h-3.5" />
-                    Kategori
-                  </span>
-                  <span class="topic-count-badge">
-                    <FileTextIcon class="w-3.5 h-3.5" />
-                    {{ topics.length }} Konu
-                  </span>
-                </div>
-                <h1 class="hero-title">
-                  <span class="title-gradient">{{ category?.name || 'Kategori' }}</span>
-                </h1>
-                <p class="hero-description">{{ category?.description }}</p>
-
-                <!-- Stats Overlay -->
-                <div class="stats-overlay">
-                  <div
-                    class="stat-item"
-                    v-for="(stat, index) in categoryStats"
-                    :key="stat.label"
-                    :style="{ animationDelay: `${index * 100}ms` }"
-                  >
-                    <div class="stat-icon-wrapper">
-                      <component :is="stat.icon" class="w-5 h-5" />
-                    </div>
-                    <div class="stat-content">
-                      <span class="stat-number" :data-value="stat.value">{{ formatNumber(stat.value) }}</span>
-                      <span class="stat-label">{{ stat.label }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- New Topic Button -->
-              <div class="hero-action">
-                <n-tooltip :disabled="isLoggedIn" trigger="hover">
-                  <template #trigger>
-                    <n-button
-                      type="primary"
-                      size="large"
-                      class="new-topic-btn"
-                      :class="{ 'btn-disabled': !isLoggedIn }"
-                      @click="handleNewTopic"
-                    >
-                      <template #icon>
-                        <LockIcon v-if="!isLoggedIn" class="w-5 h-5" />
-                        <PlusCircleIcon v-else class="w-5 h-5" />
-                      </template>
-                      {{ isLoggedIn ? 'Yeni Konu Ac' : 'Giris Yap' }}
-                    </n-button>
-                  </template>
-                  Konu olusturmak icin giris yapin
-                </n-tooltip>
-              </div>
-            </div>
-          </div>
-        </section>
-      </Transition>
-
-      <!-- Enhanced Filters & Sort with Animated Transitions -->
-      <Transition name="filter-slide" appear>
-        <section class="filter-section mb-6">
-          <div class="filter-card glass-morphism">
-            <div class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
-              <!-- Search Input -->
-              <div class="flex-1 search-wrapper" :class="{ focused: searchFocused }">
-                <div class="search-icon">
-                  <SearchIcon class="w-5 h-5" />
-                </div>
-                <input
-                  v-model="searchQuery"
-                  type="text"
-                  placeholder="Konularda ara..."
-                  class="search-input"
-                  @focus="searchFocused = true"
-                  @blur="searchFocused = false"
-                />
-                <Transition name="fade">
-                  <button
-                    v-if="searchQuery"
-                    @click="searchQuery = ''"
-                    class="search-clear"
-                  >
-                    <XIcon class="w-4 h-4" />
-                  </button>
-                </Transition>
-                <div class="search-glow"></div>
-              </div>
-
-              <!-- View Mode Toggle -->
-              <div class="view-mode-toggle">
-                <button
-                  @click="viewMode = 'list'"
-                  :class="['view-btn', { active: viewMode === 'list' }]"
-                  title="Liste Görünümu"
-                >
-                  <ListIcon class="w-4 h-4" />
-                </button>
-                <button
-                  @click="viewMode = 'compact'"
-                  :class="['view-btn', { active: viewMode === 'compact' }]"
-                  title="Kompakt Görünüm"
-                >
-                  <LayoutGridIcon class="w-4 h-4" />
-                </button>
-                <div class="view-indicator" :class="viewMode"></div>
-              </div>
-
-              <!-- Sort Options with Animation -->
-              <div class="sort-wrapper">
-                <div class="sort-dropdown" :class="{ open: sortDropdownOpen }">
-                  <button class="sort-trigger" @click="sortDropdownOpen = !sortDropdownOpen">
-                    <component :is="currentSortOption.icon" class="w-4 h-4" />
-                    <span>{{ currentSortOption.label }}</span>
-                    <ChevronDownIcon class="w-4 h-4 dropdown-arrow" />
-                  </button>
-                  <Transition name="dropdown-slide">
-                    <div v-if="sortDropdownOpen" class="sort-dropdown-menu glass-morphism">
-                      <button
-                        v-for="option in sortOptions"
-                        :key="option.value"
-                        @click="handleSortChange(option.value)"
-                        :class="['sort-option', { active: sortBy === option.value }]"
-                      >
-                        <component :is="option.icon" class="w-4 h-4" />
-                        <span>{{ option.label }}</span>
-                        <CheckIcon v-if="sortBy === option.value" class="w-4 h-4 check-icon" />
-                      </button>
-                    </div>
-                  </Transition>
-                </div>
-              </div>
-
-              <!-- Infinite Scroll Toggle -->
-              <div class="infinite-scroll-toggle">
-                <label class="toggle-label">
-                  <span class="toggle-text">
-                    <InfinityIcon class="w-4 h-4" />
-                    Sonsuz Kaydirma
-                  </span>
-                  <div class="toggle-switch" :class="{ active: infiniteScrollEnabled }">
-                    <input
-                      type="checkbox"
-                      v-model="infiniteScrollEnabled"
-                      class="toggle-input"
-                    />
-                    <div class="toggle-slider">
-                      <div class="slider-dot"></div>
-                    </div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            <!-- Active Filters Display -->
-            <Transition name="filters-expand">
-              <div v-if="searchQuery || sortBy !== 'latest'" class="active-filters">
-                <span class="filters-label">Aktif Filtreler:</span>
-                <TransitionGroup name="filter-tag" tag="div" class="filters-list">
-                  <span v-if="searchQuery" key="search" class="filter-tag">
-                    <SearchIcon class="w-3 h-3" />
-                    "{{ searchQuery }}"
-                    <button @click="searchQuery = ''" aria-label="Aramayı temizle"><XIcon class="w-3 h-3" /></button>
-                  </span>
-                  <span v-if="sortBy !== 'latest'" key="sort" class="filter-tag">
-                    <ArrowUpDownIcon class="w-3 h-3" />
-                    {{ currentSortOption.label }}
-                    <button @click="sortBy = 'latest'" aria-label="Sıralamayı sıfırla"><XIcon class="w-3 h-3" /></button>
-                  </span>
-                </TransitionGroup>
-              </div>
-            </Transition>
-          </div>
-        </section>
-      </Transition>
-
-      <!-- Topics List with Enhanced Cards -->
-      <TransitionGroup
-        :name="viewMode === 'list' ? 'topic-list' : 'topic-grid'"
-        tag="div"
-        :class="['topics-container', viewMode === 'compact' ? 'compact-view' : 'list-view']"
-        @before-leave="beforeLeave"
-      >
-        <article
-          v-for="(topic, index) in displayedTopics"
-          :key="topic.id"
-          class="topic-card-wrapper"
-          :style="{ '--delay': `${index * 50}ms` }"
-          @mouseenter="handleTopicHover($event, topic)"
-          @mouseleave="handleTopicLeave"
-        >
-          <div
-            :class="['topic-card', 'glass-morphism', { 'compact': viewMode === 'compact' }]"
-            @click="router.push(`/forum/topic/${topic.id}`)"
-          >
-            <!-- Hover Glow Effect -->
-            <div class="card-glow"></div>
-            <div class="card-border-glow"></div>
-
-            <!-- Hot/Trending Indicator -->
-            <Transition name="trending-pulse">
-              <div v-if="topic.isHot" class="trending-indicator">
-                <div class="trending-flame">
-                  <FlameIcon class="w-4 h-4" />
-                </div>
-                <span class="trending-text">Trend</span>
-              </div>
-            </Transition>
-
-            <!-- Card Content -->
-            <div class="card-inner">
-              <!-- Left Section: Author Avatar -->
-              <div v-if="viewMode === 'list'" class="topic-author-section">
-                <div class="author-avatar-wrapper">
-                  <n-avatar
-                    round
-                    :size="56"
-                    :src="topic.authorAvatar"
-                    class="author-avatar"
-                  />
-                  <div class="avatar-status" :class="{ online: topic.authorOnline }">
-                    <span class="status-pulse"></span>
-                  </div>
-                  <div class="avatar-ring"></div>
-                </div>
-
-                <!-- Animated Badges -->
-                <div class="topic-badges">
-                  <Transition name="badge-pop">
-                    <div v-if="topic.isPinned" class="badge badge-pinned">
-                      <PinIcon class="w-3 h-3" />
-                      <span>Sabit</span>
-                    </div>
-                  </Transition>
-                  <Transition name="badge-pop">
-                    <div v-if="topic.isLocked" class="badge badge-locked">
-                      <LockIcon class="w-3 h-3" />
-                      <span>Kilitli</span>
-                    </div>
-                  </Transition>
-                  <Transition name="badge-pop">
-                    <div v-if="topic.isHot" class="badge badge-hot">
-                      <FlameIcon class="w-3 h-3" />
-                      <span>Popüler</span>
-                    </div>
-                  </Transition>
-                </div>
-              </div>
-
-              <!-- Main Content -->
-              <div class="topic-main">
-                <div class="topic-header">
-                  <!-- Topic Type Badge -->
-                  <div class="topic-type-badges">
-                    <span :class="['type-badge', `type-${topic.type || 'discussion'}`]">
-                      <component :is="getTypeIcon(topic.type)" class="w-3 h-3" />
-                      {{ getTypeLabel(topic.type) }}
-                    </span>
-                    <span v-if="topic.isPinned && viewMode === 'compact'" class="compact-badge pinned">
-                      <PinIcon class="w-3 h-3" />
-                    </span>
-                    <span v-if="topic.isLocked && viewMode === 'compact'" class="compact-badge locked">
-                      <LockIcon class="w-3 h-3" />
-                    </span>
-                  </div>
-
-                  <h3 class="topic-title">
-                    <span v-if="isTopicUnread(topic)" class="unread-dot" title="Okunmamis"></span>
-                    {{ topic.title }}
-                  </h3>
-                  <div class="topic-meta">
-                    <span class="meta-item author-meta">
-                      <n-avatar v-if="viewMode === 'compact'" round :size="20" :src="topic.authorAvatar" class="meta-avatar" />
-                      <UserIcon v-else class="w-3.5 h-3.5" />
-                      <span class="author-name-link">{{ topic.author }}</span>
-                    </span>
-                    <span class="meta-divider"></span>
-                    <span class="meta-item">
-                      <ClockIcon class="w-3.5 h-3.5" />
-                      {{ topic.created }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Topic Preview (on hover) -->
-                <Transition name="preview-expand">
-                  <div v-if="hoveredTopic === topic.id && topic.preview && viewMode === 'list'" class="topic-preview">
-                    <p>{{ topic.preview }}</p>
-                  </div>
-                </Transition>
-
-                <!-- Topic Stats -->
-                <div class="topic-stats">
-                  <div class="stat" title="Yanıtlar">
-                    <MessageSquareIcon class="w-4 h-4" />
-                    <span class="stat-value">{{ topic.replies }}</span>
-                    <span v-if="viewMode === 'list'" class="stat-label">Yanıt</span>
-                  </div>
-                  <div class="stat" title="Görüntülenme">
-                    <EyeIcon class="w-4 h-4" />
-                    <span class="stat-value">{{ formatNumber(topic.views) }}</span>
-                    <span v-if="viewMode === 'list'" class="stat-label">Görüntülenme</span>
-                  </div>
-                  <div class="stat" title="Begeni">
-                    <ThumbsUpIcon class="w-4 h-4" />
-                    <span class="stat-value">{{ topic.likes }}</span>
-                    <span v-if="viewMode === 'list'" class="stat-label">Begeni</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Last Reply Section -->
-              <div v-if="viewMode === 'list'" class="topic-last-reply">
-                <template v-if="topic.lastReply">
-                  <div class="last-reply-header">
-                    <span class="last-reply-label">Son Yanıt</span>
-                    <span class="last-reply-time">{{ topic.lastReply.time }}</span>
-                  </div>
-                  <div class="last-reply-author">
-                    <n-avatar round :size="28" :src="topic.lastReply.avatar" />
-                    <span class="author-name">{{ topic.lastReply.author }}</span>
-                  </div>
-                </template>
-                <template v-else>
-                  <div class="no-reply">
-                    <MessageSquareIcon class="w-5 h-5 text-gray-500" />
-                    <span>Henüz yanıt yok</span>
-                  </div>
-                </template>
-
-                <!-- Arrow Indicator -->
-                <div class="arrow-indicator">
-                  <ArrowRightIcon class="w-5 h-5" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Progress Bar (for popular topics) -->
-            <div v-if="topic.isHot" class="popularity-bar">
-              <div class="bar-fill" :style="{ width: `${Math.min(topic.views / 5, 100)}%` }"></div>
-              <div class="bar-shine"></div>
-            </div>
-          </div>
-        </article>
-      </TransitionGroup>
-
-      <!-- Loading Indicator for Infinite Scroll -->
-      <Transition name="fade">
-        <div v-if="infiniteScrollEnabled && isLoadingMore" class="loading-more">
-          <div class="loading-spinner">
-            <div class="spinner-ring"></div>
-            <div class="spinner-ring"></div>
-            <div class="spinner-ring"></div>
-          </div>
-          <span>Daha fazla konu yükleniyor...</span>
+    <!-- Main Content -->
+    <template #default>
+      <!-- Category Game Banner -->
+      <div v-if="gameBanner" class="forum-category-banner">
+        <img :src="gameBanner" :alt="category?.name" class="forum-category-banner__img" />
+        <div class="forum-category-banner__overlay">
+          <img v-if="gameLogo" :src="gameLogo" :alt="category?.name" class="forum-category-banner__logo" />
         </div>
-      </Transition>
+      </div>
 
-      <!-- Scroll Sentinel for Infinite Scroll -->
-      <div v-if="infiniteScrollEnabled" ref="scrollSentinel" class="scroll-sentinel"></div>
+      <!-- Breadcrumb -->
+      <nav class="forum-breadcrumb-enhanced" aria-label="Gezinti">
+        <a href="#" @click.prevent="router.push('/forum')" class="forum-breadcrumb-item">
+          <HomeIcon class="w-4 h-4" />
+          <span>Forum</span>
+        </a>
+        <ChevronRightIcon class="w-4 h-4 forum-breadcrumb-separator" />
+        <span class="forum-breadcrumb-current">
+          <FolderIcon class="w-4 h-4" />
+          {{ category?.name }}
+        </span>
+      </nav>
 
-      <!-- Enhanced Empty State -->
-      <Transition name="empty-bounce" appear>
-        <section v-if="filteredTopics.length === 0" class="empty-state">
-          <div class="empty-card glass-morphism">
-            <div class="empty-illustration">
-              <div class="empty-icon-wrapper">
-                <div class="empty-icon-bg"></div>
-                <MessageSquareIcon class="w-16 h-16" />
-              </div>
-              <div class="empty-circles">
-                <div class="circle"></div>
-                <div class="circle"></div>
-                <div class="circle"></div>
-              </div>
-              <div class="empty-particles">
-                <span v-for="n in 12" :key="n" class="particle" :style="{ '--i': n }"></span>
-              </div>
-            </div>
-
-            <h3 class="empty-title">Henüz Konu Yok</h3>
-            <p class="empty-description">
-              Bu kategoride henüz bir konu açılmamış. İlk konuyu açarak tartışmayı başlatin!
-            </p>
-
-            <div class="empty-actions">
-              <n-tooltip :disabled="isLoggedIn" trigger="hover">
-                <template #trigger>
-                  <n-button
-                    type="primary"
-                    size="large"
-                    class="empty-cta"
-                    :class="{ 'btn-disabled': !isLoggedIn }"
-                    @click="handleNewTopic"
-                  >
-                    <template #icon>
-                      <LockIcon v-if="!isLoggedIn" class="w-5 h-5" />
-                      <PlusCircleIcon v-else class="w-5 h-5" />
-                    </template>
-                    {{ isLoggedIn ? 'Ilk Konuyu Ac' : 'Giris Yap' }}
-                  </n-button>
+      <!-- Category Header -->
+      <section class="forum-category-header">
+        <div class="forum-category-header__icon forum-category-icon" :style="{ background: category?.color ? `linear-gradient(135deg, ${category.color}, ${adjustColor(category.color, -30)})` : getCategoryGradient(category?.gradient) }">
+          <span v-if="category?.icon && typeof category.icon === 'string'" class="text-3xl">{{ category.icon }}</span>
+          <MessageSquareIcon v-else class="w-8 h-8 text-white" />
+        </div>
+        <div class="forum-category-header__info">
+          <h1 class="forum-heading-enhanced forum-heading--xl">{{ category?.name || 'Kategori' }}</h1>
+          <p class="forum-meta forum-text-body">{{ category?.description }}</p>
+          <div class="forum-category-header__stats">
+            <span class="forum-stat-enhanced">
+              <span class="forum-stat-enhanced__icon">
+                <FileTextIcon class="w-3.5 h-3.5" />
+              </span>
+              <span class="forum-stat-enhanced__value">{{ topics.length }}</span>
+              <span class="forum-stat-enhanced__label">Konu</span>
+            </span>
+            <span class="forum-stat-enhanced">
+              <span class="forum-stat-enhanced__icon">
+                <MessageSquareIcon class="w-3.5 h-3.5" />
+              </span>
+              <span class="forum-stat-enhanced__value">{{ totalPosts }}</span>
+              <span class="forum-stat-enhanced__label">Gonderi</span>
+            </span>
+            <span class="forum-stat-enhanced">
+              <span class="forum-stat-enhanced__icon">
+                <EyeIcon class="w-3.5 h-3.5" />
+              </span>
+              <span class="forum-stat-enhanced__value">{{ formatNumber(totalViews) }}</span>
+              <span class="forum-stat-enhanced__label">Goruntulenme</span>
+            </span>
+          </div>
+        </div>
+        <div class="forum-category-header__action">
+          <n-tooltip :disabled="isLoggedIn" trigger="hover">
+            <template #trigger>
+              <n-button
+                type="primary"
+                size="large"
+                class="forum-btn-enhanced forum-btn-enhanced--primary"
+                :class="{ 'forum-btn--disabled': !isLoggedIn }"
+                @click="handleNewTopic"
+              >
+                <template #icon>
+                  <LockIcon v-if="!isLoggedIn" class="w-5 h-5" />
+                  <PlusCircleIcon v-else class="w-5 h-5" />
                 </template>
-                Konu olusturmak icin giris yapin
-              </n-tooltip>
-              <n-button quaternary size="large" @click="router.push('/forum')">
-                <template #icon><ArrowLeftIcon class="w-5 h-5" /></template>
-                Foruma Don
+                {{ isLoggedIn ? 'Yeni Konu Ac' : 'Giris Yap' }}
               </n-button>
-            </div>
+            </template>
+            Konu olusturmak icin giris yapin
+          </n-tooltip>
+        </div>
+      </section>
 
-            <div class="empty-suggestions">
-              <p class="suggestions-title">Popüler Kategoriler</p>
-              <div class="suggestions-list">
-                <button class="suggestion-chip" v-for="cat in popularCategories" :key="cat.id" @click="router.push(`/forum/category/${cat.id}`)">
-                  <component :is="cat.icon" class="w-4 h-4" />
-                  {{ cat.name }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </Transition>
-
-      <!-- Animated Pagination -->
-      <Transition name="pagination-slide" appear>
-        <section v-if="!infiniteScrollEnabled && filteredTopics.length > 0" class="pagination-section">
-          <div class="pagination-wrapper glass-morphism">
-            <button
-              class="pagination-btn prev"
-              :disabled="currentPage === 1"
-              @click="changePage(currentPage - 1)"
-            >
-              <ChevronLeftIcon class="w-5 h-5" />
-              <span>Önceki</span>
-            </button>
-
-            <div class="pagination-numbers">
-              <TransitionGroup name="page-number">
-                <button
-                  v-for="page in visiblePages"
-                  :key="page"
-                  :class="['page-btn', { active: page === currentPage, ellipsis: page === '...' }]"
-                  :disabled="page === '...'"
-                  @click="page !== '...' && changePage(page)"
-                >
-                  <span class="page-number-text">{{ page }}</span>
-                  <span v-if="page === currentPage" class="page-active-bg"></span>
-                </button>
-              </TransitionGroup>
-            </div>
-
-            <button
-              class="pagination-btn next"
-              :disabled="currentPage === totalPages"
-              @click="changePage(currentPage + 1)"
-            >
-              <span>Sonraki</span>
-              <ChevronRightIcon class="w-5 h-5" />
-            </button>
-          </div>
-
-          <div class="pagination-info">
-            <div class="page-info-box">
-              <span class="current-range">{{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, filteredTopics.length) }}</span>
-              <span class="info-separator">/</span>
-              <span class="total-count">{{ filteredTopics.length }}</span>
-            </div>
-            <span class="info-text">konu gösteriliyor</span>
-            <div class="page-progress">
-              <div class="progress-fill" :style="{ width: `${(currentPage / totalPages) * 100}%` }"></div>
-            </div>
-          </div>
-        </section>
-      </Transition>
-    </div>
-
-    <!-- Enhanced New Topic Modal -->
-    <n-modal
-      v-model:show="showNewTopicModal"
-      :mask-closable="false"
-      class="topic-modal"
-    >
-      <div class="modal-content glass-morphism">
-        <div class="modal-header">
-          <div class="modal-icon">
-            <EditIcon class="w-6 h-6 text-orange-500" />
-          </div>
-          <div>
-            <h2 class="modal-title">Yeni Konu Oluştur</h2>
-            <p class="modal-subtitle">Topluluğa paylaşmak istediğiniz konuyu yazın</p>
-          </div>
-          <button class="modal-close" @click="showNewTopicModal = false">
-            <XIcon class="w-5 h-5" />
+      <!-- Filters & Sort -->
+      <section class="forum-filters">
+        <div class="forum-filters__search forum-search-enhanced" :class="{ focused: searchFocused }">
+          <SearchIcon class="w-5 h-5 forum-search-icon" aria-hidden="true" />
+          <input
+            v-model="searchQuery"
+            type="search"
+            placeholder="Konularda ara..."
+            class="forum-search-input"
+            aria-label="Konularda ara"
+            @focus="searchFocused = true"
+            @blur="searchFocused = false"
+            @keydown.escape="searchQuery = ''"
+          />
+          <button
+            v-if="searchQuery"
+            @click="searchQuery = ''"
+            class="forum-search-clear"
+            aria-label="Aramayi temizle"
+            type="button"
+          >
+            <XIcon class="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
-        <form @submit.prevent="createTopic" class="modal-form">
-          <!-- Topic Type Selection -->
-          <div class="form-group">
-            <label class="form-label">
-              <TagIcon class="w-4 h-4" />
-              Konu Tipi
-            </label>
-            <div class="topic-type-selector">
-              <button
-                v-for="type in topicTypes"
-                :key="type.value"
-                type="button"
-                :class="['type-option', { active: newTopic.type === type.value }]"
-                @click="newTopic.type = type.value"
-              >
-                <component :is="type.icon" class="w-4 h-4" />
-                <span>{{ type.label }}</span>
-              </button>
-            </div>
+        <div class="forum-filters__controls">
+          <!-- View Mode Toggle -->
+          <div class="forum-view-toggle" role="group" aria-label="Gorunum modu">
+            <button
+              @click="handleViewModeChange('list')"
+              :class="['forum-view-toggle__btn', { active: viewMode === 'list' }]"
+              :aria-pressed="viewMode === 'list'"
+              aria-label="Liste Gorunumu"
+              title="Liste Gorunumu"
+            >
+              <ListIcon class="w-4 h-4" />
+            </button>
+            <button
+              @click="handleViewModeChange('compact')"
+              :class="['forum-view-toggle__btn', { active: viewMode === 'compact' }]"
+              :aria-pressed="viewMode === 'compact'"
+              aria-label="Kompakt Gorunum"
+              title="Kompakt Gorunum"
+            >
+              <LayoutGridIcon class="w-4 h-4" />
+            </button>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">
-              <TypeIcon class="w-4 h-4" />
-              Konu Basligi
-            </label>
-            <div class="input-wrapper">
-              <input
-                v-model="newTopic.title"
-                type="text"
-                placeholder="Dikkat çekici bir başlık girin..."
-                class="form-input"
-                :class="{ error: titleError }"
-              />
-              <span class="char-count" :class="{ warning: newTopic.title.length > 80 }">{{ newTopic.title.length }}/100</span>
-            </div>
-            <Transition name="error-shake">
-              <p v-if="titleError" class="error-text">{{ titleError }}</p>
+          <!-- Sort Dropdown -->
+          <div class="forum-sort-dropdown" :class="{ open: sortDropdownOpen }">
+            <button class="forum-sort-dropdown__trigger" @click="sortDropdownOpen = !sortDropdownOpen">
+              <component :is="currentSortOption.icon" class="w-4 h-4" />
+              <span>{{ currentSortOption.label }}</span>
+              <ChevronDownIcon class="w-4 h-4" />
+            </button>
+            <Transition name="dropdown">
+              <div v-if="sortDropdownOpen" class="forum-sort-dropdown__menu">
+                <button
+                  v-for="option in sortOptions"
+                  :key="option.value"
+                  @click="handleSortChange(option.value)"
+                  :class="['forum-sort-dropdown__option', { active: sortBy === option.value }]"
+                >
+                  <component :is="option.icon" class="w-4 h-4" />
+                  <span>{{ option.label }}</span>
+                  <CheckIcon v-if="sortBy === option.value" class="w-4 h-4" />
+                </button>
+              </div>
             </Transition>
           </div>
+        </div>
+      </section>
 
-          <div class="form-group">
-            <label class="form-label">
-              <FileTextIcon class="w-4 h-4" />
-              İçerik
-            </label>
-            <div class="textarea-wrapper">
-              <textarea
-                v-model="newTopic.content"
-                placeholder="Konu iceriginizi detayli bir sekilde açıklayin..."
-                class="form-textarea"
-                :class="{ error: contentError }"
-                rows="8"
-              ></textarea>
-              <span class="char-count" :class="{ warning: newTopic.content.length > 4500 }">{{ newTopic.content.length }}/5000</span>
-            </div>
-            <Transition name="error-shake">
-              <p v-if="contentError" class="error-text">{{ contentError }}</p>
-            </Transition>
+      <!-- Topics List -->
+      <section class="forum-topics-list" :class="{ 'forum-topics-list--compact': viewMode === 'compact' }">
+        <!-- Loading State -->
+        <template v-if="isLoading">
+          <ForumSkeleton v-for="n in 5" :key="n" type="topic-card" />
+        </template>
+
+        <!-- Error State -->
+        <div v-else-if="fetchError" class="forum-error-state">
+          <div class="forum-error-state__icon">
+            <AlertCircleIcon class="w-16 h-16 text-red-500" />
           </div>
-
-          <div class="form-group">
-            <label class="form-label">
-              <HashIcon class="w-4 h-4" />
-              Etiketler (Opsiyonel)
-            </label>
-            <div class="tags-input">
-              <TransitionGroup name="tag-pop" tag="div" class="tags-list">
-                <span v-for="tag in newTopic.tags" :key="tag" class="tag">
-                  {{ tag }}
-                  <button type="button" @click="removeTag(tag)">
-                    <XIcon class="w-3 h-3" />
-                  </button>
-                </span>
-              </TransitionGroup>
-              <input
-                v-model="tagInput"
-                type="text"
-                placeholder="Etiket ekle..."
-                class="tag-input"
-                @keydown.enter.prevent="addTag"
-                @keydown.comma.prevent="addTag"
-              />
-            </div>
-            <p class="form-hint">Enter veya virgul ile etiket ekleyin (max 5)</p>
+          <h3 class="forum-heading forum-heading--md">Bir Hata Olustu</h3>
+          <p class="forum-meta">{{ fetchError }}</p>
+          <div class="forum-error-state__actions">
+            <n-button type="primary" @click="fetchTopics">
+              <template #icon><RefreshCwIcon class="w-5 h-5" /></template>
+              Tekrar Dene
+            </n-button>
+            <n-button quaternary @click="router.push('/forum')">
+              <template #icon><ArrowLeftIcon class="w-5 h-5" /></template>
+              Foruma Don
+            </n-button>
           </div>
-        </form>
+        </div>
 
-        <div class="modal-footer">
-          <n-button quaternary size="large" @click="showNewTopicModal = false">
-            İptal
-          </n-button>
-          <n-button
-            type="primary"
-            size="large"
-            :loading="isCreating"
-            @click="createTopic"
+        <!-- Topics -->
+        <template v-else-if="displayedTopics.length > 0">
+          <ForumTopicCard
+            v-for="topic in displayedTopics"
+            :key="topic.id"
+            :topic="formatTopicForCard(topic)"
+            :compact="viewMode === 'compact'"
+            :show-badges="true"
+            :show-tags="true"
+          />
+        </template>
+
+        <!-- Empty State -->
+        <div v-else class="forum-empty-enhanced">
+          <div class="forum-empty-icon">
+            <MessageSquareIcon class="w-14 h-14" />
+          </div>
+          <h3 class="forum-empty-title">Henuz Konu Yok</h3>
+          <p class="forum-empty-description">Bu kategoride henuz bir konu acilmamis. Ilk konuyu acarak tartismayi baslatin!</p>
+          <div class="forum-empty-actions">
+            <n-button type="primary" size="large" class="forum-btn-enhanced forum-btn-enhanced--primary" @click="handleNewTopic" :disabled="!isLoggedIn">
+              <template #icon><PlusCircleIcon class="w-5 h-5" /></template>
+              {{ isLoggedIn ? 'Ilk Konuyu Ac' : 'Giris Yap' }}
+            </n-button>
+            <n-button quaternary size="large" class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="router.push('/forum')">
+              <template #icon><ArrowLeftIcon class="w-5 h-5" /></template>
+              Foruma Don
+            </n-button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pagination -->
+      <section v-if="!isLoading && filteredTopics.length > itemsPerPage" class="forum-pagination-enhanced">
+        <button
+          class="forum-pagination-btn forum-pagination-btn--nav"
+          :disabled="currentPage === 1"
+          @click="changePage(currentPage - 1)"
+        >
+          <ChevronLeftIcon class="w-5 h-5" />
+          <span>Onceki</span>
+        </button>
+
+        <div class="forum-pagination__pages">
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            :class="['forum-pagination-btn', { 'forum-pagination-btn--active': page === currentPage, 'forum-pagination-ellipsis': page === '...' }]"
+            :disabled="page === '...'"
+            @click="page !== '...' && changePage(page)"
           >
-            <template #icon><SendIcon class="w-5 h-5" /></template>
-            Konuyu Oluştur
-          </n-button>
+            {{ page }}
+          </button>
+        </div>
+
+        <button
+          class="forum-pagination-btn forum-pagination-btn--nav"
+          :disabled="currentPage === totalPages"
+          @click="changePage(currentPage + 1)"
+        >
+          <span>Sonraki</span>
+          <ChevronRightIcon class="w-5 h-5" />
+        </button>
+      </section>
+    </template>
+
+    <!-- Right Sidebar -->
+    <template #sidebar-right>
+      <!-- Online Users -->
+      <div class="forum-sidebar-card">
+        <h3 class="forum-sidebar-card__title">
+          <UsersIcon class="w-4 h-4" />
+          Cevrimici Kullanicilar
+        </h3>
+        <div class="forum-online-indicator">
+          <span class="forum-online-dot"></span>
+          <span class="forum-online-count">{{ onlineUsers }}</span>
+          <span class="forum-meta">cevrimici</span>
         </div>
       </div>
-    </n-modal>
 
-    <!-- Quick Preview Tooltip -->
-    <Teleport to="body">
-      <Transition name="preview-tooltip">
-        <div
-          v-if="previewTooltip.show && viewMode === 'list'"
-          class="preview-tooltip glass-morphism"
-          :style="{ top: `${previewTooltip.y}px`, left: `${previewTooltip.x}px` }"
-        >
-          <div class="preview-header">
-            <span :class="['preview-type-badge', `type-${previewTooltip.topic?.type || 'discussion'}`]">
-              <component :is="getTypeIcon(previewTooltip.topic?.type)" class="w-3 h-3" />
-              {{ getTypeLabel(previewTooltip.topic?.type) }}
-            </span>
-            <span class="preview-title">{{ previewTooltip.topic?.title }}</span>
+      <!-- Category Stats -->
+      <div class="forum-sidebar-card">
+        <h3 class="forum-sidebar-card__title">
+          <TrendingUpIcon class="w-4 h-4" />
+          Kategori Istatistikleri
+        </h3>
+        <div class="forum-stats-grid">
+          <div class="forum-stat-box">
+            <span class="forum-stat-box__value">{{ topics.length }}</span>
+            <span class="forum-stat-box__label">Toplam Konu</span>
           </div>
-          <p class="preview-text">{{ previewTooltip.topic?.preview }}</p>
-          <div class="preview-stats">
-            <span><MessageSquareIcon class="w-3.5 h-3.5" /> {{ previewTooltip.topic?.replies }}</span>
-            <span><EyeIcon class="w-3.5 h-3.5" /> {{ previewTooltip.topic?.views }}</span>
-            <span><ThumbsUpIcon class="w-3.5 h-3.5" /> {{ previewTooltip.topic?.likes }}</span>
+          <div class="forum-stat-box">
+            <span class="forum-stat-box__value">{{ totalPosts }}</span>
+            <span class="forum-stat-box__label">Toplam Gonderi</span>
           </div>
-          <div class="preview-footer">
-            <span>Tıklayarak konuyu görüntüleyin</span>
-            <ArrowRightIcon class="w-4 h-4" />
+          <div class="forum-stat-box">
+            <span class="forum-stat-box__value">{{ formatNumber(totalViews) }}</span>
+            <span class="forum-stat-box__label">Goruntulenme</span>
           </div>
         </div>
-      </Transition>
-    </Teleport>
+      </div>
 
-    <!-- Steam Required Modal -->
-    <SteamRequiredModal
-      :show="showSteamModal"
-      @close="closeSteamModal"
-      @connect="connectSteam"
-    />
-  </div>
+      <!-- Popular Categories -->
+      <div class="forum-sidebar-card">
+        <h3 class="forum-sidebar-card__title">
+          <StarIcon class="w-4 h-4" />
+          Populer Kategoriler
+        </h3>
+        <div class="forum-sidebar-categories">
+          <button
+            v-for="cat in popularCategories"
+            :key="cat.id"
+            class="forum-sidebar-category"
+            @click="router.push(`/forum/category/${cat.slug || cat.id}`)"
+          >
+            <component :is="cat.icon" class="w-4 h-4" />
+            <span>{{ cat.name }}</span>
+          </button>
+        </div>
+      </div>
+    </template>
+  </ForumLayout>
+
+  <!-- New Topic Modal -->
+  <n-modal v-model:show="showNewTopicModal" :mask-closable="false" class="forum-modal">
+    <div class="forum-modal__content">
+      <div class="forum-modal__header">
+        <EditIcon class="w-6 h-6 text-orange-500" />
+        <div>
+          <h2 class="forum-heading forum-heading--lg">Yeni Konu Olustur</h2>
+          <p class="forum-meta">Topluluga paylasma istediginiz konuyu yazin</p>
+        </div>
+        <button class="forum-modal__close" @click="showNewTopicModal = false">
+          <XIcon class="w-5 h-5" />
+        </button>
+      </div>
+
+      <form @submit.prevent="createTopic" class="forum-modal__form">
+        <!-- Topic Type Selection -->
+        <div class="forum-form-group">
+          <label class="forum-form-label">
+            <TagIcon class="w-4 h-4" />
+            Konu Tipi
+          </label>
+          <div class="forum-type-selector">
+            <button
+              v-for="type in topicTypes"
+              :key="type.value"
+              type="button"
+              :class="['forum-type-option', { active: newTopic.type === type.value }]"
+              @click="newTopic.type = type.value"
+            >
+              <component :is="type.icon" class="w-4 h-4" />
+              <span>{{ type.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="forum-form-group">
+          <label class="forum-form-label">
+            <TypeIcon class="w-4 h-4" />
+            Konu Basligi
+          </label>
+          <input
+            v-model="newTopic.title"
+            type="text"
+            placeholder="Dikkat cekici bir baslik girin..."
+            class="forum-form-input"
+            :class="{ error: titleError }"
+          />
+          <span class="forum-form-counter" :class="{ warning: newTopic.title.length > 80 }">
+            {{ newTopic.title.length }}/100
+          </span>
+          <p v-if="titleError" class="forum-form-error">{{ titleError }}</p>
+        </div>
+
+        <div class="forum-form-group">
+          <label class="forum-form-label">
+            <FileTextIcon class="w-4 h-4" />
+            Icerik
+          </label>
+          <textarea
+            v-model="newTopic.content"
+            placeholder="Konu iceriginizi detayli bir sekilde aciklayin..."
+            class="forum-form-textarea"
+            :class="{ error: contentError }"
+            rows="8"
+          ></textarea>
+          <span class="forum-form-counter" :class="{ warning: newTopic.content.length > 4500 }">
+            {{ newTopic.content.length }}/5000
+          </span>
+          <p v-if="contentError" class="forum-form-error">{{ contentError }}</p>
+        </div>
+
+        <div class="forum-form-group">
+          <label class="forum-form-label">
+            <HashIcon class="w-4 h-4" />
+            Etiketler (Opsiyonel)
+          </label>
+          <div class="forum-tags-input">
+            <span v-for="tag in newTopic.tags" :key="tag" class="forum-tag">
+              {{ tag }}
+              <button type="button" @click="removeTag(tag)">
+                <XIcon class="w-3 h-3" />
+              </button>
+            </span>
+            <input
+              v-model="tagInput"
+              type="text"
+              placeholder="Etiket ekle..."
+              @keydown.enter.prevent="addTag"
+              @keydown.comma.prevent="addTag"
+            />
+          </div>
+          <p class="forum-form-hint">Enter veya virgul ile etiket ekleyin (max 5)</p>
+        </div>
+      </form>
+
+      <div class="forum-modal__footer">
+        <n-button quaternary size="large" @click="showNewTopicModal = false">
+          Iptal
+        </n-button>
+        <n-button type="primary" size="large" :loading="isCreating" @click="createTopic">
+          <template #icon><SendIcon class="w-5 h-5" /></template>
+          Konuyu Olustur
+        </n-button>
+      </div>
+    </div>
+  </n-modal>
+
+  <!-- Steam Required Modal -->
+  <SteamRequiredModal
+    :show="showSteamModal"
+    @close="closeSteamModal"
+    @connect="connectSteam"
+  />
+
+  <!-- Back to Top Button -->
+  <Transition name="fade">
+    <button v-if="showBackToTop" class="back-to-top" @click="scrollToTop" title="Yukarı Çık">
+      <ChevronUpIcon class="w-6 h-6" />
+    </button>
+  </Transition>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useGameAssets } from '@/composables/useGameAssets'
 import { useAuthStore } from '@/stores/auth'
 import { useRequireSteam } from '@/composables/useRequireSteam'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
+import { ForumLayout, ForumSidebar, ForumTopicCard, ForumSkeleton } from '@/components/forum'
 import {
   HomeIcon,
   MessageSquareIcon,
@@ -743,9 +464,7 @@ import {
   XIcon,
   FolderIcon,
   FlameIcon,
-  ArrowRightIcon,
   ArrowLeftIcon,
-  ArrowUpDownIcon,
   EditIcon,
   TypeIcon,
   TagIcon,
@@ -759,97 +478,104 @@ import {
   ListIcon,
   LayoutGridIcon,
   CheckIcon,
-  InfinityIcon,
-  LayersIcon,
   MessageCircleQuestionIcon,
-  MegaphoneIcon
+  MegaphoneIcon,
+  CheckCircleIcon,
+  AlertCircleIcon,
+  RefreshCwIcon,
+  ChevronUpIcon
 } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const categoryId = route.params.id
-const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal: closeSteamModal } = useRequireSteam()
+const { showSteamModal, requireSteam, connectSteam, closeModal: closeSteamModal } = useRequireSteam()
+const { getGameAssets } = useGameAssets()
+
+// Game banner for gaming categories
+const gameAssets = ref({})
+
+// Game slug from API - priority over local mapping
+const gameSlug = computed(() => {
+  // First check category.game_slug from API
+  if (category.value?.game_slug) {
+    return category.value.game_slug
+  }
+  // Fallback mapping for old categories or direct URL access
+  const categoryToGame = {
+    'cs16': 'cs16',
+    'counter-strike': 'cs16',
+    'cs-taktikler': 'cs16',
+    'cs-turnuvalar': 'cs16',
+    'cs-modlar': 'cs16',
+    'cs-haritalar': 'cs16',
+    'cs-medya': 'cs16',
+    'half-life-ag': 'halflife',
+    'halflife': 'halflife',
+    'ag-taktikler': 'halflife',
+    'hl-modlar': 'halflife',
+    'hl-haritalar': 'halflife',
+    'hl-medya': 'halflife'
+  }
+  const catSlug = category.value?.slug?.toLowerCase()
+  return categoryToGame[catSlug] || null
+})
+
+const gameBanner = computed(() => gameAssets.value?.hero || null)
+const gameLogo = computed(() => gameAssets.value?.logo || null)
+
+const loadGameBanner = async () => {
+  const slug = gameSlug.value
+  if (slug) {
+    try {
+      const assets = await getGameAssets(slug, null, 10)
+      const assetMap = {}
+      assets.forEach(asset => {
+        assetMap[asset.asset_type] = asset.file_path
+      })
+      gameAssets.value = assetMap
+    } catch (e) {
+      console.error('Failed to load game banner:', e)
+    }
+  }
+}
 
 // Auth state
 const isLoggedIn = computed(() => !!authStore.user)
 
-// Refs
+// State persistence keys
+const CATEGORY_SORT_KEY = 'forum_category_sort'
+const CATEGORY_VIEW_KEY = 'forum_category_view'
+
+// Refs with persistence
 const searchQuery = ref('')
 const searchFocused = ref(false)
-const sortBy = ref('latest')
+const sortBy = ref(localStorage.getItem(CATEGORY_SORT_KEY) || 'latest')
 const sortDropdownOpen = ref(false)
-const viewMode = ref('list')
+const viewMode = ref(localStorage.getItem(CATEGORY_VIEW_KEY) || 'list')
 const showNewTopicModal = ref(false)
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
-const infiniteScrollEnabled = ref(false)
-const isLoadingMore = ref(false)
-const loadedItems = ref(10)
-const hoveredTopic = ref(null)
-const scrollSentinel = ref(null)
+const isLoading = ref(true)
 const isCreating = ref(false)
 const tagInput = ref('')
 const titleError = ref('')
 const contentError = ref('')
 const onlineUsers = ref(23)
+const showBackToTop = ref(false)
 
-// Read/Unread tracking
-const READ_KEY_PREFIX = 'forum_read_'
+// Scroll to top function
+const scrollToTop = () => { window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
-// Check if a topic is unread (never viewed or has new activity since last view)
-const isTopicUnread = (topic) => {
-  const lastReadTimestamp = localStorage.getItem(`${READ_KEY_PREFIX}${topic.id}`)
-  if (!lastReadTimestamp) return true // Never read
-
-  // Check if topic has new activity since last read
-  // In a real implementation, topic.lastActivityTimestamp would come from API
-  const topicActivityTime = topic.lastActivityTimestamp || new Date(topic.created).getTime()
-  return topicActivityTime > parseInt(lastReadTimestamp)
-}
-
-// Preview tooltip state
-const previewTooltip = reactive({
-  show: false,
-  x: 0,
-  y: 0,
-  topic: null
-})
-
-// Topic types
-const topicTypes = [
-  { value: 'discussion', label: 'Tartisma', icon: MessageSquareIcon },
-  { value: 'question', label: 'Soru', icon: MessageCircleQuestionIcon },
-  { value: 'announcement', label: 'Duyuru', icon: MegaphoneIcon }
-]
-
-// Get CSRF token from cookie
-const getCsrfToken = () => {
-  const cookies = document.cookie.split(';')
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=')
-    if (name === 'csrf_token') return value
-  }
-  return null
-}
-
-const getHeaders = () => {
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${authStore.token}`
-  }
-  const csrfToken = getCsrfToken()
-  if (csrfToken) {
-    headers['X-CSRF-Token'] = csrfToken
-  }
-  return headers
-}
+// Debounce timer ref for search
+let searchDebounceTimer = null
 
 // Sort options with icons
 const sortOptions = [
   { label: 'En Yeni', value: 'latest', icon: CalendarIcon },
-  { label: 'Popüler', value: 'popular', icon: TrendingUpIcon },
-  { label: 'En Çok Yanıt', value: 'mostReplies', icon: MessageSquareIcon },
+  { label: 'Populer', value: 'popular', icon: TrendingUpIcon },
+  { label: 'En Cok Yanit', value: 'mostReplies', icon: MessageSquareIcon },
   { label: 'En Eski', value: 'oldest', icon: ClockIcon }
 ]
 
@@ -861,26 +587,43 @@ const currentSortOption = computed(() => {
 const category = ref({
   id: 1,
   name: 'Genel Tartisma',
-  description: 'CS 1.6 hakkında genel konular, sorular ve paylaşımlar için açık tartışma alanı',
+  description: 'CS 1.6 hakkinda genel konular, sorular ve paylasimlar icin acik tartisma alani',
   icon: MessageSquareIcon,
   gradient: 'primary-secondary'
 })
 
-// Category stats computed
-const categoryStats = computed(() => [
-  { label: 'Konu', value: topics.value.length, icon: FileTextIcon },
-  { label: 'Gönderi', value: totalPosts.value, icon: MessageSquareIcon },
-  { label: 'Üye', value: 156, icon: UserIcon },
-  { label: 'Görüntülenme', value: totalViews.value, icon: EyeIcon }
+// All categories for sidebar
+const allCategories = ref([
+  { id: 1, name: 'Genel Tartisma', icon: MessageSquareIcon, topics: 156, color: '#f97316' },
+  { id: 2, name: 'Sorular & Cevaplar', icon: HelpCircleIcon, topics: 89, color: '#8b5cf6' },
+  { id: 3, name: 'Duyurular', icon: ZapIcon, topics: 12, color: '#22c55e' },
+  { id: 4, name: 'Kurallar', icon: ShieldIcon, topics: 5, color: '#ef4444' }
 ])
 
-// Popular categories for empty state
+// Sidebar stats
+const sidebarStats = computed(() => ({
+  totalTopics: topics.value.length,
+  totalPosts: totalPosts.value,
+  totalMembers: 1250
+}))
+
+// Popular categories for sidebar
 const popularCategories = [
   { id: 1, name: 'Genel Tartisma', icon: MessageSquareIcon },
   { id: 2, name: 'Sorular & Cevaplar', icon: HelpCircleIcon },
   { id: 3, name: 'Duyurular', icon: ZapIcon },
   { id: 4, name: 'Kurallar', icon: ShieldIcon }
 ]
+
+// Topic types
+const topicTypes = [
+  { value: 'discussion', label: 'Tartisma', icon: MessageSquareIcon },
+  { value: 'question', label: 'Soru', icon: MessageCircleQuestionIcon },
+  { value: 'announcement', label: 'Duyuru', icon: MegaphoneIcon }
+]
+
+// Topics data - API'den çekilecek
+const topics = ref([])
 
 // Format number utility
 const formatNumber = (num) => {
@@ -890,39 +633,50 @@ const formatNumber = (num) => {
   return num
 }
 
-// Get type icon
-const getTypeIcon = (type) => {
-  const icons = {
-    discussion: MessageSquareIcon,
-    question: MessageCircleQuestionIcon,
-    announcement: MegaphoneIcon
-  }
-  return icons[type] || MessageSquareIcon
-}
-
-// Get type label
-const getTypeLabel = (type) => {
-  const labels = {
-    discussion: 'Tartisma',
-    question: 'Soru',
-    announcement: 'Duyuru'
-  }
-  return labels[type] || 'Tartisma'
-}
-
+// Get gradient color
 const getCategoryGradient = (gradient) => {
   const gradients = {
-    'primary-secondary': 'bg-gradient-to-br from-orange-500 to-purple-500',
-    'secondary-accent': 'bg-gradient-to-br from-purple-500 to-cyan-500',
-    'accent-error': 'bg-gradient-to-br from-cyan-500 to-red-500',
-    'primary-accent': 'bg-gradient-to-br from-orange-500 to-cyan-500',
-    'warning-success': 'bg-gradient-to-br from-yellow-500 to-green-500'
+    'primary-secondary': 'linear-gradient(135deg, #f97316, #8b5cf6)',
+    'secondary-accent': 'linear-gradient(135deg, #8b5cf6, #22d3ee)',
+    'accent-error': 'linear-gradient(135deg, #22d3ee, #ef4444)',
+    'primary-accent': 'linear-gradient(135deg, #f97316, #22d3ee)',
+    'warning-success': 'linear-gradient(135deg, #eab308, #22c55e)'
   }
-  return gradients[gradient] || 'bg-gradient-to-br from-orange-500 to-purple-500'
+  return gradients[gradient] || gradients['primary-secondary']
 }
 
-// Topics data - API'den çekilecek
-const topics = ref([])
+// Adjust color brightness
+const adjustColor = (color, amount) => {
+  if (!color) return '#f97316'
+  const hex = color.replace('#', '')
+  const num = parseInt(hex, 16)
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount))
+  const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount))
+  const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount))
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
+}
+
+// Format topic for ForumTopicCard component
+const formatTopicForCard = (topic) => {
+  return {
+    id: topic.id,
+    title: topic.title,
+    author: topic.author,
+    authorAvatar: topic.authorAvatar,
+    authorOnline: topic.authorOnline,
+    created: topic.created,
+    replies: topic.replies,
+    views: topic.views,
+    likes: topic.likes,
+    isPinned: topic.isPinned,
+    isLocked: topic.isLocked,
+    isSolved: topic.isSolved,
+    isHot: topic.isHot,
+    tags: topic.tags || [],
+    lastReply: topic.lastReply,
+    preview: topic.preview
+  }
+}
 
 // Computed values
 const totalPosts = computed(() => {
@@ -933,15 +687,46 @@ const totalViews = computed(() => {
   return topics.value.reduce((sum, topic) => sum + topic.views, 0)
 })
 
+// Active tag filter
+const activeTag = ref(null)
+
+// All unique tags from topics
+const allTags = computed(() => {
+  const tags = new Set()
+  topics.value.forEach(t => {
+    (t.tags || []).forEach(tag => tags.add(tag))
+  })
+  return Array.from(tags)
+})
+
+// Filter by tag function
+const filterByTag = (tag) => {
+  if (activeTag.value === tag) {
+    activeTag.value = null
+  } else {
+    activeTag.value = tag
+  }
+  currentPage.value = 1
+}
+
 const filteredTopics = computed(() => {
   let filtered = [...topics.value]
 
+  // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(t =>
       t.title.toLowerCase().includes(query) ||
       t.author.toLowerCase().includes(query) ||
-      t.preview?.toLowerCase().includes(query)
+      t.preview?.toLowerCase().includes(query) ||
+      (t.tags || []).some(tag => tag.toLowerCase().includes(query))
+    )
+  }
+
+  // Tag filter
+  if (activeTag.value) {
+    filtered = filtered.filter(t =>
+      (t.tags || []).includes(activeTag.value)
     )
   }
 
@@ -958,15 +743,21 @@ const filteredTopics = computed(() => {
     unpinned.sort((a, b) => b.replies - a.replies)
   } else if (sortBy.value === 'oldest') {
     unpinned.sort((a, b) => a.id - b.id)
+  } else if (sortBy.value === 'mostLikes') {
+    unpinned.sort((a, b) => (b.likes || 0) - (a.likes || 0))
+  } else if (sortBy.value === 'unsolved') {
+    // Show unsolved topics first
+    unpinned.sort((a, b) => {
+      if (a.isSolved && !b.isSolved) return 1
+      if (!a.isSolved && b.isSolved) return -1
+      return b.id - a.id
+    })
   }
 
   return [...pinned, ...unpinned]
 })
 
 const displayedTopics = computed(() => {
-  if (infiniteScrollEnabled.value) {
-    return filteredTopics.value.slice(0, loadedItems.value)
-  }
   const start = (currentPage.value - 1) * itemsPerPage.value
   return filteredTopics.value.slice(start, start + itemsPerPage.value)
 })
@@ -1011,6 +802,17 @@ const handleSortChange = (value) => {
   sortBy.value = value
   sortDropdownOpen.value = false
   currentPage.value = 1
+  localStorage.setItem(CATEGORY_SORT_KEY, value)
+}
+
+// Handle view mode change with persistence
+const handleViewModeChange = (mode) => {
+  viewMode.value = mode
+  localStorage.setItem(CATEGORY_VIEW_KEY, mode)
+}
+
+const handleCategoryClick = (cat) => {
+  router.push(`/forum/category/${cat.slug || cat.id}`)
 }
 
 const changePage = (page) => {
@@ -1018,36 +820,6 @@ const changePage = (page) => {
     currentPage.value = page
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-}
-
-const handleTopicHover = (event, topic) => {
-  hoveredTopic.value = topic.id
-
-  // Update tooltip position
-  const rect = event.currentTarget.getBoundingClientRect()
-  previewTooltip.x = rect.right + 16
-  previewTooltip.y = rect.top
-  previewTooltip.topic = topic
-
-  // Show tooltip after a small delay
-  setTimeout(() => {
-    if (hoveredTopic.value === topic.id) {
-      previewTooltip.show = true
-    }
-  }, 300)
-}
-
-const handleTopicLeave = () => {
-  hoveredTopic.value = null
-  previewTooltip.show = false
-}
-
-const beforeLeave = (el) => {
-  const { marginLeft, marginTop, width, height } = window.getComputedStyle(el)
-  el.style.left = `${el.offsetLeft - parseFloat(marginLeft)}px`
-  el.style.top = `${el.offsetTop - parseFloat(marginTop)}px`
-  el.style.width = width
-  el.style.height = height
 }
 
 const addTag = () => {
@@ -1070,19 +842,19 @@ const validateForm = () => {
   contentError.value = ''
 
   if (!newTopic.title || newTopic.title.trim().length < 5) {
-    titleError.value = 'Başlık en az 5 karakter olmalıdir'
+    titleError.value = 'Baslik en az 5 karakter olmalidir'
     return false
   }
   if (newTopic.title.length > 100) {
-    titleError.value = 'Başlık 100 karakterden uzun olamaz'
+    titleError.value = 'Baslik 100 karakterden uzun olamaz'
     return false
   }
   if (!newTopic.content || newTopic.content.trim().length < 20) {
-    contentError.value = 'İçerik en az 20 karakter olmalıdir'
+    contentError.value = 'Icerik en az 20 karakter olmalidir'
     return false
   }
   if (newTopic.content.length > 5000) {
-    contentError.value = 'İçerik 5000 karakterden uzun olamaz'
+    contentError.value = 'Icerik 5000 karakterden uzun olamaz'
     return false
   }
   return true
@@ -1094,17 +866,61 @@ const handleNewTopic = () => {
   })
 }
 
+// Get CSRF token from cookie
+const getCsrfToken = () => {
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'csrf_token') return value
+  }
+  return null
+}
+
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authStore.token}`
+  }
+  const csrfToken = getCsrfToken()
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+  return headers
+}
+
 const createTopic = async () => {
-  if (!validateForm()) return
+  if (!validateForm()) {
+    window.$message?.warning('Lutfen formu dogru sekilde doldurun')
+    return
+  }
 
   isCreating.value = true
+
+  // Optimistic UI - prepare new topic
+  const optimisticTopic = {
+    id: Date.now(), // Temporary ID
+    title: newTopic.title.trim(),
+    author: authStore.user?.username || 'Siz',
+    authorAvatar: authStore.user?.avatar,
+    authorOnline: true,
+    created: 'Az once',
+    replies: 0,
+    views: 0,
+    likes: 0,
+    isPinned: false,
+    isLocked: false,
+    isSolved: false,
+    isHot: false,
+    tags: [...newTopic.tags],
+    preview: newTopic.content.trim().substring(0, 150) + '...'
+  }
 
   try {
     const response = await fetch('/api/forum/topics', {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
-        category_id: categoryId,
+        category_id: category.value?.id || parseInt(categoryId) || categoryId,
         title: newTopic.title.trim(),
         content: newTopic.content.trim(),
         tags: newTopic.tags,
@@ -1113,86 +929,247 @@ const createTopic = async () => {
     })
 
     if (response.ok) {
+      const data = await response.json().catch(() => ({}))
       showNewTopicModal.value = false
       newTopic.title = ''
       newTopic.content = ''
       newTopic.tags = []
       newTopic.type = 'discussion'
-      window.$message?.success('Konu başarıyla oluşturuldu')
-      router.go(0)
+      window.$message?.success('Konu basariyla olusturuldu')
+
+      // Navigate to new topic if ID available, otherwise refresh list
+      if (data.id || data.topic?.id) {
+        router.push(`/forum/topic/${data.id || data.topic.id}`)
+      } else {
+        fetchTopics()
+      }
     } else {
-      const error = await response.json()
-      window.$message?.error(error.detail || 'Konu oluşturulamadı')
+      const error = await response.json().catch(() => ({}))
+      if (response.status === 401) {
+        window.$message?.error('Oturum suresi doldu, lutfen tekrar giris yapin')
+        router.push({ name: 'login', query: { redirect: route.fullPath } })
+      } else if (response.status === 403) {
+        window.$message?.error('Bu islemi yapma yetkiniz yok')
+      } else {
+        window.$message?.error(error.detail || 'Konu olusturulamadi')
+      }
     }
   } catch (error) {
-    window.$message?.error('Bir hata oluştu, lütfen tekrar deneyin')
+    console.error('Create topic error:', error)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      window.$message?.error('Ag baglantisi hatasi, lutfen internet baglantinizi kontrol edin')
+    } else {
+      window.$message?.error('Bir hata olustu, lutfen tekrar deneyin')
+    }
   } finally {
     isCreating.value = false
   }
 }
 
+// Error state
+const fetchError = ref(null)
+
+// Fetch topics from API
+const fetchTopics = async () => {
+  isLoading.value = true
+  fetchError.value = null
+  try {
+    const response = await fetch(`/api/forum/categories/${categoryId}/topics`)
+    if (response.ok) {
+      const data = await response.json()
+      // Map API response to frontend format
+      topics.value = (data.topics || []).map(t => ({
+        id: t.id,
+        title: t.title,
+        slug: t.slug,
+        author: t.author_name || t.author?.username || 'Anonim',
+        authorAvatar: t.author_avatar || t.author?.avatar,
+        authorOnline: false,
+        created: formatDate(t.created_at),
+        replies: t.reply_count || 0,
+        views: t.view_count || 0,
+        likes: t.like_count || 0,
+        isPinned: t.is_pinned || false,
+        isLocked: t.is_locked || false,
+        isSolved: t.is_solved || t.has_best_answer || false,
+        isHot: (t.view_count || 0) > 100 || (t.reply_count || 0) > 10,
+        tags: t.tags || [],
+        lastReply: t.last_reply ? {
+          author: t.last_reply.author_name,
+          time: formatDate(t.last_reply.created_at)
+        } : null,
+        preview: t.content ? t.content.substring(0, 150) + '...' : ''
+      }))
+      if (data.category) {
+        category.value = {
+          id: data.category.id,
+          name: data.category.name,
+          slug: data.category.slug,
+          description: data.category.description,
+          icon: data.category.icon,
+          color: data.category.color,
+          game_slug: data.category.game_slug
+        }
+        // Load game banner after category is fetched
+        loadGameBanner()
+      }
+    } else {
+      const errorData = await response.json().catch(() => ({}))
+      fetchError.value = errorData.detail || `Kategori yuklenemedi (${response.status})`
+      console.error('Category fetch failed:', response.status, errorData)
+    }
+  } catch (error) {
+    fetchError.value = 'Baglanti hatasi olustu'
+    console.error('Failed to fetch topics:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Format date helper
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now - date
+  const mins = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+
+  if (mins < 1) return 'Az once'
+  if (mins < 60) return `${mins} dk once`
+  if (hours < 24) return `${hours} saat once`
+  if (days < 7) return `${days} gun once`
+  return date.toLocaleDateString('tr-TR')
+}
+
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
-  if (sortDropdownOpen.value && !event.target.closest('.sort-dropdown')) {
+  if (sortDropdownOpen.value && !event.target.closest('.forum-sort-dropdown')) {
     sortDropdownOpen.value = false
   }
 }
 
-// Infinite scroll observer
-let observer = null
-
-const setupInfiniteScroll = () => {
-  if (!scrollSentinel.value) return
-
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting && !isLoadingMore.value) {
-        loadMoreTopics()
-      }
-    },
-    { threshold: 0.1 }
-  )
-
-  observer.observe(scrollSentinel.value)
-}
-
-const loadMoreTopics = async () => {
-  if (loadedItems.value >= filteredTopics.value.length) return
-
-  isLoadingMore.value = true
-
-  // Simulate loading delay
-  await new Promise(resolve => setTimeout(resolve, 500))
-
-  loadedItems.value += 5
-  isLoadingMore.value = false
-}
-
-// Watchers
-watch(infiniteScrollEnabled, async (enabled) => {
-  if (enabled) {
-    loadedItems.value = 10
-    await nextTick()
-    setupInfiniteScroll()
-  } else if (observer) {
-    observer.disconnect()
-    observer = null
+// Keyboard handler for modal and shortcuts
+const handleKeydown = (event) => {
+  // Close modals on Escape
+  if (event.key === 'Escape') {
+    if (showNewTopicModal.value) {
+      showNewTopicModal.value = false
+      event.preventDefault()
+    }
+    if (sortDropdownOpen.value) {
+      sortDropdownOpen.value = false
+      event.preventDefault()
+    }
   }
+
+  // Submit form on Ctrl+Enter when modal is open
+  if (event.ctrlKey && event.key === 'Enter' && showNewTopicModal.value) {
+    event.preventDefault()
+    createTopic()
+  }
+
+  // Open new topic modal on 'N' key when not in input
+  if (event.key === 'n' || event.key === 'N') {
+    if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA') {
+      event.preventDefault()
+      handleNewTopic()
+    }
+  }
+}
+
+// Watchers - Debounced search to prevent excessive filtering
+watch(searchQuery, () => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
+  searchDebounceTimer = setTimeout(() => {
+    currentPage.value = 1
+  }, 300)
 })
 
-watch(searchQuery, () => {
-  currentPage.value = 1
-  loadedItems.value = 10
+// Watch sortBy for persistence
+watch(sortBy, (newSort) => {
+  localStorage.setItem('forum_category_sort', newSort)
 })
+
+// Infinite scroll
+const infiniteScrollEnabled = ref(false)
+const loadingMore = ref(false)
+
+const handleScroll = () => {
+  // Back to top button visibility
+  showBackToTop.value = window.scrollY > 400
+
+  // Infinite scroll logic
+  if (!infiniteScrollEnabled.value || loadingMore.value) return
+
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = document.documentElement.scrollTop
+  const clientHeight = document.documentElement.clientHeight
+
+  if (scrollTop + clientHeight >= scrollHeight - 200) {
+    if (currentPage.value < totalPages.value) {
+      loadingMore.value = true
+      setTimeout(() => {
+        currentPage.value++
+        loadingMore.value = false
+      }, 300)
+    }
+  }
+}
+
+// Toggle infinite scroll
+const toggleInfiniteScroll = () => {
+  infiniteScrollEnabled.value = !infiniteScrollEnabled.value
+  if (infiniteScrollEnabled.value) {
+    window.addEventListener('scroll', handleScroll)
+  } else {
+    window.removeEventListener('scroll', handleScroll)
+  }
+}
+
+// Subscribe to category
+const isSubscribed = ref(false)
+const subscribeToCategory = async () => {
+  if (!isLoggedIn.value) {
+    window.$message?.warning('Abone olmak icin giris yapin')
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/forum/categories/${categoryId}/subscribe`, {
+      method: isSubscribed.value ? 'DELETE' : 'POST',
+      headers: getHeaders()
+    })
+
+    if (response.ok) {
+      isSubscribed.value = !isSubscribed.value
+      window.$message?.success(isSubscribed.value ? 'Kategoriye abone olundu' : 'Abonelik iptal edildi')
+    } else {
+      window.$message?.error('Islem basarisiz oldu')
+    }
+  } catch (error) {
+    console.error('Subscribe error:', error)
+    window.$message?.error('Bir hata olustu')
+  }
+}
 
 // Lifecycle
 let onlineUsersInterval = null
 
 onMounted(() => {
-  if (infiniteScrollEnabled.value) {
-    setupInfiniteScroll()
-  }
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleKeydown)
+  window.addEventListener('scroll', handleScroll)  // Always listen for back-to-top
+  fetchTopics()  // This will also load game banner after category is fetched
+
+  // Load saved sort preference
+  const savedSort = localStorage.getItem('forum_category_sort')
+  if (savedSort) {
+    sortBy.value = savedSort
+  }
 
   // Simulate online users change
   onlineUsersInterval = setInterval(() => {
@@ -1201,2312 +1178,942 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (observer) {
-    observer.disconnect()
-  }
   if (onlineUsersInterval) {
     clearInterval(onlineUsersInterval)
   }
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
 <style scoped>
-/* Base Animations */
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.05); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes ring-pulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(249, 115, 22, 0.5); }
-}
-
-@keyframes particle-float {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg);
-    opacity: 0;
-  }
-  25% {
-    opacity: 1;
-  }
-  75% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(calc(cos(var(--i) * 60deg) * 50px), calc(sin(var(--i) * 60deg) * 50px)) rotate(360deg);
-    opacity: 0;
-  }
-}
-
-@keyframes online-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.5); opacity: 0.5; }
-}
-
-@keyframes trending-glow {
-  0%, 100% { filter: drop-shadow(0 0 5px rgba(251, 146, 60, 0.5)); }
-  50% { filter: drop-shadow(0 0 15px rgba(251, 146, 60, 0.8)); }
-}
-
-@keyframes shine {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-@keyframes orb-float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(10px, -10px) scale(1.05); }
-  50% { transform: translate(0, -20px) scale(1); }
-  75% { transform: translate(-10px, -10px) scale(0.95); }
-}
-
-.delay-500 { animation-delay: 0.5s; }
-.delay-1000 { animation-delay: 1s; }
-
-/* Background Elements */
-.bg-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  animation: orb-float 8s ease-in-out infinite;
-}
-
-.bg-orb-1 {
-  top: -100px;
-  right: -100px;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%);
-  animation-delay: 0s;
-}
-
-.bg-orb-2 {
-  bottom: -150px;
-  left: -150px;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
-  animation-delay: -3s;
-}
-
-.bg-orb-3 {
-  top: 50%;
-  left: 50%;
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 70%);
-  animation-delay: -5s;
-}
-
-.bg-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 50px 50px;
-  mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
-}
-
-/* Glass Morphism */
-.glass-morphism {
-  background: rgba(17, 17, 17, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-}
-
-/* Breadcrumb Styles */
-.breadcrumb-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-  background: rgba(17, 17, 17, 0.5);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.breadcrumb-inner {
-  display: flex;
-  align-items: center;
-}
-
-.breadcrumb-item {
-  display: flex;
-  align-items: center;
-  color: #9ca3af;
-  transition: all 0.3s ease;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
+/* ===== Visual Enhancement ===== */
+.forum-page {
   position: relative;
 }
 
-.breadcrumb-item:hover {
-  color: #f97316;
-  background: rgba(249, 115, 22, 0.1);
+.forum-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(249, 115, 22, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 30% at 0% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.breadcrumb-icon-wrapper {
+/* Floating particles */
+.forum-page::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(2px 2px at 10% 20%, rgba(249, 115, 22, 0.3) 50%, transparent 50%),
+    radial-gradient(2px 2px at 30% 70%, rgba(139, 92, 246, 0.3) 50%, transparent 50%),
+    radial-gradient(2px 2px at 60% 30%, rgba(34, 211, 238, 0.3) 50%, transparent 50%),
+    radial-gradient(2px 2px at 80% 60%, rgba(249, 115, 22, 0.3) 50%, transparent 50%),
+    radial-gradient(2px 2px at 90% 10%, rgba(139, 92, 246, 0.3) 50%, transparent 50%);
+  background-size: 100% 100%;
+  animation: float-particles 30s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+@keyframes float-particles {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-20px); }
+}
+
+/* Category Header */
+.forum-category-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 32px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 15, 20, 0.95) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: var(--forum-radius-lg);
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.forum-category-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f97316, #8b5cf6, #22d3ee);
+  animation: gradient-flow 3s ease infinite;
+}
+
+@keyframes gradient-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.forum-category-header:hover {
+  border-color: rgba(249, 115, 22, 0.4);
+  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.15);
+}
+
+.forum-category-header__icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: rgba(249, 115, 22, 0.1);
-  border-radius: 6px;
-  margin-right: 8px;
-  transition: all 0.3s ease;
+  flex-shrink: 0;
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.3);
+  animation: icon-glow 3s ease-in-out infinite;
+  transition: transform 0.3s ease;
 }
 
-.breadcrumb-item:hover .breadcrumb-icon-wrapper {
-  background: rgba(249, 115, 22, 0.2);
-  transform: scale(1.1);
+.forum-category-header__icon:hover {
+  transform: scale(1.05) rotate(5deg);
 }
 
-.breadcrumb-text {
-  font-weight: 500;
+@keyframes icon-glow {
+  0%, 100% { box-shadow: 0 8px 24px rgba(249, 115, 22, 0.3); }
+  50% { box-shadow: 0 12px 32px rgba(249, 115, 22, 0.5); }
 }
 
-.breadcrumb-arrow {
+.forum-category-header__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.forum-category-header__info .forum-heading {
+  margin-bottom: 8px;
+}
+
+.forum-category-header__info .forum-meta {
+  margin-bottom: 16px;
+  max-width: 600px;
+}
+
+.forum-category-header__stats {
   display: flex;
-  align-items: center;
-  margin-left: 8px;
-  color: #4b5563;
-  transition: all 0.3s ease;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.breadcrumb-item:hover .breadcrumb-arrow {
-  color: #f97316;
-  transform: translateX(4px);
-}
-
-.breadcrumb-current {
-  display: flex;
-  align-items: center;
-  padding: 6px 12px;
-  background: rgba(249, 115, 22, 0.1);
-  border-radius: 8px;
-  position: relative;
-  overflow: hidden;
-}
-
-.current-icon-pulse {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(249, 115, 22, 0.2) 0%, transparent 70%);
-  animation: pulse-slow 2s ease-in-out infinite;
-}
-
-/* Online Users Indicator */
-.online-users-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: 20px;
-  font-size: 0.85rem;
-  color: #22c55e;
-}
-
-.online-dot {
-  width: 8px;
-  height: 8px;
-  background: #22c55e;
-  border-radius: 50%;
-  animation: online-pulse 2s ease-in-out infinite;
-}
-
-.online-count {
-  font-weight: 700;
-}
-
-.online-label {
-  color: #9ca3af;
-  font-size: 0.75rem;
-}
-
-/* Hero Section */
-.category-hero {
-  position: relative;
-  padding: 40px;
-  border-radius: 24px;
-  overflow: hidden;
-  background: rgba(17, 17, 17, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  animation: fadeInUp 0.6s ease forwards;
-}
-
-.hero-background {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.hero-gradient {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, transparent 50%, rgba(139, 92, 246, 0.1) 100%);
-}
-
-.hero-pattern {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
-  background-size: 32px 32px;
-}
-
-.hero-shine {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
-  animation: shine 8s ease-in-out infinite;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-}
-
-.hero-badge-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.category-type-badge,
-.topic-count-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #9ca3af;
-}
-
-.topic-count-badge {
-  color: #f97316;
-  background: rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.2);
-}
-
-.category-icon-wrapper {
-  position: relative;
+.forum-category-header__action {
   flex-shrink: 0;
 }
 
-.category-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 20px;
+/* Filters */
+.forum-filters {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--forum-bg-card);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius);
+  margin-bottom: 24px;
+}
+
+.forum-filters__search {
+  flex: 1;
   position: relative;
-  z-index: 1;
-  box-shadow: 0 10px 30px rgba(249, 115, 22, 0.3);
-  animation: glow-pulse 3s ease-in-out infinite;
-}
-
-.icon-ring {
-  position: absolute;
-  inset: -8px;
-  border: 2px solid rgba(249, 115, 22, 0.3);
-  border-radius: 28px;
-  animation: ring-pulse 2s ease-out infinite;
-}
-
-.icon-particles {
-  position: absolute;
-  inset: -20px;
-  pointer-events: none;
-}
-
-.icon-particles .particle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 4px;
-  height: 4px;
-  background: #f97316;
-  border-radius: 50%;
-  animation: particle-float 3s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.5s);
-}
-
-.hero-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin-bottom: 8px;
-  line-height: 1.2;
-}
-
-.title-gradient {
-  background: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #f97316 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: shimmer 3s linear infinite;
-}
-
-.hero-description {
-  color: #9ca3af;
-  font-size: 1rem;
-  max-width: 600px;
-  line-height: 1.6;
-}
-
-.stats-overlay {
   display: flex;
-  gap: 24px;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  align-items: center;
 }
 
-.stat-item {
+.forum-filters__search-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--forum-muted);
+  transition: color 0.2s ease;
+}
+
+.forum-filters__search.focused .forum-filters__search-icon {
+  color: var(--forum-accent);
+}
+
+.forum-filters__search-input {
+  width: 100%;
+  padding: 12px 40px;
+  background: var(--forum-bg-hover);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.forum-filters__search-input:focus {
+  outline: none;
+  border-color: var(--forum-accent);
+  background: var(--forum-bg-card);
+}
+
+.forum-filters__search-input::placeholder {
+  color: var(--forum-muted);
+}
+
+.forum-filters__search-clear {
+  position: absolute;
+  right: 12px;
+  padding: 4px;
+  color: var(--forum-muted);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.forum-filters__search-clear:hover {
+  color: var(--text-primary);
+  background: var(--forum-bg-hover);
+}
+
+.forum-filters__controls {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  animation: fadeInUp 0.5s ease forwards;
-  opacity: 0;
-  animation-fill-mode: forwards;
 }
 
-.stat-icon-wrapper {
+/* View Toggle */
+.forum-view-toggle {
+  display: flex;
+  background: var(--forum-bg-hover);
+  border-radius: var(--forum-radius-sm);
+  padding: 4px;
+}
+
+.forum-view-toggle__btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--forum-muted);
+  transition: all 0.2s ease;
+}
+
+.forum-view-toggle__btn.active {
+  background: var(--forum-bg-card);
+  color: var(--forum-accent);
+}
+
+.forum-view-toggle__btn:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+/* Sort Dropdown */
+.forum-sort-dropdown {
+  position: relative;
+}
+
+.forum-sort-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--forum-bg-hover);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.forum-sort-dropdown__trigger:hover {
+  border-color: var(--forum-accent);
+}
+
+.forum-sort-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: var(--forum-bg-panel);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius);
+  padding: 8px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.forum-sort-dropdown__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: var(--forum-muted);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.forum-sort-dropdown__option:hover {
+  background: var(--forum-bg-hover);
+  color: var(--text-primary);
+}
+
+.forum-sort-dropdown__option.active {
+  background: rgba(79, 140, 255, 0.1);
+  color: var(--forum-link);
+}
+
+/* Topics List */
+.forum-topics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.forum-topics-list--compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+/* Empty State */
+.forum-empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  background: var(--forum-bg-card);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-lg);
+}
+
+.forum-empty-state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  background: var(--forum-bg-hover);
+  border-radius: 50%;
+  margin-bottom: 24px;
+  color: var(--forum-muted);
+}
+
+.forum-empty-state .forum-heading {
+  margin-bottom: 12px;
+}
+
+.forum-empty-state .forum-meta {
+  margin-bottom: 24px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.forum-empty-state__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Error State */
+.forum-error-state {
+  text-align: center;
+  padding: 60px 24px;
+  background: var(--forum-bg-card);
+  border: 1px solid var(--forum-danger);
+  border-radius: var(--forum-radius-lg);
+}
+
+.forum-error-state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 50%;
+  margin-bottom: 24px;
+}
+
+.forum-error-state .forum-heading {
+  margin-bottom: 12px;
+  color: var(--forum-danger);
+}
+
+.forum-error-state .forum-meta {
+  margin-bottom: 24px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.forum-error-state__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Pagination */
+.forum-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  background: var(--forum-bg-card);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius);
+}
+
+.forum-pagination__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--forum-bg-hover);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.forum-pagination__btn:hover:not(:disabled) {
+  border-color: var(--forum-accent);
+  color: var(--forum-accent);
+}
+
+.forum-pagination__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.forum-pagination__pages {
+  display: flex;
+  gap: 4px;
+}
+
+.forum-pagination__page {
+  min-width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: rgba(249, 115, 22, 0.1);
-  border-radius: 10px;
-  color: #f97316;
+  border-radius: var(--forum-radius-sm);
+  color: var(--forum-muted);
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
-.stat-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-number {
-  font-weight: 700;
-  font-size: 1.25rem;
+.forum-pagination__page:hover:not(:disabled):not(.active) {
+  background: var(--forum-bg-hover);
   color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
 }
 
-.stat-label {
-  color: #6b7280;
-  font-size: 0.75rem;
+.forum-pagination__page.active {
+  background: var(--forum-accent);
+  color: white;
 }
 
-.hero-action {
-  flex-shrink: 0;
+.forum-pagination__page.ellipsis {
+  cursor: default;
 }
 
-.new-topic-btn {
-  padding: 14px 28px !important;
-  font-weight: 600 !important;
-  border-radius: 14px !important;
-  background: linear-gradient(135deg, #f97316, #ea580c) !important;
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4) !important;
-  transition: all 0.3s ease !important;
+/* Sidebar Cards */
+.forum-sidebar-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 15, 20, 0.95) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: var(--forum-radius);
+  padding: 20px;
+  margin-bottom: 16px;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
-.new-topic-btn::before {
+.forum-sidebar-card::before {
   content: '';
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.05), transparent);
   transition: left 0.5s ease;
 }
 
-.new-topic-btn:hover::before {
+.forum-sidebar-card:hover::before {
   left: 100%;
 }
 
-.new-topic-btn:hover {
+.forum-sidebar-card:hover {
+  border-color: rgba(139, 92, 246, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(249, 115, 22, 0.5) !important;
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.1);
 }
 
-.new-topic-btn.btn-disabled,
-.empty-cta.btn-disabled {
-  background: linear-gradient(135deg, #4b5563, #374151) !important;
-  box-shadow: none !important;
-  cursor: not-allowed;
-  opacity: 0.8;
-}
-
-.new-topic-btn.btn-disabled:hover,
-.empty-cta.btn-disabled:hover {
-  transform: none;
-  box-shadow: none !important;
-}
-
-.new-topic-btn.btn-disabled::before,
-.empty-cta.btn-disabled::before {
-  display: none;
-}
-
-/* Filter Section */
-.filter-section {
-  position: relative;
-  animation: fadeInUp 0.5s ease 0.2s forwards;
-  opacity: 0;
-  animation-fill-mode: forwards;
-}
-
-.filter-card {
-  padding: 20px 24px;
-}
-
-.search-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
-.search-wrapper.focused .search-glow {
-  opacity: 1;
-}
-
-.search-icon {
-  position: absolute;
-  left: 16px;
-  color: #6b7280;
-  z-index: 1;
-  transition: color 0.3s ease;
-}
-
-.search-wrapper.focused .search-icon {
-  color: #f97316;
-}
-
-.search-input {
-  width: 100%;
-  padding: 14px 44px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: rgba(249, 115, 22, 0.5);
-  background: rgba(249, 115, 22, 0.05);
-}
-
-.search-input::placeholder {
-  color: #6b7280;
-}
-
-.search-glow {
-  position: absolute;
-  inset: -2px;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(139, 92, 246, 0.2));
-  border-radius: 14px;
-  opacity: 0;
-  z-index: -1;
-  filter: blur(8px);
-  transition: opacity 0.3s ease;
-}
-
-.search-clear {
-  position: absolute;
-  right: 12px;
-  padding: 6px;
-  color: #6b7280;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.search-clear:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* View Mode Toggle */
-.view-mode-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  position: relative;
-}
-
-.view-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  color: #6b7280;
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 1;
-}
-
-.view-btn:hover {
-  color: #9ca3af;
-}
-
-.view-btn.active {
-  color: #f97316;
-}
-
-.view-indicator {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 36px;
-  height: 36px;
-  background: rgba(249, 115, 22, 0.15);
-  border: 1px solid rgba(249, 115, 22, 0.3);
-  border-radius: 8px;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.view-indicator.compact {
-  transform: translateX(40px);
-}
-
-/* Sort Dropdown */
-.sort-wrapper {
-  flex-shrink: 0;
-}
-
-.sort-dropdown {
-  position: relative;
-}
-
-.sort-trigger {
+.forum-sidebar-card__title {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  color: #9ca3af;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.sort-trigger:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-}
-
-.dropdown-arrow {
-  transition: transform 0.3s ease;
-}
-
-.sort-dropdown.open .dropdown-arrow {
-  transform: rotate(180deg);
-}
-
-.sort-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 180px;
-  padding: 8px;
-  z-index: 100;
-}
-
-.sort-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: #9ca3af;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.sort-option:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
-
-.sort-option.active {
-  background: rgba(249, 115, 22, 0.1);
-  color: #f97316;
-}
-
-.check-icon {
-  margin-left: auto;
-}
-
-/* Infinite Scroll Toggle */
-.infinite-scroll-toggle {
-  flex-shrink: 0;
-}
-
-.toggle-label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-}
-
-.toggle-text {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #9ca3af;
-  font-size: 0.875rem;
-  white-space: nowrap;
-}
-
-.toggle-switch {
-  position: relative;
-  width: 52px;
-  height: 28px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  transition: background 0.3s ease;
-  overflow: hidden;
-}
-
-.toggle-switch.active {
-  background: linear-gradient(135deg, #f97316, #ea580c);
-}
-
-.toggle-input {
-  opacity: 0;
-  position: absolute;
-  inset: 0;
-  cursor: pointer;
-}
-
-.toggle-slider {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 22px;
-  height: 22px;
-  background: #fff;
-  border-radius: 50%;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.toggle-switch.active .toggle-slider {
-  transform: translateX(24px);
-}
-
-.slider-dot {
-  width: 8px;
-  height: 8px;
-  background: #6b7280;
-  border-radius: 50%;
-  transition: background 0.3s ease;
-}
-
-.toggle-switch.active .slider-dot {
-  background: #f97316;
-}
-
-/* Active Filters */
-.active-filters {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.filters-label {
-  color: #6b7280;
-  font-size: 0.8rem;
-}
-
-.filters-list {
-  display: flex;
-  gap: 8px;
-}
-
-.filter-tag {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: rgba(249, 115, 22, 0.1);
-  border: 1px solid rgba(249, 115, 22, 0.2);
-  border-radius: 6px;
-  color: #f97316;
-  font-size: 0.8rem;
-}
-
-.filter-tag button {
-  display: flex;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.filter-tag button:hover {
-  opacity: 1;
-}
-
-/* Topics Container */
-.topics-container {
-  position: relative;
-}
-
-.topics-container.list-view {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.topics-container.compact-view {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
-}
-
-.topic-card-wrapper {
-  animation: fadeInUp 0.4s ease forwards;
-  animation-delay: var(--delay);
-  opacity: 0;
-}
-
-/* Topic Card */
-.topic-card {
-  position: relative;
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.topic-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(249, 115, 22, 0.3);
-  box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(249, 115, 22, 0.2);
-}
-
-.card-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(249, 115, 22, 0.15) 0%, transparent 50%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.topic-card:hover .card-glow {
-  opacity: 1;
-}
-
-.card-border-glow {
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.5), transparent, rgba(139, 92, 246, 0.3));
-  border-radius: 17px;
-  opacity: 0;
-  z-index: -1;
-  transition: opacity 0.3s ease;
-}
-
-.topic-card:hover .card-border-glow {
-  opacity: 1;
-}
-
-/* Trending Indicator */
-.trending-indicator {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(239, 68, 68, 0.1));
-  border: 1px solid rgba(251, 146, 60, 0.3);
-  border-radius: 20px;
-  z-index: 2;
-}
-
-.trending-flame {
-  display: flex;
-  color: #fb923c;
-  animation: trending-glow 1.5s ease-in-out infinite;
-}
-
-.trending-text {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #fb923c;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.card-inner {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 20px;
-  padding: 24px;
-  position: relative;
-}
-
-.topic-card.compact .card-inner {
-  grid-template-columns: 1fr;
-  gap: 12px;
-  padding: 20px;
-}
-
-/* Author Section */
-.topic-author-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.author-avatar-wrapper {
-  position: relative;
-}
-
-.author-avatar {
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-}
-
-.topic-card:hover .author-avatar {
-  border-color: rgba(249, 115, 22, 0.5);
-}
-
-.avatar-ring {
-  position: absolute;
-  inset: -4px;
-  border: 2px solid rgba(249, 115, 22, 0);
-  border-radius: 50%;
-  transition: all 0.3s ease;
-}
-
-.topic-card:hover .avatar-ring {
-  border-color: rgba(249, 115, 22, 0.3);
-  transform: scale(1.1);
-}
-
-.avatar-status {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 14px;
-  height: 14px;
-  background: #6b7280;
-  border: 3px solid #111;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.avatar-status.online {
-  background: #22c55e;
-}
-
-.status-pulse {
-  position: absolute;
-  inset: 0;
-  background: #22c55e;
-  border-radius: 50%;
-  animation: online-pulse 2s ease-in-out infinite;
-}
-
-/* Badges */
-.topic-badges {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.7rem;
+  font-size: 14px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-pinned {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(249, 115, 22, 0.1));
-  color: #f97316;
-  border: 1px solid rgba(249, 115, 22, 0.3);
-  animation: glow-pulse 2s ease-in-out infinite;
-}
-
-.badge-locked {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.badge-hot {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(251, 146, 60, 0.1));
-  color: #fb923c;
-  border: 1px solid rgba(251, 146, 60, 0.3);
-}
-
-.compact-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-}
-
-.compact-badge.pinned {
-  background: rgba(249, 115, 22, 0.2);
-  color: #f97316;
-}
-
-.compact-badge.locked {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
-}
-
-/* Topic Type Badges */
-.topic-type-badges {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.type-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.type-discussion {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(96, 165, 250, 0.3);
-}
-
-.type-question {
-  background: rgba(167, 139, 250, 0.15);
-  color: #a78bfa;
-  border: 1px solid rgba(167, 139, 250, 0.3);
-}
-
-.type-announcement {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.3);
-}
-
-/* Topic Main Content */
-.topic-main {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.topic-header {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.topic-title {
-  font-size: 1.125rem;
-  font-weight: 700;
   color: var(--text-primary);
-  line-height: 1.4;
-  transition: color 0.3s ease;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.topic-card:hover .topic-title {
-  color: #f97316;
-}
-
-.topic-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #6b7280;
-  font-size: 0.8rem;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.author-meta {
-  transition: color 0.2s ease;
-}
-
-.author-meta:hover {
-  color: #f97316;
-}
-
-.author-name-link {
-  font-weight: 500;
-}
-
-.meta-avatar {
-  margin-right: 2px;
-}
-
-.meta-divider {
-  width: 4px;
-  height: 4px;
-  background: #4b5563;
-  border-radius: 50%;
-}
-
-/* Topic Preview */
-.topic-preview {
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-  border-left: 3px solid #f97316;
-}
-
-.topic-preview p {
-  color: #9ca3af;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Topic Stats */
-.topic-stats {
-  display: flex;
-  gap: 16px;
-}
-
-.topic-card.compact .topic-stats {
-  gap: 12px;
-}
-
-.topic-stats .stat {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #6b7280;
-  font-size: 0.85rem;
-  transition: color 0.3s ease;
-}
-
-.topic-stats .stat:hover {
-  color: #f97316;
-}
-
-.topic-stats .stat-value {
-  font-weight: 600;
-  color: #9ca3af;
-}
-
-.topic-stats .stat-label {
-  color: #6b7280;
-}
-
-/* Last Reply Section */
-.topic-last-reply {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
-  min-width: 140px;
-  padding-left: 20px;
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.last-reply-header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.last-reply-label {
-  font-size: 0.7rem;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.last-reply-time {
-  font-size: 0.8rem;
-  color: #9ca3af;
-}
-
-.last-reply-author {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.last-reply-author .author-name {
-  font-size: 0.85rem;
-  color: #f97316;
-  font-weight: 500;
-}
-
-.no-reply {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  color: #6b7280;
-  font-size: 0.8rem;
-}
-
-.arrow-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: rgba(249, 115, 22, 0.1);
-  border-radius: 8px;
-  color: #f97316;
-  transition: all 0.3s ease;
-}
-
-.topic-card:hover .arrow-indicator {
-  background: #f97316;
-  color: #fff;
-  transform: translateX(4px);
-}
-
-/* Popularity Bar */
-.popularity-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.05);
-  overflow: hidden;
-}
-
-.bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #f97316, #fb923c);
-  border-radius: 0 3px 3px 0;
-  transition: width 0.5s ease;
-  position: relative;
-}
-
-.bar-shine {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: shine 2s ease-in-out infinite;
-}
-
-/* Loading More */
-.loading-more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 32px;
-  color: #9ca3af;
-}
-
-.loading-spinner {
-  position: relative;
-  width: 32px;
-  height: 32px;
-}
-
-.spinner-ring {
-  position: absolute;
-  inset: 0;
-  border: 3px solid transparent;
-  border-top-color: #f97316;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.spinner-ring:nth-child(2) {
-  inset: 4px;
-  border-top-color: #fb923c;
-  animation-duration: 0.8s;
-  animation-direction: reverse;
-}
-
-.spinner-ring:nth-child(3) {
-  inset: 8px;
-  border-top-color: #fdba74;
-  animation-duration: 0.6s;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.scroll-sentinel {
-  height: 1px;
-}
-
-/* Empty State */
-.empty-state {
-  padding: 40px 0;
-  animation: fadeInUp 0.6s ease forwards;
-}
-
-.empty-card {
-  padding: 60px 40px;
-  text-align: center;
-}
-
-.empty-illustration {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  margin-bottom: 32px;
-}
-
-.empty-icon-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 120px;
-  height: 120px;
-  color: #f97316;
-  animation: float 3s ease-in-out infinite;
-  z-index: 1;
-}
-
-.empty-icon-bg {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(139, 92, 246, 0.1));
-  border-radius: 50%;
-}
-
-.empty-circles {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-circles .circle {
-  position: absolute;
-  border: 2px dashed rgba(249, 115, 22, 0.2);
-  border-radius: 50%;
-  animation: ring-pulse 3s ease-out infinite;
-}
-
-.empty-circles .circle:nth-child(1) { width: 140px; height: 140px; animation-delay: 0s; }
-.empty-circles .circle:nth-child(2) { width: 180px; height: 180px; animation-delay: 0.5s; }
-.empty-circles .circle:nth-child(3) { width: 220px; height: 220px; animation-delay: 1s; }
-
-.empty-particles {
-  position: absolute;
-  inset: -30px;
-}
-
-.empty-particles .particle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  background: #f97316;
-  border-radius: 50%;
-  animation: particle-float 4s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.3s);
-}
-
-.empty-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 12px;
-}
-
-.empty-description {
-  color: #9ca3af;
-  font-size: 1rem;
-  max-width: 400px;
-  margin: 0 auto 32px;
-  line-height: 1.6;
-}
-
-.empty-actions {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 40px;
-}
-
-.empty-cta {
-  animation: glow-pulse 2s ease-in-out infinite;
-}
-
-.empty-suggestions {
-  padding-top: 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.suggestions-title {
-  color: #6b7280;
-  font-size: 0.875rem;
   margin-bottom: 16px;
 }
 
-.suggestions-list {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.suggestion-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  color: #9ca3af;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.suggestion-chip:hover {
-  background: rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.3);
-  color: #f97316;
-  transform: translateY(-2px);
-}
-
-/* Pagination */
-.pagination-section {
-  margin-top: 40px;
-  animation: fadeInUp 0.5s ease 0.3s forwards;
-  opacity: 0;
-  animation-fill-mode: forwards;
-}
-
-.pagination-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 16px 24px;
-}
-
-.pagination-btn {
+/* Online Indicator */
+.forum-online-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  color: #9ca3af;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  cursor: pointer;
 }
 
-.pagination-btn:not(:disabled):hover {
-  background: rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.3);
-  color: #f97316;
-  transform: translateX(-4px);
+.forum-online-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--forum-success);
+  border-radius: 50%;
+  animation: forum-online-pulse 2s ease-in-out infinite;
 }
 
-.pagination-btn.next:not(:disabled):hover {
-  transform: translateX(4px);
+@keyframes forum-online-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
 }
 
-.pagination-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pagination-numbers {
-  display: flex;
-  gap: 6px;
-}
-
-.page-btn {
-  position: relative;
-  min-width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  color: #9ca3af;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.page-number-text {
-  position: relative;
-  z-index: 1;
-}
-
-.page-active-bg {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #f97316, #ea580c);
-  z-index: 0;
-}
-
-.page-btn:not(.ellipsis):hover {
-  background: rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.3);
-  color: #f97316;
-  transform: translateY(-2px);
-}
-
-.page-btn.active {
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
-}
-
-.page-btn.ellipsis {
-  cursor: default;
-  color: #6b7280;
-}
-
-.pagination-info {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 16px;
-  font-size: 0.875rem;
-  color: #9ca3af;
-}
-
-.page-info-box {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  background: rgba(249, 115, 22, 0.1);
-  border-radius: 6px;
-}
-
-.current-range {
-  color: #f97316;
-  font-weight: 600;
-}
-
-.info-separator {
-  color: #6b7280;
-}
-
-.total-count {
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.page-progress {
-  width: 100px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-left: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #f97316, #fb923c);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-/* Modal Styles */
-.modal-content {
-  width: 100%;
-  max-width: 640px;
-  padding: 0;
-  overflow: hidden;
-}
-
-.modal-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 24px 28px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.05), transparent);
-}
-
-.modal-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  background: rgba(249, 115, 22, 0.1);
-  border-radius: 12px;
-  flex-shrink: 0;
-}
-
-.modal-title {
-  font-size: 1.25rem;
+.forum-online-count {
+  font-size: 24px;
   font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 4px;
+  color: var(--forum-success);
 }
 
-.modal-subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.modal-close {
-  margin-left: auto;
-  padding: 8px;
-  color: #6b7280;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.modal-close:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.modal-form {
-  padding: 24px 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* Topic Type Selector */
-.topic-type-selector {
-  display: flex;
-  gap: 8px;
-}
-
-.type-option {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: #9ca3af;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.type-option:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-}
-
-.type-option.active {
-  background: rgba(249, 115, 22, 0.15);
-  border-color: rgba(249, 115, 22, 0.5);
-  color: #f97316;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #d1d5db;
-}
-
-.input-wrapper,
-.textarea-wrapper {
-  position: relative;
-}
-
-.form-input,
-.form-textarea {
-  width: 100%;
-  padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-}
-
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: rgba(249, 115, 22, 0.5);
-  background: rgba(249, 115, 22, 0.05);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-}
-
-.form-input.error,
-.form-textarea.error {
-  border-color: rgba(239, 68, 68, 0.5);
-}
-
-.form-input::placeholder,
-.form-textarea::placeholder {
-  color: #6b7280;
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 150px;
-}
-
-.char-count {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  font-size: 0.75rem;
-  color: #6b7280;
-  transition: color 0.2s ease;
-}
-
-.char-count.warning {
-  color: #f97316;
-}
-
-.error-text {
-  font-size: 0.8rem;
-  color: #ef4444;
-}
-
-.form-hint {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.tags-input {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-.tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tag {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  background: rgba(249, 115, 22, 0.15);
-  border: 1px solid rgba(249, 115, 22, 0.3);
-  border-radius: 6px;
-  color: #f97316;
-  font-size: 0.8rem;
-}
-
-.tag button {
-  display: flex;
-  color: #f97316;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.tag button:hover {
-  opacity: 1;
-}
-
-.tag-input {
-  flex: 1;
-  min-width: 100px;
-  padding: 4px;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-}
-
-.tag-input:focus {
-  outline: none;
-}
-
-.tag-input::placeholder {
-  color: #6b7280;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
+/* Stats Grid */
+.forum-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  padding: 20px 28px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(0, 0, 0, 0.2);
 }
 
-/* Preview Tooltip */
-.preview-tooltip {
-  position: fixed;
-  z-index: 9999;
-  max-width: 360px;
-  padding: 16px;
-  pointer-events: none;
+.forum-stat-box {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.1);
+  border-radius: var(--forum-radius-sm);
+  padding: 12px;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: default;
 }
 
-.preview-header {
+.forum-stat-box:hover {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border-color: rgba(34, 211, 238, 0.3);
+  transform: translateY(-2px);
+}
+
+.forum-stat-box__value {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--forum-accent);
+  text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+}
+
+.forum-stat-box__label {
+  font-size: 11px;
+  color: var(--forum-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Sidebar Categories */
+.forum-sidebar-categories {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.preview-type-badge {
-  display: inline-flex;
-  align-items: center;
   gap: 4px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  width: fit-content;
 }
 
-.preview-title {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  line-height: 1.4;
-}
-
-.preview-text {
-  color: #9ca3af;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  margin-bottom: 12px;
-}
-
-.preview-stats {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.preview-stats span {
+.forum-sidebar-category {
   display: flex;
   align-items: center;
-  gap: 4px;
-  color: #6b7280;
-  font-size: 0.8rem;
-}
-
-.preview-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  color: #f97316;
-}
-
-/* Transitions */
-.breadcrumb-slide-enter-active,
-.breadcrumb-slide-leave-active {
-  transition: all 0.5s ease;
-}
-
-.breadcrumb-slide-enter-from {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-
-.hero-fade-enter-active {
-  transition: all 0.6s ease;
-}
-
-.hero-fade-enter-from {
-  opacity: 0;
-  transform: scale(0.98);
-}
-
-.filter-slide-enter-active {
-  transition: all 0.5s ease 0.2s;
-}
-
-.filter-slide-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.dropdown-slide-enter-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.dropdown-slide-leave-active {
-  transition: all 0.2s ease;
-}
-
-.dropdown-slide-enter-from,
-.dropdown-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.filters-expand-enter-active {
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--forum-radius-sm);
+  color: var(--forum-muted);
+  font-size: 14px;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.filters-expand-leave-active {
-  transition: all 0.2s ease;
-}
-
-.filters-expand-enter-from,
-.filters-expand-leave-to {
-  opacity: 0;
-  max-height: 0;
-  margin-top: 0;
-  padding-top: 0;
-}
-
-.filter-tag-enter-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.filter-tag-leave-active {
-  transition: all 0.2s ease;
-}
-
-.filter-tag-enter-from,
-.filter-tag-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
-.topic-list-enter-active,
-.topic-grid-enter-active {
-  transition: all 0.4s ease;
-}
-
-.topic-list-leave-active,
-.topic-grid-leave-active {
-  transition: all 0.3s ease;
+.forum-sidebar-category::before {
+  content: '';
   position: absolute;
-}
-
-.topic-list-enter-from {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #f97316, #8b5cf6);
   opacity: 0;
-  transform: translateX(-30px);
-}
-
-.topic-list-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
-}
-
-.topic-grid-enter-from {
-  opacity: 0;
-  transform: scale(0.9);
-}
-
-.topic-grid-leave-to {
-  opacity: 0;
-  transform: scale(0.9);
-}
-
-.topic-list-move,
-.topic-grid-move {
-  transition: transform 0.4s ease;
-}
-
-.trending-pulse-enter-active {
-  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.trending-pulse-leave-active {
-  transition: all 0.2s ease;
-}
-
-.trending-pulse-enter-from,
-.trending-pulse-leave-to {
-  opacity: 0;
-  transform: scale(0) translateX(20px);
-}
-
-.badge-pop-enter-active {
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.badge-pop-leave-active {
-  transition: all 0.2s ease;
-}
-
-.badge-pop-enter-from,
-.badge-pop-leave-to {
-  opacity: 0;
-  transform: scale(0);
-}
-
-.preview-expand-enter-active {
-  transition: all 0.3s ease;
-}
-
-.preview-expand-leave-active {
-  transition: all 0.2s ease;
-}
-
-.preview-expand-enter-from,
-.preview-expand-leave-to {
-  opacity: 0;
-  max-height: 0;
-  padding: 0;
-  margin: 0;
-}
-
-.pagination-slide-enter-active {
-  transition: all 0.5s ease 0.3s;
-}
-
-.pagination-slide-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.page-number-enter-active {
-  transition: all 0.3s ease;
-}
-
-.page-number-leave-active {
-  transition: all 0.2s ease;
-}
-
-.page-number-enter-from,
-.page-number-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
-.empty-bounce-enter-active {
-  transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.empty-bounce-enter-from {
-  opacity: 0;
-  transform: scale(0.9);
-}
-
-.fade-enter-active,
-.fade-leave-active {
   transition: opacity 0.3s ease;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.forum-sidebar-category:hover {
+  background: linear-gradient(90deg, rgba(79, 140, 255, 0.1) 0%, transparent 100%);
+  color: var(--forum-link);
+  padding-left: 16px;
 }
 
-.error-shake-enter-active {
-  animation: shake 0.4s ease;
+.forum-sidebar-category:hover::before {
+  opacity: 1;
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
+/* Modal */
+.forum-modal__content {
+  width: 100%;
+  max-width: 600px;
+  background: var(--forum-bg-panel);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-lg);
+  overflow: hidden;
 }
 
-.tag-pop-enter-active {
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+.forum-modal__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 1px solid var(--forum-border);
 }
 
-.tag-pop-leave-active {
+.forum-modal__close {
+  margin-left: auto;
+  padding: 8px;
+  color: var(--forum-muted);
+  border-radius: 8px;
   transition: all 0.2s ease;
 }
 
-.tag-pop-enter-from,
-.tag-pop-leave-to {
-  opacity: 0;
-  transform: scale(0);
+.forum-modal__close:hover {
+  background: var(--forum-bg-hover);
+  color: var(--text-primary);
 }
 
-.preview-tooltip-enter-active {
-  transition: all 0.3s ease;
+.forum-modal__form {
+  padding: 24px;
 }
 
-.preview-tooltip-leave-active {
+.forum-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--forum-bg-hover);
+  border-top: 1px solid var(--forum-border);
+}
+
+/* Form Styles */
+.forum-form-group {
+  margin-bottom: 20px;
+}
+
+.forum-form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.forum-form-input,
+.forum-form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--forum-bg-card);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
   transition: all 0.2s ease;
 }
 
-.preview-tooltip-enter-from,
-.preview-tooltip-leave-to {
+.forum-form-input:focus,
+.forum-form-textarea:focus {
+  outline: none;
+  border-color: var(--forum-accent);
+}
+
+.forum-form-input.error,
+.forum-form-textarea.error {
+  border-color: var(--forum-danger);
+}
+
+.forum-form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.forum-form-counter {
+  display: block;
+  text-align: right;
+  font-size: 12px;
+  color: var(--forum-muted);
+  margin-top: 4px;
+}
+
+.forum-form-counter.warning {
+  color: var(--forum-danger);
+}
+
+.forum-form-error {
+  color: var(--forum-danger);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.forum-form-hint {
+  color: var(--forum-muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Type Selector */
+.forum-type-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.forum-type-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--forum-bg-card);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-sm);
+  color: var(--forum-muted);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.forum-type-option:hover {
+  border-color: var(--forum-accent);
+  color: var(--text-primary);
+}
+
+.forum-type-option.active {
+  background: rgba(79, 140, 255, 0.1);
+  border-color: var(--forum-link);
+  color: var(--forum-link);
+}
+
+/* Tags Input */
+.forum-tags-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--forum-bg-card);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-sm);
+}
+
+.forum-tags-input input {
+  flex: 1;
+  min-width: 100px;
+  padding: 4px 0;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.forum-tags-input input:focus {
+  outline: none;
+}
+
+.forum-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(79, 140, 255, 0.1);
+  border-radius: 20px;
+  color: var(--forum-link);
+  font-size: 13px;
+}
+
+.forum-tag button {
+  display: flex;
+  color: var(--forum-link);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.forum-tag button:hover {
+  opacity: 1;
+}
+
+/* Dropdown Animation */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.2s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
   opacity: 0;
-  transform: translateX(20px);
+  transform: translateY(-8px);
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .hero-content > div {
+@media (max-width: 768px) {
+  .forum-category-header {
     flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .hero-action {
-    width: 100%;
-  }
-
-  .new-topic-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .stats-overlay {
-    flex-wrap: wrap;
-  }
-
-  .stat-item {
-    flex: 1;
-    min-width: 140px;
-  }
-
-  .card-inner {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .topic-author-section {
-    flex-direction: row;
-    justify-content: flex-start;
-  }
-
-  .topic-badges {
-    flex-direction: row;
-  }
-
-  .topic-last-reply {
-    flex-direction: row;
     align-items: center;
-    justify-content: space-between;
-    border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    padding-left: 0;
-    padding-top: 16px;
-    min-width: auto;
-  }
-
-  .breadcrumb-container {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .online-users-indicator {
-    align-self: flex-end;
-  }
-
-  .topics-container.compact-view {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .category-hero {
+    text-align: center;
     padding: 24px;
   }
 
-  .hero-title {
-    font-size: 1.75rem;
+  .forum-category-header__info .forum-meta {
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  .filter-card {
-    padding: 16px;
+  .forum-category-header__stats {
+    justify-content: center;
   }
 
-  .view-mode-toggle {
-    display: none;
+  .forum-filters {
+    flex-direction: column;
   }
 
-  .sort-dropdown {
+  .forum-filters__search {
     width: 100%;
   }
 
-  .sort-trigger {
+  .forum-filters__controls {
     width: 100%;
     justify-content: space-between;
   }
 
-  .sort-dropdown-menu {
-    left: 0;
-    right: 0;
-  }
-
-  .pagination-wrapper {
+  .forum-pagination {
     flex-wrap: wrap;
-    padding: 12px 16px;
-  }
-
-  .pagination-btn span {
-    display: none;
-  }
-
-  .modal-content {
-    margin: 16px;
-  }
-
-  .topic-type-selector {
-    flex-direction: column;
-  }
-
-  .type-option {
-    flex: none;
   }
 }
 
-/* Unread Indicator */
-.unread-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: linear-gradient(135deg, #f97316, #fb923c);
+/* ===== Category Game Banner ===== */
+.forum-category-banner {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.forum-category-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+.forum-category-banner__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.forum-category-banner:hover .forum-category-banner__img {
+  transform: scale(1.05);
+}
+
+.forum-category-banner__overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.9) 100%),
+    linear-gradient(90deg, rgba(249, 115, 22, 0.1) 0%, transparent 50%, rgba(139, 92, 246, 0.1) 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 24px;
+}
+
+.forum-category-banner__logo {
+  max-width: 220px;
+  max-height: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.8));
+  animation: logo-float 3s ease-in-out infinite;
+}
+
+@keyframes logo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Back to Top Button */
+.back-to-top {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  margin-right: 8px;
-  vertical-align: middle;
-  animation: unread-pulse 2s ease-in-out infinite;
-  box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+  z-index: 1000;
+  transition: all 0.3s ease;
 }
 
-@keyframes unread-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.2); }
+.back-to-top:hover {
+  transform: translateY(-4px) scale(1.1);
+  box-shadow: 0 8px 30px rgba(249, 115, 22, 0.6);
+}
+
+/* Fade Transition */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+@media (max-width: 768px) {
+  .back-to-top { bottom: 20px; right: 20px; width: 45px; height: 45px; }
+  .forum-category-banner {
+    height: 140px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  .forum-category-banner__logo {
+    max-width: 140px;
+    max-height: 50px;
+  }
 }
 </style>

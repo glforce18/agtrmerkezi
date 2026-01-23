@@ -228,11 +228,9 @@ async def list_plugins(
         "download_count": r[27], "rating_avg": float(r[28]) if r[28] else 0,
         "rating_count": r[29]
     } for r in rows]
-    
-    # Toplam sayı
-    count_q = "SELECT COUNT(*) FROM plugins p LEFT JOIN plugin_categories c ON p.category_id = c.id WHERE p.status = 'approved'"
-    # ... aynı filtreler
-    
+
+    # Note: Total count query can be added if pagination info is needed
+
     return {
         "success": True,
         "plugins": plugins,

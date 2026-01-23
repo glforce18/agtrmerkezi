@@ -20,6 +20,7 @@ export function useWebSocket(endpoint, options = {}) {
 
   const ws = ref(null)
   const isConnected = ref(false)
+  const isConnecting = ref(false) // Atomic flag to prevent concurrent connection attempts
   const reconnectAttempts = ref(0)
   const messageQueue = ref([])
   const lastHeartbeat = ref(null)
@@ -28,21 +29,39 @@ export function useWebSocket(endpoint, options = {}) {
   let heartbeatTimer = null
   let reconnectTimer = null
 
+  // Message retry configuration
+  const MAX_QUEUE_SIZE = 50
+  const MAX_RETRY_ATTEMPTS = 3
+  const QUEUE_CLEANUP_INTERVAL = 60000 // 1 minute
+  let queueCleanupTimer = null
+
   const authStore = useAuthStore()
 
   // Connection status
   const status = computed(() => {
     if (isConnected.value) return 'connected'
+    if (isConnecting.value) return 'connecting'
     if (reconnectAttempts.value > 0) return 'reconnecting'
     return 'disconnected'
   })
 
   // Connect to WebSocket
   function connect() {
+    // Prevent concurrent connection attempts with atomic flag
+    if (isConnecting.value) {
+      return
+    }
+
     if (ws.value?.readyState === WebSocket.OPEN) {
       return
     }
 
+    // Also check CONNECTING state
+    if (ws.value?.readyState === WebSocket.CONNECTING) {
+      return
+    }
+
+    isConnecting.value = true
     const url = `${WS_BASE_URL}${endpoint}`
     // Debug: WebSocket connecting
 
@@ -51,16 +70,11 @@ export function useWebSocket(endpoint, options = {}) {
 
       ws.value.onopen = () => {
         // Debug: WebSocket connected
+        isConnecting.value = false
         isConnected.value = true
         reconnectAttempts.value = 0
 
-        // Send queued messages
-        while (messageQueue.value.length > 0) {
-          const msg = messageQueue.value.shift()
-          send(msg)
-        }
-
-        // Authenticate if token exists
+        // Authenticate if token exists (before processing queue)
         if (authStore.token) {
           send({
             action: 'auth',
@@ -68,8 +82,12 @@ export function useWebSocket(endpoint, options = {}) {
           })
         }
 
-        // Start heartbeat
+        // Process queued messages with retry logic
+        processMessageQueue()
+
+        // Start heartbeat and queue cleanup
         startHeartbeat()
+        startQueueCleanup()
 
         if (onOpen) onOpen()
       }
@@ -92,6 +110,7 @@ export function useWebSocket(endpoint, options = {}) {
 
       ws.value.onclose = (event) => {
         // Debug: WebSocket closed
+        isConnecting.value = false
         isConnected.value = false
         stopHeartbeat()
 
@@ -110,11 +129,13 @@ export function useWebSocket(endpoint, options = {}) {
 
       ws.value.onerror = (error) => {
         // WebSocket error - handled by onclose
+        isConnecting.value = false
         if (onError) onError(error)
       }
 
     } catch (error) {
       // Connection error
+      isConnecting.value = false
       isConnected.value = false
     }
   }
@@ -123,6 +144,7 @@ export function useWebSocket(endpoint, options = {}) {
   function disconnect() {
     shouldReconnect.value = false // Prevent auto-reconnect
     stopHeartbeat()
+    stopQueueCleanup()
 
     if (reconnectTimer) {
       clearTimeout(reconnectTimer)
@@ -134,14 +156,24 @@ export function useWebSocket(endpoint, options = {}) {
       ws.value = null
     }
 
+    // Clear message queue on disconnect
+    messageQueue.value = []
+
     isConnected.value = false
   }
 
-  // Send message
-  function send(data) {
+  // Send message with retry tracking
+  function send(data, retryCount = 0) {
     if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
-      // Queue message if not connected
-      messageQueue.value.push(data)
+      // Queue message if not connected (with retry metadata)
+      if (messageQueue.value.length < MAX_QUEUE_SIZE) {
+        const queuedMessage = {
+          data,
+          retryCount: retryCount,
+          timestamp: Date.now()
+        }
+        messageQueue.value.push(queuedMessage)
+      }
       return false
     }
 
@@ -150,8 +182,65 @@ export function useWebSocket(endpoint, options = {}) {
       ws.value.send(message)
       return true
     } catch (error) {
-      // Send error
+      // Send error - queue for retry if under limit
+      if (retryCount < MAX_RETRY_ATTEMPTS && messageQueue.value.length < MAX_QUEUE_SIZE) {
+        messageQueue.value.push({
+          data,
+          retryCount: retryCount + 1,
+          timestamp: Date.now()
+        })
+      }
       return false
+    }
+  }
+
+  // Process queued messages with retry logic
+  function processMessageQueue() {
+    const now = Date.now()
+    const messagesToRetry = []
+
+    while (messageQueue.value.length > 0) {
+      const queuedItem = messageQueue.value.shift()
+
+      // Skip old messages (older than 30 seconds)
+      if (now - queuedItem.timestamp > 30000) {
+        continue
+      }
+
+      // Skip messages that exceeded retry limit
+      if (queuedItem.retryCount >= MAX_RETRY_ATTEMPTS) {
+        continue
+      }
+
+      // Try to send, if fails it will be re-queued by send()
+      const success = send(queuedItem.data, queuedItem.retryCount)
+      if (!success) {
+        // Move to retry list to avoid infinite loop
+        messagesToRetry.push(queuedItem)
+        break // Stop processing if connection is down
+      }
+    }
+
+    // Re-add failed messages back to queue
+    messageQueue.value.push(...messagesToRetry)
+  }
+
+  // Cleanup stale messages periodically
+  function startQueueCleanup() {
+    stopQueueCleanup()
+    queueCleanupTimer = setInterval(() => {
+      const now = Date.now()
+      messageQueue.value = messageQueue.value.filter(msg => {
+        // Keep messages less than 30 seconds old and under retry limit
+        return (now - msg.timestamp < 30000) && (msg.retryCount < MAX_RETRY_ATTEMPTS)
+      })
+    }, QUEUE_CLEANUP_INTERVAL)
+  }
+
+  function stopQueueCleanup() {
+    if (queueCleanupTimer) {
+      clearInterval(queueCleanupTimer)
+      queueCleanupTimer = null
     }
   }
 

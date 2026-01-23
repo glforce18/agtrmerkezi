@@ -165,7 +165,7 @@ async def upload_asset(
             "op": str(orig_p), "pp": str(proc_p), "tp": str(thumb_p),
             "fs": len(contents), "w": w, "h": h, "ia": is_anim,
             "at": animation_type if is_anim else None, "ad": animation_duration,
-            "ub": current_user.id
+            "ub": current_admin.id
         })
         db.commit()
         

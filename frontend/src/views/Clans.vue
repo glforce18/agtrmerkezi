@@ -49,6 +49,7 @@
               placeholder="Klan ara..."
               size="large"
               clearable
+              :loading="isSearching"
               @input="debouncedSearch"
             >
               <template #prefix>
@@ -245,14 +246,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   Shield, Plus, Users, Trophy, Target, Crown, Search,
-  ArrowRight, Clock, UserPlus
+  ArrowRight, Clock
 } from 'lucide-vue-next'
 import { useClansStore } from '@/stores/clans'
 import { useAuthStore } from '@/stores/auth'
@@ -269,6 +270,7 @@ const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = use
 const searchQuery = ref('')
 const filterStatus = ref(null)
 const sortBy = ref('points')
+const isSearching = ref(false) // Loading indicator for debounced search
 
 const statusOptions = [
   { label: 'Tümü', value: null },
@@ -354,9 +356,16 @@ const filteredClans = computed(() => {
 // Methods
 let searchTimeout = null
 const debouncedSearch = () => {
-  clearTimeout(searchTimeout)
+  // Show loading indicator while debouncing
+  isSearching.value = true
+
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
   searchTimeout = setTimeout(() => {
-    // Search is handled by computed
+    // Search is handled by computed, just turn off loading
+    isSearching.value = false
+    searchTimeout = null
   }, 300)
 }
 
@@ -429,6 +438,14 @@ onMounted(async () => {
   if (authStore.isAuthenticated) {
     await clansStore.fetchMyClan()
     await clansStore.fetchMyApplications()
+  }
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+    searchTimeout = null
   }
 })
 </script>

@@ -27,7 +27,7 @@ export function useRequireSteam() {
       // Redirect to login with return URL
       if (redirect) {
         router.push({
-          name: 'Login',
+          name: 'login',
           query: { redirect: route.fullPath }
         })
       }
@@ -55,7 +55,7 @@ export function useRequireSteam() {
 
       if (redirect) {
         router.push({
-          name: 'Login',
+          name: 'login',
           query: { redirect: route.fullPath }
         })
       }

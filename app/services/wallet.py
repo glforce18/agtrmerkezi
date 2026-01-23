@@ -31,24 +31,32 @@ class WalletService:
 
     def get_balance(self, user_id: int, wallet_type: WalletType = WalletType.REAL) -> float:
         """Kullanıcı bakiyesini getir"""
+        if user_id is None:
+            raise HTTPException(status_code=400, detail="Geçersiz kullanıcı ID")
+
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
 
         if wallet_type == WalletType.REAL:
-            return user.balance or 0.0
+            balance = user.balance
+            return float(balance) if balance is not None else 0.0
         else:
-            return user.balance_coin or 0.0
+            balance = user.balance_coin
+            return float(balance) if balance is not None else 0.0
 
     def get_all_balances(self, user_id: int) -> Dict[str, float]:
         """Tüm cüzdan bakiyelerini getir"""
+        if user_id is None:
+            raise HTTPException(status_code=400, detail="Geçersiz kullanıcı ID")
+
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
 
         return {
-            "balance_real": user.balance or 0.0,
-            "balance_coin": user.balance_coin or 0.0
+            "balance_real": float(user.balance) if user.balance is not None else 0.0,
+            "balance_coin": float(user.balance_coin) if user.balance_coin is not None else 0.0
         }
 
     def _update_balance(
@@ -58,14 +66,20 @@ class WalletService:
         amount: float
     ) -> tuple[float, float]:
         """Bakiyeyi güncelle ve önceki/sonraki değerleri döndür"""
+        if user is None:
+            raise HTTPException(status_code=400, detail="Geçersiz kullanıcı")
+
+        if amount is None:
+            raise HTTPException(status_code=400, detail="Geçersiz miktar")
+
         if wallet_type == WalletType.REAL:
-            balance_before = user.balance or 0.0
+            balance_before = float(user.balance) if user.balance is not None else 0.0
             user.balance = balance_before + amount
-            balance_after = user.balance
+            balance_after = float(user.balance) if user.balance is not None else 0.0
         else:
-            balance_before = user.balance_coin or 0.0
+            balance_before = float(user.balance_coin) if user.balance_coin is not None else 0.0
             user.balance_coin = balance_before + amount
-            balance_after = user.balance_coin
+            balance_after = float(user.balance_coin) if user.balance_coin is not None else 0.0
 
         return balance_before, balance_after
 
@@ -83,7 +97,13 @@ class WalletService:
         extra_data: Dict[str, Any] = None
     ) -> Transaction:
         """Bakiye ekle ve transaction kaydı oluştur"""
-        if amount <= 0:
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Geçersiz kullanıcı ID"
+            )
+
+        if amount is None or amount <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Miktar 0'dan büyük olmalı"
@@ -136,7 +156,13 @@ class WalletService:
         allow_negative: bool = False
     ) -> Transaction:
         """Bakiye düş ve transaction kaydı oluştur"""
-        if amount <= 0:
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Geçersiz kullanıcı ID"
+            )
+
+        if amount is None or amount <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Miktar 0'dan büyük olmalı"
@@ -146,8 +172,12 @@ class WalletService:
         if not user:
             raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
 
-        # Bakiye kontrolü
-        current_balance = self.get_balance(user_id, wallet_type)
+        # Bakiye kontrolü - LOCKED user objesinden oku, yeni query yapma
+        if wallet_type == WalletType.REAL:
+            current_balance = float(user.balance) if user.balance is not None else 0.0
+        else:
+            current_balance = float(user.balance_coin) if user.balance_coin is not None else 0.0
+
         if not allow_negative and current_balance < amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -193,13 +223,19 @@ class WalletService:
         user_agent: str = None
     ) -> tuple[Transaction, Transaction]:
         """Kullanıcılar arası transfer"""
+        if from_user_id is None or to_user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Geçersiz kullanıcı ID"
+            )
+
         if from_user_id == to_user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Kendinize transfer yapamazsınız"
             )
 
-        if amount <= 0:
+        if amount is None or amount <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Miktar 0'dan büyük olmalı"
@@ -215,8 +251,12 @@ class WalletService:
         if not to_user:
             raise HTTPException(status_code=404, detail="Alıcı kullanıcı bulunamadı")
 
-        # Bakiye kontrolü
-        current_balance = self.get_balance(from_user_id, wallet_type)
+        # Bakiye kontrolü - LOCKED from_user objesinden oku, yeni query yapma
+        if wallet_type == WalletType.REAL:
+            current_balance = float(from_user.balance) if from_user.balance is not None else 0.0
+        else:
+            current_balance = float(from_user.balance_coin) if from_user.balance_coin is not None else 0.0
+
         if current_balance < amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -274,21 +314,34 @@ class WalletService:
         user_agent: str = None
     ) -> tuple[Transaction, Transaction]:
         """TL bakiyeyi Armor'a dönüştür"""
-        if tl_amount <= 0:
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Geçersiz kullanıcı ID"
+            )
+
+        if tl_amount is None or tl_amount <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Miktar 0'dan büyük olmalı"
+            )
+
+        if exchange_rate is None or exchange_rate <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Geçersiz dönüşüm oranı"
             )
 
         user = self.db.query(User).filter(User.id == user_id).with_for_update().first()
         if not user:
             raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
 
-        # TL bakiye kontrolü
-        if (user.balance or 0.0) < tl_amount:
+        # TL bakiye kontrolü with null safety
+        current_balance = float(user.balance) if user.balance is not None else 0.0
+        if current_balance < tl_amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Yetersiz TL bakiye. Mevcut: {user.balance}"
+                detail=f"Yetersiz TL bakiye. Mevcut: {current_balance}"
             )
 
         armor_amount = tl_amount * exchange_rate

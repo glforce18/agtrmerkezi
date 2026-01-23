@@ -19,7 +19,7 @@
                 :style="logoStyle"
                 alt="AGTR Merkezi"
                 class="logo-img"
-                @error="$event.target.src='/logo-navbar.png'"
+                @error="handleLogoError"
               />
               <div class="logo-glow"></div>
               <div class="logo-pulse"></div>
@@ -513,6 +513,7 @@ const searchQuery = ref('')
 const isScrolled = ref(false)
 const themeAnimating = ref(false)
 const hasNewNotification = ref(false)
+const logoErrorCount = ref(0) // Guard for infinite logo error loops
 
 // Computed
 const user = computed(() => authStore.user)
@@ -623,6 +624,18 @@ const formatNotificationTime = (timestamp) => {
   if (hours < 24) return `${hours} saat önce`
   if (days < 7) return `${days} gün önce`
   return date.toLocaleDateString('tr-TR')
+}
+
+// Logo error handling with guard to prevent infinite loops
+const handleLogoError = (event) => {
+  // Prevent infinite error loop - only try fallback once
+  if (logoErrorCount.value >= 1) {
+    // Already tried fallback, remove src to prevent further errors
+    event.target.removeAttribute('src')
+    return
+  }
+  logoErrorCount.value++
+  event.target.src = '/logo-navbar.png'
 }
 
 // Scroll handling
@@ -808,6 +821,11 @@ onUnmounted(() => {
 watch(() => route.path, () => {
   mobileMenuOpen.value = false
   document.body.style.overflow = ''
+})
+
+// Reset logo error count when logo URL changes
+watch(logoUrl, () => {
+  logoErrorCount.value = 0
 })
 </script>
 

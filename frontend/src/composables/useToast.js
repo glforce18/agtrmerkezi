@@ -1,146 +1,83 @@
 /**
- * AGTR Merkezi - Enhanced Toast Notifications
- * Action support, progress bar, and stacking
+ * AGTR Merkezi - Toast Notification System
+ * Kullanım: const { showToast, showSuccess, showError } = useToast()
  */
 
-import { ref, readonly, h } from 'vue'
+import { ref, readonly } from 'vue'
 
+// Global toast state
 const toasts = ref([])
 let toastId = 0
 
-const DEFAULT_DURATION = 5000
-const MAX_TOASTS = 5
-
-/**
- * Toast configuration
- */
-const defaultConfig = {
-  position: 'top-right', // top-right, top-left, bottom-right, bottom-left, top-center, bottom-center
-  maxToasts: MAX_TOASTS
+// Toast types with icons and colors
+const TOAST_TYPES = {
+  success: { icon: '✓', bgClass: 'toast-success', duration: 3000 },
+  error: { icon: '✕', bgClass: 'toast-error', duration: 5000 },
+  warning: { icon: '⚠', bgClass: 'toast-warning', duration: 4000 },
+  info: { icon: 'ℹ', bgClass: 'toast-info', duration: 3000 },
+  armor: { icon: '🛡️', bgClass: 'toast-armor', duration: 4000 },
+  level: { icon: '⬆️', bgClass: 'toast-level', duration: 5000 },
+  badge: { icon: '🏆', bgClass: 'toast-badge', duration: 5000 }
 }
 
-/**
- * Create a new toast
- */
-function createToast(options) {
+function addToast(message, type = 'info', options = {}) {
   const id = ++toastId
+  const typeConfig = TOAST_TYPES[type] || TOAST_TYPES.info
+  const duration = options.duration || typeConfig.duration
 
   const toast = {
     id,
-    type: options.type || 'info', // success, error, warning, info
+    message,
+    type,
+    icon: options.icon || typeConfig.icon,
+    bgClass: typeConfig.bgClass,
     title: options.title || null,
-    message: options.message || '',
-    duration: options.duration ?? DEFAULT_DURATION,
-    closable: options.closable ?? true,
-    showProgress: options.showProgress ?? true,
-    action: options.action || null, // { label: string, onClick: Function }
-    icon: options.icon || null,
-    createdAt: Date.now()
-  }
-
-  // Remove oldest toast if max reached
-  if (toasts.value.length >= defaultConfig.maxToasts) {
-    toasts.value.shift()
+    visible: true,
+    progress: 100
   }
 
   toasts.value.push(toast)
 
-  // Auto dismiss
-  if (toast.duration > 0) {
-    setTimeout(() => {
-      dismissToast(id)
-    }, toast.duration)
+  // Auto dismiss with progress
+  if (duration > 0) {
+    const startTime = Date.now()
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime
+      const remaining = Math.max(0, 100 - (elapsed / duration) * 100)
+      const t = toasts.value.find(t => t.id === id)
+      if (t) t.progress = remaining
+      if (remaining <= 0) {
+        clearInterval(interval)
+        removeToast(id)
+      }
+    }, 50)
   }
-
   return id
 }
 
-/**
- * Dismiss a toast
- */
-function dismissToast(id) {
+function removeToast(id) {
   const index = toasts.value.findIndex(t => t.id === id)
-  if (index !== -1) {
-    toasts.value.splice(index, 1)
+  if (index > -1) {
+    toasts.value[index].visible = false
+    setTimeout(() => {
+      toasts.value = toasts.value.filter(t => t.id !== id)
+    }, 300)
   }
 }
 
-/**
- * Dismiss all toasts
- */
-function dismissAll() {
-  toasts.value = []
-}
-
-/**
- * Shorthand methods
- */
-function success(message, options = {}) {
-  return createToast({ ...options, type: 'success', message })
-}
-
-function error(message, options = {}) {
-  return createToast({ ...options, type: 'error', message })
-}
-
-function warning(message, options = {}) {
-  return createToast({ ...options, type: 'warning', message })
-}
-
-function info(message, options = {}) {
-  return createToast({ ...options, type: 'info', message })
-}
-
-/**
- * Promise-based toast (loading -> success/error)
- */
-async function promise(promise, options = {}) {
-  const {
-    loading = 'Yükleniyor...',
-    success = 'Başarılı!',
-    error = 'Bir hata oluştu'
-  } = options
-
-  const id = createToast({
-    type: 'info',
-    message: loading,
-    duration: 0, // Don't auto-dismiss
-    showProgress: false
-  })
-
-  try {
-    const result = await promise
-    dismissToast(id)
-    createToast({
-      type: 'success',
-      message: typeof success === 'function' ? success(result) : success
-    })
-    return result
-  } catch (err) {
-    dismissToast(id)
-    createToast({
-      type: 'error',
-      message: typeof error === 'function' ? error(err) : error
-    })
-    throw err
-  }
-}
-
-/**
- * Composable
- */
 export function useToast() {
   return {
     toasts: readonly(toasts),
-    create: createToast,
-    dismiss: dismissToast,
-    dismissAll,
-    success,
-    error,
-    warning,
-    info,
-    promise
+    showToast: (message, type = 'info', options = {}) => addToast(message, type, options),
+    showSuccess: (message, options = {}) => addToast(message, 'success', options),
+    showError: (message, options = {}) => addToast(message, 'error', options),
+    showWarning: (message, options = {}) => addToast(message, 'warning', options),
+    showInfo: (message, options = {}) => addToast(message, 'info', options),
+    showArmorEarned: (amount, reason = '') => addToast(`+${amount} Armor kazandin!${reason ? ' ' + reason : ''}`, 'armor', { title: 'Armor Kazanildi' }),
+    showLevelUp: (newLevel) => addToast(`Tebrikler! Level ${newLevel} oldun!`, 'level', { title: 'Level Atladin!' }),
+    showBadgeEarned: (badgeName) => addToast(`"${badgeName}" rozetini kazandin!`, 'badge', { title: 'Yeni Rozet!' }),
+    removeToast
   }
 }
 
-export default useToast
+export { toasts, addToast, removeToast }

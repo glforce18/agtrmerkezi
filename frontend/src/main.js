@@ -49,4 +49,20 @@ initErrorTracking(app)
 // Initialize analytics
 initAnalytics(router)
 
+// Register Service Worker for offline support (production only)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    .then((registration) => {
+      console.log('[App] Service Worker registered:', registration.scope)
+
+      // Check for updates periodically
+      setInterval(() => {
+        registration.update()
+      }, 60 * 60 * 1000) // Check every hour
+    })
+    .catch((error) => {
+      console.warn('[App] Service Worker registration failed:', error)
+    })
+}
+
 app.mount('#app')

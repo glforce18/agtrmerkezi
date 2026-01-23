@@ -51,6 +51,16 @@ router = APIRouter()
 
 # ==================== HELPER FUNCTIONS ====================
 
+def format_avatar_url(avatar_path: str) -> str:
+    """Format avatar path to full URL with proper prefix"""
+    if not avatar_path:
+        return None
+    if avatar_path.startswith(('http://', 'https://', '/')):
+        return avatar_path
+    # Avatars are stored in /static/images/
+    return f"/static/images/{avatar_path}"
+
+
 def log_audit(db: Session, user_id: int, action: str, entity_type: str = None,
               entity_id: int = None, old_values: dict = None, new_values: dict = None,
               ip_address: str = None):
@@ -193,7 +203,7 @@ async def get_profile(db: Session = Depends(get_db), current_user: User = Depend
         "username": current_user.username,
         "email": current_user.email,
         "display_name": current_user.display_name,
-        "avatar": current_user.avatar,
+        "avatar": format_avatar_url(current_user.avatar),
         "bio": current_user.bio,
         "steam_id": current_user.steam_id,
         "role": current_user.role.value,
@@ -483,7 +493,7 @@ async def upload_avatar(request: Request, file: UploadFile = File(...), db: Sess
 
     return {
         "success": True,
-        "avatar": f"/static/images/{current_user.avatar}",
+        "avatar": format_avatar_url(current_user.avatar),
         "avatar_webp": f"/static/images/avatars/{base_filename}.webp"
     }
 
@@ -764,7 +774,7 @@ async def get_public_profile(username: str, db: Session = Depends(get_db), curre
         "id": user.id,
         "username": user.username,
         "display_name": user.display_name,
-        "avatar": user.avatar,
+        "avatar": format_avatar_url(user.avatar),
         "bio": user.bio,
         "role": user.role.value,
         "post_count": user.post_count,

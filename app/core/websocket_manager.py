@@ -210,8 +210,8 @@ class EnhancedConnectionManager:
 
             try:
                 await ws.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Error closing stale WebSocket connection: {e}")
 
         if stale:
             logger.info(f"Cleaned up {len(stale)} stale connections")

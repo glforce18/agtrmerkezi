@@ -33,6 +33,38 @@ logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 
+# ==================== ENUM VALIDATION ====================
+
+def validate_enum_value(value, enum_class, column_name: str):
+    """Validate that a value is a valid enum member"""
+    if value is None:
+        return value
+    if isinstance(value, enum_class):
+        return value
+    if isinstance(value, str):
+        try:
+            return enum_class(value)
+        except ValueError:
+            valid_values = [e.value for e in enum_class]
+            raise ValueError(
+                f"Invalid value '{value}' for {column_name}. "
+                f"Valid values are: {valid_values}"
+            )
+    raise ValueError(
+        f"Invalid type {type(value).__name__} for {column_name}. "
+        f"Expected {enum_class.__name__} or string."
+    )
+
+
+def create_enum_validator(enum_class, column_name: str):
+    """Create a validator function for enum columns"""
+    def validator(target, value, oldvalue, initiator):
+        if value is None:
+            return value
+        return validate_enum_value(value, enum_class, column_name)
+    return validator
+
+
 # ==================== DATABASE ENGINE & SESSION ====================
 
 _engine = None
@@ -460,6 +492,18 @@ class TicketPriority(enum.Enum):
 
 # ==================== USER MODELS ====================
 
+def _get_default_email_notifications() -> dict:
+    """Return default email notification settings - callable for SQLAlchemy default"""
+    return {
+        "server_expiring": True,
+        "payment_received": True,
+        "forum_replies": True,
+        "mentions": True,
+        "announcements": False,
+        "weekly_digest": False
+    }
+
+
 class User(Base):
     __tablename__ = "users"
     
@@ -483,15 +527,8 @@ class User(Base):
     losses = Column(Integer, default=0)
     kd_ratio = Column(Float, default=0.0)
     
-    # Email bildirimleri tercihleri
-    email_notifications = Column(JSON, default=lambda: {
-        "server_expiring": True,
-        "payment_received": True,
-        "forum_replies": True,
-        "mentions": True,
-        "announcements": False,
-        "weekly_digest": False
-    })
+    # Email bildirimleri tercihleri - use callable to avoid mutable default sharing
+    email_notifications = Column(JSON, default=_get_default_email_notifications, nullable=False)
     
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -638,9 +675,9 @@ class ServerAction(Base):
 
 class Payment(Base):
     __tablename__ = "payments"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Changed to SET NULL for soft delete protection
     amount = Column(Float, nullable=False)
     original_amount = Column(Float)  # Indirim oncesi tutar
     discount_amount = Column(Float, default=0)  # Indirim miktari
@@ -658,7 +695,9 @@ class Payment(Base):
     created_at = Column(DateTime, default=func.now())
     completed_at = Column(DateTime)
     cancelled_at = Column(DateTime)  # Iptal zamani
-    
+    deleted_at = Column(DateTime, nullable=True)  # Soft delete timestamp
+    is_deleted = Column(Boolean, default=False)  # Soft delete flag
+
     # Relationships
     user = relationship("User", back_populates="payments")
     server = relationship("GameServer", backref="payments")
@@ -683,7 +722,7 @@ class BankTransfer(Base):
 
 class ForumCategory(Base):
     __tablename__ = "forum_categories"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     slug = Column(String(100), unique=True, nullable=False)
@@ -691,6 +730,7 @@ class ForumCategory(Base):
     icon = Column(String(50))
     color = Column(String(20))
     parent_id = Column(Integer, ForeignKey("forum_categories.id"))
+    game_slug = Column(String(50), nullable=True, index=True)  # cs16, halflife vb.
     display_order = Column(Integer, default=0)
     is_visible = Column(Boolean, default=True)
     min_role_to_view = Column(Enum(UserRole), default=UserRole.USER)
@@ -712,26 +752,36 @@ class ForumTopic(Base):
     __tablename__ = "forum_topics"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    category_id = Column(Integer, ForeignKey("forum_categories.id", ondelete="CASCADE"), nullable=False)
-    author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    category_id = Column(Integer, ForeignKey("forum_categories.id", ondelete="CASCADE"), nullable=False, index=True)
+    author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(200), nullable=False)
-    slug = Column(String(220), nullable=False)
+    slug = Column(String(220), nullable=False, index=True)
     content = Column(Text)  # Konu icerigi
-    is_active = Column(Boolean, default=True)  # Aktif/silindi
-    is_pinned = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True, index=True)  # Aktif/silindi - siralama icin index
+    is_pinned = Column(Boolean, default=False, index=True)  # Pinned topics siralama icin
     is_locked = Column(Boolean, default=False)
     is_featured = Column(Boolean, default=False)
-    view_count = Column(Integer, default=0)
+    view_count = Column(Integer, default=0, index=True)  # Popular topics siralama icin
     reply_count = Column(Integer, default=0)
     last_post_id = Column(Integer)
-    last_post_at = Column(DateTime)
+    last_post_at = Column(DateTime, index=True)  # Son aktivite siralama icin
     last_post_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(DateTime, default=func.now(), index=True)  # Yeni konular siralama icin
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Edit tracking
     edited_at = Column(DateTime)
     edited_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+
+    # Composite indexes for common queries
+    __table_args__ = (
+        # Kategori + is_active + is_pinned + created_at (kategori sayfalari icin)
+        Index('ix_forum_topics_category_active_pinned', 'category_id', 'is_active', 'is_pinned', 'created_at'),
+        # is_active + view_count (populer konular icin)
+        Index('ix_forum_topics_active_views', 'is_active', 'view_count'),
+        # is_active + created_at (yeni konular icin)
+        Index('ix_forum_topics_active_created', 'is_active', 'created_at'),
+    )
 
     # user_id alias for backward compatibility
     @property
@@ -785,16 +835,21 @@ class ForumReply(Base):
     __tablename__ = "forum_replies"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     content = Column(Text, nullable=False)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True, index=True)
     is_best_answer = Column(Boolean, default=False)  # Best answer feature
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(DateTime, default=func.now(), index=True)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Edit tracking
     edited_at = Column(DateTime)
+
+    # Composite index for topic replies query (topic_id + is_active + created_at)
+    __table_args__ = (
+        Index('ix_forum_replies_topic_active_created', 'topic_id', 'is_active', 'created_at'),
+    )
 
     # Relationships
     topic = relationship("ForumTopic", backref="replies")
@@ -947,9 +1002,9 @@ class UserForumBadge(Base):
 
 class SupportTicket(Base):
     __tablename__ = "support_tickets"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Changed to SET NULL for soft delete protection
     subject = Column(String(200), nullable=False)
     status = Column(String(20), default="open")  # open, pending, resolved, closed
     priority = Column(String(20), default="medium")  # low, medium, high
@@ -959,7 +1014,9 @@ class SupportTicket(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     closed_at = Column(DateTime)
-    
+    deleted_at = Column(DateTime, nullable=True)  # Soft delete timestamp
+    is_deleted = Column(Boolean, default=False)  # Soft delete flag
+
     # Relationships
     user = relationship("User", foreign_keys=[user_id], backref="tickets")
 
@@ -1995,3 +2052,26 @@ class ModerationLog(Base):
     # Relationships
     target_user = relationship("User", foreign_keys=[target_user_id])
     moderator = relationship("User", foreign_keys=[moderator_id])
+
+
+# ==================== ENUM VALIDATION EVENT LISTENERS ====================
+# Register validators for critical enum columns to ensure data integrity
+
+from sqlalchemy import event
+
+# User model enum validators
+event.listen(User.role, 'set', create_enum_validator(UserRole, 'User.role'), propagate=True)
+event.listen(User.status, 'set', create_enum_validator(UserStatus, 'User.status'), propagate=True)
+
+# GameServer model enum validators
+event.listen(GameServer.game_type, 'set', create_enum_validator(GameType, 'GameServer.game_type'), propagate=True)
+event.listen(GameServer.status, 'set', create_enum_validator(ServerStatus, 'GameServer.status'), propagate=True)
+
+# Payment model enum validators
+event.listen(Payment.method, 'set', create_enum_validator(PaymentMethod, 'Payment.method'), propagate=True)
+event.listen(Payment.status, 'set', create_enum_validator(PaymentStatus, 'Payment.status'), propagate=True)
+
+# ServerPackage model enum validator
+event.listen(ServerPackage.game_type, 'set', create_enum_validator(GameType, 'ServerPackage.game_type'), propagate=True)
+
+logger.debug("Enum validation event listeners registered")

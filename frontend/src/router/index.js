@@ -46,6 +46,12 @@ const routes = [
     meta: { title: 'Forum Kategorisi' }
   },
   {
+    path: '/test/game-assets',
+    name: 'game-assets-test',
+    component: () => import('@/views/GameAssetsTest.vue'),
+    meta: { title: 'Game Assets Test' }
+  },
+  {
     path: '/forum/topic/:id',
     name: 'forum-topic',
     component: () => import('@/views/ForumTopic.vue'),
@@ -188,6 +194,12 @@ const routes = [
     name: 'admin-stats',
     component: () => import('@/views/admin/Stats.vue'),
     meta: { title: 'Istatistikler', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/game-assets',
+    name: 'admin-game-assets',
+    component: () => import('@/views/admin/GameAssets.vue'),
+    meta: { title: 'Oyun Gorselleri', requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/login',

@@ -1,5 +1,8 @@
 /* Google Fonts with Turkish character support */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&subset=latin,latin-ext&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&subset=latin,latin-ext&display=swap');
+
+/* Forum-specific design system */
+@import './assets/styles/forum.css';
 
 /* Tailwind CSS Directives */
 @tailwind base;
@@ -30,12 +33,17 @@
     --gradient-gaming: linear-gradient(135deg, #f97316 0%, #8b5cf6 50%, #06b6d4 100%);
     --gradient-glow: linear-gradient(135deg, rgba(249, 115, 22, 0.3) 0%, rgba(139, 92, 246, 0.3) 100%);
 
-    /* Shadows - Subtle & Clean */
-    --shadow-gaming: 0 0 15px rgba(249, 115, 22, 0.15);
-    --shadow-glow: 0 4px 12px rgba(249, 115, 22, 0.12);
-    --shadow-glow-strong: 0 0 20px rgba(249, 115, 22, 0.25);
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+    /* Shadows - Subtle & Clean (eye-friendly) */
+    --shadow-gaming: 0 0 12px rgba(249, 115, 22, 0.1);
+    --shadow-glow: 0 4px 12px rgba(249, 115, 22, 0.08);
+    --shadow-glow-strong: 0 0 18px rgba(249, 115, 22, 0.18);
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.1);
+
+    /* New shadow levels */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.15);
 
     /* Typography Scale (Master Document) */
     --font-size-h1: clamp(40px, 5vw, 56px);
@@ -45,8 +53,8 @@
     --font-size-meta: 13px;
     --font-size-small: 12px;
 
-    --line-height-heading: 1.2;
-    --line-height-body: 1.6;
+    --line-height-heading: 1.25;
+    --line-height-body: 1.7;
 
     /* Spacing Scale (Master Document) - Optimized */
     --spacing-page: clamp(16px, 4vw, 48px);
@@ -62,27 +70,27 @@
 
   /* Dark Mode Variables - Softer & Eye-friendly */
   html.dark {
-    --bg-primary: #121318;
-    --bg-secondary: #1a1b21;
-    --bg-tertiary: #22232a;
-    --bg-card: rgba(255, 255, 255, 0.025);
-    --bg-hover: rgba(255, 255, 255, 0.05);
+    --bg-primary: #0d1117;
+    --bg-secondary: #151b23;
+    --bg-tertiary: #1c232d;
+    --bg-card: rgba(255, 255, 255, 0.02);
+    --bg-hover: rgba(255, 255, 255, 0.04);
 
-    --text-primary: #e8e8ec;
-    --text-secondary: #9ca3af;
-    --text-tertiary: #6b7280;
-    --text-muted: #4b5563;
+    --text-primary: #e2e8f0;
+    --text-secondary: #a0aec0;
+    --text-tertiary: #718096;
+    --text-muted: #4a5568;
 
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-light: rgba(255, 255, 255, 0.05);
+    --border-color: rgba(255, 255, 255, 0.06);
+    --border-light: rgba(255, 255, 255, 0.04);
 
-    --glass-bg: rgba(255, 255, 255, 0.025);
-    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-bg: rgba(255, 255, 255, 0.02);
+    --glass-border: rgba(255, 255, 255, 0.05);
 
-    --card-bg: rgba(26, 27, 33, 0.9);
-    --input-bg: rgba(255, 255, 255, 0.04);
+    --card-bg: rgba(21, 27, 35, 0.95);
+    --input-bg: rgba(255, 255, 255, 0.03);
 
-    --overlay-bg: rgba(0, 0, 0, 0.7);
+    --overlay-bg: rgba(0, 0, 0, 0.75);
   }
 
   /* Light Mode Variables */

@@ -6,9 +6,12 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import uuid
 from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request

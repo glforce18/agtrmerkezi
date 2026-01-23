@@ -48,26 +48,63 @@ class ConnectionManager:
     def disconnect(self, websocket: WebSocket, endpoint: str):
         if endpoint in self.connections:
             self.connections[endpoint].discard(websocket)
+
+        # Get user_id before removing from authenticated (needed for cleanup)
+        user_id = self.authenticated.get(websocket)
         if websocket in self.authenticated:
             del self.authenticated[websocket]
-        # Remove from all rooms
-        for room in self.rooms.values():
-            room.discard(websocket)
+
+        # RACE CONDITION FIX: Copy keys to avoid modification during iteration
+        # Also clean up ALL references including room_users and typing_users
+        rooms_to_check = list(self.rooms.keys())
+        for room_id in rooms_to_check:
+            if room_id in self.rooms and websocket in self.rooms[room_id]:
+                self.rooms[room_id].discard(websocket)
+
+                # If user was authenticated, clean up user tracking
+                if user_id is not None and room_id in self.room_users:
+                    # Check if user has other connections in the room
+                    user_still_in_room = False
+                    for ws in self.rooms.get(room_id, set()):
+                        if self.authenticated.get(ws) == user_id:
+                            user_still_in_room = True
+                            break
+
+                    if not user_still_in_room:
+                        self.room_users[room_id].discard(user_id)
+                        # Clean up typing indicator for this user
+                        if room_id in self.typing_users:
+                            self.typing_users[room_id].pop(user_id, None)
+                            # MEMORY LEAK FIX: Delete empty typing_users dict
+                            if not self.typing_users[room_id]:
+                                del self.typing_users[room_id]
+
+                        # Clean up empty room_users set
+                        if not self.room_users[room_id]:
+                            del self.room_users[room_id]
+
+                # Clean up empty rooms set
+                if not self.rooms[room_id]:
+                    del self.rooms[room_id]
+
         logger.info(f"WebSocket disconnected: {endpoint}")
     
     async def broadcast(self, endpoint: str, message: dict):
         """Endpoint'e bağlı tüm client'lara mesaj gönder"""
         if endpoint not in self.connections:
             return
-        
+
+        # RACE CONDITION FIX: Copy the set before iterating to avoid
+        # RuntimeError when set is modified during iteration
+        connections_copy = list(self.connections[endpoint])
         disconnected = set()
-        for ws in self.connections[endpoint]:
+        for ws in connections_copy:
             try:
                 await ws.send_json(message)
             except Exception as e:
                 logger.error(f"Broadcast error: {e}")
                 disconnected.add(ws)
-        
+
         # Clean up disconnected
         for ws in disconnected:
             self.connections[endpoint].discard(ws)
@@ -89,8 +126,8 @@ class ConnectionManager:
         for ws in self.rooms[room_id]:
             try:
                 await ws.send_json(message)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Room broadcast send error: {e}")
     
     def join_room(self, websocket: WebSocket, room_id: str):
         if room_id not in self.rooms:
@@ -149,6 +186,17 @@ class ConnectionManager:
             # Clean up typing indicator
             if room_id in self.typing_users:
                 self.typing_users[room_id].pop(user_id, None)
+                # MEMORY LEAK FIX: Delete empty typing_users dict
+                if not self.typing_users[room_id]:
+                    del self.typing_users[room_id]
+
+            # Clean up empty room_users set
+            if not self.room_users[room_id]:
+                del self.room_users[room_id]
+
+        # Clean up empty rooms set
+        if room_id in self.rooms and not self.rooms[room_id]:
+            del self.rooms[room_id]
 
         return not user_still_in_room  # Returns True if user fully left
 
@@ -310,30 +358,39 @@ async def get_dashboard_stats() -> dict:
 async def notifications_ws(websocket: WebSocket):
     """Kullanıcı bildirimleri"""
     await manager.connect(websocket, "notifications")
-    
+
     try:
         # İlk mesajda token ile authenticate
         data = await websocket.receive_text()
+        user_id = None
+
         try:
             payload = json.loads(data)
             token = payload.get("token")
             if token:
                 decoded = decode_token(token)
-                if decoded:
+                # SECURITY FIX: Explicit null check on decoded token
+                if decoded and "sub" in decoded:
                     user_id = decoded.get("sub")
                     if user_id:
                         manager.authenticate(websocket, int(user_id))
-                        
                         # Okunmamış bildirimleri gönder
                         await send_unread_notifications(websocket, int(user_id))
-        except Exception:
-            pass
-        
-        # Bağlantıyı açık tut
+        except Exception as e:
+            logger.debug(f"WebSocket notification auth error: {e}")
+
+        # SECURITY FIX: Close connection if authentication failed
+        if not user_id:
+            logger.warning("WebSocket notifications: Authentication failed, closing connection")
+            await websocket.close(code=1008, reason="Authentication required")
+            manager.disconnect(websocket, "notifications")
+            return
+
+        # Bağlantıyı açık tut (only for authenticated users)
         while True:
             await asyncio.sleep(30)
             await websocket.send_json({"type": "ping"})
-            
+
     except WebSocketDisconnect:
         manager.disconnect(websocket, "notifications")
 

@@ -22,6 +22,16 @@ REPUTATION_REPLY_CREATE = 2
 REPUTATION_LIKE_RECEIVED = 1
 REPUTATION_REPORTED_CONTENT = -10  # When confirmed as bad content
 
+# ============ Armor (Coin) Rewards ============
+# Forum aktivitesine göre Armor kazanma miktarları
+ARMOR_TOPIC_CREATE = 10      # Konu açma: 10 Armor
+ARMOR_REPLY_CREATE = 5       # Yanıt yazma: 5 Armor
+ARMOR_BEST_ANSWER = 25       # En iyi cevap seçilme: 25 Armor
+ARMOR_LIKE_RECEIVED = 1      # Beğeni alma: 1 Armor
+ARMOR_DAILY_LOGIN = 5        # Günlük giriş bonusu: 5 Armor
+ARMOR_FIRST_TOPIC = 50       # İlk konu bonusu: 50 Armor
+ARMOR_STREAK_BONUS = 10      # Ardışık gün bonusu: 10 Armor (7. gün)
+
 # ============ Badge Definitions ============
 # These are the default badges to be created in the database
 DEFAULT_BADGES = [
@@ -105,6 +115,77 @@ class ForumGamificationService:
 
         logger.info(f"User {user_id} reputation changed: {old_rep} -> {new_rep} ({amount:+d}) - {reason}")
         return new_rep
+
+    # ============ Armor (Coin) Methods ============
+
+    def add_armor(self, user_id: int, amount: int, reason: str = "") -> float:
+        """Kullanıcıya Armor (Coin) ekle"""
+        from app.models.database import User
+
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return 0.0
+
+        old_armor = user.balance_coin or 0.0
+        new_armor = old_armor + amount
+
+        user.balance_coin = new_armor
+        self.db.commit()
+
+        logger.info(f"User {user_id} armor changed: {old_armor:.0f} -> {new_armor:.0f} ({amount:+d}) - {reason}")
+        return new_armor
+
+    def reward_topic_creation(self, user_id: int, is_first_topic: bool = False) -> Dict:
+        """Konu açma ödülü - Reputation + Armor"""
+        rep = self.add_reputation(user_id, REPUTATION_TOPIC_CREATE, "topic_create")
+        armor_amount = ARMOR_TOPIC_CREATE
+
+        # İlk konu bonusu
+        if is_first_topic:
+            armor_amount += ARMOR_FIRST_TOPIC
+
+        armor = self.add_armor(user_id, armor_amount, "topic_create")
+
+        return {
+            "reputation_gained": REPUTATION_TOPIC_CREATE,
+            "armor_gained": armor_amount,
+            "new_reputation": rep,
+            "new_armor": armor,
+            "is_first_topic": is_first_topic
+        }
+
+    def reward_reply_creation(self, user_id: int) -> Dict:
+        """Yanıt yazma ödülü - Reputation + Armor"""
+        rep = self.add_reputation(user_id, REPUTATION_REPLY_CREATE, "reply_create")
+        armor = self.add_armor(user_id, ARMOR_REPLY_CREATE, "reply_create")
+
+        return {
+            "reputation_gained": REPUTATION_REPLY_CREATE,
+            "armor_gained": ARMOR_REPLY_CREATE,
+            "new_reputation": rep,
+            "new_armor": armor
+        }
+
+    def reward_best_answer(self, user_id: int) -> Dict:
+        """En iyi cevap seçilme ödülü"""
+        armor = self.add_armor(user_id, ARMOR_BEST_ANSWER, "best_answer")
+
+        return {
+            "armor_gained": ARMOR_BEST_ANSWER,
+            "new_armor": armor
+        }
+
+    def reward_like_received(self, user_id: int) -> Dict:
+        """Beğeni alma ödülü"""
+        rep = self.add_reputation(user_id, REPUTATION_LIKE_RECEIVED, "like_received")
+        armor = self.add_armor(user_id, ARMOR_LIKE_RECEIVED, "like_received")
+
+        return {
+            "reputation_gained": REPUTATION_LIKE_RECEIVED,
+            "armor_gained": ARMOR_LIKE_RECEIVED,
+            "new_reputation": rep,
+            "new_armor": armor
+        }
 
     def get_reputation_leaderboard(self, limit: int = 10) -> List[Dict]:
         """Get top users by reputation"""

@@ -189,7 +189,7 @@ async def finish_jackpot_round(
 
     # WebSocket broadcast - kazanan
     try:
-        from app.api.websocket import broadcast_jackpot_rolling, broadcast_jackpot_winner
+        from app.api.websocket import broadcast_jackpot_rolling
 
         # Önce rolling animasyonu
         animation_data = {
@@ -205,6 +205,7 @@ async def finish_jackpot_round(
         # 10 saniye sonra kazanan
         async def delayed_winner_broadcast():
             await asyncio.sleep(10)
+            from app.api.websocket import broadcast_jackpot_winner
             winner_data = {
                 "round_id": result["round_id"],
                 "round_number": result["round_number"],
@@ -216,7 +217,6 @@ async def finish_jackpot_round(
                 "server_seed": result["server_seed"],
                 "client_seed": result["client_seed"]
             }
-            from app.api.websocket import broadcast_jackpot_winner
             await broadcast_jackpot_winner(winner_data)
 
         asyncio.create_task(delayed_winner_broadcast())
@@ -340,9 +340,14 @@ async def get_game_leaderboard(
         func.sum(GameHistory.profit).desc()
     ).limit(limit).all()
 
+    # N+1 query fix: Batch load all users in a single query
+    user_ids = [row.user_id for row in results]
+    users = db.query(User).filter(User.id.in_(user_ids)).all() if user_ids else []
+    users_map = {u.id: u for u in users}
+
     leaderboard = []
     for i, row in enumerate(results):
-        user = db.query(User).filter(User.id == row.user_id).first()
+        user = users_map.get(row.user_id)
         if user:
             leaderboard.append({
                 "rank": i + 1,

@@ -36,7 +36,7 @@ export function useRequireAuth() {
       // Redirect to login with return URL
       if (redirect) {
         router.push({
-          name: 'Login',
+          name: 'login',
           query: { redirect: route.fullPath }
         })
       }
@@ -80,7 +80,7 @@ export function useRequireAuth() {
         negativeText: 'Vazgec',
         onPositiveClick: () => {
           router.push({
-            name: 'Login',
+            name: 'login',
             query: { redirect: route.fullPath }
           })
         }

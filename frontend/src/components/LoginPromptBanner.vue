@@ -32,7 +32,7 @@ const route = useRoute()
 const isLoggedIn = computed(() => !!authStore.user)
 
 const goToLogin = () => {
-  router.push({ name: 'Login', query: { redirect: route.fullPath } })
+  router.push({ name: 'login', query: { redirect: route.fullPath } })
 }
 </script>
 

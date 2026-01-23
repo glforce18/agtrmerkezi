@@ -10,6 +10,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user, get_current_user_with_steam
@@ -326,46 +327,58 @@ async def register_team(
 ):
     """📝 Turnuvaya takım kayıt (Steam hesabi baglantisi gerekli)"""
     ensure_tournament_tables(db)
-    
-    # Turnuva kontrolü
-    tournament = db.execute(text("""
-        SELECT status, max_teams, entry_fee, registration_start, registration_end
-        FROM tournaments WHERE id = :id
-    """), {"id": tournament_id}).fetchone()
-    
-    if not tournament:
-        raise HTTPException(404, "Turnuva bulunamadı")
-    
-    if tournament[0] != "registration":
-        return JSONResponse(status_code=400, content={"success": False, "detail": "Kayıtlar açık değil"})
-    
-    # Takım sayısı kontrolü
-    team_count = db.execute(text("""
-        SELECT COUNT(*) FROM tournament_teams WHERE tournament_id = :tid AND status != 'disqualified'
-    """), {"tid": tournament_id}).fetchone()[0]
-    
-    if team_count >= tournament[1]:
-        return JSONResponse(status_code=400, content={"success": False, "detail": "Turnuva dolu"})
-    
-    team_name = data.get("team_name", "").strip()
-    team_tag = data.get("team_tag", "").upper().strip()
-    
-    # Takım oluştur
-    r = db.execute(text("""
-        INSERT INTO tournament_teams (tournament_id, team_name, team_tag, captain_id)
-        VALUES (:tid, :name, :tag, :captain)
-    """), {"tid": tournament_id, "name": team_name, "tag": team_tag, "captain": current_user.id})
-    team_id = r.lastrowid
-    
-    # Kaptanı üye olarak ekle
-    db.execute(text("""
-        INSERT INTO tournament_team_members (team_id, user_id, role)
-        VALUES (:tid, :uid, 'captain')
-    """), {"tid": team_id, "uid": current_user.id})
-    
-    db.commit()
-    
-    return {"success": True, "team_id": team_id, "message": "Takım kaydedildi"}
+
+    try:
+        # Turnuva kontrolü - SELECT FOR UPDATE ile satırı kilitle (race condition önleme)
+        tournament = db.execute(text("""
+            SELECT status, max_teams, entry_fee, registration_start, registration_end
+            FROM tournaments WHERE id = :id FOR UPDATE
+        """), {"id": tournament_id}).fetchone()
+
+        if not tournament:
+            db.rollback()
+            raise HTTPException(404, "Turnuva bulunamadı")
+
+        if tournament[0] != "registration":
+            db.rollback()
+            return JSONResponse(status_code=400, content={"success": False, "detail": "Kayıtlar açık değil"})
+
+        # Takım sayısı kontrolü - Kilitleme altında yapılıyor
+        team_count = db.execute(text("""
+            SELECT COUNT(*) FROM tournament_teams WHERE tournament_id = :tid AND status != 'disqualified'
+        """), {"tid": tournament_id}).fetchone()[0]
+
+        if team_count >= tournament[1]:
+            db.rollback()
+            return JSONResponse(status_code=400, content={"success": False, "detail": "Turnuva dolu"})
+
+        team_name = data.get("team_name", "").strip()
+        team_tag = data.get("team_tag", "").upper().strip()
+
+        # Takım oluştur
+        r = db.execute(text("""
+            INSERT INTO tournament_teams (tournament_id, team_name, team_tag, captain_id)
+            VALUES (:tid, :name, :tag, :captain)
+        """), {"tid": tournament_id, "name": team_name, "tag": team_tag, "captain": current_user.id})
+        team_id = r.lastrowid
+
+        # Kaptanı üye olarak ekle
+        db.execute(text("""
+            INSERT INTO tournament_team_members (team_id, user_id, role)
+            VALUES (:tid, :uid, 'captain')
+        """), {"tid": team_id, "uid": current_user.id})
+
+        db.commit()
+
+        return {"success": True, "team_id": team_id, "message": "Takım kaydedildi"}
+    except IntegrityError:
+        db.rollback()
+        return JSONResponse(status_code=400, content={"success": False, "detail": "Kayıt işlemi başarısız, lütfen tekrar deneyin"})
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"success": False, "detail": "Bir hata oluştu"})
 
 
 @router.post("/teams/{team_id}/members")
@@ -427,47 +440,57 @@ async def generate_bracket(db: Session, tournament_id: int):
 
 
 async def generate_single_elimination(db: Session, tournament_id: int, team_ids: list):
-    """Single elimination bracket"""
+    """Single elimination bracket - atomic transaction ile tüm bracket oluşturulur"""
     num_teams = len(team_ids)
     num_rounds = math.ceil(math.log2(num_teams))
-    
+
     # Seed sıralaması
     random.shuffle(team_ids)  # veya seed'e göre sırala
-    
-    # İlk tur maçları
-    match_number = 0
-    for i in range(0, num_teams, 2):
-        match_number += 1
-        team1 = team_ids[i] if i < num_teams else None
-        team2 = team_ids[i + 1] if i + 1 < num_teams else None
-        
-        # Bye durumu
-        if team2 is None:
-            winner = team1
-            status = "completed"
-        else:
-            winner = None
-            status = "pending"
-        
-        db.execute(text("""
-            INSERT INTO tournament_matches (tournament_id, round_number, match_number, 
-                team1_id, team2_id, winner_id, status)
-            VALUES (:tid, 1, :mn, :t1, :t2, :winner, :status)
-        """), {
-            "tid": tournament_id, "mn": match_number,
-            "t1": team1, "t2": team2, "winner": winner, "status": status
-        })
-    
-    # Sonraki turlar (boş maçlar)
-    for round_num in range(2, num_rounds + 1):
-        matches_in_round = 2 ** (num_rounds - round_num)
-        for mn in range(1, matches_in_round + 1):
+
+    # Savepoint oluştur - hata durumunda tüm bracket geri alınır
+    savepoint = db.begin_nested()
+    try:
+        # İlk tur maçları
+        match_number = 0
+        for i in range(0, num_teams, 2):
+            match_number += 1
+            team1 = team_ids[i] if i < num_teams else None
+            team2 = team_ids[i + 1] if i + 1 < num_teams else None
+
+            # Bye durumu
+            if team2 is None:
+                winner = team1
+                status = "completed"
+            else:
+                winner = None
+                status = "pending"
+
             db.execute(text("""
-                INSERT INTO tournament_matches (tournament_id, round_number, match_number, status)
-                VALUES (:tid, :rn, :mn, 'pending')
-            """), {"tid": tournament_id, "rn": round_num, "mn": mn})
-    
-    db.commit()
+                INSERT INTO tournament_matches (tournament_id, round_number, match_number,
+                    team1_id, team2_id, winner_id, status)
+                VALUES (:tid, 1, :mn, :t1, :t2, :winner, :status)
+            """), {
+                "tid": tournament_id, "mn": match_number,
+                "t1": team1, "t2": team2, "winner": winner, "status": status
+            })
+
+        # Sonraki turlar (boş maçlar)
+        for round_num in range(2, num_rounds + 1):
+            matches_in_round = 2 ** (num_rounds - round_num)
+            for mn in range(1, matches_in_round + 1):
+                db.execute(text("""
+                    INSERT INTO tournament_matches (tournament_id, round_number, match_number, status)
+                    VALUES (:tid, :rn, :mn, 'pending')
+                """), {"tid": tournament_id, "rn": round_num, "mn": mn})
+
+        # Tüm işlemler başarılı - savepoint commit
+        savepoint.commit()
+        db.commit()
+    except Exception as e:
+        # Hata durumunda savepoint'e geri dön - partial state önlenir
+        savepoint.rollback()
+        db.rollback()
+        raise Exception(f"Bracket oluşturma hatası: {str(e)}")
 
 
 async def generate_round_robin(db: Session, tournament_id: int, team_ids: list):
@@ -520,42 +543,61 @@ async def submit_match_result(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """📊 Maç sonucu gir"""
+    """📊 Maç sonucu gir - Atomic transaction ile tüm güncellemeler tek seferde"""
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
         raise HTTPException(403, "Yetkiniz yok")
-    
+
     team1_score = data.get("team1_score", 0)
     team2_score = data.get("team2_score", 0)
-    
-    match = db.execute(text(
-        "SELECT team1_id, team2_id, tournament_id, round_number FROM tournament_matches WHERE id = :id"
-    ), {"id": match_id}).fetchone()
-    
-    if not match:
-        raise HTTPException(404, "Maç bulunamadı")
-    
-    # Kazanan belirle
-    winner_id = match[0] if team1_score > team2_score else match[1]
-    loser_id = match[1] if team1_score > team2_score else match[0]
-    
-    # Maçı güncelle
-    db.execute(text("""
-        UPDATE tournament_matches SET 
-            team1_score = :s1, team2_score = :s2, winner_id = :winner, loser_id = :loser,
-            status = 'completed', completed_at = NOW()
-        WHERE id = :id
-    """), {"s1": team1_score, "s2": team2_score, "winner": winner_id, "loser": loser_id, "id": match_id})
-    
-    # Takım istatistiklerini güncelle
-    db.execute(text("UPDATE tournament_teams SET wins = wins + 1 WHERE id = :id"), {"id": winner_id})
-    db.execute(text("UPDATE tournament_teams SET losses = losses + 1 WHERE id = :id"), {"id": loser_id})
-    
-    # Sonraki maça kazananı yerleştir
-    await advance_winner(db, match[2], match[3], winner_id)
-    
-    db.commit()
-    
-    return {"success": True, "winner_id": winner_id, "message": "Sonuç kaydedildi"}
+
+    # Savepoint ile atomic transaction başlat
+    savepoint = db.begin_nested()
+    try:
+        # Maçı kilitle - concurrent updates önleme (SELECT FOR UPDATE)
+        match = db.execute(text(
+            "SELECT team1_id, team2_id, tournament_id, round_number, status FROM tournament_matches WHERE id = :id FOR UPDATE"
+        ), {"id": match_id}).fetchone()
+
+        if not match:
+            savepoint.rollback()
+            raise HTTPException(404, "Maç bulunamadı")
+
+        # Maç zaten tamamlanmış mı kontrol et
+        if match[4] == "completed":
+            savepoint.rollback()
+            return JSONResponse(status_code=400, content={"success": False, "detail": "Bu maç zaten tamamlanmış"})
+
+        # Kazanan belirle
+        winner_id = match[0] if team1_score > team2_score else match[1]
+        loser_id = match[1] if team1_score > team2_score else match[0]
+
+        # Maçı güncelle
+        db.execute(text("""
+            UPDATE tournament_matches SET
+                team1_score = :s1, team2_score = :s2, winner_id = :winner, loser_id = :loser,
+                status = 'completed', completed_at = NOW()
+            WHERE id = :id
+        """), {"s1": team1_score, "s2": team2_score, "winner": winner_id, "loser": loser_id, "id": match_id})
+
+        # Takım istatistiklerini güncelle - aynı transaction içinde
+        db.execute(text("UPDATE tournament_teams SET wins = wins + 1 WHERE id = :id"), {"id": winner_id})
+        db.execute(text("UPDATE tournament_teams SET losses = losses + 1 WHERE id = :id"), {"id": loser_id})
+
+        # Sonraki maça kazananı yerleştir - aynı transaction içinde
+        await advance_winner(db, match[2], match[3], winner_id)
+
+        # Tüm işlemler başarılı - commit
+        savepoint.commit()
+        db.commit()
+
+        return {"success": True, "winner_id": winner_id, "message": "Sonuç kaydedildi"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Hata durumunda tüm değişiklikleri geri al
+        savepoint.rollback()
+        db.rollback()
+        return JSONResponse(status_code=500, content={"success": False, "detail": f"Sonuç kaydedilemedi: {str(e)}"})
 
 
 async def advance_winner(db: Session, tournament_id: int, current_round: int, winner_id: int):

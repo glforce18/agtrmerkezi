@@ -86,7 +86,21 @@ async def transfer_balance(
     db: Session = Depends(get_db)
 ):
     """Başka bir kullanıcıya bakiye transferi"""
-    # Alıcıyı bul
+    # Wallet type - önce belirle, lock sırasını tutarlı tutmak için
+    wallet_type = WalletType.COIN if data.wallet_type == "coin" else WalletType.REAL
+
+    # TL transferi sadece adminler için
+    if wallet_type == WalletType.REAL and current_user.role.value not in ["admin", "superadmin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="TL transferi sadece adminler için kullanılabilir"
+        )
+
+    # Race condition önleme: Gönderen ve alıcıyı with_for_update ile kilitle
+    # Deadlock önlemek için ID sırasına göre kilitleme yapılır (wallet.transfer içinde)
+    # Burada sadece alıcının varlığını doğrula, lock wallet.transfer'da yapılacak
+
+    # Alıcıyı bul - lock wallet.transfer metodunda yapılıyor
     to_user = db.query(User).filter(User.username == data.to_username).first()
     if not to_user:
         raise HTTPException(
@@ -100,20 +114,12 @@ async def transfer_balance(
             detail="Kendinize transfer yapamazsınız"
         )
 
-    # Wallet type
-    wallet_type = WalletType.COIN if data.wallet_type == "coin" else WalletType.REAL
-
-    # TL transferi sadece adminler için
-    if wallet_type == WalletType.REAL and current_user.role.value not in ["admin", "superadmin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="TL transferi sadece adminler için kullanılabilir"
-        )
-
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent", "")[:500]
 
     wallet = get_wallet_service(db)
+    # wallet.transfer metodu her iki kullanıcıyı with_for_update ile kilitler
+    # Bu sayede race condition önlenir
     from_tx, to_tx = wallet.transfer(
         from_user_id=current_user.id,
         to_user_id=to_user.id,
@@ -288,30 +294,27 @@ async def buy_armor_package(
 
     wallet = get_wallet_service(db)
 
-    # TL bakiyesini kontrol et
-    balances = wallet.get_all_balances(current_user.id)
-    if balances["balance_real"] < package["tl_amount"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Yetersiz TL bakiye. Mevcut: {balances['balance_real']} TL, Gerekli: {package['tl_amount']} TL"
-        )
-
     # Bonus dahil toplam Armor hesapla
     base_armor = package["armor_amount"]
     bonus_armor = int(base_armor * package["bonus_percent"] / 100)
     total_armor = base_armor + bonus_armor
 
-    # TL düş
-    tl_tx = wallet.deduct_balance(
-        user_id=current_user.id,
-        amount=package["tl_amount"],
-        wallet_type=WalletType.REAL,
-        transaction_type=TransactionType.PAYMENT.value,
-        description=f"Armor paketi satın alımı ({total_armor} Armor)",
-        ip_address=client_ip,
-        user_agent=user_agent,
-        extra_data={"package_id": package["id"], "armor_amount": total_armor}
-    )
+    # TL düş - deduct_balance zaten atomic lock ile bakiye kontrolü yapar
+    # Önceki get_all_balances kontrolü kaldırıldı (race condition riski)
+    try:
+        tl_tx = wallet.deduct_balance(
+            user_id=current_user.id,
+            amount=package["tl_amount"],
+            wallet_type=WalletType.REAL,
+            transaction_type=TransactionType.PAYMENT.value,
+            description=f"Armor paketi satın alımı ({total_armor} Armor)",
+            ip_address=client_ip,
+            user_agent=user_agent,
+            extra_data={"package_id": package["id"], "armor_amount": total_armor}
+        )
+    except HTTPException as e:
+        # Yetersiz bakiye hatası olabilir, olduğu gibi ilet
+        raise e
 
     # Armor ekle
     armor_tx = wallet.add_balance(

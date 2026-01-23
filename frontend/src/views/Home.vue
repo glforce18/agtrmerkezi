@@ -74,6 +74,172 @@
       </div>
     </section>
 
+    <!-- Games Showcase Section -->
+    <section class="games-showcase py-12 relative">
+      <div class="container-main relative z-10">
+        <div class="section-header mb-8">
+          <div class="section-badge">
+            <Gamepad2 class="w-4 h-4" />
+            <span>Oyunlar</span>
+          </div>
+          <h2 class="section-title">
+            <Gamepad2 class="section-icon" />
+            Desteklenen Oyunlar
+          </h2>
+          <p class="section-subtitle">Klasik FPS oyunları için topluluk merkezi</p>
+        </div>
+
+        <div class="games-grid">
+          <div
+            v-for="game in gamesList"
+            :key="game.slug"
+            class="game-showcase-card"
+            @click="navigateToGame(game.slug)"
+          >
+            <div class="game-banner-wrapper">
+              <img
+                v-if="gameAssets[game.slug]?.hero"
+                :src="gameAssets[game.slug].hero"
+                :alt="game.name"
+                class="game-banner-img"
+              />
+              <div v-else class="game-banner-placeholder" :style="{ background: game.gradient }">
+                <span class="game-placeholder-icon">{{ game.icon }}</span>
+              </div>
+              <div class="game-banner-overlay">
+                <img
+                  v-if="gameAssets[game.slug]?.logo"
+                  :src="gameAssets[game.slug].logo"
+                  :alt="game.name + ' logo'"
+                  class="game-logo-img"
+                />
+                <span v-else class="game-name-text">{{ game.name }}</span>
+              </div>
+            </div>
+            <div class="game-card-footer">
+              <span class="game-icon-small">{{ game.icon }}</span>
+              <span class="game-name-small">{{ game.name }}</span>
+              <ArrowRight class="w-4 h-4 game-arrow" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Forum Categories Showcase -->
+    <section class="forum-showcase py-16 relative">
+      <div class="section-glow section-glow-left"></div>
+      <div class="container-main relative z-10">
+        <div class="section-header mb-10">
+          <div class="section-badge">
+            <MessageSquare class="w-4 h-4" />
+            <span>Topluluk</span>
+          </div>
+          <h2 class="section-title">
+            <MessageSquare class="section-icon" />
+            Forum Kategorileri
+          </h2>
+          <p class="section-subtitle">Half-Life ve CS 1.6 hakkında tartışmalara katılın</p>
+        </div>
+
+        <div class="forum-categories-grid">
+          <!-- Half-Life Category -->
+          <router-link to="/forum/category/half-life-ag" class="forum-category-showcase hl-category">
+            <div class="category-icon-wrapper">
+              <span class="category-emoji">🔶</span>
+              <div class="category-icon-glow"></div>
+            </div>
+            <div class="category-content">
+              <h3 class="category-name">Half-Life / AG</h3>
+              <p class="category-desc">Adrenaline Gamer, modlar, haritalar ve taktikler</p>
+              <div class="category-tags">
+                <span class="category-tag">⚔️ Taktikler</span>
+                <span class="category-tag">🎮 Modlar</span>
+                <span class="category-tag">🗺️ Haritalar</span>
+              </div>
+            </div>
+            <div class="category-arrow">
+              <ArrowRight class="w-5 h-5" />
+            </div>
+            <div class="category-shine"></div>
+          </router-link>
+
+          <!-- CS 1.6 Category -->
+          <router-link to="/forum/category/cs16" class="forum-category-showcase cs-category">
+            <div class="category-icon-wrapper">
+              <span class="category-emoji">🎯</span>
+              <div class="category-icon-glow"></div>
+            </div>
+            <div class="category-content">
+              <h3 class="category-name">Counter-Strike 1.6</h3>
+              <p class="category-desc">Stratejiler, turnuvalar, klanlar ve daha fazlası</p>
+              <div class="category-tags">
+                <span class="category-tag">🎖️ Taktikler</span>
+                <span class="category-tag">🏆 Turnuvalar</span>
+                <span class="category-tag">🔧 Modlar</span>
+              </div>
+            </div>
+            <div class="category-arrow">
+              <ArrowRight class="w-5 h-5" />
+            </div>
+            <div class="category-shine"></div>
+          </router-link>
+
+          <!-- Community Category -->
+          <router-link to="/forum/category/tanisma" class="forum-category-showcase community-category">
+            <div class="category-icon-wrapper">
+              <span class="category-emoji">👋</span>
+              <div class="category-icon-glow"></div>
+            </div>
+            <div class="category-content">
+              <h3 class="category-name">Topluluk</h3>
+              <p class="category-desc">Tanışma, sohbet ve öneri köşesi</p>
+              <div class="category-tags">
+                <span class="category-tag">💬 Sohbet</span>
+                <span class="category-tag">💡 Öneriler</span>
+                <span class="category-tag">📚 Rehberler</span>
+              </div>
+            </div>
+            <div class="category-arrow">
+              <ArrowRight class="w-5 h-5" />
+            </div>
+            <div class="category-shine"></div>
+          </router-link>
+
+          <!-- Support Category -->
+          <router-link to="/forum/category/sunucu-destek" class="forum-category-showcase support-category">
+            <div class="category-icon-wrapper">
+              <span class="category-emoji">🛠️</span>
+              <div class="category-icon-glow"></div>
+            </div>
+            <div class="category-content">
+              <h3 class="category-name">Destek & Yardım</h3>
+              <p class="category-desc">Sunucu kurulumu ve teknik destek</p>
+              <div class="category-tags">
+                <span class="category-tag">🖥️ Kurulum</span>
+                <span class="category-tag">⚙️ Ayarlar</span>
+                <span class="category-tag">❓ SSS</span>
+              </div>
+            </div>
+            <div class="category-arrow">
+              <ArrowRight class="w-5 h-5" />
+            </div>
+            <div class="category-shine"></div>
+          </router-link>
+        </div>
+
+        <div class="text-center mt-10">
+          <router-link to="/forum">
+            <button class="btn-forum-cta muzzle-flash-hover">
+              <MessageSquare class="w-5 h-5" />
+              Tüm Kategorileri Gör
+              <ArrowRight class="w-5 h-5" />
+            </button>
+          </router-link>
+        </div>
+      </div>
+    </section>
+
     <!-- Featured Servers Section - Sadece veri varsa göster -->
     <section v-if="popularServers.length > 0" class="servers-section py-20 relative">
       <div class="section-glow section-glow-right"></div>
@@ -466,6 +632,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useClansStore } from '@/stores/clans'
 import { useAuthStore } from '@/stores/auth'
 import { useRequireSteam } from '@/composables/useRequireSteam'
+import { useGameAssets } from '@/composables/useGameAssets'
 import GameIcon from '@/components/game/GameIcon.vue'
 import ActivityFeed from '@/components/social/ActivityFeed.vue'
 import {
@@ -505,6 +672,18 @@ const themeStore = useThemeStore()
 const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
 const { hasSteam, requireSteam } = useRequireSteam()
+const { getGames, getGameAssets } = useGameAssets()
+
+// Games data
+const gamesList = ref([
+  { slug: 'cs16', name: 'Counter-Strike 1.6', icon: '🔫', gradient: 'linear-gradient(135deg, #ff6b00 0%, #1a1a2e 100%)' },
+  { slug: 'halflife', name: 'Half-Life', icon: '🎮', gradient: 'linear-gradient(135deg, #ff8c00 0%, #1a1a2e 100%)' },
+  { slug: 'css', name: 'CS: Source', icon: '🎯', gradient: 'linear-gradient(135deg, #2a9d8f 0%, #1a1a2e 100%)' },
+  { slug: 'csgo', name: 'CS:GO', icon: '💣', gradient: 'linear-gradient(135deg, #e63946 0%, #1a1a2e 100%)' },
+  { slug: 'tf2', name: 'Team Fortress 2', icon: '🏰', gradient: 'linear-gradient(135deg, #b5838d 0%, #1a1a2e 100%)' },
+  { slug: 'sven', name: 'Sven Co-op', icon: '👥', gradient: 'linear-gradient(135deg, #457b9d 0%, #1a1a2e 100%)' }
+])
+const gameAssets = ref({})
 
 // Auth state
 const isLoggedIn = computed(() => !!authStore.user)
@@ -771,6 +950,38 @@ const joinTournament = (event) => {
   })
 }
 
+// Game assets loading
+const loadGameAssets = async () => {
+  console.log('Loading game assets...')
+  for (const game of gamesList.value) {
+    try {
+      const assets = await getGameAssets(game.slug, null, 10)
+      console.log(`Assets for ${game.slug}:`, assets)
+      const assetMap = {}
+      assets.forEach(asset => {
+        assetMap[asset.asset_type] = asset.file_path
+      })
+      gameAssets.value = { ...gameAssets.value, [game.slug]: assetMap }
+      console.log(`Game assets updated:`, gameAssets.value)
+    } catch (e) {
+      console.error(`Failed to load assets for ${game.slug}:`, e)
+    }
+  }
+}
+
+// Navigate to game forum/page
+const navigateToGame = (slug) => {
+  const forumMap = {
+    cs16: '/forum/category/cs16',
+    halflife: '/forum/category/half-life-ag',
+    css: '/forum',
+    csgo: '/forum',
+    tf2: '/forum',
+    sven: '/forum'
+  }
+  router.push(forumMap[slug] || '/forum')
+}
+
 // Animation functions
 let typingInterval = null
 let counterInterval = null
@@ -833,6 +1044,9 @@ onMounted(() => {
   fetchTopPlayers()
   fetchPopularServers()
   fetchActiveEvents()
+
+  // Load game assets (banners, logos)
+  loadGameAssets()
 
   // Fetch clans for sidebar
   clansStore.fetchClans({ reset: true })
@@ -2505,6 +2719,381 @@ onUnmounted(() => {
 
   .activity-section .lg\\:col-span-2 {
     order: 1;
+  }
+}
+
+/* ===== Forum Showcase Section ===== */
+.forum-showcase {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.forum-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .forum-categories-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.forum-category-showcase {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  color: inherit;
+}
+
+.forum-category-showcase:hover {
+  transform: translateY(-5px) scale(1.02);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.forum-category-showcase:hover .category-shine {
+  transform: translateX(100%);
+}
+
+.forum-category-showcase:hover .category-arrow {
+  transform: translateX(5px);
+  opacity: 1;
+}
+
+.forum-category-showcase:hover .category-icon-glow {
+  opacity: 0.6;
+}
+
+/* Category-specific colors */
+.hl-category {
+  border-left: 4px solid #f97316;
+}
+
+.hl-category:hover {
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.hl-category .category-icon-glow {
+  background: #f97316;
+}
+
+.cs-category {
+  border-left: 4px solid #3b82f6;
+}
+
+.cs-category:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.cs-category .category-icon-glow {
+  background: #3b82f6;
+}
+
+.community-category {
+  border-left: 4px solid #10b981;
+}
+
+.community-category:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.community-category .category-icon-glow {
+  background: #10b981;
+}
+
+.support-category {
+  border-left: 4px solid #8b5cf6;
+}
+
+.support-category:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.support-category .category-icon-glow {
+  background: #8b5cf6;
+}
+
+.category-icon-wrapper {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+
+.category-emoji {
+  font-size: 32px;
+  z-index: 1;
+}
+
+.category-icon-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  opacity: 0;
+  filter: blur(20px);
+  transition: opacity 0.4s ease;
+}
+
+.category-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #f8fafc;
+}
+
+.category-desc {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  transition: all 0.3s ease;
+}
+
+.forum-category-showcase:hover .category-tag {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.category-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  color: #94a3b8;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.category-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.btn-forum-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 32px;
+  font-family: 'Poppins', 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-forum-cta:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(249, 115, 22, 0.5);
+}
+
+/* Responsive for forum showcase */
+@media (max-width: 640px) {
+  .forum-category-showcase {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .category-tags {
+    justify-content: center;
+  }
+
+  .category-arrow {
+    display: none;
+  }
+}
+
+/* ===== Games Showcase Section ===== */
+.games-showcase {
+  background: linear-gradient(180deg, rgba(15, 15, 26, 0.8) 0%, rgba(24, 24, 28, 0.9) 100%);
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.game-showcase-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #131a22;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.game-showcase-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.game-banner-wrapper {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.game-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.game-showcase-card:hover .game-banner-img {
+  transform: scale(1.08);
+}
+
+.game-banner-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-placeholder-icon {
+  font-size: 64px;
+  filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));
+}
+
+.game-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
+}
+
+.game-logo-img {
+  max-width: 180px;
+  max-height: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.8));
+}
+
+.game-name-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+}
+
+.game-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: rgba(0,0,0,0.3);
+}
+
+.game-icon-small {
+  font-size: 20px;
+}
+
+.game-name-small {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.game-arrow {
+  color: #94a3b8;
+  transition: all 0.3s ease;
+}
+
+.game-showcase-card:hover .game-arrow {
+  color: #f97316;
+  transform: translateX(4px);
+}
+
+@media (max-width: 640px) {
+  .games-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .game-logo-img {
+    max-width: 120px;
+    max-height: 50px;
+  }
+
+  .game-name-text {
+    font-size: 16px;
+  }
+
+  .game-card-footer {
+    padding: 10px 12px;
+  }
+
+  .game-name-small {
+    font-size: 12px;
   }
 }
 </style>

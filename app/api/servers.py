@@ -552,10 +552,6 @@ async def server_action(server_id: int, data: ServerActionRequest, db: Session =
     return {"success": True, "message": message, "new_status": server.status.value}
 
 
-import os
-import subprocess
-
-
 def run_server_command(command: str, server_id: int, *args) -> dict:
     """Server manager scriptini calistir"""
     # Build command as list to prevent shell injection

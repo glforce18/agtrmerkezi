@@ -3,7 +3,10 @@
 # Dosya: app/api/maintenance.py
 # ============================================
 
+import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -247,7 +250,8 @@ async def admin_update_maintenance(
     if data.estimated_end:
         try:
             estimated_end = datetime.fromisoformat(data.estimated_end.replace('Z', '+00:00'))
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to parse estimated_end date: {e}")
             pass
 
     # Upsert
@@ -290,7 +294,8 @@ async def admin_update_maintenance(
         from app.core.redis_manager import redis_manager
         import asyncio
         asyncio.create_task(redis_manager.delete("maintenance:status"))
-    except:
+    except Exception as e:
+        logger.warning(f"Failed to clear Redis cache: {e}")
         pass
 
     action = "bakıma alındı" if data.is_enabled else "bakımdan çıkarıldı"

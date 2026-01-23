@@ -15,14 +15,25 @@ from app.models.database import Base, add_missing_columns
 
 logger = logging.getLogger(__name__)
 
-# Engine olustur - Connection Pool ile
+# Engine olustur - Optimize edilmis Connection Pool ile
 engine = create_engine(
     settings.DATABASE_URL,
-    pool_size=settings.DB_POOL_SIZE,
-    max_overflow=settings.DB_MAX_OVERFLOW,
-    pool_pre_ping=True,
-    pool_recycle=settings.DB_POOL_RECYCLE,
-    echo=settings.DEBUG
+    pool_size=settings.DB_POOL_SIZE,  # Varsayilan: 20
+    max_overflow=settings.DB_MAX_OVERFLOW,  # Varsayilan: 30
+    pool_pre_ping=True,  # Her baglantiyi kullanmadan once kontrol et (kopuk baglantiyi tespit eder)
+    pool_recycle=settings.DB_POOL_RECYCLE,  # Varsayilan: 3600 (1 saat)
+    pool_timeout=30,  # Havuzdan baglanti almayi 30 saniye bekle
+    echo=settings.DEBUG,
+    # Performance optimizations
+    execution_options={
+        "stream_results": True,  # Buyuk sonuc setleri icin streaming
+    },
+    # Connection arguments
+    connect_args={
+        "connect_timeout": 10,  # MySQL baglanti timeout (saniye)
+        "read_timeout": 30,  # MySQL okuma timeout
+        "write_timeout": 30,  # MySQL yazma timeout
+    }
 )
 
 # Session factory
@@ -97,9 +108,13 @@ def get_redis_pool():
             port=settings.REDIS_PORT,
             db=settings.REDIS_DB,
             max_connections=settings.REDIS_MAX_CONNECTIONS,
-            decode_responses=True
+            decode_responses=True,
+            socket_timeout=5.0,  # 5 saniye okuma/yazma timeout
+            socket_connect_timeout=3.0,  # 3 saniye baglanti timeout
+            retry_on_timeout=True,  # Timeout durumunda yeniden dene
+            health_check_interval=30  # 30 saniyede bir baglanti kontrolu
         )
-        logger.info("Redis connection pool olusturuldu")
+        logger.info("Redis connection pool olusturuldu (timeout: 5s, connect_timeout: 3s)")
     return _redis_pool
 
 

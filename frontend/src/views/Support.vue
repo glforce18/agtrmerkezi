@@ -11,9 +11,12 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Yardim konusu arayın..."
+            placeholder="Yardim konusu arayın... (min 2 karakter)"
             class="input input-bordered bg-base-200 w-full"
+            :class="{ 'input-warning': searchValidation.show }"
+            @input="validateSearch"
           />
+          <p v-if="searchValidation.show" class="text-warning text-sm mt-2">{{ searchValidation.message }}</p>
         </div>
       </div>
 
@@ -96,6 +99,15 @@ import { ref, computed } from 'vue'
 
 const searchQuery = ref('')
 const openFAQ = ref(null)
+const searchValidation = ref({ message: '', show: false })
+
+const validateSearch = () => {
+  if (searchQuery.value.length > 0 && searchQuery.value.length < 2) {
+    searchValidation.value = { message: 'Arama icin en az 2 karakter girin', show: true }
+  } else {
+    searchValidation.value = { message: '', show: false }
+  }
+}
 
 const faqs = [
   {
@@ -125,7 +137,7 @@ const faqs = [
 ]
 
 const filteredFAQs = computed(() => {
-  if (!searchQuery.value) return faqs
+  if (!searchQuery.value || searchQuery.value.length < 2) return faqs
   const query = searchQuery.value.toLowerCase()
   return faqs.filter(faq =>
     faq.question.toLowerCase().includes(query) ||

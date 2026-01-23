@@ -218,12 +218,23 @@ class RedisManager:
     # ==================== SESSION MANAGEMENT ====================
 
     async def set_online_user(self, user_id: int, metadata: dict = None):
-        """Mark user as online"""
+        """Mark user as online with atomic check-and-set to prevent race conditions"""
+        if not self.redis:
+            return
+
         key = f"online:user:{user_id}"
         data = metadata or {}
         data["user_id"] = user_id
         data["timestamp"] = asyncio.get_event_loop().time()
-        await self.cache_set(key, data, expire=60)  # 60s TTL, needs refresh
+
+        try:
+            # Use SET with NX option for atomic operation, or update if exists
+            # Using SETNX would only set if not exists, but we want to always update
+            # So we use SET with EX for atomic set-with-expiry
+            serialized = json.dumps(data)
+            await self.redis.set(key, serialized, ex=60)  # 60s TTL, atomic operation
+        except RedisError as e:
+            logger.error(f"Redis set_online_user error: {e}")
 
     async def remove_online_user(self, user_id: int):
         """Mark user as offline"""

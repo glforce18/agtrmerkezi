@@ -1,1372 +1,628 @@
 <template>
-  <div class="forum-topic-page min-h-screen relative">
-    <!-- Reading Progress Indicator -->
-    <div class="reading-progress-container">
-      <div
-        class="reading-progress-bar"
-        :style="{ width: `${readingProgress}%` }"
+  <ForumLayout
+    :show-right-sidebar="false"
+    :full-width="false"
+    class="forum-page"
+  >
+    <!-- Left Sidebar: Category Navigation -->
+    <template #sidebar-left>
+      <ForumSidebar
+        :categories="allCategories"
+        :active-category="topic?.categoryId"
+        :stats="sidebarStats"
+        @category-click="handleCategoryClick"
       />
-    </div>
+    </template>
 
-    <!-- Animated Background -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-float" />
-      <div class="absolute top-1/2 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-float-delayed" />
-      <div class="absolute -bottom-40 right-1/3 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl animate-float" />
-    </div>
-
-    <!-- Floating Action Bar -->
-    <Transition name="slide-up">
-      <div
-        v-if="showFloatingBar"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
-      >
-        <div class="floating-action-bar glass-morphism-strong px-6 py-3 rounded-full flex items-center gap-4">
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <button
-                class="fab-button"
-                :class="{ 'liked': hasLikedTopic, 'disabled-action': !isLoggedIn }"
-                @click="likeTopic"
-              >
-                <HeartIcon class="w-5 h-5" :class="{ 'animate-like': likeAnimating }" />
-                <span class="fab-count">{{ topic?.likes }}</span>
-              </button>
-            </template>
-            {{ isLoggedIn ? 'Begeni' : 'Begenmek icin giris yapin' }}
-          </n-tooltip>
-
-          <div class="h-6 w-px bg-white/20" />
-
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <button class="fab-button" @click="showShareModal = true">
-                <Share2Icon class="w-5 h-5" />
-              </button>
-            </template>
-            Paylas
-          </n-tooltip>
-
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <button
-                class="fab-button"
-                :class="{ 'disabled-action': !isLoggedIn }"
-                @click="reportTopic"
-              >
-                <FlagIcon class="w-5 h-5" />
-              </button>
-            </template>
-            {{ isLoggedIn ? 'Bildir' : 'Bildirmek icin giris yapin' }}
-          </n-tooltip>
-
-          <div class="h-6 w-px bg-white/20" />
-
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <button class="fab-button" @click="scrollToReplyForm">
-                <MessageSquareIcon class="w-5 h-5" />
-              </button>
-            </template>
-            Yanıtla
-          </n-tooltip>
-
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <button class="fab-button" @click="scrollToTop">
-                <ArrowUpIcon class="w-5 h-5" />
-              </button>
-            </template>
-            Yukari
-          </n-tooltip>
-        </div>
-      </div>
-    </Transition>
-
-    <div class="container-custom py-8 relative z-10">
-      <!-- Enhanced Breadcrumb Navigation with Category Color -->
-      <nav class="breadcrumb-nav glass-morphism mb-6 p-4 rounded-2xl">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3 flex-wrap">
-            <button
-              class="breadcrumb-item group"
-              @click="router.push('/forum')"
-            >
-              <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-orange-500/20 transition-all duration-300">
-                <HomeIcon class="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
-                <span class="text-gray-300 group-hover:text-orange-400 transition-colors">Forum</span>
-              </div>
-            </button>
-
-            <ChevronRightIcon class="w-4 h-4 text-gray-500" />
-
-            <button
-              class="breadcrumb-item group"
-              @click="router.push(`/forum/category/${topic?.categoryId || 1}`)"
-            >
-              <div
-                class="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300"
-                :style="{
-                  background: `${getCategoryColor(topic?.categoryId)}15`,
-                  borderLeft: `3px solid ${getCategoryColor(topic?.categoryId)}`
-                }"
-              >
-                <FolderIcon class="w-4 h-4 transition-transform group-hover:scale-110" :style="{ color: getCategoryColor(topic?.categoryId) }" />
-                <span class="transition-colors" :style="{ color: getCategoryColor(topic?.categoryId) }">{{ topic?.categoryName || 'Genel Tartisma' }}</span>
-              </div>
-            </button>
-
-            <ChevronRightIcon class="w-4 h-4 text-gray-500" />
-
-            <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/30">
-              <FileTextIcon class="w-4 h-4 text-orange-500" />
-              <span class="text-orange-400 font-medium truncate max-w-[200px] md:max-w-[400px]">{{ topic?.title }}</span>
-            </div>
-          </div>
-
-          <div class="hidden md:flex items-center gap-2">
-            <n-button quaternary size="small" @click="router.back()">
-              <template #icon><ArrowLeftIcon class="w-4 h-4" /></template>
-              Geri
-            </n-button>
-          </div>
-        </div>
+    <!-- Main Content -->
+    <template #default>
+      <!-- Breadcrumb -->
+      <nav class="forum-breadcrumb-enhanced" aria-label="Gezinti">
+        <a href="#" @click.prevent="router.push('/forum')" class="forum-breadcrumb-item">
+          <HomeIcon class="w-4 h-4" />
+          <span>Forum</span>
+        </a>
+        <ChevronRightIcon class="w-4 h-4 forum-breadcrumb-separator" />
+        <a href="#" @click.prevent="router.push(`/forum/category/${topic?.categoryId || 1}`)" class="forum-breadcrumb-item">
+          <FolderIcon class="w-4 h-4" />
+          <span>{{ topic?.categoryName || 'Kategori' }}</span>
+        </a>
+        <ChevronRightIcon class="w-4 h-4 forum-breadcrumb-separator" />
+        <span class="forum-breadcrumb-current">
+          <FileTextIcon class="w-4 h-4" />
+          {{ topic?.title }}
+        </span>
       </nav>
 
-      <!-- Topic Header Card -->
-      <div class="glass-morphism-strong rounded-3xl p-6 mb-6 animate-fade-in">
-        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-3 flex-wrap">
-              <n-tag
-                v-if="topic?.isPinned"
-                type="warning"
-                round
-                class="tag-glow-orange"
-              >
-                <template #icon><PinIcon class="w-3 h-3" /></template>
-                Sabitlenmis
-              </n-tag>
-              <n-tag
-                v-if="topic?.isLocked"
-                type="error"
-                round
-                class="tag-glow-red"
-              >
-                <template #icon><LockIcon class="w-3 h-3" /></template>
-                Kilitli
-              </n-tag>
-              <n-tag
-                v-if="topic?.isHot"
-                round
-                class="tag-hot"
-              >
-                <template #icon><FlameIcon class="w-3 h-3" /></template>
-                Popüler
-              </n-tag>
-            </div>
-
-            <h1 class="text-2xl md:text-4xl font-display font-bold mb-4">
-              <span class="text-gradient-animated">{{ topic?.title }}</span>
-            </h1>
-
-            <!-- Topic Meta Stats -->
-            <div class="flex flex-wrap items-center gap-4 text-sm">
-              <div class="stat-chip">
-                <MessageSquareIcon class="w-4 h-4 text-orange-400" />
-                <span>{{ replies.length }} Yanıt</span>
-              </div>
-              <div class="stat-chip">
-                <EyeIcon class="w-4 h-4 text-purple-400" />
-                <span>{{ topic?.views }} Görüntülenme</span>
-              </div>
-              <div class="stat-chip">
-                <HeartIcon class="w-4 h-4 text-pink-400" />
-                <span>{{ topic?.likes }} Begeni</span>
-              </div>
-              <div class="stat-chip">
-                <ClockIcon class="w-4 h-4 text-cyan-400" />
-                <span>{{ topic?.created }}</span>
-              </div>
-              <!-- Real-time Viewers Badge -->
-              <n-tooltip v-if="wsViewerCount > 0" trigger="hover">
-                <template #trigger>
-                  <div class="stat-chip live-viewers">
-                    <div class="live-dot" />
-                    <UsersIcon class="w-4 h-4 text-green-400" />
-                    <span>{{ wsViewerCount }} izliyor</span>
-                  </div>
-                </template>
-                <div class="p-2">
-                  <div class="text-xs text-gray-400 mb-2">Su an konuyu goruntuleyenler:</div>
-                  <div v-for="viewer in wsViewers" :key="viewer.id" class="flex items-center gap-2 py-1">
-                    <n-avatar round :size="20" :src="viewer.avatar" />
-                    <span class="text-sm">{{ viewer.username }}</span>
-                  </div>
-                  <div v-if="wsViewers.length === 0" class="text-xs text-gray-500">
-                    Anonim izleyiciler
-                  </div>
-                </div>
-              </n-tooltip>
-            </div>
-          </div>
-
-          <!-- Quick Actions (Desktop) -->
-          <div class="hidden lg:flex items-center gap-2">
-            <n-button-group>
-              <n-tooltip trigger="hover">
-                <template #trigger>
-                  <n-button
-                    :type="hasLikedTopic ? 'primary' : 'default'"
-                    quaternary
-                    :class="{ 'disabled-action': !isLoggedIn }"
-                    @click="likeTopic"
-                  >
-                    <template #icon>
-                      <HeartIcon class="w-4 h-4" :class="{ 'text-red-500 fill-red-500': hasLikedTopic }" />
-                    </template>
-                    {{ topic?.likes }}
-                  </n-button>
-                </template>
-                {{ isLoggedIn ? 'Begen' : 'Begenmek icin giris yapin' }}
-              </n-tooltip>
-              <n-button quaternary @click="showShareModal = true">
-                <template #icon><Share2Icon class="w-4 h-4" /></template>
-              </n-button>
-              <n-button quaternary @click="bookmarkTopic">
-                <template #icon>
-                  <BookmarkIcon class="w-4 h-4" :class="{ 'text-yellow-500 fill-yellow-500': hasBookmarked }" />
-                </template>
-              </n-button>
-            </n-button-group>
-          </div>
+      <!-- Topic Header -->
+      <section class="forum-topic-header">
+        <div class="forum-topic-header__badges">
+          <span v-if="topic?.isPinned" class="forum-badge-enhanced forum-badge-enhanced--warning">
+            <PinIcon class="w-3 h-3" />
+            Sabitlenmis
+          </span>
+          <span v-if="topic?.isLocked" class="forum-badge-enhanced forum-badge-enhanced--error">
+            <LockIcon class="w-3 h-3" />
+            Kilitli
+          </span>
+          <span v-if="topic?.isHot" class="forum-badge-enhanced forum-badge-enhanced--hot">
+            <FlameIcon class="w-3 h-3" />
+            Populer
+          </span>
+          <span v-if="topic?.isSolved" class="forum-badge-enhanced forum-badge-enhanced--success">
+            <CheckCircleIcon class="w-3 h-3" />
+            Cozuldu
+          </span>
         </div>
-      </div>
-
-      <!-- Original Post -->
-      <div class="post-card glass-morphism-strong rounded-3xl overflow-hidden mb-6 animate-fade-in" style="animation-delay: 0.1s">
-        <div class="flex flex-col lg:flex-row">
-          <!-- Enhanced Author Sidebar -->
-          <div class="author-sidebar lg:w-64 p-6 border-b lg:border-b-0 lg:border-r border-white/10">
-            <div class="flex lg:flex-col items-center lg:items-center gap-4 lg:gap-3">
-              <!-- Avatar with Status & Level Ring -->
-              <div class="relative group">
-                <div class="avatar-ring-container">
-                  <svg class="avatar-level-ring" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
-                    <circle
-                      cx="60" cy="60" r="54" fill="none"
-                      :stroke="getLevelColor(topic?.authorLevel)"
-                      stroke-width="4"
-                      stroke-linecap="round"
-                      :stroke-dasharray="`${(topic?.authorXpProgress || 75) * 3.39} 339`"
-                      transform="rotate(-90 60 60)"
-                      class="level-progress"
-                    />
-                  </svg>
-                  <n-avatar
-                    round
-                    :size="96"
-                    :src="topic?.authorAvatar"
-                    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                  />
-                </div>
-
-                <!-- Online Status -->
-                <div
-                  class="absolute bottom-2 right-2 w-5 h-5 rounded-full border-3 border-gray-900"
-                  :class="topic?.authorOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-500'"
-                />
-
-                <!-- Level Badge -->
-                <div class="level-badge">
-                  <ZapIcon class="w-3 h-3 mr-1" />
-                  {{ topic?.authorLevel || 42 }}
-                </div>
-              </div>
-
-              <!-- Author Info -->
-              <div class="text-center lg:text-center flex-1 lg:flex-none">
-                <h3 class="font-bold text-lg text-[color:var(--text-primary)] hover:text-orange-400 transition-colors cursor-pointer">
-                  {{ topic?.author }}
-                </h3>
-
-                <!-- Role Badge -->
-                <div class="role-badge-container my-2">
-                  <span :class="getRoleBadgeClass(topic?.authorRole)">
-                    <component :is="getRoleIcon(topic?.authorRole)" class="w-3 h-3 mr-1" />
-                    {{ topic?.authorRole }}
-                  </span>
-                </div>
-
-                <!-- Badges Row -->
-                <div class="flex justify-center gap-1 mb-3">
-                  <n-tooltip v-for="badge in topic?.authorBadges || defaultBadges" :key="badge.id">
-                    <template #trigger>
-                      <div class="badge-icon" :style="{ background: badge.color }">
-                        <component :is="getBadgeIcon(badge.icon)" class="w-3 h-3" />
-                      </div>
-                    </template>
-                    {{ badge.name }}
-                  </n-tooltip>
-                </div>
-
-                <!-- Author Stats Grid -->
-                <div class="author-stats-grid">
-                  <div class="author-stat-item">
-                    <MessageCircleIcon class="w-4 h-4 text-orange-400" />
-                    <span class="stat-value">{{ topic?.authorPosts }}</span>
-                    <span class="stat-label">Gönderi</span>
-                  </div>
-                  <div class="author-stat-item">
-                    <ThumbsUpIcon class="w-4 h-4 text-pink-400" />
-                    <span class="stat-value">{{ topic?.authorLikes || 2341 }}</span>
-                    <span class="stat-label">Begeni</span>
-                  </div>
-                  <div class="author-stat-item full-width">
-                    <CalendarIcon class="w-4 h-4 text-cyan-400" />
-                    <span class="stat-label">Üyelik: {{ topic?.authorJoined }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Post Content -->
-          <div class="flex-1 p-6">
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-sm text-gray-500 flex items-center gap-2">
-                <ClockIcon class="w-4 h-4" />
-                {{ topic?.created }}
-                <span v-if="topic?.isEdited" class="text-orange-400">(düzenlendi)</span>
-              </span>
-
-              <!-- Post Actions Menu -->
-              <n-dropdown
-                v-if="isOwnPost(topic?.authorId)"
-                :options="postActionOptions"
-                @select="handlePostAction"
-              >
-                <n-button quaternary circle size="small">
-                  <MoreHorizontalIcon class="w-4 h-4" />
-                </n-button>
-              </n-dropdown>
-            </div>
-
-            <!-- Rendered Markdown Content -->
-            <div class="post-content prose prose-invert max-w-none mb-6">
-              <div v-html="renderedContent" class="markdown-body" />
-            </div>
-
-            <!-- Attachments -->
-            <div v-if="topic?.attachments?.length" class="mb-6">
-              <h4 class="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
-                <PaperclipIcon class="w-4 h-4" />
-                Ekler
-              </h4>
-              <div class="flex flex-wrap gap-2">
-                <a
-                  v-for="attachment in topic?.attachments"
-                  :key="attachment.id"
-                  :href="attachment.url"
-                  target="_blank"
-                  class="attachment-chip"
-                >
-                  <FileIcon class="w-4 h-4" />
-                  <span>{{ attachment.name }}</span>
-                  <span class="text-xs text-gray-500">({{ attachment.size }})</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Reactions Bar -->
-            <div class="reactions-bar flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-white/10">
-              <button
-                v-for="reaction in availableReactions"
-                :key="reaction.emoji"
-                class="reaction-button"
-                :class="{ 'active': hasReacted(reaction.emoji) }"
-                @click="toggleReaction(reaction.emoji)"
-              >
-                <span class="text-lg">{{ reaction.emoji }}</span>
-                <span v-if="getReactionCount(reaction.emoji) > 0" class="reaction-count">
-                  {{ getReactionCount(reaction.emoji) }}
-                </span>
-              </button>
-
-              <n-popover trigger="click" placement="bottom-start">
-                <template #trigger>
-                  <button class="reaction-button add-reaction">
-                    <PlusIcon class="w-4 h-4" />
-                  </button>
-                </template>
-                <div class="grid grid-cols-6 gap-2 p-2">
-                  <button
-                    v-for="emoji in allEmojis"
-                    :key="emoji"
-                    class="emoji-picker-item"
-                    @click="addReaction(emoji)"
-                  >
-                    {{ emoji }}
-                  </button>
-                </div>
-              </n-popover>
-            </div>
-
-            <!-- Post Actions -->
-            <div class="flex items-center justify-between">
-              <div class="flex gap-3">
-                <n-tooltip trigger="hover">
-                  <template #trigger>
-                    <button
-                      class="like-button-animated"
-                      :class="{ 'liked': hasLikedTopic, 'animating': likeAnimating, 'disabled-action': !isLoggedIn }"
-                      @click="likeTopic"
-                    >
-                      <HeartIcon class="like-icon w-5 h-5" />
-                      <span class="like-count">{{ topic?.likes }}</span>
-                      <span class="like-text">Begeni</span>
-                      <div class="like-particles">
-                        <span v-for="i in 6" :key="i" class="particle" />
-                      </div>
-                    </button>
-                  </template>
-                  {{ isLoggedIn ? 'Begen' : 'Begenmek icin giris yapin' }}
-                </n-tooltip>
-                <n-button size="small" @click="scrollToReplyForm" class="action-button">
-                  <template #icon><ReplyIcon class="w-4 h-4" /></template>
-                  Yanıtla
-                </n-button>
-                <n-button size="small" @click="showShareModal = true" class="action-button">
-                  <template #icon><Share2Icon class="w-4 h-4" /></template>
-                  Paylas
-                </n-button>
-              </div>
-              <n-tooltip trigger="hover">
-                <template #trigger>
-                  <n-button
-                    size="small"
-                    type="error"
-                    quaternary
-                    :class="{ 'disabled-action': !isLoggedIn }"
-                    @click="reportTopic"
-                  >
-                    <template #icon><FlagIcon class="w-4 h-4" /></template>
-                    Bildir
-                  </n-button>
-                </template>
-                {{ isLoggedIn ? 'Bildir' : 'Bildirmek icin giris yapin' }}
-              </n-tooltip>
-            </div>
-          </div>
+        <h1 class="forum-heading-enhanced forum-heading--xl">{{ topic?.title }}</h1>
+        <div class="forum-topic-header__stats">
+          <span class="forum-stat-enhanced">
+            <span class="forum-stat-enhanced__icon"><MessageSquareIcon class="w-3.5 h-3.5" /></span>
+            <span class="forum-stat-enhanced__value">{{ replies.length }}</span>
+            <span class="forum-stat-enhanced__label">Yanit</span>
+          </span>
+          <span class="forum-stat-enhanced">
+            <span class="forum-stat-enhanced__icon"><EyeIcon class="w-3.5 h-3.5" /></span>
+            <span class="forum-stat-enhanced__value">{{ topic?.views }}</span>
+            <span class="forum-stat-enhanced__label">Goruntulenme</span>
+          </span>
+          <span class="forum-stat-enhanced">
+            <span class="forum-stat-enhanced__icon"><HeartIcon class="w-3.5 h-3.5" /></span>
+            <span class="forum-stat-enhanced__value">{{ topic?.likes }}</span>
+            <span class="forum-stat-enhanced__label">Begeni</span>
+          </span>
+          <span class="forum-stat-enhanced">
+            <span class="forum-stat-enhanced__icon"><ClockIcon class="w-3.5 h-3.5" /></span>
+            <span class="forum-stat-enhanced__value">{{ topic?.created }}</span>
+          </span>
+          <span v-if="wsViewerCount > 0" class="forum-stat-enhanced forum-stat-enhanced--success">
+            <span class="forum-live-dot"></span>
+            <span class="forum-stat-enhanced__icon"><UsersIcon class="w-3.5 h-3.5" /></span>
+            <span class="forum-stat-enhanced__value">{{ wsViewerCount }}</span>
+            <span class="forum-stat-enhanced__label">izliyor</span>
+          </span>
         </div>
-      </div>
+      </section>
 
-      <!-- Typing Indicator -->
-      <Transition name="fade">
-        <div v-if="typingUsers.length > 0" class="typing-indicator glass-morphism rounded-2xl p-4 mb-4">
-          <div class="flex items-center gap-3">
-            <div class="typing-dots">
-              <span /><span /><span />
+      <!-- Loading State -->
+      <template v-if="isLoading">
+        <ForumSkeleton type="post-card" />
+        <ForumSkeleton v-for="n in 3" :key="n" type="post-card" />
+      </template>
+
+      <template v-else>
+        <!-- Best Answer (if exists) -->
+        <ForumBestAnswer
+          v-if="bestAnswer"
+          :post="bestAnswer"
+          :marked-by="topic?.author"
+          @goto="scrollToReply(bestAnswer.id)"
+        />
+
+        <!-- Original Post -->
+        <ForumPostCard
+          :post="formatPostForCard(topic)"
+          :show-level="true"
+          :show-level-ring="true"
+          :show-actions="true"
+          :can-interact="isLoggedIn"
+          @like="likeTopic"
+          @reply="scrollToReplyForm"
+          @quote="quotePost(topic)"
+          @share="showShareModal = true"
+          @report="reportTopic"
+          @action="handleTopicAction"
+        />
+
+        <!-- Typing Indicator -->
+        <Transition name="fade">
+          <div v-if="typingUsers.length > 0" class="forum-typing-indicator">
+            <div class="forum-typing-dots">
+              <span></span><span></span><span></span>
             </div>
-            <span class="text-sm text-gray-400">
-              <strong class="text-orange-400">{{ typingUsers.map(u => u.username || u).join(', ') }}</strong> yaziyor...
+            <span class="forum-meta">
+              <strong>{{ typingUsers.map(u => u.username || u).join(', ') }}</strong> yaziyor...
             </span>
           </div>
-        </div>
-      </Transition>
+        </Transition>
 
-      <!-- Replies Section -->
-      <div class="replies-section space-y-4 mb-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-bold flex items-center gap-2">
-            <MessageSquareIcon class="w-5 h-5 text-orange-400" />
-            Yanıtlar ({{ replies.length }})
-          </h2>
-          <n-select
-            v-model:value="sortOrder"
-            :options="sortOptions"
-            size="small"
-            style="width: 150px"
-          />
-        </div>
-
-        <TransitionGroup name="reply-list" tag="div" class="space-y-4">
-          <div
-            v-for="(reply, index) in sortedReplies"
-            :key="reply.id"
-            :id="`reply-${reply.id}`"
-            class="reply-card glass-morphism rounded-2xl overflow-hidden"
-            :class="{
-              'highlighted': highlightedReplyId === reply.id,
-              'reply-even': index % 2 === 0,
-              'reply-odd': index % 2 === 1
-            }"
-            :style="{ animationDelay: `${index * 0.05}s` }"
-          >
-            <div class="flex flex-col lg:flex-row">
-              <!-- Reply Author Sidebar -->
-              <div class="reply-author-sidebar lg:w-56 p-4 border-b lg:border-b-0 lg:border-r border-white/10">
-                <div class="flex lg:flex-col items-center gap-3">
-                  <!-- Compact Avatar -->
-                  <div class="relative">
-                    <div class="avatar-ring-small">
-                      <svg class="w-full h-full" viewBox="0 0 80 80">
-                        <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
-                        <circle
-                          cx="40" cy="40" r="36" fill="none"
-                          :stroke="getLevelColor(reply.authorLevel)"
-                          stroke-width="3"
-                          stroke-linecap="round"
-                          :stroke-dasharray="`${(reply.authorXpProgress || 50) * 2.26} 226`"
-                          transform="rotate(-90 40 40)"
-                        />
-                      </svg>
-                      <n-avatar round :size="56" :src="reply.authorAvatar" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                    </div>
-                    <div
-                      class="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-gray-900"
-                      :class="reply.authorOnline ? 'bg-green-500' : 'bg-gray-500'"
-                    />
-                    <div class="level-badge-small">{{ reply.authorLevel || 15 }}</div>
-                  </div>
-
-                  <div class="text-center lg:text-center flex-1 lg:flex-none">
-                    <h4 class="font-semibold text-[color:var(--text-primary)] hover:text-orange-400 transition-colors cursor-pointer">
-                      {{ reply.author }}
-                    </h4>
-                    <span :class="getRoleBadgeClass(reply.authorRole, 'small')">
-                      {{ reply.authorRole }}
-                    </span>
-                    <div class="reply-author-stats">
-                      <span><MessageCircleIcon class="w-3 h-3" /> {{ reply.authorPosts }}</span>
-                      <span><CalendarIcon class="w-3 h-3" /> {{ reply.authorJoined || 'Oca 2024' }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Reply Content -->
-              <div class="flex-1 p-4">
-                <div class="flex items-center justify-between mb-3">
-                  <div class="flex items-center gap-3">
-                    <span class="reply-number">#{{ index + 1 }}</span>
-                    <span class="text-sm text-gray-500 flex items-center gap-1">
-                      <ClockIcon class="w-3 h-3" />
-                      {{ reply.created }}
-                    </span>
-                    <span v-if="reply.isEdited" class="text-xs text-orange-400">(düzenlendi)</span>
-                  </div>
-
-                  <!-- Reply Actions Menu -->
-                  <div class="flex items-center gap-2">
-                    <n-button
-                      text
-                      size="tiny"
-                      @click="scrollToReply(reply.id)"
-                      class="text-gray-500 hover:text-orange-400"
-                    >
-                      <LinkIcon class="w-3 h-3" />
-                    </n-button>
-                    <n-dropdown
-                      v-if="isOwnPost(reply.authorId)"
-                      :options="replyActionOptions"
-                      @select="(key) => handleReplyAction(key, reply)"
-                    >
-                      <n-button text size="tiny">
-                        <MoreHorizontalIcon class="w-4 h-4" />
-                      </n-button>
-                    </n-dropdown>
-                  </div>
-                </div>
-
-                <!-- Quote Preview (if replying to another post) -->
-                <div v-if="reply.quotedPost" class="quote-block mb-4">
-                  <div class="quote-header">
-                    <QuoteIcon class="w-4 h-4 text-orange-400" />
-                    <span>{{ reply.quotedPost.author }} yazdi:</span>
-                  </div>
-                  <div class="quote-content">
-                    {{ reply.quotedPost.content }}
-                  </div>
-                  <button
-                    class="quote-jump-btn"
-                    @click="scrollToReply(reply.quotedPost.id)"
-                  >
-                    Orijinal mesaja git
-                    <ArrowRightIcon class="w-3 h-3" />
-                  </button>
-                </div>
-
-                <!-- Reply Content with Markdown -->
-                <div class="reply-content prose prose-invert prose-sm max-w-none mb-4">
-                  <div v-html="renderMarkdown(reply.content)" class="markdown-body" />
-                </div>
-
-                <!-- Reply Reactions -->
-                <div class="flex flex-wrap items-center gap-2 mb-3">
-                  <button
-                    v-for="reaction in reply.reactions || []"
-                    :key="reaction.emoji"
-                    class="reaction-button-small"
-                    :class="{ 'active': reaction.hasReacted }"
-                    @click="toggleReplyReaction(reply.id, reaction.emoji)"
-                  >
-                    <span>{{ reaction.emoji }}</span>
-                    <span class="text-xs">{{ reaction.count }}</span>
-                  </button>
-                </div>
-
-                <!-- Reply Actions -->
-                <div class="flex items-center gap-3 pt-3 border-t border-white/10">
-                  <n-tooltip trigger="hover">
-                    <template #trigger>
-                      <button
-                        class="reply-like-btn"
-                        :class="{ 'liked': reply.hasLiked, 'disabled-action': !isLoggedIn }"
-                        @click="likeReply(reply.id)"
-                      >
-                        <HeartIcon class="w-4 h-4" />
-                        <span>{{ reply.likes }}</span>
-                      </button>
-                    </template>
-                    {{ isLoggedIn ? 'Begen' : 'Begenmek icin giris yapin' }}
-                  </n-tooltip>
-                  <n-button text size="tiny" @click="quoteReply(reply)" class="reply-action-btn">
-                    <template #icon><QuoteIcon class="w-3 h-3" /></template>
-                    Alıntıla
-                  </n-button>
-                  <n-button text size="tiny" @click="replyToUser(reply)" class="reply-action-btn">
-                    <template #icon><AtSignIcon class="w-3 h-3" /></template>
-                    Yanıtla
-                  </n-button>
-                  <n-tooltip trigger="hover">
-                    <template #trigger>
-                      <n-button
-                        text
-                        size="tiny"
-                        type="error"
-                        :class="{ 'disabled-action': !isLoggedIn }"
-                        @click="reportReply(reply)"
-                        class="reply-action-btn"
-                      >
-                        <template #icon><FlagIcon class="w-3 h-3" /></template>
-                        Bildir
-                      </n-button>
-                    </template>
-                    {{ isLoggedIn ? 'Bildir' : 'Bildirmek icin giris yapin' }}
-                  </n-tooltip>
-                </div>
-              </div>
-            </div>
+        <!-- Replies Section -->
+        <section class="forum-replies-section">
+          <div class="forum-replies-header">
+            <h2 class="forum-heading forum-heading--md">
+              <MessageSquareIcon class="w-5 h-5" />
+              Yanitlar ({{ replies.length }})
+            </h2>
+            <n-select
+              v-model:value="sortOrder"
+              :options="sortOptions"
+              size="small"
+              style="width: 150px"
+            />
           </div>
-        </TransitionGroup>
 
-        <!-- Load More Replies Button -->
-        <div v-if="canLoadMoreReplies" class="load-more-container mt-6">
-          <button
-            class="load-more-btn glass-morphism"
-            :disabled="isLoadingMoreReplies"
-            @click="loadMoreReplies"
-          >
-            <template v-if="isLoadingMoreReplies">
-              <div class="skeleton-loading-dots">
-                <span></span><span></span><span></span>
-              </div>
-              <span>Yanitlar yukleniyor...</span>
-            </template>
-            <template v-else>
-              <ChevronDownIcon class="w-5 h-5" />
-              <span>Daha fazla yanit yukle ({{ allSortedReplies.length - displayedRepliesCount }} kaldi)</span>
-            </template>
-          </button>
-        </div>
-
-        <!-- Skeleton Loading for Replies -->
-        <div v-if="isLoadingMoreReplies" class="skeleton-replies mt-4 space-y-4">
-          <div v-for="n in 3" :key="n" class="skeleton-reply-card glass-morphism rounded-2xl p-4">
-            <div class="flex items-start gap-4">
-              <div class="skeleton-avatar"></div>
-              <div class="flex-1 space-y-3">
-                <div class="skeleton-line w-1/4"></div>
-                <div class="skeleton-line w-3/4"></div>
-                <div class="skeleton-line w-1/2"></div>
-              </div>
-            </div>
+          <!-- Replies List -->
+          <div class="forum-replies-list">
+            <ForumPostCard
+              v-for="(reply, index) in sortedReplies"
+              :key="reply.id"
+              :id="`reply-${reply.id}`"
+              :post="formatReplyForCard(reply, index)"
+              :show-level="true"
+              :show-level-ring="true"
+              :show-actions="true"
+              :can-interact="isLoggedIn"
+              :class="{ 'forum-reply--highlighted': highlightedReplyId === reply.id }"
+              @like="() => likeReply(reply.id)"
+              @reply="() => replyToUser(reply)"
+              @quote="() => quoteReply(reply)"
+              @report="() => reportReply(reply)"
+              @action="(e) => handleReplyAction(e, reply)"
+            />
           </div>
-        </div>
-      </div>
 
-      <!-- Pagination -->
-      <div class="flex justify-center mb-8">
-        <div class="glass-morphism rounded-2xl px-6 py-3">
+          <!-- Load More Button -->
+          <div v-if="canLoadMoreReplies" class="forum-load-more">
+            <button
+              class="forum-load-more__btn"
+              :disabled="isLoadingMoreReplies"
+              @click="loadMoreReplies"
+            >
+              <template v-if="isLoadingMoreReplies">
+                <span class="forum-loading-dots"><span></span><span></span><span></span></span>
+                Yanitlar yukleniyor...
+              </template>
+              <template v-else>
+                <ChevronDownIcon class="w-5 h-5" />
+                Daha fazla yanit yukle ({{ allSortedReplies.length - displayedRepliesCount }} kaldi)
+              </template>
+            </button>
+          </div>
+
+          <!-- Loading More Skeleton -->
+          <template v-if="isLoadingMoreReplies">
+            <ForumSkeleton v-for="n in 3" :key="n" type="post-card" />
+          </template>
+        </section>
+
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="forum-pagination">
           <n-pagination
             v-model:page="currentPage"
             :page-count="totalPages"
             :page-slot="7"
             show-quick-jumper
-          >
-            <template #prev>
-              <ChevronLeftIcon class="w-4 h-4" />
-            </template>
-            <template #next>
-              <ChevronRightIcon class="w-4 h-4" />
-            </template>
-          </n-pagination>
+          />
         </div>
-      </div>
 
-      <!-- Reply Form -->
-      <div
-        v-if="!topic?.isLocked"
-        ref="replyFormRef"
-        id="reply-form"
-        class="reply-form-container glass-morphism-strong rounded-3xl overflow-hidden animate-fade-in"
-      >
-        <!-- Steam Required Notice -->
-        <div v-if="!hasSteam" class="steam-required-notice p-4 border-b border-white/10">
-          <div class="flex items-center gap-3">
-            <div class="steam-icon-container">
-              <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-[#66c0f4]">
+        <!-- Reply Form -->
+        <section
+          v-if="!topic?.isLocked"
+          ref="replyFormRef"
+          id="reply-form"
+          class="forum-reply-form"
+        >
+          <!-- Steam Required Notice -->
+          <div v-if="!hasSteam" class="forum-steam-notice">
+            <div class="forum-steam-notice__icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
                 <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10c-4.6 0-8.45-3.08-9.64-7.27l3.83 1.58a2.84 2.84 0 0 0 2.78 2.27c1.56 0 2.83-1.27 2.83-2.83v-.13l3.4-2.43h.08c2.08 0 3.77-1.69 3.77-3.77s-1.69-3.77-3.77-3.77-3.77 1.69-3.77 3.77v.05l-2.37 3.46-.16-.01c-.55 0-1.08.16-1.53.45L2 11.54A10 10 0 0 1 12 2z"/>
               </svg>
             </div>
-            <div class="flex-1">
-              <p class="text-sm text-gray-300">Steam hesabi baglayarak yanit yazabilirsiniz</p>
-              <p class="text-xs text-gray-500">Topluluk guvenligi icin Steam dogrulamasi gereklidir</p>
+            <div class="forum-steam-notice__content">
+              <p>Steam hesabi baglayarak yanit yazabilirsiniz</p>
+              <span class="forum-meta">Topluluk guvenligi icin Steam dogrulamasi gereklidir</span>
             </div>
             <n-button size="small" type="info" @click="connectSteam">
               Steam Bagla
             </n-button>
           </div>
-        </div>
 
-        <!-- Quote Preview in Form -->
-        <Transition name="slide-down">
-          <div v-if="quotedReply" class="quote-form-preview border-b border-white/10 p-4">
-            <div class="flex items-start justify-between gap-4">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-2 text-sm text-gray-400">
-                  <QuoteIcon class="w-4 h-4 text-orange-400" />
-                  <span><strong>{{ quotedReply.author }}</strong> kullanıcısina yanıt veriyorsunuz:</span>
-                </div>
-                <div class="quote-content text-sm">
-                  {{ quotedReply.content.substring(0, 200) }}{{ quotedReply.content.length > 200 ? '...' : '' }}
-                </div>
+          <!-- Quote Preview -->
+          <Transition name="slide-down">
+            <div v-if="quotedReply" class="forum-reply-preview">
+              <div class="forum-reply-preview__header">
+                <QuoteIcon class="w-4 h-4" />
+                <span><strong>{{ quotedReply.author }}</strong> kullanicisina yanit veriyorsunuz:</span>
               </div>
-              <n-button circle size="small" quaternary @click="clearQuote">
+              <div class="forum-quote-content">
+                {{ quotedReply.content.substring(0, 200) }}{{ quotedReply.content.length > 200 ? '...' : '' }}
+              </div>
+              <button class="forum-reply-preview__close" @click="clearQuote" type="button">
                 <XIcon class="w-4 h-4" />
-              </n-button>
-            </div>
-          </div>
-        </Transition>
-
-        <div class="p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold text-lg flex items-center gap-2">
-              <EditIcon class="w-5 h-5 text-orange-400" />
-              Yanıt Yaz
-            </h3>
-            <div class="flex items-center gap-2 text-sm text-gray-500">
-              <span>Markdown desteklenir</span>
-              <n-tooltip>
-                <template #trigger>
-                  <HelpCircleIcon class="w-4 h-4 cursor-help" />
-                </template>
-                <div class="text-xs">
-                  **kalın**, *italik*, `kod`, ```kod blogu```<br/>
-                  > alıntı, - liste, [link](url)
-                </div>
-              </n-tooltip>
-            </div>
-          </div>
-
-          <n-form @submit.prevent="submitReply" class="space-y-4">
-            <!-- Rich Text Editor Toolbar -->
-            <div class="editor-toolbar">
-              <div class="toolbar-group">
-                <n-tooltip v-for="tool in editorTools" :key="tool.action">
-                  <template #trigger>
-                    <button
-                      type="button"
-                      class="editor-tool-btn"
-                      :class="{ 'active': activeFormats.includes(tool.action) }"
-                      @click="applyFormat(tool.action)"
-                    >
-                      <component :is="tool.icon" class="w-4 h-4" />
-                    </button>
-                  </template>
-                  {{ tool.label }}
-                </n-tooltip>
-              </div>
-
-              <div class="toolbar-divider" />
-
-              <div class="toolbar-group">
-                <!-- Emoji Picker -->
-                <n-popover trigger="click" placement="bottom">
-                  <template #trigger>
-                    <button type="button" class="editor-tool-btn">
-                      <SmileIcon class="w-4 h-4" />
-                    </button>
-                  </template>
-                  <div class="grid grid-cols-8 gap-1 p-2 max-h-48 overflow-y-auto">
-                    <button
-                      v-for="emoji in allEmojis"
-                      :key="emoji"
-                      type="button"
-                      class="emoji-picker-item"
-                      @click="insertEmoji(emoji)"
-                    >
-                      {{ emoji }}
-                    </button>
-                  </div>
-                </n-popover>
-              </div>
-
-              <div class="toolbar-divider" />
-
-              <!-- Preview Toggle -->
-              <button
-                type="button"
-                class="editor-tool-btn preview-toggle"
-                :class="{ 'active': showPreview }"
-                @click="showPreview = !showPreview"
-              >
-                <EyeIcon class="w-4 h-4" />
-                <span>Onizle</span>
               </button>
             </div>
+          </Transition>
 
-            <!-- Editor / Preview Split -->
-            <div class="editor-container" :class="{ 'split-view': showPreview }">
-              <div class="editor-pane">
-                <n-input
-                  ref="editorRef"
-                  v-model:value="newReply"
-                  type="textarea"
-                  placeholder="Yanıtinizi yazın... Markdown kullanabilirsiniz."
-                  :rows="8"
-                  @input="handleTyping"
-                  @focus="handleEditorFocus"
-                  class="custom-textarea"
-                />
+          <div class="forum-reply-form__content">
+            <h3 class="forum-heading forum-heading--sm">
+              <EditIcon class="w-5 h-5" />
+              Yanit Yaz
+            </h3>
+
+            <form @submit.prevent="submitReply">
+              <!-- Editor Toolbar -->
+              <div class="forum-editor-toolbar-enhanced">
+                <button
+                  v-for="tool in editorTools"
+                  :key="tool.action"
+                  type="button"
+                  class="forum-toolbar-btn-enhanced"
+                  :title="tool.label"
+                  @click="applyFormat(tool.action)"
+                >
+                  <component :is="tool.icon" class="w-4 h-4" />
+                </button>
+                <div class="forum-toolbar-divider-enhanced"></div>
+                <button
+                  type="button"
+                  class="forum-toolbar-btn-enhanced forum-toolbar-btn-labeled"
+                  :class="{ 'forum-toolbar-btn-enhanced--active': showPreview }"
+                  @click="showPreview = !showPreview"
+                >
+                  <EyeIcon class="w-4 h-4" />
+                  <span>Onizle</span>
+                </button>
               </div>
 
-              <Transition name="fade">
-                <div v-if="showPreview" class="preview-pane">
-                  <div class="text-xs text-gray-500 mb-2 flex items-center gap-2">
-                    <EyeIcon class="w-3 h-3" />
-                    Onizleme
+              <!-- Editor -->
+              <div class="forum-editor" :class="{ 'forum-editor--split': showPreview }">
+                <div class="forum-editor__input">
+                  <n-input
+                    ref="editorRef"
+                    v-model:value="newReply"
+                    type="textarea"
+                    placeholder="Yanitinizi yazin... Markdown kullanabilirsiniz. (min 5 karakter)"
+                    :rows="8"
+                    :status="replyValidation.status"
+                    @input="handleTyping"
+                    @blur="validateReply"
+                  />
+                  <div v-if="replyValidation.message" class="forum-reply-validation-error">
+                    {{ replyValidation.message }}
                   </div>
-                  <div
-                    class="preview-content prose prose-invert prose-sm max-w-none"
-                    v-html="previewContent"
+                </div>
+                <Transition name="fade">
+                  <div v-if="showPreview" class="forum-editor__preview">
+                    <div class="forum-meta">Onizleme</div>
+                    <div class="forum-body" v-html="previewContent"></div>
+                  </div>
+                </Transition>
+              </div>
+
+              <!-- Form Footer -->
+              <div class="forum-reply-form__footer">
+                <div class="forum-reply-form__counter">
+                  <span>{{ newReply.length }} / 10000 karakter</span>
+                  <n-progress
+                    type="line"
+                    :percentage="(newReply.length / 10000) * 100"
+                    :show-indicator="false"
+                    :height="4"
+                    style="width: 100px"
+                    :color="newReply.length > 9000 ? '#ef4444' : '#f97316'"
                   />
                 </div>
-              </Transition>
-            </div>
-
-            <!-- Character Count & Submit -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-4">
-                <span class="text-sm text-gray-500">
-                  {{ newReply.length }} / 10000 karakter
-                </span>
-                <n-progress
-                  type="line"
-                  :percentage="(newReply.length / 10000) * 100"
-                  :show-indicator="false"
-                  :height="4"
-                  style="width: 100px"
-                  :color="newReply.length > 9000 ? '#ef4444' : '#f97316'"
-                />
+                <div class="forum-reply-form__actions">
+                  <n-button quaternary @click="saveDraft">
+                    <template #icon><SaveIcon class="w-4 h-4" /></template>
+                    Taslak Kaydet
+                  </n-button>
+                  <n-button
+                    type="primary"
+                    attr-type="submit"
+                    :disabled="!isReplyValid || isSubmitting"
+                    :loading="isSubmitting"
+                  >
+                    <template #icon><SendIcon class="w-4 h-4" /></template>
+                    Yanitla
+                  </n-button>
+                </div>
               </div>
+            </form>
+          </div>
+        </section>
 
-              <div class="flex gap-3">
-                <n-button quaternary @click="saveDraft">
-                  <template #icon><SaveIcon class="w-4 h-4" /></template>
-                  Taslak Kaydet
-                </n-button>
-                <n-button
-                  type="primary"
-                  attr-type="submit"
-                  :disabled="!newReply.trim() || isSubmitting"
-                  :loading="isSubmitting"
-                  class="submit-btn"
-                >
-                  <template #icon><SendIcon class="w-4 h-4" /></template>
-                  Yanıtla
-                </n-button>
-              </div>
-            </div>
-          </n-form>
+        <!-- Locked Topic Message -->
+        <div v-else class="forum-locked-message">
+          <LockIcon class="w-16 h-16" />
+          <h3 class="forum-heading forum-heading--lg">Bu Konu Kilitli</h3>
+          <p class="forum-meta">Bu konuya yeni yanit ekleyemezsiniz. Daha fazla bilgi icin moderatorlerle iletisime gecin.</p>
         </div>
+      </template>
+    </template>
+  </ForumLayout>
+
+  <!-- Floating Action Bar -->
+  <Transition name="slide-up">
+    <div v-if="showFloatingBar" class="forum-floating-bar forum-scrollbar-hidden">
+      <button class="forum-floating-bar__btn forum-fab-mini" :class="{ liked: hasLikedTopic }" @click="likeTopic" type="button">
+        <HeartIcon class="w-5 h-5" />
+        <span>{{ topic?.likes }}</span>
+      </button>
+      <div class="forum-floating-bar__divider"></div>
+      <button class="forum-floating-bar__btn forum-fab-mini" @click="showShareModal = true" type="button">
+        <Share2Icon class="w-5 h-5" />
+      </button>
+      <button class="forum-floating-bar__btn forum-fab-mini" @click="reportTopic" type="button">
+        <FlagIcon class="w-5 h-5" />
+      </button>
+      <div class="forum-floating-bar__divider"></div>
+      <button class="forum-floating-bar__btn forum-fab-mini" @click="scrollToReplyForm" type="button">
+        <MessageSquareIcon class="w-5 h-5" />
+      </button>
+      <button class="forum-floating-bar__btn forum-fab-mini" @click="scrollToTop" type="button">
+        <ArrowUpIcon class="w-5 h-5" />
+      </button>
+    </div>
+  </Transition>
+
+  <!-- Share Modal -->
+  <n-modal v-model:show="showShareModal" preset="card" title="Paylas" class="forum-modal-enhanced" style="max-width: 400px">
+    <div class="forum-share-modal">
+      <div class="forum-share-modal__url">
+        <n-input :value="shareUrl" readonly />
+        <n-button type="primary" class="forum-btn-enhanced forum-btn-enhanced--primary" @click="copyShareUrl">
+          <template #icon><CopyIcon class="w-4 h-4" /></template>
+          Kopyala
+        </n-button>
       </div>
-
-      <!-- Locked Topic Message -->
-      <div v-else class="locked-message glass-morphism-strong rounded-3xl text-center py-16">
-        <div class="locked-icon-container mb-6">
-          <LockIcon class="w-16 h-16 text-red-500" />
-        </div>
-        <h3 class="text-2xl font-bold mb-3">Bu Konu Kilitli</h3>
-        <p class="text-gray-400 max-w-md mx-auto">
-          Bu konuya yeni yanıt ekleyemezsiniz. Daha fazla bilgi için moderatörlerle iletişime gecin.
-        </p>
+      <div class="forum-share-modal__social">
+        <button
+          v-for="social in socialShareOptions"
+          :key="social.name"
+          class="forum-share-modal__social-btn forum-btn-enhanced"
+          :style="{ '--color': social.color }"
+          @click="shareToSocial(social)"
+          type="button"
+        >
+          <component :is="social.icon" class="w-5 h-5" />
+          <span>{{ social.name }}</span>
+        </button>
       </div>
     </div>
+  </n-modal>
 
-    <!-- Report Modal -->
-    <n-modal v-model:show="showReportModal" preset="card" title="İçerik Bildir" class="max-w-lg report-modal">
-      <div class="report-modal-content">
-        <div class="report-icon-container mb-4">
-          <FlagIcon class="w-8 h-8 text-red-400" />
-        </div>
-        <n-form ref="reportFormRef" :model="reportForm" class="space-y-4">
-          <n-form-item label="Bildirim Nedeni" path="reason">
-            <n-radio-group v-model:value="reportForm.reason" class="report-reasons">
-              <div
-                v-for="reason in reportReasons"
-                :key="reason.value"
-                class="report-reason-item"
-                :class="{ 'selected': reportForm.reason === reason.value }"
-                @click="reportForm.reason = reason.value"
-              >
-                <n-radio :value="reason.value" />
-                <component :is="reason.icon" class="w-4 h-4" />
-                <span>{{ reason.label }}</span>
-              </div>
-            </n-radio-group>
-          </n-form-item>
-          <n-form-item label="Ek Açıklama" path="description">
-            <n-input
-              v-model:value="reportForm.description"
-              type="textarea"
-              placeholder="Daha fazla detay ekleyin..."
-              :rows="4"
-            />
-          </n-form-item>
-        </n-form>
-      </div>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <n-button @click="showReportModal = false">İptal</n-button>
-          <n-button type="error" @click="submitReport">
-            <template #icon><FlagIcon class="w-4 h-4" /></template>
-            Bildir
-          </n-button>
-        </div>
-      </template>
-    </n-modal>
-
-    <!-- Share Modal -->
-    <n-modal v-model:show="showShareModal" preset="card" title="Paylas" class="max-w-md share-modal">
-      <div class="share-modal-content">
-        <div class="share-preview mb-6">
-          <div class="share-preview-icon">
-            <Share2Icon class="w-6 h-6 text-orange-400" />
+  <!-- Report Modal -->
+  <n-modal v-model:show="showReportModal" preset="card" title="Icerik Bildir" class="forum-modal-enhanced" style="max-width: 500px">
+    <n-form :model="reportForm">
+      <n-form-item label="Bildirim Nedeni">
+        <n-radio-group v-model:value="reportForm.reason">
+          <div v-for="reason in reportReasons" :key="reason.value" class="forum-report-option">
+            <n-radio :value="reason.value">{{ reason.label }}</n-radio>
           </div>
-          <div class="share-preview-text">
-            <h4 class="font-semibold text-[color:var(--text-primary)]">{{ topic?.title }}</h4>
-            <p class="text-xs text-gray-500">{{ replies.length }} yanıt - {{ topic?.views }} görüntülenme</p>
-          </div>
-        </div>
-
-        <div class="share-url-container">
-          <n-input :value="shareUrl" readonly class="share-url-input" />
-          <n-button type="primary" @click="copyShareUrl" class="copy-btn">
-            <template #icon><CopyIcon class="w-4 h-4" /></template>
-            Kopyala
-          </n-button>
-        </div>
-
-        <div class="share-divider">
-          <span>veya sosyal medyada paylaş</span>
-        </div>
-
-        <div class="social-share-grid">
-          <button
-            v-for="social in socialShareOptions"
-            :key="social.name"
-            class="social-share-btn"
-            :style="{ '--social-color': social.color }"
-            @click="shareToSocial(social)"
-          >
-            <component :is="social.icon" class="w-5 h-5" />
-            <span>{{ social.name }}</span>
-          </button>
-        </div>
+        </n-radio-group>
+      </n-form-item>
+      <n-form-item label="Ek Aciklama">
+        <n-input v-model:value="reportForm.description" type="textarea" :rows="4" placeholder="Daha fazla detay ekleyin..." class="forum-reply-textarea" />
+      </n-form-item>
+    </n-form>
+    <template #footer>
+      <div class="forum-modal-footer-enhanced">
+        <n-button class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="showReportModal = false">Iptal</n-button>
+        <n-button type="error" class="forum-btn-enhanced" @click="submitReport">
+          <template #icon><FlagIcon class="w-4 h-4" /></template>
+          Bildir
+        </n-button>
       </div>
-    </n-modal>
+    </template>
+  </n-modal>
 
-    <!-- Edit Post Modal -->
-    <n-modal v-model:show="showEditModal" preset="card" title="Gönderiyi Düzenle" class="max-w-2xl">
-      <n-form class="space-y-4">
-        <n-form-item label="İçerik">
-          <n-input
-            v-model:value="editContent"
-            type="textarea"
-            :rows="8"
-          />
-        </n-form-item>
-      </n-form>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <n-button @click="showEditModal = false">İptal</n-button>
-          <n-button type="primary" @click="saveEdit">
-            <template #icon><SaveIcon class="w-4 h-4" /></template>
-            Kaydet
-          </n-button>
-        </div>
-      </template>
-    </n-modal>
-
-    <!-- Delete Confirmation Modal -->
-    <n-modal v-model:show="showDeleteModal" preset="dialog" type="error" title="Gönderiyi Sil">
-      <template #default>
-        Bu gönderiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
-      </template>
-      <template #action>
-        <div class="flex gap-3">
-          <n-button @click="showDeleteModal = false">İptal</n-button>
-          <n-button type="error" @click="confirmDelete">
-            <template #icon><Trash2Icon class="w-4 h-4" /></template>
-            Sil
-          </n-button>
-        </div>
-      </template>
-    </n-modal>
-
-    <!-- Keyboard Shortcuts Modal -->
-    <n-modal v-model:show="showShortcutsModal" preset="card" title="Klavye Kisayollari" style="width: 500px;" class="shortcuts-modal">
-      <div class="shortcuts-list space-y-3">
-        <div
-          v-for="shortcut in keyboardShortcuts"
-          :key="shortcut.keys.join('+')"
-          class="shortcut-item flex items-center justify-between p-3 rounded-lg bg-white/5"
-        >
-          <span class="text-gray-300">{{ shortcut.description }}</span>
-          <div class="flex items-center gap-1">
-            <kbd
-              v-for="(key, idx) in shortcut.keys"
-              :key="idx"
-              class="kbd px-2 py-1 text-xs font-mono bg-white/10 border border-white/20 rounded"
-            >
-              {{ key }}
-            </kbd>
-          </div>
-        </div>
+  <!-- Edit Topic Modal -->
+  <n-modal v-model:show="showEditTopicModal" preset="card" title="Konu Duzenle" class="forum-modal-enhanced" style="max-width: 600px">
+    <n-form :model="editTopicForm">
+      <n-form-item label="Baslik">
+        <n-input v-model:value="editTopicForm.title" placeholder="Konu basligi..." maxlength="200" show-count />
+      </n-form-item>
+      <n-form-item label="Icerik">
+        <n-input v-model:value="editTopicForm.content" type="textarea" :rows="10" placeholder="Konu icerigi..." maxlength="10000" show-count />
+      </n-form-item>
+    </n-form>
+    <template #footer>
+      <div class="forum-modal-footer-enhanced">
+        <n-button class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="showEditTopicModal = false">Iptal</n-button>
+        <n-button type="primary" class="forum-btn-enhanced forum-btn-enhanced--primary" @click="saveEditTopic">
+          <template #icon><SaveIcon class="w-4 h-4" /></template>
+          Kaydet
+        </n-button>
       </div>
-      <div class="mt-4 text-center text-sm text-gray-500">
-        Herhangi bir sayfada <kbd class="kbd px-1.5 py-0.5 text-xs bg-white/10 border border-white/20 rounded">?</kbd> tusuna basarak bu menüyu gorebilirsiniz
-      </div>
-    </n-modal>
+    </template>
+  </n-modal>
 
-    <!-- Steam Required Modal -->
-    <SteamRequiredModal
-      :show="showSteamModal"
-      @close="closeModal"
-      @connect="connectSteam"
-    />
-  </div>
+  <!-- Edit Reply Modal -->
+  <n-modal v-model:show="showEditReplyModal" preset="card" title="Yanit Duzenle" class="forum-modal-enhanced" style="max-width: 600px">
+    <n-form>
+      <n-form-item label="Icerik">
+        <n-input v-model:value="editReplyContent" type="textarea" :rows="8" placeholder="Yanit icerigi..." maxlength="10000" show-count />
+      </n-form-item>
+    </n-form>
+    <template #footer>
+      <div class="forum-modal-footer-enhanced">
+        <n-button class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="cancelEditReply">Iptal</n-button>
+        <n-button type="primary" class="forum-btn-enhanced forum-btn-enhanced--primary" @click="saveEditReply(editingReplyId)">
+          <template #icon><SaveIcon class="w-4 h-4" /></template>
+          Kaydet
+        </n-button>
+      </div>
+    </template>
+  </n-modal>
+
+  <!-- Steam Required Modal -->
+  <SteamRequiredModal
+    :show="showSteamModal"
+    @close="closeModal"
+    @connect="connectSteam"
+  />
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick, watch, h } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useForumTopicWS } from '@/composables/useWebSocket'
 import { useRequireSteam } from '@/composables/useRequireSteam'
 import { useRequireAuth } from '@/composables/useRequireAuth'
+import { useAuthStore } from '@/stores/auth'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
+import { ForumLayout, ForumSidebar, ForumPostCard, ForumBestAnswer, ForumSkeleton } from '@/components/forum'
 import {
   HomeIcon,
   ChevronRightIcon,
-  ChevronLeftIcon,
   ChevronDownIcon,
   FolderIcon,
   FileTextIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
   MessageSquareIcon,
-  MessageCircleIcon,
   EyeIcon,
   ClockIcon,
   PinIcon,
   LockIcon,
   FlameIcon,
   HeartIcon,
-  ThumbsUpIcon,
   Share2Icon,
-  BookmarkIcon,
   FlagIcon,
   QuoteIcon,
   SendIcon,
-  MoreHorizontalIcon,
   EditIcon,
-  Trash2Icon,
-  LinkIcon,
-  AtSignIcon,
-  CalendarIcon,
-  PaperclipIcon,
-  FileIcon,
-  PlusIcon,
   XIcon,
-  HelpCircleIcon,
   SaveIcon,
   CopyIcon,
-  SmileIcon,
   ArrowUpIcon,
-  ReplyIcon,
   BoldIcon,
   ItalicIcon,
   CodeIcon,
   ListIcon,
   ImageIcon,
-  LinkIcon as Link2Icon,
-  StarIcon,
+  LinkIcon,
+  CheckCircleIcon,
+  UsersIcon,
+  HelpCircleIcon,
   ShieldIcon,
-  AwardIcon,
   ZapIcon,
-  CrownIcon,
   TwitterIcon,
   FacebookIcon,
   LinkedinIcon,
-  MailIcon,
-  AlertTriangleIcon,
-  BanIcon,
-  CopyrightIcon,
-  HelpCircleIcon as OtherIcon,
-  UserIcon,
-  UsersIcon
+  MailIcon
 } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
-const topicId = route.params.id
 
-// Steam requirement
+// Make topicId reactive - updates when route changes
+// Note: route.params.id might be a slug, so we use topic.value?.id for API calls
+const topicId = computed(() => route.params.id)
+
+// Helper to get the actual numeric topic ID for API calls
+const getTopicId = () => topic.value?.id || topicId.value
+
+// Stores
+const authStore = useAuthStore()
+
+// Steam & Auth
 const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal } = useRequireSteam()
-
-// Auth requirement
 const { isLoggedIn, requireAuth } = useRequireAuth()
+
+// Admin check
+const isAdmin = computed(() => ['admin', 'superadmin', 'moderator'].includes(authStore.user?.role) || authStore.user?.is_admin)
+
+// Get CSRF token from cookie
+const getCsrfToken = () => {
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'csrf_token') return value
+  }
+  return null
+}
 
 // Refs
 const replyFormRef = ref(null)
 const editorRef = ref(null)
-const reportFormRef = ref(null)
 
 // State
+const isLoading = ref(true)
+const fetchError = ref(null)
 const currentPage = ref(1)
-const totalPages = ref(5)
+const totalPages = ref(1)
 const sortOrder = ref('oldest')
 const showFloatingBar = ref(false)
 const showPreview = ref(false)
 const showReportModal = ref(false)
 const showShareModal = ref(false)
-const showEditModal = ref(false)
-const showDeleteModal = ref(false)
 const isSubmitting = ref(false)
-const likeAnimating = ref(false)
 const hasLikedTopic = ref(false)
-const hasBookmarked = ref(false)
 const highlightedReplyId = ref(null)
 const quotedReply = ref(null)
-const editContent = ref('')
-const editingItem = ref(null)
-const deletingItem = ref(null)
-const activeFormats = ref([])
-const readingProgress = ref(0)
+const newReply = ref('')
 
-// Lazy loading replies state
+// Reply validation
+const replyValidation = reactive({ status: undefined, message: '' })
+
+// Lazy loading
 const REPLIES_PER_PAGE = 10
 const displayedRepliesCount = ref(REPLIES_PER_PAGE)
 const isLoadingMoreReplies = ref(false)
-const hasMoreReplies = ref(true)
 
-// Read/Unread tracking
-const READ_KEY_PREFIX = 'forum_read_'
-
-// Keyboard shortcuts
-const showShortcutsModal = ref(false)
-const keyboardShortcuts = [
-  { keys: ['R'], description: 'Yanit yaz' },
-  { keys: ['Q'], description: 'Secili metni alintila' },
-  { keys: ['Ctrl', 'Enter'], description: 'Formu gonder' },
-  { keys: ['?'], description: 'Kisayollari goster' },
-  { keys: ['Esc'], description: 'Modali kapat' },
-  { keys: ['Home'], description: 'Sayfanin basina git' },
-  { keys: ['End'], description: 'Sayfanin sonuna git' }
-]
-
-// Current user - auth'dan gelecek
-const currentUserId = ref(null)
-
-// WebSocket for real-time updates
+// WebSocket state
 const wsViewerCount = ref(0)
 const wsViewers = ref([])
-const wsConnected = ref(false)
 const typingUsers = ref([])
 let forumWS = null
-let typingTimeout = null
 
-// Initialize WebSocket connection
-function initWebSocket() {
-  if (forumWS) {
-    forumWS.disconnect()
-  }
+// Timeout tracking for cleanup
+let highlightTimeout = null
+let loadMoreTimeout = null
+let typingUserTimeouts = new Map()
 
-  forumWS = useForumTopicWS(topicId, {
-    onNewReply: (reply) => {
-      // Check if reply already exists (from our own submission)
-      const exists = replies.value.find(r => r.id === reply.id)
-      if (!exists) {
-        // Add the new reply with proper format
-        replies.value.push({
-          id: reply.id,
-          content: reply.content,
-          author: reply.author?.username || 'Unknown',
-          authorId: reply.author?.id,
-          authorAvatar: reply.author?.avatar,
-          authorRole: 'Uye',
-          authorLevel: 15,
-          authorXpProgress: 50,
-          authorPosts: 0,
-          authorJoined: 'Simdi',
-          authorOnline: true,
-          created: 'Az once',
-          likes: 0,
-          hasLiked: false,
-          isEdited: false,
-          reactions: []
-        })
-
-        // Show notification
-        window.$message?.info(`${reply.author?.username || 'Birisi'} yeni bir yanit yazdi`)
-
-        // Scroll to new reply if user is near bottom
-        const scrollBottom = document.documentElement.scrollHeight - window.scrollY - window.innerHeight
-        if (scrollBottom < 500) {
-          nextTick(() => {
-            const lastReply = document.getElementById(`reply-${reply.id}`)
-            if (lastReply) {
-              lastReply.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            }
-          })
-        }
-      }
-    },
-    onUserTyping: (user) => {
-      // Update typing users
-      const idx = typingUsers.value.findIndex(u => u.id === user.id)
-      if (idx === -1) {
-        typingUsers.value.push(user)
-      }
-      // Auto-clear after 3 seconds
-      setTimeout(() => {
-        const removeIdx = typingUsers.value.findIndex(u => u.id === user.id)
-        if (removeIdx !== -1) {
-          typingUsers.value.splice(removeIdx, 1)
-        }
-      }, 3000)
-    },
-    onUserStopTyping: (userId) => {
-      const idx = typingUsers.value.findIndex(u => u.id === userId)
-      if (idx !== -1) {
-        typingUsers.value.splice(idx, 1)
-      }
-    },
-    onUserJoined: (user, count) => {
-      wsViewerCount.value = count
-      if (user && user.username) {
-        window.$message?.info(`${user.username} konuyu goruntulemeye basladi`)
-      }
-    },
-    onUserLeft: (user, count) => {
-      wsViewerCount.value = count
-    },
-    onViewersUpdate: (count, viewers) => {
-      wsViewerCount.value = count
-      wsViewers.value = viewers
-    }
-  })
-
-  // Update connection status
-  watch(() => forumWS?.isConnected?.value, (connected) => {
-    wsConnected.value = connected
-  }, { immediate: true })
-}
-
-// Category colors
-const categoryColors = {
-  1: '#f97316', // Genel - Orange
-  2: '#8b5cf6', // Duyurular - Purple
-  3: '#06b6d4', // Yardim - Cyan
-  4: '#22c55e', // Oneriler - Green
-  5: '#ec4899', // Etkinlikler - Pink
-  6: '#eab308'  // Rehberler - Yellow
-}
-
-// Topic Data - API'den çekilecek
+// Data
 const topic = ref(null)
-
-// Yanıtlar - API'den çekilecek
 const replies = ref([])
+const bestAnswer = ref(null)
 
-const newReply = ref('')
+// Categories for sidebar
+const allCategories = ref([
+  { id: 1, name: 'Genel Tartisma', icon: MessageSquareIcon, topics: 156, color: '#f97316' },
+  { id: 2, name: 'Sorular & Cevaplar', icon: HelpCircleIcon, topics: 89, color: '#8b5cf6' },
+  { id: 3, name: 'Duyurular', icon: ZapIcon, topics: 12, color: '#22c55e' },
+  { id: 4, name: 'Kurallar', icon: ShieldIcon, topics: 5, color: '#ef4444' }
+])
 
-// Default badges for fallback
-const defaultBadges = [
-  { id: 1, name: 'Aktif Üye', icon: 'zap', color: 'linear-gradient(135deg, #f97316, #ea580c)' }
-]
+const sidebarStats = computed(() => ({
+  totalTopics: 262,
+  totalPosts: replies.value.length + 1,
+  totalMembers: 1250
+}))
 
 // Sort options
 const sortOptions = [
   { label: 'En Eski', value: 'oldest' },
   { label: 'En Yeni', value: 'newest' },
-  { label: 'En Çok Begenilen', value: 'likes' }
+  { label: 'En Cok Begenilen', value: 'likes' }
 ]
 
 // Editor tools
 const editorTools = [
-  { action: 'bold', icon: BoldIcon, label: 'Kalın (Ctrl+B)' },
-  { action: 'italic', icon: ItalicIcon, label: 'Italik (Ctrl+I)' },
+  { action: 'bold', icon: BoldIcon, label: 'Kalin' },
+  { action: 'italic', icon: ItalicIcon, label: 'Italik' },
   { action: 'code', icon: CodeIcon, label: 'Kod' },
-  { action: 'quote', icon: QuoteIcon, label: 'Alıntı' },
+  { action: 'quote', icon: QuoteIcon, label: 'Alinti' },
   { action: 'list', icon: ListIcon, label: 'Liste' },
-  { action: 'link', icon: Link2Icon, label: 'Link' },
+  { action: 'link', icon: LinkIcon, label: 'Link' },
   { action: 'image', icon: ImageIcon, label: 'Resim' }
 ]
 
-// Available reactions
-const availableReactions = [
-  { emoji: '👍', name: 'Begen' },
-  { emoji: '❤️', name: 'Sevgi' },
-  { emoji: '🔥', name: 'Ates' },
-  { emoji: '😂', name: 'Guldu' },
-  { emoji: '😮', name: 'Saskin' },
-  { emoji: '😢', name: 'Uzgun' }
-]
-
-// All emojis for picker
-const allEmojis = ['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😰', '😱', '🥵', '🥶', '😳', '🤪', '😵', '🥴', '😠', '😡', '🤬', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '👍', '👎', '👏', '🙌', '🤝', '🔥', '⭐', '💯', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💪', '🎉', '🎊', '🏆', '🥇', '🚀', '💡', '✅', '❌', '⚠️', '❓', '❗']
-
-// Report reasons with icons
+// Report reasons
 const reportReasons = [
-  { label: 'Spam veya reklam', value: 'spam', icon: BanIcon },
-  { label: 'Hakaret veya kufur', value: 'abuse', icon: AlertTriangleIcon },
-  { label: 'Yaniltici bilgi', value: 'misleading', icon: AlertTriangleIcon },
-  { label: 'Telif hakki ihlali', value: 'copyright', icon: CopyrightIcon },
-  { label: 'Diğer', value: 'other', icon: OtherIcon }
+  { label: 'Spam veya reklam', value: 'spam' },
+  { label: 'Hakaret veya kufur', value: 'abuse' },
+  { label: 'Yaniltici bilgi', value: 'misleading' },
+  { label: 'Telif hakki ihlali', value: 'copyright' },
+  { label: 'Diger', value: 'other' }
 ]
 
-const reportForm = ref({
-  reason: null,
-  description: ''
-})
+const reportForm = ref({ reason: null, description: '' })
 
-// Social share options
+// Social share
 const socialShareOptions = [
   { name: 'Twitter', icon: TwitterIcon, color: '#1DA1F2' },
   { name: 'Facebook', icon: FacebookIcon, color: '#4267B2' },
@@ -1374,198 +630,437 @@ const socialShareOptions = [
   { name: 'E-posta', icon: MailIcon, color: '#EA4335' }
 ]
 
-// Post action options
-const postActionOptions = [
-  { label: 'Düzenle', key: 'edit', icon: () => h(EditIcon, { class: 'w-4 h-4' }) },
-  { label: 'Sil', key: 'delete', icon: () => h(Trash2Icon, { class: 'w-4 h-4' }) }
-]
-
-const replyActionOptions = [
-  { label: 'Düzenle', key: 'edit' },
-  { label: 'Sil', key: 'delete' }
-]
-
 // Computed
 const allSortedReplies = computed(() => {
   const sorted = [...replies.value]
   switch (sortOrder.value) {
-    case 'newest':
-      return sorted.reverse()
-    case 'likes':
-      return sorted.sort((a, b) => b.likes - a.likes)
-    default:
-      return sorted
+    case 'newest': return sorted.reverse()
+    case 'likes': return sorted.sort((a, b) => b.likes - a.likes)
+    default: return sorted
   }
 })
 
-// Lazy loaded replies - only show up to displayedRepliesCount
-const sortedReplies = computed(() => {
-  return allSortedReplies.value.slice(0, displayedRepliesCount.value)
-})
+const sortedReplies = computed(() => allSortedReplies.value.slice(0, displayedRepliesCount.value))
+const canLoadMoreReplies = computed(() => displayedRepliesCount.value < allSortedReplies.value.length)
 
-// Check if there are more replies to load
-const canLoadMoreReplies = computed(() => {
-  return displayedRepliesCount.value < allSortedReplies.value.length
-})
-
-const renderedContent = computed(() => {
-  return renderMarkdown(topic.value?.content || '')
-})
-
-const previewContent = computed(() => {
-  return renderMarkdown(newReply.value || '*Onizleme için bir seyler yazın...*')
-})
-
-const shareUrl = computed(() => {
-  return `${window.location.origin}/forum/topic/${topicId}`
-})
+const previewContent = computed(() => renderMarkdown(newReply.value || '*Onizleme icin bir seyler yazin...*'))
+const shareUrl = computed(() => `${window.location.origin}/forum/topic/${topicId.value}`)
+const isReplyValid = computed(() => newReply.value.trim().length >= 5)
 
 // Methods
 function renderMarkdown(content) {
   if (!content) return ''
   try {
-    const html = marked(content, {
-      breaks: true,
-      gfm: true
-    })
-    return DOMPurify.sanitize(html)
+    return DOMPurify.sanitize(marked(content, { breaks: true, gfm: true }))
   } catch (e) {
     return content
   }
 }
 
-function getCategoryColor(categoryId) {
-  return categoryColors[categoryId] || '#f97316'
-}
+function formatPostForCard(post) {
+  if (!post) return null
 
-function getLevelColor(level) {
-  if (level >= 40) return '#f97316' // Orange - High level
-  if (level >= 30) return '#8b5cf6' // Purple
-  if (level >= 20) return '#06b6d4' // Cyan
-  if (level >= 10) return '#22c55e' // Green
-  return '#6b7280' // Gray - Beginner
-}
+  // Handle author as object or string
+  const authorObj = typeof post.author === 'object' ? post.author : null
+  const authorName = authorObj ? authorObj.username : post.author
+  const authorAvatar = authorObj ? authorObj.avatar : post.authorAvatar
+  const authorRole = authorObj ? authorObj.role : post.authorRole
+  const authorLevel = authorObj ? authorObj.level : post.authorLevel
+  const authorPostCount = authorObj ? authorObj.post_count : post.authorPosts
+  const authorJoinedDate = authorObj?.joined_at
+    ? new Date(authorObj.joined_at).toLocaleDateString('tr-TR', { month: 'short', year: 'numeric' })
+    : post.authorJoined
 
-function getRoleBadgeClass(role, size = 'normal') {
-  const baseClass = size === 'small'
-    ? 'role-badge-small'
-    : 'role-badge'
-
-  const roleClasses = {
-    'Admin': 'role-admin',
-    'Moderatör': 'role-mod',
-    'VIP Üye': 'role-vip',
-    'Üye': 'role-member',
-    'Yeni Üye': 'role-newbie'
-  }
-
-  return `${baseClass} ${roleClasses[role] || 'role-member'}`
-}
-
-function getRoleIcon(role) {
-  const icons = {
-    'Admin': CrownIcon,
-    'Moderatör': ShieldIcon,
-    'VIP Üye': StarIcon,
-    'Üye': UserIcon,
-    'Yeni Üye': UsersIcon
-  }
-  return icons[role] || UserIcon
-}
-
-function getBadgeIcon(iconName) {
-  const icons = {
-    crown: CrownIcon,
-    code: CodeIcon,
-    star: StarIcon,
-    shield: ShieldIcon,
-    award: AwardIcon,
-    zap: ZapIcon
-  }
-  return icons[iconName] || StarIcon
-}
-
-function isOwnPost(authorId) {
-  return authorId === currentUserId.value
-}
-
-function hasReacted(emoji) {
-  const reaction = topic.value?.reactions?.find(r => r.emoji === emoji)
-  return reaction?.hasReacted || false
-}
-
-function getReactionCount(emoji) {
-  const reaction = topic.value?.reactions?.find(r => r.emoji === emoji)
-  return reaction?.count || 0
-}
-
-function toggleReaction(emoji) {
-  const reaction = topic.value?.reactions?.find(r => r.emoji === emoji)
-  if (reaction) {
-    reaction.hasReacted = !reaction.hasReacted
-    reaction.count += reaction.hasReacted ? 1 : -1
-  } else {
-    topic.value.reactions.push({ emoji, count: 1, hasReacted: true })
+  return {
+    id: post.id,
+    content: post.content,
+    htmlContent: renderMarkdown(post.content),
+    author: authorName || 'Anonim',
+    authorAvatar: authorAvatar,
+    authorRole: authorRole || 'Uye',
+    authorLevel: authorLevel || 1,
+    authorXp: post.authorXp || 0,
+    authorXpProgress: post.authorXpProgress || 50,
+    authorPosts: authorPostCount || 0,
+    authorJoined: authorJoinedDate || 'Bilinmiyor',
+    authorOnline: post.authorOnline || false,
+    authorBadges: post.authorBadges || [],
+    created: post.created || formatDate(post.created_at),
+    likes: post.likes || 0,
+    hasLiked: hasLikedTopic.value,
+    isEdited: post.isEdited || post.is_edited,
+    isBestAnswer: post.isBestAnswer || post.is_best_answer
   }
 }
 
-function addReaction(emoji) {
-  if (!hasReacted(emoji)) {
-    toggleReaction(emoji)
+// Format date helper
+function formatDate(dateStr) {
+  if (!dateStr) return 'Bilinmiyor'
+  try {
+    return new Date(dateStr).toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return dateStr
   }
 }
 
-function toggleReplyReaction(replyId, emoji) {
-  const reply = replies.value.find(r => r.id === replyId)
-  if (reply) {
-    const reaction = reply.reactions?.find(r => r.emoji === emoji)
-    if (reaction) {
-      reaction.hasReacted = !reaction.hasReacted
-      reaction.count += reaction.hasReacted ? 1 : -1
-    }
+function formatReplyForCard(reply, index) {
+  // Handle author as object or string
+  const authorObj = typeof reply.author === 'object' ? reply.author : null
+  const authorName = authorObj ? authorObj.username : reply.author
+  const authorAvatar = authorObj ? authorObj.avatar : reply.authorAvatar
+  const authorRole = authorObj ? authorObj.role : reply.authorRole
+  const authorLevel = authorObj ? authorObj.level : reply.authorLevel
+  const authorPostCount = authorObj ? authorObj.post_count : reply.authorPosts
+  const authorJoinedDate = authorObj?.joined_at
+    ? new Date(authorObj.joined_at).toLocaleDateString('tr-TR', { month: 'short', year: 'numeric' })
+    : reply.authorJoined
+
+  return {
+    id: reply.id,
+    content: reply.content,
+    htmlContent: renderMarkdown(reply.content),
+    author: authorName || 'Anonim',
+    authorAvatar: authorAvatar,
+    authorRole: authorRole || 'Uye',
+    authorLevel: authorLevel || 1,
+    authorXp: reply.authorXp || 0,
+    authorXpProgress: reply.authorXpProgress || 50,
+    authorPosts: authorPostCount || 0,
+    authorJoined: authorJoinedDate || 'Bilinmiyor',
+    authorOnline: reply.authorOnline || false,
+    authorBadges: reply.authorBadges || [],
+    created: reply.created || formatDate(reply.created_at),
+    likes: reply.likes || 0,
+    hasLiked: reply.hasLiked || false,
+    isEdited: reply.isEdited || reply.is_edited,
+    isBestAnswer: reply.isBestAnswer || reply.is_best_answer,
+    replyNumber: index + 1
   }
 }
 
-function likeTopic() {
+function handleCategoryClick(cat) {
+  router.push(`/forum/category/${cat.id}`)
+}
+
+async function likeTopic() {
   if (!requireAuth({ message: 'Begenmek icin giris yapmaniz gerekiyor', redirect: false })) return
+  // BUGFIX: Add null check for topic
+  if (!topic.value || topic.value.likes === undefined) return
 
-  if (topic.value) {
-    hasLikedTopic.value = !hasLikedTopic.value
-    topic.value.likes += hasLikedTopic.value ? 1 : -1
+  const wasLiked = hasLikedTopic.value
+  // Optimistic update
+  hasLikedTopic.value = !hasLikedTopic.value
+  topic.value.likes += hasLikedTopic.value ? 1 : -1
 
-    if (hasLikedTopic.value) {
-      likeAnimating.value = true
-      setTimeout(() => {
-        likeAnimating.value = false
-      }, 600)
+  try {
+    const response = await fetch(`/api/forum/topics/${getTopicId()}/like`, {
+      method: wasLiked ? 'DELETE' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      }
+    })
+
+    if (!response.ok) {
+      // Revert on error
+      hasLikedTopic.value = wasLiked
+      topic.value.likes += wasLiked ? 1 : -1
+      window.$message?.error('Begeni islemi basarisiz')
+    } else {
+      window.$message?.success(hasLikedTopic.value ? 'Begenildi' : 'Begeni kaldirildi')
     }
-
-    window.$message?.success(hasLikedTopic.value ? 'Begenildi' : 'Begeni kaldırıldı')
+  } catch (error) {
+    // Revert on error
+    hasLikedTopic.value = wasLiked
+    topic.value.likes += wasLiked ? 1 : -1
+    console.error('Like error:', error)
   }
 }
 
-function likeReply(replyId) {
+async function likeReply(replyId) {
   if (!requireAuth({ message: 'Begenmek icin giris yapmaniz gerekiyor', redirect: false })) return
-
   const reply = replies.value.find(r => r.id === replyId)
-  if (reply) {
-    reply.hasLiked = !reply.hasLiked
-    reply.likes += reply.hasLiked ? 1 : -1
-    window.$message?.success(reply.hasLiked ? 'Begenildi' : 'Begeni kaldırıldı')
+  // BUGFIX: Add null check for reply and likes
+  if (!reply || reply.likes === undefined) return
+
+  const wasLiked = reply.hasLiked
+  // Optimistic update
+  reply.hasLiked = !reply.hasLiked
+  reply.likes += reply.hasLiked ? 1 : -1
+
+  try {
+    const response = await fetch(`/api/forum/replies/${replyId}/like`, {
+      method: wasLiked ? 'DELETE' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      }
+    })
+
+    if (!response.ok) {
+      // Revert on error
+      reply.hasLiked = wasLiked
+      reply.likes += wasLiked ? 1 : -1
+      window.$message?.error('Begeni islemi basarisiz')
+    } else {
+      window.$message?.success(reply.hasLiked ? 'Begenildi' : 'Begeni kaldirildi')
+    }
+  } catch (error) {
+    // Revert on error
+    reply.hasLiked = wasLiked
+    reply.likes += wasLiked ? 1 : -1
+    console.error('Like reply error:', error)
   }
 }
 
-function bookmarkTopic() {
-  hasBookmarked.value = !hasBookmarked.value
-  window.$message?.success(hasBookmarked.value ? 'Yer işaretlerine eklendi' : 'Yer işaretlerinden kaldırıldı')
+// Bookmark topic
+const isBookmarked = ref(false)
+async function bookmarkTopic() {
+  if (!requireAuth({ message: 'Yer imi eklemek icin giris yapmaniz gerekiyor', redirect: false })) return
+
+  const wasBookmarked = isBookmarked.value
+  isBookmarked.value = !isBookmarked.value
+
+  try {
+    const response = await fetch(`/api/forum/topics/${getTopicId()}/bookmark`, {
+      method: wasBookmarked ? 'DELETE' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      }
+    })
+
+    if (!response.ok) {
+      isBookmarked.value = wasBookmarked
+      window.$message?.error('Yer imi islemi basarisiz')
+    } else {
+      window.$message?.success(isBookmarked.value ? 'Yer imine eklendi' : 'Yer iminden cikarildi')
+    }
+  } catch (error) {
+    isBookmarked.value = wasBookmarked
+    console.error('Bookmark error:', error)
+  }
+}
+
+// Subscribe to topic
+const isTopicSubscribed = ref(false)
+async function subscribeToTopic() {
+  if (!requireAuth({ message: 'Takip etmek icin giris yapmaniz gerekiyor', redirect: false })) return
+
+  const wasSubscribed = isTopicSubscribed.value
+  isTopicSubscribed.value = !isTopicSubscribed.value
+
+  try {
+    const response = await fetch(`/api/forum/topics/${getTopicId()}/subscribe`, {
+      method: wasSubscribed ? 'DELETE' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      }
+    })
+
+    if (!response.ok) {
+      isTopicSubscribed.value = wasSubscribed
+      window.$message?.error('Takip islemi basarisiz')
+    } else {
+      window.$message?.success(isTopicSubscribed.value ? 'Konu takip ediliyor' : 'Takip iptal edildi')
+    }
+  } catch (error) {
+    isTopicSubscribed.value = wasSubscribed
+    console.error('Subscribe error:', error)
+  }
+}
+
+// Mark best answer
+async function markBestAnswer(replyId) {
+  if (!isLoggedIn.value) {
+    window.$message?.warning('Bu islemi yapmak icin giris yapin')
+    return
+  }
+
+  // Only topic author can mark best answer
+  if (topic.value?.author !== authStore.user?.username && !authStore.user?.is_admin) {
+    window.$message?.warning('Sadece konu sahibi en iyi yaniti isaretleyebilir')
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/forum/replies/${replyId}/best`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      }
+    })
+
+    if (response.ok) {
+      // Update local state
+      replies.value.forEach(r => {
+        r.isBestAnswer = r.id === replyId
+      })
+      const bestReply = replies.value.find(r => r.id === replyId)
+      bestAnswer.value = bestReply
+      topic.value.isSolved = true
+      window.$message?.success('En iyi yanit isaretlendi')
+    } else {
+      window.$message?.error('Islem basarisiz')
+    }
+  } catch (error) {
+    console.error('Mark best answer error:', error)
+    window.$message?.error('Bir hata olustu')
+  }
+}
+
+// Pin/unpin topic (admin only)
+async function togglePinTopic() {
+  if (!isAdmin.value) return
+
+  const wasPinned = topic.value?.isPinned
+  topic.value.isPinned = !topic.value.isPinned
+
+  try {
+    const response = await fetch(`/api/forum/topics/${getTopicId()}/pin`, {
+      method: wasPinned ? 'DELETE' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      }
+    })
+
+    if (!response.ok) {
+      topic.value.isPinned = wasPinned
+      window.$message?.error('Sabitleme islemi basarisiz')
+    } else {
+      window.$message?.success(topic.value.isPinned ? 'Konu sabitlendi' : 'Sabitleme kaldirildi')
+    }
+  } catch (error) {
+    topic.value.isPinned = wasPinned
+    console.error('Pin error:', error)
+  }
+}
+
+// Lock/unlock topic (admin only)
+async function toggleLockTopic() {
+  if (!isAdmin.value) return
+
+  const wasLocked = topic.value?.isLocked
+  topic.value.isLocked = !topic.value.isLocked
+
+  try {
+    const response = await fetch(`/api/forum/topics/${getTopicId()}/lock`, {
+      method: wasLocked ? 'DELETE' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      }
+    })
+
+    if (!response.ok) {
+      topic.value.isLocked = wasLocked
+      window.$message?.error('Kilitleme islemi basarisiz')
+    } else {
+      window.$message?.success(topic.value.isLocked ? 'Konu kilitlendi' : 'Kilit kaldirildi')
+    }
+  } catch (error) {
+    topic.value.isLocked = wasLocked
+    console.error('Lock error:', error)
+  }
+}
+
+// Delete topic (admin or owner)
+async function deleteTopic() {
+  const canDelete = isAdmin.value || topic.value?.author === authStore.user?.username
+
+  if (!canDelete) {
+    window.$message?.warning('Bu konuyu silme yetkiniz yok')
+    return
+  }
+
+  if (!window.confirm('Bu konuyu silmek istediginizden emin misiniz?')) {
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/forum/topics/${getTopicId()}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      }
+    })
+
+    if (response.ok) {
+      window.$message?.success('Konu silindi')
+      router.push('/forum')
+    } else {
+      window.$message?.error('Konu silinemedi')
+    }
+  } catch (error) {
+    console.error('Delete topic error:', error)
+    window.$message?.error('Bir hata olustu')
+  }
+}
+
+// Delete reply
+async function deleteReply(replyId) {
+  const reply = replies.value.find(r => r.id === replyId)
+  const canDelete = isAdmin.value || reply?.author === authStore.user?.username
+
+  if (!canDelete) {
+    window.$message?.warning('Bu yaniti silme yetkiniz yok')
+    return
+  }
+
+  if (!window.confirm('Bu yaniti silmek istediginizden emin misiniz?')) {
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/forum/replies/${replyId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      }
+    })
+
+    if (response.ok) {
+      replies.value = replies.value.filter(r => r.id !== replyId)
+      window.$message?.success('Yanit silindi')
+    } else {
+      window.$message?.error('Yanit silinemedi')
+    }
+  } catch (error) {
+    console.error('Delete reply error:', error)
+    window.$message?.error('Bir hata olustu')
+  }
+}
+
+function quotePost(post) {
+  quotedReply.value = post
+  const quoteText = `> @${post.author} yazdi:\n> ${post.content.replace(/\n/g, '\n> ')}\n\n`
+  newReply.value = quoteText + newReply.value
+  scrollToReplyForm()
 }
 
 function quoteReply(reply) {
   quotedReply.value = reply
-  const quoteText = `> @${reply.author} wrote:\n> ${reply.content.replace(/\n/g, '\n> ')}\n\n`
+  const quoteText = `> @${reply.author} yazdi:\n> ${reply.content.replace(/\n/g, '\n> ')}\n\n`
   newReply.value = quoteText + newReply.value
   scrollToReplyForm()
-  window.$message?.info('Alıntı eklendi')
 }
 
 function replyToUser(reply) {
@@ -1578,34 +1073,508 @@ function clearQuote() {
 }
 
 function scrollToReply(replyId) {
-  const element = document.getElementById(`reply-${replyId}`)
-  if (element) {
-    highlightedReplyId.value = replyId
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-
-    setTimeout(() => {
-      highlightedReplyId.value = null
-    }, 2000)
+  // Ensure the reply is in view by checking if we need to load more
+  const replyIndex = allSortedReplies.value.findIndex(r => r.id === replyId)
+  if (replyIndex >= displayedRepliesCount.value) {
+    // Need to load more replies to show this one
+    displayedRepliesCount.value = replyIndex + 1
   }
 
-  // Copy link to clipboard
-  const url = `${window.location.origin}${window.location.pathname}#reply-${replyId}`
-  navigator.clipboard.writeText(url)
-  window.$message?.success('Yanıt linki kopyalandi')
+  // Use nextTick to ensure DOM is updated before scrolling
+  nextTick(() => {
+    const element = document.getElementById(`reply-${replyId}`)
+    if (element) {
+      highlightedReplyId.value = replyId
+      // Use scrollIntoView with offset for better positioning
+      const headerOffset = 80
+      const elementPosition = element.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
+
+      // Focus the element for accessibility
+      element.setAttribute('tabindex', '-1')
+      element.focus({ preventScroll: true })
+
+      // Clear any existing highlight timeout before setting a new one
+      if (highlightTimeout) {
+        clearTimeout(highlightTimeout)
+      }
+      highlightTimeout = setTimeout(() => {
+        highlightedReplyId.value = null
+        highlightTimeout = null
+        element.removeAttribute('tabindex')
+      }, 2000)
+    }
+  })
 }
 
 function scrollToReplyForm() {
   nextTick(() => {
     const element = document.getElementById('reply-form')
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      editorRef.value?.focus()
+      const headerOffset = 80
+      const elementPosition = element.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
+
+      // Focus the editor after scroll completes
+      setTimeout(() => {
+        editorRef.value?.focus()
+      }, 500)
     }
   })
 }
 
 function scrollToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
+  // Focus the topic header for accessibility
+  nextTick(() => {
+    const header = document.querySelector('.forum-topic-header h1')
+    if (header) {
+      header.setAttribute('tabindex', '-1')
+      header.focus({ preventScroll: true })
+    }
+  })
+}
+
+function loadMoreReplies() {
+  isLoadingMoreReplies.value = true
+  // Clear any existing load more timeout
+  if (loadMoreTimeout) {
+    clearTimeout(loadMoreTimeout)
+  }
+  loadMoreTimeout = setTimeout(() => {
+    displayedRepliesCount.value += REPLIES_PER_PAGE
+    isLoadingMoreReplies.value = false
+    loadMoreTimeout = null
+  }, 500)
+}
+
+function applyFormat(action) {
+  const formats = {
+    bold: { prefix: '**', suffix: '**' },
+    italic: { prefix: '*', suffix: '*' },
+    code: { prefix: '`', suffix: '`' },
+    codeblock: { prefix: '```\n', suffix: '\n```' },
+    quote: { prefix: '> ', suffix: '' },
+    list: { prefix: '- ', suffix: '' },
+    link: { prefix: '[', suffix: '](url)' },
+    image: { prefix: '![alt](', suffix: ')' },
+    heading: { prefix: '## ', suffix: '' },
+    hr: { prefix: '\n---\n', suffix: '' }
+  }
+  const format = formats[action]
+  if (format) {
+    newReply.value += `${format.prefix}text${format.suffix}`
+  }
+}
+
+// Mention suggestions
+const mentionSuggestions = ref([])
+const showMentionDropdown = ref(false)
+const mentionQuery = ref('')
+const mentionDropdownPosition = ref({ top: 0, left: 0 })
+
+async function handleMentionInput(e) {
+  const text = newReply.value
+  const cursorPos = e.target?.selectionStart || text.length
+  const textBefore = text.substring(0, cursorPos)
+
+  // Find @ pattern
+  const mentionMatch = textBefore.match(/@(\w*)$/)
+
+  if (mentionMatch) {
+    mentionQuery.value = mentionMatch[1]
+
+    // Fetch mention suggestions
+    if (mentionQuery.value.length >= 1) {
+      try {
+        const response = await fetch(`/api/forum/mentions/search?q=${mentionQuery.value}`, {
+          headers: {
+            'Authorization': `Bearer ${authStore.token}`
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          mentionSuggestions.value = data.users || []
+          showMentionDropdown.value = mentionSuggestions.value.length > 0
+        }
+      } catch (error) {
+        console.error('Mention search error:', error)
+      }
+    } else {
+      // Show recent users from replies
+      const uniqueAuthors = [...new Set(replies.value.map(r => r.author))].slice(0, 5)
+      mentionSuggestions.value = uniqueAuthors.map(a => ({ username: a }))
+      showMentionDropdown.value = mentionSuggestions.value.length > 0
+    }
+  } else {
+    showMentionDropdown.value = false
+  }
+}
+
+function selectMention(user) {
+  const text = newReply.value
+  const cursorPos = document.activeElement?.selectionStart || text.length
+  const textBefore = text.substring(0, cursorPos)
+  const textAfter = text.substring(cursorPos)
+
+  // Replace @query with @username
+  const newTextBefore = textBefore.replace(/@\w*$/, `@${user.username} `)
+  newReply.value = newTextBefore + textAfter
+  showMentionDropdown.value = false
+}
+
+function handleTyping() {
+  if (forumWS && hasSteam.value) {
+    forumWS.sendTyping()
+  }
+}
+
+function validateReply() {
+  const trimmedReply = newReply.value.trim()
+  if (trimmedReply.length === 0) {
+    replyValidation.status = undefined
+    replyValidation.message = ''
+  } else if (trimmedReply.length < 5) {
+    replyValidation.status = 'error'
+    replyValidation.message = 'Yanıt en az 5 karakter olmalıdır'
+  } else {
+    replyValidation.status = 'success'
+    replyValidation.message = ''
+  }
+}
+
+function saveDraft() {
+  localStorage.setItem(`forum_draft_${topicId.value}`, newReply.value)
+  window.$message?.success('Taslak kaydedildi')
+}
+
+async function submitReply() {
+  if (!requireSteam(() => {})) return
+  if (!newReply.value.trim()) return
+
+  isSubmitting.value = true
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authStore.token}`
+    }
+    const csrfToken = getCsrfToken()
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken
+    }
+
+    const response = await fetch(`/api/forum/topics/${getTopicId()}/replies`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        content: newReply.value.trim(),
+        quoted_reply_id: quotedReply.value?.id
+      })
+    })
+
+    if (response.ok) {
+      let data = null
+      try {
+        data = await response.json()
+      } catch (jsonError) {
+        // Response body may be empty on success
+        console.warn('Response JSON parse warning:', jsonError)
+      }
+      newReply.value = ''
+      quotedReply.value = null
+      localStorage.removeItem(`forum_draft_${topicId.value}`)
+      window.$message?.success('Yanıt gönderildi')
+      fetchTopic()
+    } else {
+      let errorMessage = 'Yanıt gönderilemedi'
+      try {
+        const error = await response.json()
+        errorMessage = error.detail || errorMessage
+      } catch (jsonError) {
+        // Could not parse error response
+        console.warn('Error response JSON parse warning:', jsonError)
+      }
+      window.$message?.error(errorMessage)
+    }
+  } catch (error) {
+    console.error('Submit reply error:', error)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      window.$message?.error('Ağ bağlantısı hatası, lütfen internet bağlantınızı kontrol edin')
+    } else {
+      window.$message?.error('Bir hata oluştu, lütfen tekrar deneyin')
+    }
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Current item being reported
+const reportingItem = ref(null)
+
+function reportTopic() {
+  if (!requireAuth({ message: 'Bildirmek icin giris yapmaniz gerekiyor', redirect: false })) return
+  reportingItem.value = { type: 'topic', id: topicId }
+  showReportModal.value = true
+}
+
+function reportReply(reply) {
+  if (!requireAuth({ message: 'Bildirmek icin giris yapmaniz gerekiyor', redirect: false })) return
+  reportingItem.value = { type: 'reply', id: reply.id }
+  showReportModal.value = true
+}
+
+async function submitReport() {
+  if (!reportForm.value.reason) {
+    window.$message?.warning('Lutfen bir neden secin')
+    return
+  }
+
+  try {
+    const endpoint = reportingItem.value?.type === 'topic'
+      ? `/api/forum/topics/${getTopicId()}/report`
+      : `/api/forum/replies/${reportingItem.value?.id}/report`
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      },
+      body: JSON.stringify({
+        reason: reportForm.value.reason,
+        description: reportForm.value.description
+      })
+    })
+
+    if (response.ok) {
+      window.$message?.success('Bildiriminiz alindi')
+    } else {
+      window.$message?.error('Bildirim gonderilemedi')
+    }
+  } catch (error) {
+    console.error('Report error:', error)
+    window.$message?.error('Bir hata olustu')
+  } finally {
+    showReportModal.value = false
+    reportForm.value = { reason: null, description: '' }
+    reportingItem.value = null
+  }
+}
+
+// Edit topic
+const showEditTopicModal = ref(false)
+const editTopicForm = ref({ title: '', content: '' })
+
+function openEditTopic() {
+  if (!topic.value) return
+  if (topic.value.author !== authStore.user?.username && !isAdmin.value) {
+    window.$message?.warning('Bu konuyu duzenleme yetkiniz yok')
+    return
+  }
+  editTopicForm.value = {
+    title: topic.value.title || '',
+    content: topic.value.content || ''
+  }
+  showEditTopicModal.value = true
+}
+
+async function saveEditTopic() {
+  if (editTopicForm.value.title.trim().length < 5) {
+    window.$message?.warning('Baslik en az 5 karakter olmalidir')
+    return
+  }
+  if (editTopicForm.value.content.trim().length < 20) {
+    window.$message?.warning('Icerik en az 20 karakter olmalidir')
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/forum/topics/${getTopicId()}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      },
+      body: JSON.stringify({
+        title: editTopicForm.value.title.trim(),
+        content: editTopicForm.value.content.trim()
+      })
+    })
+
+    if (response.ok) {
+      topic.value.title = editTopicForm.value.title.trim()
+      topic.value.content = editTopicForm.value.content.trim()
+      topic.value.isEdited = true
+      showEditTopicModal.value = false
+      window.$message?.success('Konu guncellendi')
+    } else {
+      window.$message?.error('Konu guncellenemedi')
+    }
+  } catch (error) {
+    console.error('Edit topic error:', error)
+    window.$message?.error('Bir hata olustu')
+  }
+}
+
+// Edit reply
+const editingReplyId = ref(null)
+const editReplyContent = ref('')
+const showEditReplyModal = ref(false)
+
+function startEditReply(reply) {
+  if (reply.author !== authStore.user?.username && !isAdmin.value) {
+    window.$message?.warning('Bu yaniti duzenleme yetkiniz yok')
+    return
+  }
+  editingReplyId.value = reply.id
+  editReplyContent.value = reply.content
+  showEditReplyModal.value = true
+}
+
+function cancelEditReply() {
+  editingReplyId.value = null
+  editReplyContent.value = ''
+  showEditReplyModal.value = false
+}
+
+async function saveEditReply(replyId) {
+  if (editReplyContent.value.trim().length < 5) {
+    window.$message?.warning('Yanit en az 5 karakter olmalidir')
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/forum/replies/${replyId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`,
+        'X-CSRF-Token': getCsrfToken() || ''
+      },
+      body: JSON.stringify({
+        content: editReplyContent.value.trim()
+      })
+    })
+
+    if (response.ok) {
+      const reply = replies.value.find(r => r.id === replyId)
+      if (reply) {
+        reply.content = editReplyContent.value.trim()
+        reply.isEdited = true
+      }
+      editingReplyId.value = null
+      editReplyContent.value = ''
+      showEditReplyModal.value = false
+      window.$message?.success('Yanit guncellendi')
+    } else {
+      window.$message?.error('Yanit guncellenemedi')
+    }
+  } catch (error) {
+    console.error('Edit reply error:', error)
+    window.$message?.error('Bir hata olustu')
+  }
+}
+
+// Handle topic card actions (edit, delete, copy-link)
+function handleTopicAction({ action, post }) {
+  switch (action) {
+    case 'edit':
+      openEditTopic()
+      break
+    case 'delete':
+      deleteTopic()
+      break
+    case 'copy-link':
+      navigator.clipboard.writeText(`${window.location.origin}/forum/topic/${getTopicId()}`)
+      window.$message?.success('Link kopyalandi')
+      break
+  }
+}
+
+// Handle reply card actions (edit, delete, copy-link)
+function handleReplyAction({ action, post }, reply) {
+  switch (action) {
+    case 'edit':
+      startEditReply(reply)
+      break
+    case 'delete':
+      deleteReply(reply.id)
+      break
+    case 'copy-link':
+      navigator.clipboard.writeText(`${window.location.origin}/forum/topic/${getTopicId()}#reply-${reply.id}`)
+      window.$message?.success('Link kopyalandi')
+      break
+  }
+}
+
+// Keyboard shortcuts
+function handleKeydown(e) {
+  // Don't trigger shortcuts when typing in inputs
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    // Ctrl+Enter to submit reply
+    if (e.ctrlKey && e.key === 'Enter' && newReply.value.trim().length >= 5) {
+      e.preventDefault()
+      submitReply()
+    }
+    return
+  }
+
+  // R - Focus reply form
+  if (e.key === 'r' || e.key === 'R') {
+    e.preventDefault()
+    scrollToReplyForm()
+  }
+
+  // Q - Quote selected text or topic
+  if (e.key === 'q' || e.key === 'Q') {
+    e.preventDefault()
+    if (topic.value) {
+      quotePost(topic.value)
+    }
+  }
+
+  // L - Like topic
+  if (e.key === 'l' || e.key === 'L') {
+    e.preventDefault()
+    likeTopic()
+  }
+
+  // B - Bookmark topic
+  if (e.key === 'b' || e.key === 'B') {
+    e.preventDefault()
+    bookmarkTopic()
+  }
+
+  // S - Share topic
+  if (e.key === 's' || e.key === 'S') {
+    e.preventDefault()
+    showShareModal.value = true
+  }
+
+  // ? - Show shortcuts help
+  if (e.key === '?') {
+    e.preventDefault()
+    window.$message?.info('Kisayollar: R=Yanit, Q=Alinti, L=Begen, B=Yerimine Ekle, S=Paylas')
+  }
+
+  // Escape - Close modals
+  if (e.key === 'Escape') {
+    showShareModal.value = false
+    showReportModal.value = false
+    showEditTopicModal.value = false
+  }
 }
 
 function copyShareUrl() {
@@ -1614,1532 +1583,719 @@ function copyShareUrl() {
 }
 
 function shareToSocial(social) {
-  const encodedUrl = encodeURIComponent(shareUrl.value)
-  const encodedTitle = encodeURIComponent(topic.value?.title || '')
-
   const urls = {
-    Twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
-    Facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-    LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
-    'E-posta': `mailto:?subject=${encodedTitle}&body=${encodedUrl}`
+    Twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl.value)}&text=${encodeURIComponent(topic.value?.title)}`,
+    Facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl.value)}`,
+    LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl.value)}`,
+    'E-posta': `mailto:?subject=${encodeURIComponent(topic.value?.title)}&body=${encodeURIComponent(shareUrl.value)}`
   }
-
-  if (urls[social.name]) {
-    window.open(urls[social.name], '_blank')
-  }
-  showShareModal.value = false
+  window.open(urls[social.name], '_blank')
 }
 
-function reportTopic() {
-  if (!requireAuth({ message: 'Sikayet etmek icin giris yapmaniz gerekiyor', redirect: false })) return
-
-  editingItem.value = topic.value
-  showReportModal.value = true
-}
-
-function reportReply(reply) {
-  if (!requireAuth({ message: 'Sikayet etmek icin giris yapmaniz gerekiyor', redirect: false })) return
-
-  editingItem.value = reply
-  showReportModal.value = true
-}
-
-function submitReport() {
-  if (reportForm.value.reason) {
-    window.$message?.success('Bildiriminiz alındı')
-    showReportModal.value = false
-    reportForm.value = { reason: null, description: '' }
-  } else {
-    window.$message?.error('Lütfen bir neden seçin')
-  }
-}
-
-function handlePostAction(key) {
-  if (key === 'edit') {
-    editContent.value = topic.value?.content || ''
-    editingItem.value = topic.value
-    showEditModal.value = true
-  } else if (key === 'delete') {
-    deletingItem.value = topic.value
-    showDeleteModal.value = true
-  }
-}
-
-function handleReplyAction(key, reply) {
-  if (key === 'edit') {
-    editContent.value = reply.content
-    editingItem.value = reply
-    showEditModal.value = true
-  } else if (key === 'delete') {
-    deletingItem.value = reply
-    showDeleteModal.value = true
-  }
-}
-
-function saveEdit() {
-  if (editingItem.value) {
-    if (editingItem.value.id === topic.value?.id) {
-      topic.value.content = editContent.value
-      topic.value.isEdited = true
-    } else {
-      const reply = replies.value.find(r => r.id === editingItem.value.id)
-      if (reply) {
-        reply.content = editContent.value
-        reply.isEdited = true
+// WebSocket
+function initWebSocket() {
+  forumWS = useForumTopicWS(topicId.value, {
+    onNewReply: (reply) => {
+      const exists = replies.value.find(r => r.id === reply.id)
+      if (!exists) {
+        replies.value.push({
+          id: reply.id,
+          content: reply.content,
+          author: reply.author?.username || 'Unknown',
+          authorAvatar: reply.author?.avatar,
+          authorRole: 'Uye',
+          authorLevel: 15,
+          created: 'Az once',
+          likes: 0,
+          hasLiked: false
+        })
+        window.$message?.info(`${reply.author?.username || 'Birisi'} yeni bir yanit yazdi`)
       }
-    }
-    window.$message?.success('Gönderi güncellendi')
-    showEditModal.value = false
-    editingItem.value = null
-    editContent.value = ''
-  }
-}
-
-function confirmDelete() {
-  if (deletingItem.value) {
-    if (deletingItem.value.id !== topic.value?.id) {
-      const index = replies.value.findIndex(r => r.id === deletingItem.value.id)
-      if (index > -1) {
-        replies.value.splice(index, 1)
+    },
+    onUserTyping: (user) => {
+      const idx = typingUsers.value.findIndex(u => u.id === user.id)
+      if (idx === -1) typingUsers.value.push(user)
+      // Clear any existing timeout for this user
+      if (typingUserTimeouts.has(user.id)) {
+        clearTimeout(typingUserTimeouts.get(user.id))
       }
+      // Set a new timeout to remove typing indicator
+      const timeoutId = setTimeout(() => {
+        const removeIdx = typingUsers.value.findIndex(u => u.id === user.id)
+        if (removeIdx !== -1) typingUsers.value.splice(removeIdx, 1)
+        typingUserTimeouts.delete(user.id)
+      }, 3000)
+      typingUserTimeouts.set(user.id, timeoutId)
+    },
+    onViewersUpdate: (count, viewers) => {
+      wsViewerCount.value = count
+      wsViewers.value = viewers
     }
-    window.$message?.success('Gönderi silindi')
-    showDeleteModal.value = false
-    deletingItem.value = null
-  }
-}
-
-function applyFormat(action) {
-  const textarea = editorRef.value?.$el?.querySelector('textarea')
-  if (!textarea) return
-
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const selectedText = newReply.value.substring(start, end)
-
-  let replacement = ''
-  let cursorOffset = 0
-
-  switch (action) {
-    case 'bold':
-      replacement = `**${selectedText || 'kalın metin'}**`
-      cursorOffset = selectedText ? 0 : -2
-      break
-    case 'italic':
-      replacement = `*${selectedText || 'italik metin'}*`
-      cursorOffset = selectedText ? 0 : -1
-      break
-    case 'code':
-      replacement = selectedText.includes('\n')
-        ? `\`\`\`\n${selectedText || 'kod'}\n\`\`\``
-        : `\`${selectedText || 'kod'}\``
-      break
-    case 'quote':
-      replacement = `> ${selectedText || 'alıntı'}`
-      break
-    case 'list':
-      replacement = `- ${selectedText || 'liste ogesi'}`
-      break
-    case 'link':
-      replacement = `[${selectedText || 'link metni'}](url)`
-      cursorOffset = selectedText ? -1 : -4
-      break
-    case 'image':
-      replacement = `![${selectedText || 'resim açıklamasi'}](url)`
-      cursorOffset = selectedText ? -1 : -4
-      break
-  }
-
-  newReply.value = newReply.value.substring(0, start) + replacement + newReply.value.substring(end)
-
-  nextTick(() => {
-    textarea.focus()
-    const newPos = start + replacement.length + cursorOffset
-    textarea.setSelectionRange(newPos, newPos)
   })
 }
 
-function insertEmoji(emoji) {
-  const textarea = editorRef.value?.$el?.querySelector('textarea')
-  if (!textarea) return
-
-  const start = textarea.selectionStart
-  newReply.value = newReply.value.substring(0, start) + emoji + newReply.value.substring(start)
-
-  nextTick(() => {
-    textarea.focus()
-    const newPos = start + emoji.length
-    textarea.setSelectionRange(newPos, newPos)
-  })
-}
-
-function handleTyping() {
-  // Send typing indicator via WebSocket
-  if (forumWS && forumWS.sendTyping) {
-    forumWS.sendTyping()
+// Fetch data - with race condition protection
+let fetchTopicAbortController = null
+async function fetchTopic() {
+  // Cancel any pending fetch request
+  if (fetchTopicAbortController) {
+    fetchTopicAbortController.abort()
   }
-}
+  fetchTopicAbortController = new AbortController()
 
-function handleEditorFocus() {
-  // Track focus for typing indicator
-  if (forumWS && forumWS.sendTyping) {
-    forumWS.sendTyping()
-  }
-}
-
-function saveDraft() {
-  localStorage.setItem(`forum_draft_${topicId}`, newReply.value)
-  window.$message?.success('Taslak kaydedildi')
-}
-
-// Load more replies with skeleton loading
-async function loadMoreReplies() {
-  if (isLoadingMoreReplies.value || !canLoadMoreReplies.value) return
-
-  isLoadingMoreReplies.value = true
-
-  // Simulate API call with delay
-  await new Promise(resolve => setTimeout(resolve, 500))
-
-  // In real implementation, this would fetch from API with pagination:
-  // const response = await forumAPI.getReplies(topicId, {
-  //   page: Math.floor(displayedRepliesCount.value / REPLIES_PER_PAGE) + 1,
-  //   limit: REPLIES_PER_PAGE
-  // })
-
-  displayedRepliesCount.value += REPLIES_PER_PAGE
-  isLoadingMoreReplies.value = false
-}
-
-// Reset replies count when sort changes
-function resetRepliesCount() {
-  displayedRepliesCount.value = REPLIES_PER_PAGE
-}
-
-// Mark topic as read
-function markTopicAsRead() {
-  localStorage.setItem(`${READ_KEY_PREFIX}${topicId}`, Date.now().toString())
-}
-
-// Keyboard shortcuts handler
-function handleKeydown(e) {
-  // Don't trigger shortcuts when typing in inputs
-  const isTyping = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
-
-  // Ctrl+Enter to submit form (works even in textarea)
-  if (e.ctrlKey && e.key === 'Enter') {
-    if (isTyping && newReply.value.trim()) {
-      e.preventDefault()
-      submitReply()
-    }
-    return
-  }
-
-  // Don't trigger other shortcuts when typing
-  if (isTyping) return
-
-  // R = Reply to topic
-  if (e.key === 'r' || e.key === 'R') {
-    e.preventDefault()
-    scrollToReplyForm()
-    return
-  }
-
-  // Q = Quote selected text
-  if (e.key === 'q' || e.key === 'Q') {
-    e.preventDefault()
-    quoteSelectedText()
-    return
-  }
-
-  // ? = Show shortcuts help modal
-  if (e.key === '?') {
-    e.preventDefault()
-    showShortcutsModal.value = true
-    return
-  }
-
-  // Escape = Close modals
-  if (e.key === 'Escape') {
-    showShortcutsModal.value = false
-    showReportModal.value = false
-    showShareModal.value = false
-    showEditModal.value = false
-    showDeleteModal.value = false
-    return
-  }
-
-  // Home = Scroll to top
-  if (e.key === 'Home' && !e.ctrlKey) {
-    e.preventDefault()
-    scrollToTop()
-    return
-  }
-
-  // End = Scroll to bottom
-  if (e.key === 'End' && !e.ctrlKey) {
-    e.preventDefault()
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-    return
-  }
-}
-
-// Quote selected text from page
-function quoteSelectedText() {
-  const selection = window.getSelection()
-  const selectedText = selection?.toString().trim()
-
-  if (selectedText) {
-    const quoteText = `> ${selectedText.replace(/\n/g, '\n> ')}\n\n`
-    newReply.value = quoteText + newReply.value
-    scrollToReplyForm()
-    window.$message?.info('Secili metin alintilandi')
-  } else {
-    window.$message?.warning('Önce alıntilamak icin bir metin secin')
-  }
-}
-
-function loadDraft() {
-  const draft = localStorage.getItem(`forum_draft_${topicId}`)
-  if (draft) {
-    newReply.value = draft
-    window.$message?.info('Taslak yüklendi')
-  }
-}
-
-async function submitReply() {
-  if (!newReply.value.trim()) return
-
-  // Check for Steam requirement
-  if (!requireSteam()) {
-    return
-  }
-
-  isSubmitting.value = true
+  isLoading.value = true
+  fetchError.value = null
 
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    replies.value.push({
-      id: replies.value.length + 1,
-      author: 'CurrentUser',
-      authorId: currentUserId.value,
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=current',
-      authorRole: 'Üye',
-      authorLevel: 15,
-      authorXpProgress: 40,
-      authorPosts: 15,
-      authorJoined: 'Oca 2025',
-      authorOnline: true,
-      created: 'Az önce',
-      content: newReply.value,
-      likes: 0,
-      hasLiked: false,
-      isEdited: false,
-      quotedPost: quotedReply.value ? {
-        id: quotedReply.value.id,
-        author: quotedReply.value.author,
-        content: quotedReply.value.content.substring(0, 100)
-      } : null,
-      reactions: []
+    const response = await fetch(`/api/forum/topics/${topicId.value}`, {
+      signal: fetchTopicAbortController.signal
     })
 
-    newReply.value = ''
-    quotedReply.value = null
-    localStorage.removeItem(`forum_draft_${topicId}`)
-
-    window.$message?.success('Yanıtiniz gönderildi')
-
-    // Scroll to new reply
-    nextTick(() => {
-      const lastReply = document.getElementById(`reply-${replies.value[replies.value.length - 1].id}`)
-      if (lastReply) {
-        lastReply.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
-    })
+    if (response.ok) {
+      const data = await response.json()
+      topic.value = data.topic
+      replies.value = data.replies || []
+      bestAnswer.value = data.bestAnswer || null
+      // Set like status from API response
+      hasLikedTopic.value = data.topic?.hasLiked || false
+    } else if (response.status === 404) {
+      fetchError.value = 'Konu bulunamadi'
+      window.$message?.error('Konu bulunamadi')
+    } else if (response.status === 403) {
+      fetchError.value = 'Bu konuyu goruntuleme yetkiniz yok'
+      window.$message?.error('Bu konuyu goruntuleme yetkiniz yok')
+    } else {
+      fetchError.value = 'Konu yuklenemedi'
+      window.$message?.error('Konu yuklenemedi')
+    }
   } catch (error) {
-    window.$message?.error('Bir hata oluştu')
+    if (error.name === 'AbortError') {
+      // Request was cancelled, ignore
+      return
+    }
+    console.error('Failed to fetch topic:', error)
+    fetchError.value = 'Konu yuklenirken bir hata olustu'
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      window.$message?.error('Ag baglantisi hatasi')
+    }
   } finally {
-    isSubmitting.value = false
+    isLoading.value = false
+    fetchTopicAbortController = null
   }
 }
 
-// Scroll handling for floating bar and reading progress
+// Scroll handler
 function handleScroll() {
   showFloatingBar.value = window.scrollY > 400
-
-  // Calculate reading progress
-  const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
-  const scrolled = window.scrollY
-  readingProgress.value = Math.min((scrolled / scrollHeight) * 100, 100)
 }
 
-// Check for reply hash in URL
-function checkUrlHash() {
-  const hash = window.location.hash
-  if (hash.startsWith('#reply-')) {
-    const replyId = parseInt(hash.replace('#reply-', ''))
-    if (replyId) {
-      nextTick(() => {
-        scrollToReply(replyId)
-      })
+// Load draft
+function loadDraft() {
+  const draft = localStorage.getItem(`forum_draft_${topicId.value}`)
+  if (draft) {
+    newReply.value = draft
+  }
+}
+
+// Draft auto-save
+let draftAutoSaveTimer = null
+function startDraftAutoSave() {
+  if (draftAutoSaveTimer) clearInterval(draftAutoSaveTimer)
+  draftAutoSaveTimer = setInterval(() => {
+    if (newReply.value.trim()) {
+      localStorage.setItem(`forum_draft_${topicId.value}`, newReply.value)
     }
+  }, 10000) // Save every 10 seconds
+}
+
+function stopDraftAutoSave() {
+  if (draftAutoSaveTimer) {
+    clearInterval(draftAutoSaveTimer)
+    draftAutoSaveTimer = null
   }
 }
 
 // Lifecycle
 onMounted(() => {
+  fetchTopic()
+  initWebSocket()
+  loadDraft()
+  startDraftAutoSave()
   window.addEventListener('scroll', handleScroll)
   window.addEventListener('keydown', handleKeydown)
-  checkUrlHash()
-  loadDraft()
-  markTopicAsRead() // Mark topic as read when viewed
-
-  // Initialize WebSocket connection for real-time updates
-  initWebSocket()
 })
 
 onUnmounted(() => {
+  if (forumWS) forumWS.disconnect?.()
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('keydown', handleKeydown)
+  stopDraftAutoSave()
 
-  // Disconnect WebSocket when leaving the page
-  if (forumWS) {
-    forumWS.disconnect()
-    forumWS = null
+  // Save draft on unmount
+  if (newReply.value.trim()) {
+    localStorage.setItem(`forum_draft_${topicId.value}`, newReply.value)
   }
 
-  // Clear typing timeout
-  if (typingTimeout) {
-    clearTimeout(typingTimeout)
+  // Clean up all timeouts
+  if (highlightTimeout) {
+    clearTimeout(highlightTimeout)
+    highlightTimeout = null
   }
-})
-
-// Watch for hash changes
-watch(() => route.hash, () => {
-  checkUrlHash()
-})
-
-// Reset replies count when sort order changes
-watch(sortOrder, () => {
-  resetRepliesCount()
+  if (loadMoreTimeout) {
+    clearTimeout(loadMoreTimeout)
+    loadMoreTimeout = null
+  }
+  // Clear all typing user timeouts
+  typingUserTimeouts.forEach((timeoutId) => {
+    clearTimeout(timeoutId)
+  })
+  typingUserTimeouts.clear()
 })
 </script>
 
 <style scoped>
-/* Steam Required Notice */
-.steam-required-notice {
-  background: linear-gradient(135deg, rgba(102, 192, 244, 0.1), rgba(23, 26, 33, 0.9));
-  border-bottom: 1px solid rgba(102, 192, 244, 0.2);
+/* ===== Visual Enhancement ===== */
+.forum-page {
+  position: relative;
 }
 
-.steam-icon-container {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #171a21, #1b2838);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(102, 192, 244, 0.3);
-}
-
-/* Reading Progress Indicator */
-.reading-progress-container {
+.forum-page::before {
+  content: '';
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.1);
-  z-index: 9999;
+  bottom: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(249, 115, 22, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 30% at 0% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.reading-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #f97316, #fb923c, #fbbf24);
-  transition: width 0.1s ease-out;
-  box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
-}
-
-/* Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(5deg); }
-}
-
-@keyframes float-delayed {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-30px) rotate(-5deg); }
-}
-
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes like-pop {
-  0% { transform: scale(1); }
-  25% { transform: scale(1.3); }
-  50% { transform: scale(0.9); }
-  75% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(249, 115, 22, 0.5); }
-  50% { box-shadow: 0 0 25px rgba(249, 115, 22, 0.8), 0 0 50px rgba(249, 115, 22, 0.4); }
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes level-progress {
-  from { stroke-dasharray: 0 339; }
-}
-
-@keyframes particle-fly {
-  0% { opacity: 1; transform: translate(0, 0) scale(1); }
-  100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
-}
-
-.animate-float {
-  animation: float 8s ease-in-out infinite;
-}
-
-.animate-float-delayed {
-  animation: float-delayed 10s ease-in-out infinite;
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
-  opacity: 0;
-}
-
-.animate-like {
-  animation: like-pop 0.6s ease-out;
-}
-
-/* Glass Morphism */
-.glass-morphism {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.glass-morphism-strong {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-/* Gradient Text */
-.text-gradient-animated {
-  background: linear-gradient(90deg, #f97316, #fb923c, #fbbf24, #f97316);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: gradient-shift 3s linear infinite;
-}
-
-/* Floating Action Bar */
-.floating-action-bar {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 60px rgba(249, 115, 22, 0.1);
-}
-
-.fab-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  color: #9ca3af;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.fab-button:hover {
-  color: #f97316;
-  background: rgba(249, 115, 22, 0.1);
-  transform: translateY(-2px);
-}
-
-.fab-button.liked {
-  color: #ef4444;
-}
-
-.fab-button.liked svg {
-  fill: #ef4444;
-}
-
-.fab-count {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* Breadcrumb */
-.breadcrumb-nav {
-  overflow-x: auto;
-}
-
-.breadcrumb-item {
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-/* Stat Chips */
-.stat-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
-  color: #9ca3af;
-  font-size: 13px;
+/* Topic Header */
+.forum-topic-header {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 15, 20, 0.98) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--forum-radius-lg);
+  padding: 32px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
   transition: all 0.3s ease;
 }
 
-.stat-chip:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
+.forum-topic-header:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.15);
 }
 
-/* Live Viewers Badge */
-.stat-chip.live-viewers {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  position: relative;
-}
-
-.stat-chip.live-viewers:hover {
-  background: rgba(34, 197, 94, 0.2);
-}
-
-.live-dot {
-  width: 8px;
-  height: 8px;
-  background: #22c55e;
-  border-radius: 50%;
-  animation: live-pulse 2s ease-in-out infinite;
-}
-
-@keyframes live-pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(1.2);
-  }
-}
-
-/* Tags */
-.tag-glow-orange {
-  box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
-}
-
-.tag-glow-red {
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
-}
-
-.tag-hot {
-  background: linear-gradient(135deg, #ef4444, #f97316) !important;
-  border: none !important;
-  color: white !important;
-}
-
-/* Avatar Level Ring */
-.avatar-ring-container {
-  position: relative;
-  width: 112px;
-  height: 112px;
-}
-
-.avatar-ring-small {
-  position: relative;
-  width: 72px;
-  height: 72px;
-}
-
-.avatar-level-ring {
-  width: 100%;
-  height: 100%;
-}
-
-.level-progress {
-  animation: level-progress 1s ease-out forwards;
-  transition: stroke-dasharray 0.5s ease;
-}
-
-.level-badge {
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #f97316, #ea580c);
-  color: white;
-  font-size: 11px;
-  font-weight: bold;
-  padding: 3px 10px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
-  display: flex;
-  align-items: center;
-}
-
-.level-badge-small {
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #f97316, #ea580c);
-  color: white;
-  font-size: 10px;
-  font-weight: bold;
-  padding: 2px 8px;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.3);
-}
-
-/* Role Badges */
-.role-badge, .role-badge-small {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.role-badge-small {
-  padding: 2px 8px;
-  font-size: 10px;
-}
-
-.role-admin {
-  background: linear-gradient(135deg, #f97316, #ea580c);
-  color: white;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
-}
-
-.role-mod {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  color: white;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-}
-
-.role-vip {
-  background: linear-gradient(135deg, #eab308, #ca8a04);
-  color: white;
-  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3);
-}
-
-.role-member {
-  background: rgba(255, 255, 255, 0.1);
-  color: #9ca3af;
-}
-
-.role-newbie {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
-}
-
-/* Author Stats Grid */
-.author-stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-}
-
-.author-stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-}
-
-.author-stat-item.full-width {
-  grid-column: 1 / -1;
-  flex-direction: row;
-  justify-content: center;
-  gap: 8px;
-}
-
-.author-stat-item .stat-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.author-stat-item .stat-label {
-  font-size: 10px;
-  color: #6b7280;
-  text-transform: uppercase;
-}
-
-/* Reply Author Stats */
-.reply-author-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 8px;
-  font-size: 11px;
-  color: #6b7280;
-}
-
-.reply-author-stats span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-/* Badge Icons */
-.badge-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.badge-icon:hover {
-  transform: scale(1.15) rotate(5deg);
-}
-
-/* Reactions */
-.reaction-button {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.reaction-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.05);
-}
-
-.reaction-button.active {
-  background: rgba(249, 115, 22, 0.2);
-  border-color: rgba(249, 115, 22, 0.4);
-}
-
-.reaction-button.add-reaction {
-  color: #6b7280;
-}
-
-.reaction-count {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-.reaction-button-small {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px 8px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s ease;
-}
-
-.reaction-button-small.active {
-  background: rgba(249, 115, 22, 0.15);
-  border-color: rgba(249, 115, 22, 0.3);
-}
-
-.emoji-picker-item {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: none;
-  border: none;
-  font-size: 18px;
-}
-
-.emoji-picker-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.2);
-}
-
-/* Animated Like Button */
-.like-button-animated {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #9ca3af;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.like-button-animated:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
-}
-
-.like-button-animated.liked {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-}
-
-.like-button-animated.liked .like-icon {
-  fill: #ef4444;
-  color: #ef4444;
-}
-
-.like-button-animated.animating .like-icon {
-  animation: like-pop 0.6s ease-out;
-}
-
-.like-button-animated .like-particles {
-  position: absolute;
-  top: 50%;
-  left: 20px;
-  pointer-events: none;
-}
-
-.like-button-animated.animating .particle {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  background: #ef4444;
-  border-radius: 50%;
-  animation: particle-fly 0.6s ease-out forwards;
-}
-
-.like-button-animated.animating .particle:nth-child(1) { --tx: -20px; --ty: -20px; }
-.like-button-animated.animating .particle:nth-child(2) { --tx: 20px; --ty: -20px; }
-.like-button-animated.animating .particle:nth-child(3) { --tx: -25px; --ty: 0px; }
-.like-button-animated.animating .particle:nth-child(4) { --tx: 25px; --ty: 0px; }
-.like-button-animated.animating .particle:nth-child(5) { --tx: -15px; --ty: 15px; }
-.like-button-animated.animating .particle:nth-child(6) { --tx: 15px; --ty: 15px; }
-
-/* Reply Like Button */
-.reply-like-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: transparent;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 13px;
-}
-
-.reply-like-btn:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.reply-like-btn.liked {
-  color: #ef4444;
-}
-
-.reply-like-btn.liked svg {
-  fill: #ef4444;
-}
-
-/* Action Buttons */
-.action-button {
-  transition: all 0.2s ease;
-}
-
-.action-button:hover {
-  transform: translateY(-2px);
-}
-
-/* Reply Cards with Alternating Backgrounds */
-.reply-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.reply-card.reply-even {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.reply-card.reply-odd {
-  background: rgba(249, 115, 22, 0.02);
-}
-
-.reply-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-}
-
-.reply-card.highlighted {
-  border-color: #f97316 !important;
-  box-shadow: 0 0 30px rgba(249, 115, 22, 0.3);
-  animation: pulse-glow 1s ease-in-out 2;
-}
-
-.reply-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 22px;
-  padding: 0 8px;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(249, 115, 22, 0.1));
-  color: #f97316;
-  border-radius: 11px;
-  font-size: 11px;
-  font-weight: 700;
-  border: 1px solid rgba(249, 115, 22, 0.3);
-}
-
-.reply-action-btn {
-  transition: all 0.2s ease;
-}
-
-.reply-action-btn:hover {
-  transform: translateY(-1px);
-}
-
-/* Quote Block */
-.quote-block {
-  padding: 16px;
-  border-left: 4px solid #f97316;
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.08), transparent);
-  border-radius: 0 12px 12px 0;
-  position: relative;
-}
-
-.quote-block::before {
+.forum-topic-header::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h20v20H0z' fill='none'/%3E%3Cpath d='M10 15l-5-5 1.41-1.41L10 12.17l7.59-7.59L19 6l-9 9z' fill='%23f9731608'/%3E%3C/svg%3E");
+  height: 4px;
+  background: linear-gradient(90deg, var(--forum-brand), var(--forum-accent), var(--forum-purple));
+  animation: gradient-flow 4s ease infinite;
+  background-size: 200% 100%;
+}
+
+@keyframes gradient-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.forum-topic-header::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
   pointer-events: none;
 }
 
-.quote-header {
+.forum-topic-header__badges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.forum-topic-header__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.forum-stat-pill--live {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--forum-success);
+}
+
+.forum-live-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--forum-success);
+  border-radius: 50%;
+  animation: forum-pulse 2s ease-in-out infinite;
+}
+
+@keyframes forum-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Replies Section */
+.forum-replies-section {
+  margin-bottom: 24px;
+}
+
+.forum-replies-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.forum-replies-header .forum-heading {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: #9ca3af;
 }
 
-.quote-content {
-  color: #d1d5db;
-  font-size: 14px;
-  line-height: 1.6;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
-
-.quote-jump-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-  padding: 4px 8px;
-  background: rgba(249, 115, 22, 0.1);
-  border: none;
-  border-radius: 6px;
-  color: #f97316;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.quote-jump-btn:hover {
-  background: rgba(249, 115, 22, 0.2);
-  transform: translateX(4px);
-}
-
-.quote-form-preview {
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.08), transparent);
-}
-
-/* Editor Toolbar */
-.editor-toolbar {
+.forum-replies-list {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  padding: 12px;
-  border-radius: 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.toolbar-group {
-  display: flex;
-  gap: 2px;
-}
-
-.toolbar-divider {
-  width: 1px;
-  height: 24px;
-  background: rgba(255, 255, 255, 0.15);
-  margin: 0 8px;
-}
-
-.editor-tool-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  padding: 0 8px;
-  border-radius: 8px;
-  color: #9ca3af;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  gap: 4px;
-}
-
-.editor-tool-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-}
-
-.editor-tool-btn.active {
-  background: rgba(249, 115, 22, 0.2);
-  color: #f97316;
-}
-
-.preview-toggle {
-  padding: 0 12px;
-}
-
-.preview-toggle span {
-  font-size: 12px;
-}
-
-.editor-container {
-  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-.editor-container.split-view .editor-pane {
-  flex: 1;
+.forum-reply--highlighted {
+  animation: forum-highlight 2s ease;
 }
 
-.editor-pane {
-  flex: 1;
+@keyframes forum-highlight {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 3px var(--forum-accent); }
 }
 
-.preview-pane {
-  flex: 1;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: auto;
-  max-height: 250px;
+/* Load More */
+.forum-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
 }
 
-.preview-content {
-  min-height: 100px;
-}
-
-.custom-textarea :deep(textarea) {
-  background: rgba(0, 0, 0, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 12px !important;
-  font-family: inherit;
-  line-height: 1.7;
-}
-
-.custom-textarea :deep(textarea):focus {
-  border-color: #f97316 !important;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15) !important;
-}
-
-.submit-btn {
-  background: linear-gradient(135deg, #f97316, #ea580c) !important;
-  border: none !important;
-  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+.forum-load-more__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 15, 20, 0.95) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: var(--forum-radius);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.submit-btn:hover:not(:disabled) {
+.forum-load-more__btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.forum-load-more__btn:hover:not(:disabled) {
+  border-color: rgba(34, 211, 238, 0.6);
+  color: var(--forum-accent);
   transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 8px 24px rgba(34, 211, 238, 0.15);
+}
+
+.forum-load-more__btn:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.forum-load-more__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Typing Indicator */
-.typing-indicator {
-  display: inline-flex;
-}
-
-.typing-dots {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.typing-dots span {
-  width: 6px;
-  height: 6px;
-  background: #f97316;
-  border-radius: 50%;
-  animation: typing-bounce 1.4s infinite ease-in-out both;
-}
-
-.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
-.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
-.typing-dots span:nth-child(3) { animation-delay: 0s; }
-
-@keyframes typing-bounce {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-  40% { transform: scale(1); opacity: 1; }
-}
-
-/* Attachment Chips */
-.attachment-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: #9ca3af;
-  font-size: 13px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.attachment-chip:hover {
-  background: rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.3);
-  color: #f97316;
-  transform: translateY(-2px);
-}
-
-/* Share Modal */
-.share-modal-content {
-  padding: 8px 0;
-}
-
-.share-preview {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 16px;
-}
-
-.share-preview-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(249, 115, 22, 0.1);
-  border-radius: 12px;
-}
-
-.share-preview-text {
-  flex: 1;
-  overflow: hidden;
-}
-
-.share-preview-text h4 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.share-url-container {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.share-url-input {
-  flex: 1;
-}
-
-.copy-btn {
-  flex-shrink: 0;
-}
-
-.share-divider {
-  position: relative;
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.share-divider::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.share-divider span {
-  position: relative;
-  padding: 0 16px;
-  background: var(--n-color);
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.social-share-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.social-share-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.social-share-btn:hover {
-  background: var(--social-color);
-  border-color: var(--social-color);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-.social-share-btn span {
-  font-size: 11px;
-}
-
-/* Report Modal */
-.report-modal-content {
-  padding: 8px 0;
-}
-
-.report-icon-container {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(239, 68, 68, 0.1);
-  border-radius: 50%;
-  border: 2px solid rgba(239, 68, 68, 0.2);
-}
-
-.report-reasons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.report-reason-item {
+.forum-typing-indicator {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  cursor: pointer;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: var(--forum-radius);
+  margin-bottom: 16px;
+  animation: typing-glow 2s ease-in-out infinite;
+}
+
+@keyframes typing-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(34, 211, 238, 0); }
+  50% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.2); }
+}
+
+.forum-typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.forum-typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--forum-accent);
+  border-radius: 50%;
+  animation: forum-typing 1.4s infinite;
+}
+
+.forum-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.forum-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes forum-typing {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+/* Reply Form */
+.forum-reply-form {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 15, 20, 0.98) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: var(--forum-radius-lg);
+  overflow: hidden;
+  position: relative;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.forum-reply-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f97316, #22d3ee);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.forum-reply-form:focus-within {
+  border-color: rgba(249, 115, 22, 0.5);
+  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.1);
+}
+
+.forum-reply-form:focus-within::before {
+  opacity: 1;
+}
+
+.forum-steam-notice {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: rgba(102, 192, 244, 0.1);
+  border-bottom: 1px solid var(--forum-border);
+}
+
+.forum-steam-notice__icon {
+  color: #66c0f4;
+}
+
+.forum-steam-notice__content {
+  flex: 1;
+}
+
+.forum-steam-notice__content p {
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.forum-quote-preview {
+  position: relative;
+  padding: 16px 24px;
+  background: var(--forum-bg-hover);
+  border-bottom: 1px solid var(--forum-border);
+}
+
+.forum-quote-preview__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--forum-muted);
+  margin-bottom: 8px;
+}
+
+.forum-quote-preview__content {
+  color: var(--text-primary);
+  font-size: 14px;
+  padding-left: 12px;
+  border-left: 3px solid var(--forum-accent);
+}
+
+.forum-quote-preview__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 4px;
+  color: var(--forum-muted);
+  border-radius: 4px;
   transition: all 0.2s ease;
 }
 
-.report-reason-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+.forum-quote-preview__close:hover {
+  background: var(--forum-bg-card);
+  color: var(--text-primary);
 }
 
-.report-reason-item.selected {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+.forum-reply-form__content {
+  padding: 24px;
+}
+
+.forum-reply-form__content .forum-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Editor Toolbar */
+.forum-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--forum-bg-hover);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-sm) var(--forum-radius-sm) 0 0;
+}
+
+.forum-editor-toolbar__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--forum-muted);
+  transition: all 0.2s ease;
+}
+
+.forum-editor-toolbar__btn:hover,
+.forum-editor-toolbar__btn.active {
+  background: var(--forum-bg-card);
+  color: var(--forum-accent);
+}
+
+.forum-editor-toolbar__divider {
+  width: 1px;
+  height: 24px;
+  background: var(--forum-border);
+  margin: 0 8px;
+}
+
+/* Editor */
+.forum-editor {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.forum-editor__input {
+  flex: 1;
+}
+
+.forum-reply-validation-error {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.forum-editor--split .forum-editor__input {
+  flex: 1;
+}
+
+.forum-editor__preview {
+  flex: 1;
+  padding: 16px;
+  background: var(--forum-bg-hover);
+  border: 1px solid var(--forum-border);
+  border-radius: 0 0 var(--forum-radius-sm) var(--forum-radius-sm);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.forum-editor__preview .forum-meta {
+  margin-bottom: 12px;
+}
+
+/* Form Footer */
+.forum-reply-form__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.forum-reply-form__counter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--forum-muted);
+  font-size: 14px;
+}
+
+.forum-reply-form__actions {
+  display: flex;
+  gap: 12px;
 }
 
 /* Locked Message */
-.locked-icon-container {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto;
+.forum-locked-message {
+  text-align: center;
+  padding: 60px 24px;
+  background: var(--forum-bg-card);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-lg);
+  color: var(--forum-danger);
+}
+
+.forum-locked-message .forum-heading {
+  margin: 24px 0 12px;
+}
+
+/* Floating Bar */
+.forum-floating-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--forum-bg-panel);
+  border: 1px solid var(--forum-border);
+  border-radius: 50px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.forum-floating-bar__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  color: var(--forum-muted);
+  transition: all 0.2s ease;
+}
+
+.forum-floating-bar__btn:hover {
+  background: var(--forum-bg-hover);
+  color: var(--text-primary);
+}
+
+.forum-floating-bar__btn.liked {
+  color: var(--forum-danger);
+}
+
+.forum-floating-bar__divider {
+  width: 1px;
+  height: 24px;
+  background: var(--forum-border);
+}
+
+/* Share Modal */
+.forum-share-modal__url {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.forum-share-modal__social {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.forum-share-modal__social-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(239, 68, 68, 0.1);
+  gap: 8px;
+  padding: 12px;
+  background: var(--forum-bg-hover);
+  border: 1px solid var(--forum-border);
+  border-radius: var(--forum-radius-sm);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.forum-share-modal__social-btn:hover {
+  background: var(--color);
+  color: white;
+}
+
+/* Report Option */
+.forum-report-option {
+  padding: 8px 0;
+}
+
+/* Modal Footer */
+.forum-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Loading Dots */
+.forum-loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.forum-loading-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--forum-muted);
   border-radius: 50%;
-  border: 2px solid rgba(239, 68, 68, 0.3);
+  animation: forum-loading 1s infinite;
 }
 
-/* Markdown Body Styling */
-.markdown-body {
-  color: #d1d5db;
-  line-height: 1.8;
-  font-size: 15px;
-}
+.forum-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.forum-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
 
-.markdown-body :deep(h1),
-.markdown-body :deep(h2),
-.markdown-body :deep(h3) {
-  color: var(--text-primary);
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-  font-weight: 700;
-}
-
-.markdown-body :deep(p) {
-  margin-bottom: 1em;
-}
-
-.markdown-body :deep(a) {
-  color: #f97316;
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.2s ease;
-}
-
-.markdown-body :deep(a:hover) {
-  border-bottom-color: #f97316;
-}
-
-.markdown-body :deep(code) {
-  background: rgba(249, 115, 22, 0.1);
-  color: #fb923c;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.9em;
-  font-family: 'Fira Code', monospace;
-}
-
-.markdown-body :deep(pre) {
-  background: rgba(0, 0, 0, 0.4);
-  padding: 20px;
-  border-radius: 16px;
-  overflow-x: auto;
-  margin: 1.5em 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.markdown-body :deep(pre code) {
-  background: none;
-  padding: 0;
-  color: #e5e7eb;
-}
-
-.markdown-body :deep(blockquote) {
-  border-left: 4px solid #f97316;
-  padding: 12px 20px;
-  margin: 1.5em 0;
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.08), transparent);
-  border-radius: 0 12px 12px 0;
-  color: #d1d5db;
-  font-style: italic;
-}
-
-.markdown-body :deep(ul),
-.markdown-body :deep(ol) {
-  padding-left: 28px;
-  margin: 1em 0;
-}
-
-.markdown-body :deep(li) {
-  margin-bottom: 0.5em;
-}
-
-.markdown-body :deep(li::marker) {
-  color: #f97316;
-}
-
-.markdown-body :deep(strong) {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.markdown-body :deep(img) {
-  max-width: 100%;
-  border-radius: 16px;
-  margin: 1.5em 0;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-}
-
-.markdown-body :deep(hr) {
-  border: none;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  margin: 2em 0;
+@keyframes forum-loading {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
 }
 
 /* Transitions */
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .slide-up-enter-from,
 .slide-up-leave-to {
+  transform: translateX(-50%) translateY(100px);
   opacity: 0;
-  transform: translate(-50%, 20px);
 }
 
 .slide-down-enter-active,
@@ -3149,8 +2305,8 @@ watch(sortOrder, () => {
 
 .slide-down-enter-from,
 .slide-down-leave-to {
+  transform: translateY(-20px);
   opacity: 0;
-  transform: translateY(-10px);
 }
 
 .fade-enter-active,
@@ -3163,171 +2319,30 @@ watch(sortOrder, () => {
   opacity: 0;
 }
 
-.reply-list-enter-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.reply-list-leave-active {
-  transition: all 0.3s ease;
-}
-
-.reply-list-enter-from {
-  opacity: 0;
-  transform: translateX(-20px);
-}
-
-.reply-list-leave-to {
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.reply-list-move {
-  transition: transform 0.3s ease;
-}
-
 /* Responsive */
-@media (max-width: 1024px) {
-  .author-sidebar {
-    border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+@media (max-width: 768px) {
+  .forum-topic-header {
+    padding: 24px;
   }
 
-  .reply-author-sidebar {
-    border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  .forum-floating-bar {
+    bottom: 16px;
+    padding: 8px 16px;
   }
 
-  .editor-container.split-view {
+  .forum-editor {
     flex-direction: column;
   }
 
-  .social-share-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .floating-action-bar {
-    padding: 12px 16px;
+  .forum-reply-form__footer {
+    flex-direction: column;
+    gap: 16px;
   }
 
-  .fab-button {
-    padding: 8px;
+  .forum-reply-form__counter,
+  .forum-reply-form__actions {
+    width: 100%;
+    justify-content: center;
   }
-
-  .fab-count {
-    display: none;
-  }
-
-  .stat-chip span {
-    display: none;
-  }
-
-  .stat-chip {
-    padding: 8px;
-    border-radius: 50%;
-  }
-
-  .author-stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .like-button-animated .like-text {
-    display: none;
-  }
-}
-
-/* Load More Button */
-.load-more-container {
-  display: flex;
-  justify-content: center;
-}
-
-.load-more-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 12px;
-  color: #9ca3af;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.load-more-btn:hover:not(:disabled) {
-  color: #f97316;
-  background: rgba(249, 115, 22, 0.1);
-  transform: translateY(-2px);
-}
-
-.load-more-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* Skeleton Loading */
-.skeleton-loading-dots {
-  display: flex;
-  gap: 4px;
-}
-
-.skeleton-loading-dots span {
-  width: 6px;
-  height: 6px;
-  background: #f97316;
-  border-radius: 50%;
-  animation: skeleton-bounce 1.4s ease-in-out infinite both;
-}
-
-.skeleton-loading-dots span:nth-child(1) { animation-delay: -0.32s; }
-.skeleton-loading-dots span:nth-child(2) { animation-delay: -0.16s; }
-.skeleton-loading-dots span:nth-child(3) { animation-delay: 0s; }
-
-@keyframes skeleton-bounce {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-  40% { transform: scale(1); opacity: 1; }
-}
-
-.skeleton-reply-card {
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes skeleton-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.skeleton-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s infinite;
-}
-
-.skeleton-line {
-  height: 12px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s infinite;
-}
-
-@keyframes skeleton-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* Disabled action state for non-authenticated users */
-.disabled-action {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.disabled-action:hover {
-  opacity: 0.6;
 }
 </style>

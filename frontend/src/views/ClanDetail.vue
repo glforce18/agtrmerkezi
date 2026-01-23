@@ -67,7 +67,7 @@
               </template>
 
               <template v-else-if="authStore.isAuthenticated && !clansStore.isInClan">
-                <n-button v-if="clan.is_recruiting && !hasApplied" type="primary" @click="requireSteam(handleApply)">
+                <n-button v-if="clan.is_recruiting && !hasApplied" type="primary" @click="requireSteam(openApplicationModal)">
                   <template #icon><UserPlus class="w-5 h-5" /></template>
                   Başvur
                 </n-button>
@@ -208,6 +208,37 @@
       </n-form>
     </n-modal>
 
+    <!-- Application Modal -->
+    <n-modal v-model:show="showApplicationModal" preset="card" title="Klana Basvur" style="max-width: 500px">
+      <div class="application-form">
+        <p class="text-sm text-gray-400 mb-4">
+          <strong>{{ clan?.name }}</strong> klanina basvuru yapiyorsunuz. Kendinizi tanitan bir mesaj yazin.
+        </p>
+        <n-form-item label="Basvuru Mesaji" :validation-status="applicationValidation.status" :feedback="applicationValidation.message">
+          <n-input
+            v-model:value="applicationMessage"
+            type="textarea"
+            :rows="4"
+            placeholder="Kendinizi tanitin, neden bu klana katilmak istediginizi belirtin... (min 10, max 500 karakter)"
+            :status="applicationValidation.status"
+            @blur="validateApplicationMessage"
+            show-count
+            :maxlength="500"
+          />
+        </n-form-item>
+        <div class="text-xs text-gray-500 mb-4">
+          {{ applicationMessage.length }}/500 karakter
+        </div>
+        <div class="flex justify-end gap-3">
+          <n-button @click="showApplicationModal = false">Iptal</n-button>
+          <n-button type="primary" :disabled="!isApplicationValid" @click="handleApply">
+            <template #icon><UserPlus class="w-4 h-4" /></template>
+            Basvuru Gonder
+          </n-button>
+        </div>
+      </div>
+    </n-modal>
+
     <!-- Steam Required Modal -->
     <SteamRequiredModal
       :show="showSteamModal"
@@ -218,7 +249,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessage, useDialog } from 'naive-ui'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
@@ -253,6 +284,33 @@ const settingsForm = ref({
   tag: '',
   description: '',
   is_recruiting: true
+})
+
+// Application form
+const applicationMessage = ref('')
+const applicationValidation = reactive({ status: undefined, message: '' })
+const showApplicationModal = ref(false)
+
+const validateApplicationMessage = () => {
+  const trimmed = applicationMessage.value.trim()
+  if (trimmed.length === 0) {
+    applicationValidation.status = undefined
+    applicationValidation.message = ''
+  } else if (trimmed.length < 10) {
+    applicationValidation.status = 'error'
+    applicationValidation.message = 'Basvuru mesaji en az 10 karakter olmalidir'
+  } else if (trimmed.length > 500) {
+    applicationValidation.status = 'error'
+    applicationValidation.message = 'Basvuru mesaji en fazla 500 karakter olmalidir'
+  } else {
+    applicationValidation.status = 'success'
+    applicationValidation.message = ''
+  }
+}
+
+const isApplicationValid = computed(() => {
+  const trimmed = applicationMessage.value.trim()
+  return trimmed.length >= 10 && trimmed.length <= 500
 })
 
 // Computed
@@ -404,11 +462,24 @@ const handleMemberAction = async (key, member) => {
   }
 }
 
+const openApplicationModal = () => {
+  applicationMessage.value = ''
+  applicationValidation.status = undefined
+  applicationValidation.message = ''
+  showApplicationModal.value = true
+}
+
 const handleApply = async () => {
-  const result = await clansStore.applyToClan(clan.value.id)
+  if (!isApplicationValid.value) {
+    validateApplicationMessage()
+    return
+  }
+
+  const result = await clansStore.applyToClan(clan.value.id, applicationMessage.value.trim())
   if (result.success) {
     message.success(result.message)
     clan.value.has_applied = true
+    showApplicationModal.value = false
   } else {
     message.error(result.message)
   }
@@ -761,6 +832,15 @@ onMounted(() => {
   justify-content: center;
   padding: 60px 20px;
   color: var(--text-tertiary);
+}
+
+/* Application Form */
+.application-form {
+  padding: 0.5rem 0;
+}
+
+.application-form :deep(.n-input__textarea-el) {
+  min-height: 100px;
 }
 
 @media (max-width: 768px) {

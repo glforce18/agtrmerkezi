@@ -154,7 +154,10 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_CHAT_ID: str = ""
     TELEGRAM_ENABLED: bool = False
-    
+
+    # Scraper API Keys
+    STEAMGRIDDB_API_KEY: str = ""  # https://www.steamgriddb.com/profile/preferences/api
+
     # Forum ayarlari
     FORUM_POSTS_PER_PAGE: int = 20
     FORUM_TOPICS_PER_PAGE: int = 25
