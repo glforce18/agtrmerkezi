@@ -348,6 +348,11 @@ entity.field = new_value
 db.commit()
 ```
 
+**Database Model Sync (23 Ocak 2026):**
+Database kolonlari ile model senkronize edildi (`app/models/database.py`):
+- ForumTopic: `likes`, `is_sticky`, `is_solved`, `last_reply_id`, `last_reply_at`
+- ForumReply: `likes`, `parent_reply_id` (nested replies)
+
 **CSRF Exempt APIs (23 Ocak 2026):**
 JWT ile korunan API'ler CSRF'den exempt edildi (`app/middleware/csrf.py`):
 - `/api/forum` - Forum islemleri (like, reply, vb.)
