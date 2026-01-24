@@ -17,16 +17,6 @@ from sqlalchemy import and_, asc, case, desc, func, or_, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.exceptions import (
-    CategoryNotFoundException,
-    ContentValidationException,
-    InsufficientPermissionsException,
-    RateLimitExceededException,
-    ReplyNotFoundException,
-    SpamDetectedException,
-    TopicLockedException,
-    TopicNotFoundException,
-)
 from app.core.redis_manager import redis_manager
 from app.core.sanitizer import sanitize_forum_content, sanitize_title
 from app.core.security import (
@@ -2031,6 +2021,59 @@ async def create_topic(
     logger.info(f"Topic creation attempt by user {current_user.id}")
 
     try:
+        # ===== ANTI-FARMING CHECKS =====
+        from app.core.anti_farming import (
+            check_content_quality,
+            check_duplicate_content,
+            check_reputation_farming,
+            check_topic_creation_cooldown,
+            check_topic_title_quality,
+        )
+
+        # Cooldown check
+        can_create, cooldown_seconds = await check_topic_creation_cooldown(current_user.id, db)
+        if not can_create:
+            if cooldown_seconds > 0:
+                minutes_remaining = (cooldown_seconds // 60) + 1
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=f"Cok hizli konu olusturuyorsunuz. {minutes_remaining} dakika sonra tekrar deneyin.",
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Gunluk konu olusturma limitine ulastiniz.",
+                )
+
+        # Title quality check
+        title_ok, title_error = check_topic_title_quality(data.title)
+        if not title_ok:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=title_error)
+
+        # Content quality check
+        content_ok, content_error = check_content_quality(data.content, "topic")
+        if not content_ok:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=content_error)
+
+        # Duplicate content check
+        is_duplicate, duplicate_id = await check_duplicate_content(
+            current_user.id, data.content, "topic", db
+        )
+        if is_duplicate:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Bu icerigi daha once paylasmistiniz (Konu ID: {duplicate_id})",
+            )
+
+        # Reputation farming check
+        is_farming, farming_reason = await check_reputation_farming(current_user.id, db)
+        if is_farming:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Reputation farming algılandi: {farming_reason}",
+            )
+        # ===== END ANTI-FARMING CHECKS =====
+
         # Rate limit check with remaining time
         rate_limited, remaining_seconds = await check_forum_rate_limit(current_user.id, "topic")
         if rate_limited:
@@ -2159,14 +2202,15 @@ async def create_topic(
             logger.warning(f"Reputation update error for user {current_user.id}: {e}")
 
         # Badge check
+        # Queue badge check for background processing
         badges_earned = []
         try:
-            from app.services.forum_gamification import get_forum_gamification_service
+            from app.tasks.forum_tasks import enqueue_badge_check
 
-            gamification_service = get_forum_gamification_service(db)
-            badges_earned = await gamification_service.check_and_award_badges(current_user.id) or []
+            await enqueue_badge_check(current_user.id)
+            logger.debug(f"Badge check queued for user {current_user.id}")
         except Exception as e:
-            logger.warning(f"Badge check error for user {current_user.id}: {e}")
+            logger.warning(f"Badge check queue error for user {current_user.id}: {e}")
 
         # Forum coin reward
         reward_amount = None
@@ -2368,6 +2412,62 @@ async def create_reply(
     logger.info(f"Reply creation attempt by user {current_user.id} on topic {slug_or_id}")
 
     try:
+        # Get topic ID first for anti-farming checks
+        if slug_or_id.isdigit():
+            topic_id_for_check = int(slug_or_id)
+        else:
+            topic_check = db.query(ForumTopic.id).filter(ForumTopic.slug == slug_or_id).first()
+            topic_id_for_check = topic_check.id if topic_check else None
+
+        # ===== ANTI-FARMING CHECKS =====
+        from app.core.anti_farming import (
+            check_content_quality,
+            check_duplicate_content,
+            check_reply_creation_cooldown,
+            check_reputation_farming,
+        )
+
+        # Cooldown check
+        if topic_id_for_check:
+            can_create, cooldown_seconds = await check_reply_creation_cooldown(
+                current_user.id, topic_id_for_check, db
+            )
+            if not can_create:
+                if cooldown_seconds == -1:
+                    raise HTTPException(
+                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                        detail="Bu konuda cok fazla yanit yazdınız.",
+                    )
+                elif cooldown_seconds > 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                        detail=f"Cok hizli yanit yaziyorsunuz. {cooldown_seconds} saniye sonra tekrar deneyin.",
+                    )
+
+        # Content quality check
+        content_ok, content_error = check_content_quality(data.content, "reply")
+        if not content_ok:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=content_error)
+
+        # Duplicate content check
+        is_duplicate, duplicate_id = await check_duplicate_content(
+            current_user.id, data.content, "reply", db
+        )
+        if is_duplicate:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Bu icerigi daha once paylasmistiniz (Yanit ID: {duplicate_id})",
+            )
+
+        # Reputation farming check
+        is_farming, farming_reason = await check_reputation_farming(current_user.id, db)
+        if is_farming:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Reputation farming algılandi: {farming_reason}",
+            )
+        # ===== END ANTI-FARMING CHECKS =====
+
         # Rate limit check with remaining time
         rate_limited, remaining_seconds = await check_forum_rate_limit(current_user.id, "reply")
         if rate_limited:
@@ -2514,15 +2614,15 @@ async def create_reply(
         except Exception as e:
             logger.warning(f"Reputation update error: {e}")
 
-        # Badge check
+        # Queue badge check for background processing
         badges_earned = []
         try:
-            from app.services.forum_gamification import get_forum_gamification_service
+            from app.tasks.forum_tasks import enqueue_badge_check
 
-            gamification_service = get_forum_gamification_service(db)
-            badges_earned = await gamification_service.check_and_award_badges(current_user.id) or []
+            await enqueue_badge_check(current_user.id)
+            logger.debug(f"Badge check queued for user {current_user.id}")
         except Exception as e:
-            logger.warning(f"Badge check error: {e}")
+            logger.warning(f"Badge check queue error: {e}")
 
         # Forum coin reward
         reward_amount = None

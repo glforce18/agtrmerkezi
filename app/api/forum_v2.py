@@ -13,18 +13,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.cache import get_cached_leaderboard, cache_leaderboard
-from app.core.exceptions import (
-    InsufficientPermissionsException,
-    PollAlreadyExistsException,
-    PollExpiredException,
-    PollNotFoundException,
-    TopicNotFoundException,
-)
-from app.core.security import (
-    get_current_user_optional,
-    get_current_user_required,
-)
+from app.core.cache import cache_leaderboard, get_cached_leaderboard
+from app.core.security import get_current_user_optional, get_current_user_required
 from app.models.connection import get_db
 from app.models.database import User
 from app.services.forum_advanced import (
@@ -129,6 +119,36 @@ async def add_reaction(
     db: Session = Depends(get_db),
 ):
     """Tepki ekle/guncelle/kaldir"""
+    from app.core.anti_farming import check_reaction_cooldown
+
+    # Get target user (content owner)
+    if request.content_type == "topic":
+        from app.models.forum import ForumTopic
+
+        content = db.query(ForumTopic).filter(ForumTopic.id == request.content_id).first()
+        target_user_id = content.author_id if content else None
+    else:
+        from app.models.forum import ForumReply
+
+        content = db.query(ForumReply).filter(ForumReply.id == request.content_id).first()
+        target_user_id = content.user_id if content else None
+
+    # Cooldown check
+    if target_user_id:
+        can_react, cooldown_seconds = await check_reaction_cooldown(
+            current_user.id, target_user_id, request.content_type, request.content_id, db
+        )
+        if not can_react:
+            if cooldown_seconds >= 86400:
+                raise HTTPException(
+                    status_code=429, detail="Gunluk tepki limitine ulastiniz. Yarin tekrar deneyin."
+                )
+            elif cooldown_seconds > 0:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Cok hizli tepki veriyorsunuz. {cooldown_seconds} saniye sonra tekrar deneyin.",
+                )
+
     service = get_reaction_service(db)
     result = service.add_reaction(
         user_id=current_user.id,
@@ -315,9 +335,8 @@ async def save_draft(
     db: Session = Depends(get_db),
 ):
     """Taslak kaydet (with device validation)"""
-    from fastapi import Request as FastAPIRequest
 
-    from app.core.encryption import generate_device_id, validate_device_id
+    from app.core.encryption import generate_device_id
 
     # Generate/validate device ID
     device_id = request.device_id
@@ -584,7 +603,6 @@ async def check_bookmark(
 @router.get("/replies/{reply_id}/thread")
 async def get_reply_thread(reply_id: int, db: Session = Depends(get_db)):
     """Yanit zincirini getir (parent'lardan child'lara)"""
-    from app.models.database import User
     from app.models.forum import ForumReply
 
     # Yaniti bul
@@ -686,7 +704,6 @@ async def get_topics_cursor(
     """Cursor-based pagination for infinite scroll"""
     import base64
 
-    from app.models.database import User
     from app.models.forum import ForumTopic
 
     query = db.query(ForumTopic).filter(ForumTopic.is_active == True)
@@ -774,7 +791,6 @@ async def get_replies_cursor(
     """Cursor-based pagination for replies (infinite scroll)"""
     import base64
 
-    from app.models.database import User
     from app.models.forum import ForumReply
 
     query = db.query(ForumReply).filter(

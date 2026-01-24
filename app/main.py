@@ -143,6 +143,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Server tasks başlatılamadı: {e}")
 
+    # Forum Tasks başlat (badge checking, reputation sync, cleanup)
+    try:
+        from app.tasks.forum_tasks import start_forum_tasks
+
+        await start_forum_tasks()
+        logger.info("Forum tasks başlatıldı")
+    except Exception as e:
+        logger.warning(f"Forum tasks başlatılamadı: {e}")
+
     logger.info("=" * 50)
     logger.info(f"API: {settings.BASE_URL}/api")
     logger.info(f"Docs: {settings.BASE_URL}/api/docs")
@@ -182,6 +191,15 @@ async def lifespan(app: FastAPI):
 
         await stop_server_tasks()
         logger.info("Server tasks durduruldu")
+    except Exception:
+        pass
+
+    # Forum Tasks durdur
+    try:
+        from app.tasks.forum_tasks import stop_forum_tasks
+
+        await stop_forum_tasks()
+        logger.info("Forum tasks durduruldu")
     except Exception:
         pass
 
