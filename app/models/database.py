@@ -1152,6 +1152,16 @@ class ForumReply(Base):
     author = relationship("User", back_populates="forum_replies")
     parent_reply = relationship("ForumReply", remote_side=[id], backref="child_replies")
 
+    # Alias for backward compatibility (some code uses reply.user instead of reply.author)
+    @property
+    def user(self):
+        return self.author
+
+    # Alias for consistency with old code
+    @property
+    def is_solution(self):
+        return self.is_best_answer
+
 
 class ForumReportStatus(enum.Enum):
     """Forum report status"""

@@ -10,7 +10,7 @@ import re
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
 from app.core.redis_manager import redis_manager
@@ -248,42 +248,61 @@ class ForumPollService:
         if not poll.allow_multiple and len(option_ids) > 1:
             raise ValueError("Bu ankette sadece 1 secenek secilebilir")
 
-        # Mevcut oylari sil
+        # Mevcut oylari sil - atomic decrement ile
         existing_votes = (
             self.db.query(ForumPollVote)
             .filter(ForumPollVote.poll_id == poll_id, ForumPollVote.user_id == user_id)
             .all()
         )
 
+        old_option_ids = []
         for v in existing_votes:
-            # Eski oy sayisini dusur
-            option = (
-                self.db.query(ForumPollOption).filter(ForumPollOption.id == v.option_id).first()
-            )
-            if option:
-                option.vote_count = max(0, option.vote_count - 1)
+            old_option_ids.append(v.option_id)
             self.db.delete(v)
 
-        # Yeni oylari ekle
+        # Eski oy sayilarini atomik olarak azalt
+        if old_option_ids:
+            self.db.execute(
+                text(
+                    "UPDATE forum_poll_options SET vote_count = GREATEST(0, vote_count - 1) "
+                    "WHERE id IN :option_ids"
+                ),
+                {"option_ids": tuple(old_option_ids)},
+            )
+
+        # Yeni oylari ekle - atomic increment ile
+        valid_option_ids = []
         for option_id in option_ids:
-            option = (
-                self.db.query(ForumPollOption)
+            # Validate option exists
+            option_exists = (
+                self.db.query(ForumPollOption.id)
                 .filter(ForumPollOption.id == option_id, ForumPollOption.poll_id == poll_id)
                 .first()
             )
-            if not option:
+            if not option_exists:
                 continue
 
             vote = ForumPollVote(poll_id=poll_id, option_id=option_id, user_id=user_id)
             self.db.add(vote)
-            option.vote_count += 1
+            valid_option_ids.append(option_id)
 
-        # Toplam oy sayisini guncelle
-        poll.total_votes = (
-            self.db.query(func.count(func.distinct(ForumPollVote.user_id)))
-            .filter(ForumPollVote.poll_id == poll_id)
-            .scalar()
-            or 0
+        # Yeni oy sayilarini atomik olarak artir
+        if valid_option_ids:
+            self.db.execute(
+                text(
+                    "UPDATE forum_poll_options SET vote_count = vote_count + 1 WHERE id IN :option_ids"
+                ),
+                {"option_ids": tuple(valid_option_ids)},
+            )
+
+        # Toplam oy sayisini atomik olarak guncelle (recalculate from votes table)
+        self.db.execute(
+            text(
+                "UPDATE forum_polls SET total_votes = "
+                "(SELECT COUNT(DISTINCT user_id) FROM forum_poll_votes WHERE poll_id = :poll_id) "
+                "WHERE id = :poll_id"
+            ),
+            {"poll_id": poll_id},
         )
 
         self.db.commit()
@@ -1113,25 +1132,38 @@ class ForumBookmarkService:
         self.db = db
 
     def toggle_bookmark(self, user_id: int, topic_id: int) -> Dict:
-        """Yer imi ekle/kaldir"""
+        """Yer imi ekle/kaldir (race-condition safe)"""
+        from sqlalchemy.exc import IntegrityError
+
         from app.models.database import ForumBookmark
 
-        existing = (
+        # Try to delete first - if exists, it will be removed
+        deleted = (
             self.db.query(ForumBookmark)
             .filter(ForumBookmark.user_id == user_id, ForumBookmark.topic_id == topic_id)
-            .first()
+            .delete(synchronize_session=False)
         )
-
-        if existing:
-            self.db.delete(existing)
-            self.db.commit()
-            return {"bookmarked": False}
-
-        bookmark = ForumBookmark(user_id=user_id, topic_id=topic_id)
-        self.db.add(bookmark)
         self.db.commit()
 
-        return {"bookmarked": True}
+        if deleted > 0:
+            return {"bookmarked": False}
+
+        # If not deleted, try to insert - handle race condition with unique constraint
+        try:
+            bookmark = ForumBookmark(user_id=user_id, topic_id=topic_id)
+            self.db.add(bookmark)
+            self.db.commit()
+            return {"bookmarked": True}
+        except IntegrityError:
+            # Race condition: another request already inserted
+            self.db.rollback()
+            # Double check current state
+            existing = (
+                self.db.query(ForumBookmark)
+                .filter(ForumBookmark.user_id == user_id, ForumBookmark.topic_id == topic_id)
+                .first()
+            )
+            return {"bookmarked": existing is not None}
 
     def get_bookmarks(self, user_id: int, page: int = 1, limit: int = 20) -> Dict:
         """Kullanicinin yer imlerini getir"""

@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, validator
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.security import (
     get_current_user_optional,
@@ -554,14 +554,34 @@ async def get_reply_thread(reply_id: int, db: Session = Depends(get_db)):
     if not reply:
         raise HTTPException(status_code=404, detail="Yanit bulunamadi")
 
-    # Parent zinciri
-    parents = []
+    # Parent zinciri - tum parent ID'leri topla
+    parent_ids = []
     current = reply
     while current.parent_reply_id:
+        parent_ids.append(current.parent_reply_id)
+        # Gecici olarak parent'i memory'den oku (dongu sonrasi tek query ile cekilecek)
         parent = db.query(ForumReply).filter(ForumReply.id == current.parent_reply_id).first()
         if not parent:
             break
-        author = db.query(User).filter(User.id == parent.user_id).first()
+        current = parent
+
+    # Tum parent'lari ve author'larini tek query ile getir
+    parents_data = {}
+    if parent_ids:
+        parents_with_users = (
+            db.query(ForumReply)
+            .options(joinedload(ForumReply.user))
+            .filter(ForumReply.id.in_(parent_ids))
+            .all()
+        )
+        parents_data = {p.id: p for p in parents_with_users}
+
+    # Parent listesini duzgun sirada olustur
+    parents = []
+    current = reply
+    while current.parent_reply_id and current.parent_reply_id in parents_data:
+        parent = parents_data[current.parent_reply_id]
+        author = parent.user
         parents.insert(
             0,
             {
@@ -578,9 +598,10 @@ async def get_reply_thread(reply_id: int, db: Session = Depends(get_db)):
         )
         current = parent
 
-    # Child yanitlar
+    # Child yanitlar - eager load user relationship
     children = (
         db.query(ForumReply)
+        .options(joinedload(ForumReply.user))
         .filter(ForumReply.parent_reply_id == reply_id, ForumReply.is_active == True)
         .order_by(ForumReply.created_at)
         .limit(10)
@@ -589,7 +610,7 @@ async def get_reply_thread(reply_id: int, db: Session = Depends(get_db)):
 
     child_list = []
     for child in children:
-        author = db.query(User).filter(User.id == child.user_id).first()
+        author = child.user
         child_list.append(
             {
                 "id": child.id,
@@ -651,9 +672,12 @@ async def get_topics_cursor(
         except Exception:
             pass
 
-    # Siralama ve limit
+    # Siralama ve limit - eager load author
     topics = (
-        query.order_by(ForumTopic.created_at.desc(), ForumTopic.id.desc()).limit(limit + 1).all()
+        query.options(joinedload(ForumTopic.author))
+        .order_by(ForumTopic.created_at.desc(), ForumTopic.id.desc())
+        .limit(limit + 1)
+        .all()
     )
 
     # Sonraki sayfa var mi?
@@ -668,10 +692,10 @@ async def get_topics_cursor(
         cursor_data = {"date": last_topic.created_at.isoformat(), "id": last_topic.id}
         next_cursor = base64.b64encode(json.dumps(cursor_data).encode("utf-8")).decode("utf-8")
 
-    # Format topics
+    # Format topics - author already loaded
     result_topics = []
     for topic in topics:
-        author = db.query(User).filter(User.id == topic.author_id).first()
+        author = topic.author
         result_topics.append(
             {
                 "id": topic.id,
@@ -734,9 +758,12 @@ async def get_replies_cursor(
         except Exception:
             pass
 
-    # Siralama ve limit
+    # Siralama ve limit - eager load user
     replies = (
-        query.order_by(ForumReply.created_at.asc(), ForumReply.id.asc()).limit(limit + 1).all()
+        query.options(joinedload(ForumReply.user))
+        .order_by(ForumReply.created_at.asc(), ForumReply.id.asc())
+        .limit(limit + 1)
+        .all()
     )
 
     has_more = len(replies) > limit
@@ -750,10 +777,10 @@ async def get_replies_cursor(
         cursor_data = {"date": last_reply.created_at.isoformat(), "id": last_reply.id}
         next_cursor = base64.b64encode(json.dumps(cursor_data).encode("utf-8")).decode("utf-8")
 
-    # Format replies
+    # Format replies - user already loaded
     result_replies = []
     for reply in replies:
-        author = db.query(User).filter(User.id == reply.user_id).first()
+        author = reply.user
         result_replies.append(
             {
                 "id": reply.id,

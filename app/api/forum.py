@@ -1914,6 +1914,18 @@ async def get_topic(
             total_replies = reply_count
             replies = replies_query.offset((reply_page - 1) * reply_limit).limit(reply_limit).all()
 
+            # Bulk fetch user likes to avoid N+1 query
+            liked_reply_ids = set()
+            if current_user and replies:
+                reply_ids = [r.id for r in replies]
+                liked_results = db.execute(
+                    text(
+                        "SELECT content_id FROM forum_likes WHERE user_id = :uid AND content_type = 'reply' AND content_id IN :reply_ids"
+                    ),
+                    {"uid": current_user.id, "reply_ids": tuple(reply_ids)},
+                ).fetchall()
+                liked_reply_ids = {row[0] for row in liked_results}
+
             for reply in replies:
                 is_best = getattr(reply, "is_best_answer", False)
                 reply_data = {
@@ -1932,17 +1944,7 @@ async def get_topic(
                         else str(reply.author.role) if reply.author and reply.author.role else None
                     ),
                     "likes": getattr(reply, "likes", 0) or 0,
-                    "hasLiked": (
-                        db.execute(
-                            text(
-                                "SELECT 1 FROM forum_likes WHERE user_id = :uid AND content_type = 'reply' AND content_id = :cid"
-                            ),
-                            {"uid": current_user.id, "cid": reply.id},
-                        ).fetchone()
-                        is not None
-                        if current_user
-                        else False
-                    ),
+                    "hasLiked": reply.id in liked_reply_ids,
                     "isBestAnswer": is_best,
                     "is_best_answer": is_best,
                     "isEdited": (
