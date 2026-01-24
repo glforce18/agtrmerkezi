@@ -691,27 +691,46 @@ class ForumSpamFilterService:
         return self._rules_cache
 
     def check_content(self, content: str, user_id: int) -> Dict:
-        """Icerigi spam/zararlı icerik icin kontrol et"""
+        """Icerigi spam/zararlı icerik icin kontrol et (with normalization)"""
+        from app.core.text_normalization import get_text_variants, normalize_text_aggressive
         from app.models.database import SpamLog
 
         rules = self._load_rules()
         violations = []
         total_severity = 0
 
+        # Generate normalized variants for better matching
         content_lower = content.lower()
+        normalized_content = normalize_text_aggressive(content)
+        content_variants = get_text_variants(content)
 
         for rule in rules:
             matched = False
 
             if rule["rule_type"] == "keyword":
-                # Basit kelime eslesmesi
-                if rule["pattern"].lower() in content_lower:
+                # Check against all variants (bypasses homoglyphs and leetspeak)
+                pattern_lower = rule["pattern"].lower()
+                pattern_normalized = normalize_text_aggressive(rule["pattern"])
+
+                # Check original
+                if pattern_lower in content_lower:
                     matched = True
+                # Check normalized (catches homoglyphs/leetspeak)
+                elif pattern_normalized in normalized_content:
+                    matched = True
+                # Check all variants
+                else:
+                    for variant in content_variants:
+                        if pattern_normalized in variant:
+                            matched = True
+                            break
 
             elif rule["rule_type"] == "regex":
-                # Regex eslesmesi
+                # Regex matching on original and normalized
                 try:
                     if re.search(rule["pattern"], content, re.IGNORECASE):
+                        matched = True
+                    elif re.search(rule["pattern"], normalized_content, re.IGNORECASE):
                         matched = True
                 except re.error:
                     pass
@@ -720,7 +739,10 @@ class ForumSpamFilterService:
                 # Link kontrolu
                 links = re.findall(r"https?://[^\s]+", content)
                 for link in links:
-                    if rule["pattern"].lower() in link.lower():
+                    link_normalized = normalize_text_aggressive(link)
+                    pattern_normalized = normalize_text_aggressive(rule["pattern"])
+
+                    if pattern_normalized in link_normalized:
                         matched = True
                         break
 
