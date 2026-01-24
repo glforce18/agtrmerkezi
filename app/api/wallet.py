@@ -11,29 +11,73 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import get_current_user_required
 from app.models.connection import get_db
-from app.models.database import User, WalletType, TransactionType
+from app.models.database import TransactionType, User, WalletType
 from app.services.wallet import get_wallet_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Exchange rate: 1 TL = 100 Armor
-ARMOR_RATE = 100
+# Exchange rate: 1 TL = X Armor (from settings)
+ARMOR_RATE = settings.ARMOR_RATE
 
 # Armor packages with bonus percentages
 ARMOR_PACKAGES = [
-    {"id": 1, "name": "Baslangic", "armor_amount": 1000, "tl_amount": 10, "bonus_percent": 0, "is_featured": False},
-    {"id": 2, "name": "Standart", "armor_amount": 2500, "tl_amount": 25, "bonus_percent": 5, "is_featured": False},
-    {"id": 3, "name": "Populer", "armor_amount": 5000, "tl_amount": 50, "bonus_percent": 10, "is_featured": True},
-    {"id": 4, "name": "Premium", "armor_amount": 10000, "tl_amount": 100, "bonus_percent": 15, "is_featured": False},
-    {"id": 5, "name": "Elite", "armor_amount": 25000, "tl_amount": 250, "bonus_percent": 20, "is_featured": False},
-    {"id": 6, "name": "Legend", "armor_amount": 50000, "tl_amount": 500, "bonus_percent": 25, "is_featured": False},
+    {
+        "id": 1,
+        "name": "Baslangic",
+        "armor_amount": 1000,
+        "tl_amount": 10,
+        "bonus_percent": 0,
+        "is_featured": False,
+    },
+    {
+        "id": 2,
+        "name": "Standart",
+        "armor_amount": 2500,
+        "tl_amount": 25,
+        "bonus_percent": 5,
+        "is_featured": False,
+    },
+    {
+        "id": 3,
+        "name": "Populer",
+        "armor_amount": 5000,
+        "tl_amount": 50,
+        "bonus_percent": 10,
+        "is_featured": True,
+    },
+    {
+        "id": 4,
+        "name": "Premium",
+        "armor_amount": 10000,
+        "tl_amount": 100,
+        "bonus_percent": 15,
+        "is_featured": False,
+    },
+    {
+        "id": 5,
+        "name": "Elite",
+        "armor_amount": 25000,
+        "tl_amount": 250,
+        "bonus_percent": 20,
+        "is_featured": False,
+    },
+    {
+        "id": 6,
+        "name": "Legend",
+        "armor_amount": 50000,
+        "tl_amount": 500,
+        "bonus_percent": 25,
+        "is_featured": False,
+    },
 ]
 
 
 # ==================== SCHEMAS ====================
+
 
 class BalanceResponse(BaseModel):
     balance_real: float = Field(description="TL bakiye")
@@ -67,10 +111,10 @@ class TransactionResponse(BaseModel):
 
 # ==================== ENDPOINTS ====================
 
+
 @router.get("/balance", response_model=BalanceResponse)
 async def get_balance(
-    current_user: User = Depends(get_current_user_required),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user_required), db: Session = Depends(get_db)
 ):
     """Kullanıcının tüm bakiyelerini getir"""
     wallet = get_wallet_service(db)
@@ -83,7 +127,7 @@ async def transfer_balance(
     request: Request,
     data: TransferRequest,
     current_user: User = Depends(get_current_user_required),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Başka bir kullanıcıya bakiye transferi"""
     # Wallet type - önce belirle, lock sırasını tutarlı tutmak için
@@ -93,7 +137,7 @@ async def transfer_balance(
     if wallet_type == WalletType.REAL and current_user.role.value not in ["admin", "superadmin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="TL transferi sadece adminler için kullanılabilir"
+            detail="TL transferi sadece adminler için kullanılabilir",
         )
 
     # Race condition önleme: Gönderen ve alıcıyı with_for_update ile kilitle
@@ -104,14 +148,12 @@ async def transfer_balance(
     to_user = db.query(User).filter(User.username == data.to_username).first()
     if not to_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Alıcı kullanıcı bulunamadı"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Alıcı kullanıcı bulunamadı"
         )
 
     if to_user.id == current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Kendinize transfer yapamazsınız"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Kendinize transfer yapamazsınız"
         )
 
     client_ip = request.client.host if request.client else None
@@ -127,14 +169,14 @@ async def transfer_balance(
         wallet_type=wallet_type,
         description=data.message,
         ip_address=client_ip,
-        user_agent=user_agent
+        user_agent=user_agent,
     )
 
     return {
         "success": True,
         "message": f"{data.amount} {data.wallet_type.upper()} {to_user.username}'e gönderildi",
         "transaction_id": from_tx.id,
-        "new_balance": from_tx.balance_after
+        "new_balance": from_tx.balance_after,
     }
 
 
@@ -143,7 +185,7 @@ async def exchange_to_armor(
     request: Request,
     data: ExchangeRequest,
     current_user: User = Depends(get_current_user_required),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """TL bakiyeyi Armor'a dönüştür (1 TL = 100 Armor)"""
     client_ip = request.client.host if request.client else None
@@ -156,7 +198,7 @@ async def exchange_to_armor(
         tl_amount=data.tl_amount,
         exchange_rate=float(ARMOR_RATE),
         ip_address=client_ip,
-        user_agent=user_agent
+        user_agent=user_agent,
     )
 
     armor_amount = data.tl_amount * ARMOR_RATE
@@ -168,7 +210,7 @@ async def exchange_to_armor(
         "armor_added": armor_amount,
         "exchange_rate": ARMOR_RATE,
         "new_balance_real": tl_tx.balance_after,
-        "new_balance_armor": armor_tx.balance_after
+        "new_balance_armor": armor_tx.balance_after,
     }
 
 
@@ -179,7 +221,7 @@ async def get_transactions(
     limit: int = 50,
     offset: int = 0,
     current_user: User = Depends(get_current_user_required),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Kullanıcının işlem geçmişini getir"""
     wallet = get_wallet_service(db)
@@ -193,7 +235,7 @@ async def get_transactions(
         wallet_type=wt,
         transaction_type=transaction_type,
         limit=min(limit, 100),  # Max 100
-        offset=offset
+        offset=offset,
     )
 
     return [
@@ -205,7 +247,7 @@ async def get_transactions(
             description=tx.description,
             balance_before=tx.balance_before,
             balance_after=tx.balance_after,
-            created_at=tx.created_at.isoformat() if tx.created_at else ""
+            created_at=tx.created_at.isoformat() if tx.created_at else "",
         )
         for tx in transactions
     ]
@@ -214,19 +256,13 @@ async def get_transactions(
 @router.get("/exchange-rate")
 async def get_exchange_rate():
     """Güncel TL -> Armor dönüşüm oranını getir"""
-    return {
-        "rate": ARMOR_RATE,
-        "description": f"1 TL = {ARMOR_RATE} Armor"
-    }
+    return {"rate": ARMOR_RATE, "description": f"1 TL = {ARMOR_RATE} Armor"}
 
 
 @router.get("/armor-packages")
 async def get_armor_packages():
     """Satın alınabilir Armor paketlerini getir"""
-    return {
-        "packages": ARMOR_PACKAGES,
-        "exchange_rate": ARMOR_RATE
-    }
+    return {"packages": ARMOR_PACKAGES, "exchange_rate": ARMOR_RATE}
 
 
 class DepositRequest(BaseModel):
@@ -243,7 +279,7 @@ async def deposit_tl(
     request: Request,
     data: DepositRequest,
     current_user: User = Depends(get_current_user_required),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """TL bakiye yükle (ödeme entegrasyonu simülasyonu)"""
     client_ip = request.client.host if request.client else None
@@ -261,7 +297,7 @@ async def deposit_tl(
         description=f"TL yükleme ({data.payment_method})",
         ip_address=client_ip,
         user_agent=user_agent,
-        extra_data={"payment_method": data.payment_method}
+        extra_data={"payment_method": data.payment_method},
     )
 
     return {
@@ -269,7 +305,7 @@ async def deposit_tl(
         "message": f"{data.amount} TL hesabınıza yüklendi",
         "amount": data.amount,
         "new_balance": tx.balance_after,
-        "transaction_id": tx.id
+        "transaction_id": tx.id,
     }
 
 
@@ -278,16 +314,13 @@ async def buy_armor_package(
     request: Request,
     data: ArmorPackageRequest,
     current_user: User = Depends(get_current_user_required),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """TL ile Armor paketi satın al"""
     # Paketi bul
     package = next((p for p in ARMOR_PACKAGES if p["id"] == data.package_id), None)
     if not package:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Armor paketi bulunamadı"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Armor paketi bulunamadı")
 
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent", "")[:500]
@@ -310,7 +343,7 @@ async def buy_armor_package(
             description=f"Armor paketi satın alımı ({total_armor} Armor)",
             ip_address=client_ip,
             user_agent=user_agent,
-            extra_data={"package_id": package["id"], "armor_amount": total_armor}
+            extra_data={"package_id": package["id"], "armor_amount": total_armor},
         )
     except HTTPException as e:
         # Yetersiz bakiye hatası olabilir, olduğu gibi ilet
@@ -325,7 +358,11 @@ async def buy_armor_package(
         description=f"Armor paketi ({base_armor} + {bonus_armor} bonus)",
         ip_address=client_ip,
         user_agent=user_agent,
-        extra_data={"package_id": package["id"], "base_armor": base_armor, "bonus_armor": bonus_armor}
+        extra_data={
+            "package_id": package["id"],
+            "base_armor": base_armor,
+            "bonus_armor": bonus_armor,
+        },
     )
 
     return {
@@ -337,5 +374,5 @@ async def buy_armor_package(
         "total_armor": total_armor,
         "tl_spent": package["tl_amount"],
         "new_balance_real": tl_tx.balance_after,
-        "new_balance_armor": armor_tx.balance_after
+        "new_balance_armor": armor_tx.balance_after,
     }

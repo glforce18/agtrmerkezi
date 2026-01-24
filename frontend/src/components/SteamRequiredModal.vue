@@ -9,11 +9,11 @@
             </svg>
           </div>
           <h3>Steam Hesabi Gerekli</h3>
-          <p>Bu ozellik icin Steam hesabinizi baglameniz gerekiyor. Steam baglantisi, oyuncu kimliginizi dogrulamak ve topluluk guvenligini saglamak icin kullanilir.</p>
+          <p>Bu ozellik icin Steam hesabinizi bağlameniz gerekiyor. Steam bağlantisi, oyuncu kimliginizi doğrulamak ve topluluk guvenligini saglamak icin kullanilir.</p>
           <div class="modal-features">
             <div class="feature">
               <span class="feature-icon">🎮</span>
-              <span>Oyuncu kimligi dogrulama</span>
+              <span>Oyuncu kimligi doğrulama</span>
             </div>
             <div class="feature">
               <span class="feature-icon">🛡️</span>
@@ -29,7 +29,7 @@
               <svg class="steam-icon" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10c-4.6 0-8.45-3.08-9.64-7.27l3.83 1.58a2.84 2.84 0 0 0 2.78 2.27c1.56 0 2.83-1.27 2.83-2.83v-.13l3.4-2.43h.08c2.08 0 3.77-1.69 3.77-3.77s-1.69-3.77-3.77-3.77-3.77 1.69-3.77 3.77v.05l-2.37 3.46-.16-.01c-.55 0-1.08.16-1.53.45L2 11.54A10 10 0 0 1 12 2z"/>
               </svg>
-              Steam ile Baglan
+              Steam ile Bağlan
             </button>
             <button class="btn-cancel" @click="$emit('close')">Vazgec</button>
           </div>

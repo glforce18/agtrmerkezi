@@ -26,37 +26,42 @@ export const serversAPI = {
   getAll: (params) => apiClient.get('/servers', { params }),
   getPublic: (id) => apiClient.get(`/servers/${id}`),
 
-  // My servers (requires auth)
-  getMy: () => apiClient.get('/my-servers'),
-  getOne: (id) => apiClient.get(`/my-servers/${id}/status`),
-  create: (data) => apiClient.post('/servers/create', data),
+  // My servers (requires auth) - v2 API
+  getMy: () => apiClient.get('/v2/servers/my'),
+  getOne: (id) => apiClient.get(`/v2/servers/${id}`),
+  create: (data) => apiClient.post('/v2/servers/create', data),
 
   // Server actions
-  start: (id) => apiClient.post(`/my-servers/${id}/action`, { action: 'start' }),
-  stop: (id) => apiClient.post(`/my-servers/${id}/action`, { action: 'stop' }),
-  restart: (id) => apiClient.post(`/my-servers/${id}/action`, { action: 'restart' }),
+  start: (id) => apiClient.post(`/v2/servers/${id}/start`),
+  stop: (id) => apiClient.post(`/v2/servers/${id}/stop`),
+  restart: (id) => apiClient.post(`/v2/servers/${id}/restart`),
 
   // Server info
-  status: (id) => apiClient.get(`/my-servers/${id}/status`),
-  players: (id) => apiClient.get(`/my-servers/${id}/players`),
-  resources: (id) => apiClient.get(`/my-servers/${id}/resources`),
-  logs: (id, lines = 100) => apiClient.get(`/my-servers/${id}/logs`, { params: { lines } }),
+  status: (id) => apiClient.get(`/v2/servers/${id}/status`),
+  players: (id) => apiClient.get(`/v2/servers/${id}/players`),
+  resources: (id) => apiClient.get(`/v2/servers/${id}/resources`),
+  logs: (id, lines = 100) => apiClient.get(`/v2/servers/${id}/logs`, { params: { lines } }),
 
   // RCON
-  rcon: (id, command) => apiClient.post(`/my-servers/${id}/rcon`, { command }),
-  rconHistory: (id, limit = 50) => apiClient.get(`/my-servers/${id}/rcon-history`, { params: { limit } }),
+  rcon: (id, command) => apiClient.post(`/v2/servers/${id}/rcon`, { command }),
+  rconHistory: (id, limit = 50) => apiClient.get(`/v2/servers/${id}/rcon/history`, { params: { limit } }),
 
   // Maps
-  maps: (id) => apiClient.get(`/my-servers/${id}/maps`),
-  changeMap: (id, mapName) => apiClient.post(`/my-servers/${id}/change-map`, { map_name: mapName }),
+  maps: (id) => apiClient.get(`/v2/servers/${id}/maps`),
+  changeMap: (id, mapName) => apiClient.post(`/v2/servers/${id}/maps/change`, { map_name: mapName }),
 
   // Config
-  getConfig: (id, configType = 'server.cfg') => apiClient.get(`/my-servers/${id}/config`, { params: { config_type: configType } }),
-  saveConfig: (id, configType, content) => apiClient.post(`/my-servers/${id}/config`, { config_type: configType, content }),
+  getConfig: (id, filename = 'server.cfg') => apiClient.get(`/v2/servers/${id}/config`, { params: { filename } }),
+  saveConfig: (id, filename, content) => apiClient.put(`/v2/servers/${id}/config`, { content }, { params: { filename } }),
 
-  // Files & Plugins
-  files: (id, path = '') => apiClient.get(`/my-servers/${id}/files`, { params: { path } }),
-  plugins: (id) => apiClient.get(`/my-servers/${id}/plugins`)
+  // Admins
+  getAdmins: (id) => apiClient.get(`/v2/servers/${id}/admins`),
+  addAdmin: (id, data) => apiClient.post(`/v2/servers/${id}/admins`, data),
+  removeAdmin: (id, adminId) => apiClient.delete(`/v2/servers/${id}/admins/${adminId}`),
+
+  // Search by Steam ID or Unique Code
+  searchBySteamId: (steamId) => apiClient.get(`/v2/servers/search/steam/${steamId}`),
+  searchByCode: (code) => apiClient.get(`/v2/servers/search/code/${code}`)
 }
 
 export const forumAPI = {

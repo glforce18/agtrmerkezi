@@ -21,7 +21,7 @@
       <h3 class="game-name">{{ game.name }}</h3>
       <div class="game-meta">
         <span class="steam-id">Steam ID: {{ game.steam_id }}</span>
-        <span v-if="assetCount" class="asset-count">{{ assetCount }} gorsel</span>
+        <span v-if="assetCount" class="asset-count">{{ assetCount }} görsel</span>
       </div>
     </div>
 

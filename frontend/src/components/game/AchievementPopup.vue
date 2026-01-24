@@ -32,13 +32,13 @@
 
         <!-- Achievement Content -->
         <div class="achievement-content">
-          <div class="achievement-label">Basarim Acildi!</div>
+          <div class="achievement-label">Başarım Acildi!</div>
           <div class="achievement-title">{{ achievement.title }}</div>
           <div v-if="achievement.description" class="achievement-description">
             {{ achievement.description }}
           </div>
           <div v-if="achievement.reward" class="achievement-reward">
-            <span class="reward-label">Odul:</span>
+            <span class="reward-label">Ödül:</span>
             <span class="reward-value">{{ achievement.reward }}</span>
           </div>
         </div>
@@ -68,7 +68,7 @@ let achievementId = 0
 const show = (data) => {
   const achievement = {
     id: ++achievementId,
-    title: data.title || 'Basarim',
+    title: data.title || 'Başarım',
     description: data.description || '',
     icon: data.icon || null,
     gameIcon: data.gameIcon || null,

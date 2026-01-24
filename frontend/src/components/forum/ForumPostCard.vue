@@ -9,7 +9,7 @@
     ]"
     :id="`post-${post.id}`"
     role="article"
-    :aria-label="`${post.author} tarafindan gonderilen yanitlar`"
+    :aria-label="`${post.author} tarafindan gönderilen yanıtlar`"
   >
     <!-- Best Answer Badge -->
     <div v-if="post.isBestAnswer" class="forum-best-answer__badge">
@@ -20,36 +20,43 @@
     <div class="forum-post-card__layout">
       <!-- Author Sidebar -->
       <div class="forum-author-sidebar">
-        <!-- Avatar with level ring -->
-        <div class="forum-post-card__avatar-wrapper">
-          <svg v-if="showLevelRing" class="forum-post-card__level-ring" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
-            <circle
-              cx="50" cy="50" r="46" fill="none"
-              :stroke="levelColor"
-              stroke-width="3"
-              stroke-linecap="round"
-              :stroke-dasharray="`${(post.authorXpProgress || 75) * 2.89} 289`"
-              transform="rotate(-90 50 50)"
-              class="level-progress-ring"
+        <!-- Clickable Author Profile Link -->
+        <router-link
+          :to="authorProfileUrl"
+          class="forum-author-profile-link"
+          @click.stop
+        >
+          <!-- Avatar with level ring -->
+          <div class="forum-post-card__avatar-wrapper">
+            <svg v-if="showLevelRing" class="forum-post-card__level-ring" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+              <circle
+                cx="50" cy="50" r="46" fill="none"
+                :stroke="levelColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                :stroke-dasharray="`${(post.authorXpProgress || 75) * 2.89} 289`"
+                transform="rotate(-90 50 50)"
+                class="level-progress-ring"
+              />
+            </svg>
+            <n-avatar
+              round
+              :size="64"
+              :src="post.authorAvatar"
+              :fallback-src="defaultAvatar"
+              class="forum-post-card__avatar"
             />
-          </svg>
-          <n-avatar
-            round
-            :size="80"
-            :src="post.authorAvatar"
-            :fallback-src="defaultAvatar"
-            class="forum-post-card__avatar"
-          />
-          <div
-            v-if="post.authorOnline"
-            class="forum-post-card__online-dot"
-            aria-label="Cevrimici"
-          />
-        </div>
+            <div
+              v-if="post.authorOnline"
+              class="forum-post-card__online-dot"
+              aria-label="Çevrimiçi"
+            />
+          </div>
 
-        <!-- Author Name -->
-        <h4 class="forum-author-sidebar__name">{{ post.author }}</h4>
+          <!-- Author Name -->
+          <h4 class="forum-author-sidebar__name">{{ post.author }}</h4>
+        </router-link>
 
         <!-- Role Badge -->
         <span
@@ -85,11 +92,11 @@
         <div class="forum-author-sidebar__stats">
           <div class="forum-author-sidebar__stat">
             <span class="forum-author-sidebar__stat-value">{{ formatNumber(post.authorPosts || 0) }}</span>
-            <span class="forum-author-sidebar__stat-label">Gonderi</span>
+            <span class="forum-author-sidebar__stat-label">Gönderi</span>
           </div>
           <div class="forum-author-sidebar__stat">
             <span class="forum-author-sidebar__stat-value">{{ formatNumber(post.authorLikes || 0) }}</span>
-            <span class="forum-author-sidebar__stat-label">Begeni</span>
+            <span class="forum-author-sidebar__stat-label">Beğeni</span>
           </div>
         </div>
 
@@ -108,7 +115,7 @@
             <ClockIcon class="w-4 h-4" />
             {{ post.created }}
             <span v-if="post.isEdited" class="forum-post-card__edited">
-              (duzenlendi)
+              (düzenlendi)
             </span>
           </div>
 
@@ -156,7 +163,7 @@
         </div>
 
         <!-- Post Footer Actions -->
-        <div class="forum-post-card__footer" role="group" aria-label="Gonderi eylemleri">
+        <div class="forum-post-card__footer" role="group" aria-label="Gönderi eylemleri">
           <div class="forum-post-card__reactions">
             <button
               :class="['forum-post-card__like-btn', { 'liked': hasLiked, 'like-animating': likeAnimating }]"
@@ -174,22 +181,22 @@
               class="forum-post-card__reply-btn"
               @click="$emit('reply', post)"
               :disabled="!canInteract"
-              aria-label="Bu gonderiye yanit ver"
+              aria-label="Bu gönderiye yanıt ver"
               type="button"
             >
               <ReplyIcon class="w-4 h-4" aria-hidden="true" />
-              Yanitla
+              Yanıtla
             </button>
 
             <button
               class="forum-post-card__quote-btn"
               @click="$emit('quote', post)"
               :disabled="!canInteract"
-              aria-label="Alinti yaparak yanit ver"
+              aria-label="Alinti yaparak yanıt ver"
               type="button"
             >
               <QuoteIcon class="w-4 h-4" aria-hidden="true" />
-              Alintiyla Yanitla
+              Alintiyla Yanıtla
             </button>
           </div>
 
@@ -197,7 +204,7 @@
             <button
               class="forum-post-card__share-btn"
               @click="$emit('share', post)"
-              aria-label="Bu gonderiyi paylas"
+              aria-label="Bu gönderiyi paylaş"
               type="button"
             >
               <Share2Icon class="w-4 h-4" aria-hidden="true" />
@@ -207,7 +214,7 @@
               v-if="canInteract"
               class="forum-post-card__report-btn"
               @click="$emit('report', post)"
-              aria-label="Bu gonderiyi bildir"
+              aria-label="Bu gönderiyi bildir"
               type="button"
             >
               <FlagIcon class="w-4 h-4" aria-hidden="true" />
@@ -329,8 +336,21 @@ const levelColor = computed(() => {
   return '#22c55e'
 })
 
+// Author profile URL - kullanıcı profiline yönlendirme
+const authorProfileUrl = computed(() => {
+  // authorId varsa ID ile, yoksa username ile profil linki
+  if (props.post.authorId) {
+    return `/profile/${props.post.authorId}`
+  }
+  // Username ile de gidilebilir
+  if (props.post.author && props.post.author !== 'Anonim') {
+    return `/user/${encodeURIComponent(props.post.author)}`
+  }
+  return '#'
+})
+
 const actionOptions = [
-  { label: 'Duzenle', key: 'edit' },
+  { label: 'Düzenle', key: 'edit' },
   { label: 'Sil', key: 'delete' },
   { type: 'divider' },
   { label: 'Link Kopyala', key: 'copy-link' }
@@ -354,6 +374,29 @@ const handleAction = (key) => {
   overflow: hidden;
 }
 
+/* Author Profile Link */
+.forum-author-profile-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.forum-author-profile-link:hover {
+  transform: translateY(-2px);
+}
+
+.forum-author-profile-link:hover .forum-author-sidebar__name {
+  color: var(--forum-accent, #22d3ee);
+}
+
+.forum-author-profile-link:hover .forum-post-card__avatar {
+  box-shadow: 0 0 0 3px var(--forum-accent, #22d3ee);
+}
+
 .forum-post-card__layout {
   display: flex;
   flex-direction: column;
@@ -367,9 +410,9 @@ const handleAction = (key) => {
 
 .forum-post-card__avatar-wrapper {
   position: relative;
-  width: 88px;
-  height: 88px;
-  margin-bottom: 12px;
+  width: 70px;
+  height: 70px;
+  margin-bottom: 8px;
 }
 
 .forum-post-card__level-ring {
@@ -404,13 +447,13 @@ const handleAction = (key) => {
 
 .forum-post-card__role {
   display: inline-block;
-  padding: 2px 8px;
-  font-size: 11px;
+  padding: 2px 6px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-radius: 4px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .forum-post-card__role--admin {
@@ -434,29 +477,29 @@ const handleAction = (key) => {
 }
 
 .forum-post-card__badges {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .forum-post-card__level-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .forum-post-card__joined {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 4px;
+  font-size: 11px;
   color: var(--forum-muted);
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .forum-post-card__content {
   flex: 1;
-  padding: 20px;
+  padding: 14px;
   min-width: 0;
 }
 
@@ -464,7 +507,7 @@ const handleAction = (key) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .forum-post-card__time {
@@ -479,12 +522,12 @@ const handleAction = (key) => {
 }
 
 .forum-post-card__body {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .forum-post-card__attachments {
-  margin-bottom: 20px;
-  padding: 16px;
+  margin-bottom: 12px;
+  padding: 10px;
   background: var(--forum-bg-hover);
   border-radius: var(--forum-radius-sm);
 }
@@ -493,7 +536,8 @@ const handleAction = (key) => {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
 }
 
 .forum-post-card__attachment-list {

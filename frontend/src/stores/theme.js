@@ -1,12 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { darkTheme } from 'naive-ui'
+import { useCookies } from '@/composables/useCookies'
 
 const STORAGE_KEY = 'agtr-theme-mode'
 
 export const useThemeStore = defineStore('theme', () => {
+  const { getThemePreference, setThemePreference, hasConsent, COOKIE_CATEGORIES } = useCookies()
+
   // Theme mode: 'light', 'dark', or 'system'
-  const mode = ref(localStorage.getItem(STORAGE_KEY) || 'dark')
+  // Cookie'den veya localStorage'dan oku
+  const savedTheme = getThemePreference() || localStorage.getItem(STORAGE_KEY) || 'dark'
+  const mode = ref(savedTheme)
 
   // System preference
   const systemPrefersDark = ref(
@@ -273,7 +278,9 @@ export const useThemeStore = defineStore('theme', () => {
   // Set theme mode
   function setMode(newMode) {
     mode.value = newMode
+    // Her iki yere de kaydet (cookie consent durumuna gore cookie veya localStorage)
     localStorage.setItem(STORAGE_KEY, newMode)
+    setThemePreference(newMode)
     applyTheme()
   }
 

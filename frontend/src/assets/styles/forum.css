@@ -50,11 +50,11 @@
   --forum-font-display: 'Poppins', 'Inter', -apple-system, sans-serif;
   --forum-font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --forum-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  --forum-title-size: 18px;
-  --forum-body-size: 16px;
-  --forum-meta-size: 13px;
-  --forum-small-size: 12px;
-  --forum-line-height: 1.7;
+  --forum-title-size: 15px;
+  --forum-body-size: 13px;
+  --forum-meta-size: 11px;
+  --forum-small-size: 10px;
+  --forum-line-height: 1.5;
   --forum-max-width: 72ch;
 
   /* Forum text colors - Softer for eyes */
@@ -64,9 +64,9 @@
 
   /* Forum layout */
   --forum-max-content: 1400px;
-  --forum-gap: 24px;
-  --forum-gap-sm: 16px;
-  --forum-gap-xs: 12px;
+  --forum-gap: 12px;
+  --forum-gap-sm: 10px;
+  --forum-gap-xs: 8px;
   --forum-sidebar-width: 260px;
   --forum-right-sidebar: 300px;
 
@@ -713,15 +713,16 @@ html:not(.dark) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px 20px;
+  padding: 12px 10px;
   background: linear-gradient(180deg, var(--forum-bg-hover), transparent);
   border-right: 1px solid var(--forum-border);
-  min-width: 200px;
+  min-width: 140px;
+  max-width: 150px;
 }
 
 .forum-author-sidebar__avatar {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .forum-author-sidebar__avatar img {
@@ -754,34 +755,35 @@ html:not(.dark) {
 
 .forum-author-sidebar__name {
   font-weight: 600;
+  font-size: 12px;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   text-align: center;
 }
 
 .forum-author-sidebar__role {
-  font-size: 11px;
+  font-size: 9px;
   color: var(--forum-accent);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 2px 6px;
   background: var(--forum-accent-light);
   border-radius: var(--forum-radius-full);
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .forum-author-sidebar__stats {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 16px;
+  gap: 4px;
+  margin-top: 8px;
   width: 100%;
 }
 
 .forum-author-sidebar__stat {
   text-align: center;
-  padding: 12px 8px;
+  padding: 6px 4px;
   background: var(--forum-bg-card);
   border-radius: var(--forum-radius-sm);
   border: 1px solid var(--forum-border);
@@ -790,21 +792,20 @@ html:not(.dark) {
 
 .forum-author-sidebar__stat:hover {
   border-color: var(--forum-accent);
-  transform: translateY(-2px);
 }
 
 .forum-author-sidebar__stat-value {
   font-weight: 700;
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: 12px;
   display: block;
 }
 
 .forum-author-sidebar__stat-label {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--forum-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 /* ========================================
@@ -2620,15 +2621,15 @@ html:not(.dark) {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 16px 0;
-  font-size: 14px;
+  padding: 8px 0;
+  font-size: 12px;
 }
 
 .forum-breadcrumb-item {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: 6px;
+  padding: 5px 10px;
   color: var(--forum-muted);
   text-decoration: none;
   border-radius: var(--forum-radius-sm);
@@ -2675,13 +2676,17 @@ html:not(.dark) {
 .forum-breadcrumb-current {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: 6px;
+  padding: 5px 10px;
   background: linear-gradient(135deg, var(--forum-bg-hover), var(--forum-bg-active));
   color: var(--text-primary);
   font-weight: 600;
   border-radius: var(--forum-radius-sm);
   border: 1px solid var(--forum-border);
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ========================================
@@ -2691,10 +2696,11 @@ html:not(.dark) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 20px;
+  padding: 12px 10px;
   background: linear-gradient(180deg, var(--forum-bg-hover) 0%, transparent 100%);
   border-right: 1px solid var(--forum-border);
-  min-width: 220px;
+  min-width: 130px;
+  max-width: 140px;
   position: relative;
 }
 
@@ -2704,14 +2710,14 @@ html:not(.dark) {
   top: 0;
   left: 0;
   right: 0;
-  height: 80px;
+  height: 50px;
   background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(34, 211, 238, 0.05));
   border-radius: 0 0 50% 50%;
 }
 
 .forum-author-avatar-wrapper {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   z-index: 1;
 }
 

@@ -3,7 +3,7 @@
     <div class="map-gallery__header">
       <h3 class="map-gallery__title">
         <MapIcon class="w-5 h-5" />
-        {{ title || 'Populer Haritalar' }}
+        {{ title || 'Popüler Haritalar' }}
       </h3>
       <div class="map-gallery__controls">
         <button
@@ -119,7 +119,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: 'Populer Haritalar'
+    default: 'Popüler Haritalar'
   },
   autoPlay: {
     type: Boolean,

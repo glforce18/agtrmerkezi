@@ -34,55 +34,41 @@
         </span>
       </nav>
 
-      <!-- Topic Header -->
-      <section class="forum-topic-header">
-        <div class="forum-topic-header__badges">
-          <span v-if="topic?.isPinned" class="forum-badge-enhanced forum-badge-enhanced--warning">
-            <PinIcon class="w-3 h-3" />
-            Sabitlenmis
-          </span>
-          <span v-if="topic?.isLocked" class="forum-badge-enhanced forum-badge-enhanced--error">
-            <LockIcon class="w-3 h-3" />
-            Kilitli
-          </span>
-          <span v-if="topic?.isHot" class="forum-badge-enhanced forum-badge-enhanced--hot">
-            <FlameIcon class="w-3 h-3" />
-            Populer
-          </span>
-          <span v-if="topic?.isSolved" class="forum-badge-enhanced forum-badge-enhanced--success">
-            <CheckCircleIcon class="w-3 h-3" />
-            Cozuldu
-          </span>
-        </div>
-        <h1 class="forum-heading-enhanced forum-heading--xl">{{ topic?.title }}</h1>
-        <div class="forum-topic-header__stats">
-          <span class="forum-stat-enhanced">
-            <span class="forum-stat-enhanced__icon"><MessageSquareIcon class="w-3.5 h-3.5" /></span>
-            <span class="forum-stat-enhanced__value">{{ replies.length }}</span>
-            <span class="forum-stat-enhanced__label">Yanit</span>
-          </span>
-          <span class="forum-stat-enhanced">
-            <span class="forum-stat-enhanced__icon"><EyeIcon class="w-3.5 h-3.5" /></span>
-            <span class="forum-stat-enhanced__value">{{ topic?.views }}</span>
-            <span class="forum-stat-enhanced__label">Goruntulenme</span>
-          </span>
-          <span class="forum-stat-enhanced">
-            <span class="forum-stat-enhanced__icon"><HeartIcon class="w-3.5 h-3.5" /></span>
-            <span class="forum-stat-enhanced__value">{{ topic?.likes }}</span>
-            <span class="forum-stat-enhanced__label">Begeni</span>
-          </span>
-          <span class="forum-stat-enhanced">
-            <span class="forum-stat-enhanced__icon"><ClockIcon class="w-3.5 h-3.5" /></span>
-            <span class="forum-stat-enhanced__value">{{ topic?.created }}</span>
-          </span>
-          <span v-if="wsViewerCount > 0" class="forum-stat-enhanced forum-stat-enhanced--success">
-            <span class="forum-live-dot"></span>
-            <span class="forum-stat-enhanced__icon"><UsersIcon class="w-3.5 h-3.5" /></span>
-            <span class="forum-stat-enhanced__value">{{ wsViewerCount }}</span>
-            <span class="forum-stat-enhanced__label">izliyor</span>
-          </span>
+      <!-- Topic Header - Minimal -->
+      <section class="forum-topic-header-minimal">
+        <div class="forum-topic-header__main">
+          <div class="forum-topic-header__title-row">
+            <h1 class="forum-topic-title">{{ topic?.title }}</h1>
+            <div class="forum-topic-header__badges" v-if="topic?.isPinned || topic?.isLocked || topic?.isHot || topic?.isSolved">
+              <span v-if="topic?.isPinned" class="forum-badge-mini forum-badge-mini--warning" title="Sabitlenmiş">
+                <PinIcon class="w-3 h-3" />
+              </span>
+              <span v-if="topic?.isLocked" class="forum-badge-mini forum-badge-mini--error" title="Kilitli">
+                <LockIcon class="w-3 h-3" />
+              </span>
+              <span v-if="topic?.isHot" class="forum-badge-mini forum-badge-mini--hot" title="Popüler">
+                <FlameIcon class="w-3 h-3" />
+              </span>
+              <span v-if="topic?.isSolved" class="forum-badge-mini forum-badge-mini--success" title="Çözüldü">
+                <CheckCircleIcon class="w-3 h-3" />
+              </span>
+            </div>
+          </div>
+          <div class="forum-topic-header__meta">
+            <span class="forum-stat-mini"><MessageSquareIcon class="w-3 h-3" />{{ replies.length }}</span>
+            <span class="forum-stat-mini"><EyeIcon class="w-3 h-3" />{{ topic?.views }}</span>
+            <span class="forum-stat-mini"><HeartIcon class="w-3 h-3" />{{ topic?.likes }}</span>
+            <span class="forum-stat-mini"><ClockIcon class="w-3 h-3" />{{ topic?.created }}</span>
+            <span v-if="wsViewerCount > 0" class="forum-stat-mini forum-stat-mini--live">
+              <span class="forum-live-dot-mini"></span>{{ wsViewerCount }} izliyor
+            </span>
+            <ForumBookmarkButton v-if="isLoggedIn" :topic-id="topic?.id" size="tiny" quaternary />
+          </div>
         </div>
       </section>
+
+      <!-- Poll (if exists) -->
+      <ForumPoll v-if="topic?.id" :topic-id="topic.id" :can-create="isLoggedIn && topic?.authorId === authStore.user?.id" />
 
       <!-- Loading State -->
       <template v-if="isLoading">
@@ -95,7 +81,7 @@
         <ForumBestAnswer
           v-if="bestAnswer"
           :post="bestAnswer"
-          :marked-by="topic?.author"
+          :marked-by="getAuthorName(topic)"
           @goto="scrollToReply(bestAnswer.id)"
         />
 
@@ -105,7 +91,7 @@
           :show-level="true"
           :show-level-ring="true"
           :show-actions="true"
-          :can-interact="isLoggedIn"
+          :can-interact="isLoggedIn && hasSteam"
           @like="likeTopic"
           @reply="scrollToReplyForm"
           @quote="quotePost(topic)"
@@ -113,6 +99,11 @@
           @report="reportTopic"
           @action="handleTopicAction"
         />
+
+        <!-- Topic Reactions -->
+        <div v-if="topic?.id" class="forum-topic-reactions">
+          <ForumReactions content-type="topic" :content-id="topic.id" />
+        </div>
 
         <!-- Typing Indicator -->
         <Transition name="fade">
@@ -131,7 +122,7 @@
           <div class="forum-replies-header">
             <h2 class="forum-heading forum-heading--md">
               <MessageSquareIcon class="w-5 h-5" />
-              Yanitlar ({{ replies.length }})
+              Yanıtlar ({{ replies.length }})
             </h2>
             <n-select
               v-model:value="sortOrder"
@@ -151,7 +142,7 @@
               :show-level="true"
               :show-level-ring="true"
               :show-actions="true"
-              :can-interact="isLoggedIn"
+              :can-interact="isLoggedIn && hasSteam"
               :class="{ 'forum-reply--highlighted': highlightedReplyId === reply.id }"
               @like="() => likeReply(reply.id)"
               @reply="() => replyToUser(reply)"
@@ -170,11 +161,11 @@
             >
               <template v-if="isLoadingMoreReplies">
                 <span class="forum-loading-dots"><span></span><span></span><span></span></span>
-                Yanitlar yukleniyor...
+                Yanıtlar yükleniyor...
               </template>
               <template v-else>
                 <ChevronDownIcon class="w-5 h-5" />
-                Daha fazla yanit yukle ({{ allSortedReplies.length - displayedRepliesCount }} kaldi)
+                Daha fazla yanıt yükle ({{ allSortedReplies.length - displayedRepliesCount }} kaldı)
               </template>
             </button>
           </div>
@@ -210,34 +201,45 @@
               </svg>
             </div>
             <div class="forum-steam-notice__content">
-              <p>Steam hesabi baglayarak yanit yazabilirsiniz</p>
-              <span class="forum-meta">Topluluk guvenligi icin Steam dogrulamasi gereklidir</span>
+              <p>Steam hesabi bağlayarak yanıt yazabilirsiniz</p>
+              <span class="forum-meta">Topluluk guvenligi icin Steam doğrulamasi gereklidir</span>
             </div>
             <n-button size="small" type="info" @click="connectSteam">
-              Steam Bagla
+              Steam Bağla
             </n-button>
           </div>
 
-          <!-- Quote Preview -->
+          <!-- Quote Preview - Modern Social Media Style -->
           <Transition name="slide-down">
-            <div v-if="quotedReply" class="forum-reply-preview">
-              <div class="forum-reply-preview__header">
-                <QuoteIcon class="w-4 h-4" />
-                <span><strong>{{ quotedReply.author }}</strong> kullanicisina yanit veriyorsunuz:</span>
+            <div v-if="quotedReply" class="forum-quote-box">
+              <div class="forum-quote-box__header">
+                <div class="forum-quote-box__user">
+                  <img
+                    v-if="quotedReply.authorAvatar"
+                    :src="quotedReply.authorAvatar"
+                    :alt="quotedReply.authorName || 'Kullanıcı'"
+                    class="forum-quote-box__avatar"
+                  />
+                  <div v-else class="forum-quote-box__avatar forum-quote-box__avatar--placeholder">
+                    {{ (quotedReply.authorName || 'A').charAt(0).toUpperCase() }}
+                  </div>
+                  <span class="forum-quote-box__name">@{{ quotedReply.authorName || 'Anonim' }}</span>
+                </div>
+                <button class="forum-quote-box__close" @click="clearQuote" type="button" title="Alıntıyı kaldır">
+                  <XIcon class="w-4 h-4" />
+                </button>
               </div>
-              <div class="forum-quote-content">
-                {{ quotedReply.content.substring(0, 200) }}{{ quotedReply.content.length > 200 ? '...' : '' }}
+              <div class="forum-quote-box__content">
+                {{ quotedReply.contentPreview || '' }}
               </div>
-              <button class="forum-reply-preview__close" @click="clearQuote" type="button">
-                <XIcon class="w-4 h-4" />
-              </button>
+              <div class="forum-quote-box__indicator"></div>
             </div>
           </Transition>
 
           <div class="forum-reply-form__content">
             <h3 class="forum-heading forum-heading--sm">
               <EditIcon class="w-5 h-5" />
-              Yanit Yaz
+              Yanıt Yaz
             </h3>
 
             <form @submit.prevent="submitReply">
@@ -272,7 +274,7 @@
                     ref="editorRef"
                     v-model:value="newReply"
                     type="textarea"
-                    placeholder="Yanitinizi yazin... Markdown kullanabilirsiniz. (min 5 karakter)"
+                    placeholder="Yanıtinizi yazin... Markdown kullanabilirsiniz. (min 5 karakter)"
                     :rows="8"
                     :status="replyValidation.status"
                     @input="handleTyping"
@@ -315,7 +317,7 @@
                     :loading="isSubmitting"
                   >
                     <template #icon><SendIcon class="w-4 h-4" /></template>
-                    Yanitla
+                    Yanıtla
                   </n-button>
                 </div>
               </div>
@@ -327,7 +329,7 @@
         <div v-else class="forum-locked-message">
           <LockIcon class="w-16 h-16" />
           <h3 class="forum-heading forum-heading--lg">Bu Konu Kilitli</h3>
-          <p class="forum-meta">Bu konuya yeni yanit ekleyemezsiniz. Daha fazla bilgi icin moderatorlerle iletisime gecin.</p>
+          <p class="forum-meta">Bu konuya yeni yanıt ekleyemezsiniz. Daha fazla bilgi icin moderatorlerle iletisime gecin.</p>
         </div>
       </template>
     </template>
@@ -358,7 +360,7 @@
   </Transition>
 
   <!-- Share Modal -->
-  <n-modal v-model:show="showShareModal" preset="card" title="Paylas" class="forum-modal-enhanced" style="max-width: 400px">
+  <n-modal v-model:show="showShareModal" preset="card" title="Paylaş" class="forum-modal-enhanced" style="max-width: 400px">
     <div class="forum-share-modal">
       <div class="forum-share-modal__url">
         <n-input :value="shareUrl" readonly />
@@ -384,7 +386,7 @@
   </n-modal>
 
   <!-- Report Modal -->
-  <n-modal v-model:show="showReportModal" preset="card" title="Icerik Bildir" class="forum-modal-enhanced" style="max-width: 500px">
+  <n-modal v-model:show="showReportModal" preset="card" title="İçerik Bildir" class="forum-modal-enhanced" style="max-width: 500px">
     <n-form :model="reportForm">
       <n-form-item label="Bildirim Nedeni">
         <n-radio-group v-model:value="reportForm.reason">
@@ -393,13 +395,13 @@
           </div>
         </n-radio-group>
       </n-form-item>
-      <n-form-item label="Ek Aciklama">
+      <n-form-item label="Ek Açıklama">
         <n-input v-model:value="reportForm.description" type="textarea" :rows="4" placeholder="Daha fazla detay ekleyin..." class="forum-reply-textarea" />
       </n-form-item>
     </n-form>
     <template #footer>
       <div class="forum-modal-footer-enhanced">
-        <n-button class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="showReportModal = false">Iptal</n-button>
+        <n-button class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="showReportModal = false">İptal</n-button>
         <n-button type="error" class="forum-btn-enhanced" @click="submitReport">
           <template #icon><FlagIcon class="w-4 h-4" /></template>
           Bildir
@@ -409,18 +411,18 @@
   </n-modal>
 
   <!-- Edit Topic Modal -->
-  <n-modal v-model:show="showEditTopicModal" preset="card" title="Konu Duzenle" class="forum-modal-enhanced" style="max-width: 600px">
+  <n-modal v-model:show="showEditTopicModal" preset="card" title="Konu Düzenle" class="forum-modal-enhanced" style="max-width: 600px">
     <n-form :model="editTopicForm">
-      <n-form-item label="Baslik">
+      <n-form-item label="Başlık">
         <n-input v-model:value="editTopicForm.title" placeholder="Konu basligi..." maxlength="200" show-count />
       </n-form-item>
-      <n-form-item label="Icerik">
-        <n-input v-model:value="editTopicForm.content" type="textarea" :rows="10" placeholder="Konu icerigi..." maxlength="10000" show-count />
+      <n-form-item label="İçerik">
+        <n-input v-model:value="editTopicForm.content" type="textarea" :rows="10" placeholder="Konu içeriği..." maxlength="10000" show-count />
       </n-form-item>
     </n-form>
     <template #footer>
       <div class="forum-modal-footer-enhanced">
-        <n-button class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="showEditTopicModal = false">Iptal</n-button>
+        <n-button class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="showEditTopicModal = false">İptal</n-button>
         <n-button type="primary" class="forum-btn-enhanced forum-btn-enhanced--primary" @click="saveEditTopic">
           <template #icon><SaveIcon class="w-4 h-4" /></template>
           Kaydet
@@ -430,15 +432,15 @@
   </n-modal>
 
   <!-- Edit Reply Modal -->
-  <n-modal v-model:show="showEditReplyModal" preset="card" title="Yanit Duzenle" class="forum-modal-enhanced" style="max-width: 600px">
+  <n-modal v-model:show="showEditReplyModal" preset="card" title="Yanıt Düzenle" class="forum-modal-enhanced" style="max-width: 600px">
     <n-form>
-      <n-form-item label="Icerik">
-        <n-input v-model:value="editReplyContent" type="textarea" :rows="8" placeholder="Yanit icerigi..." maxlength="10000" show-count />
+      <n-form-item label="İçerik">
+        <n-input v-model:value="editReplyContent" type="textarea" :rows="8" placeholder="Yanıt içeriği..." maxlength="10000" show-count />
       </n-form-item>
     </n-form>
     <template #footer>
       <div class="forum-modal-footer-enhanced">
-        <n-button class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="cancelEditReply">Iptal</n-button>
+        <n-button class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="cancelEditReply">İptal</n-button>
         <n-button type="primary" class="forum-btn-enhanced forum-btn-enhanced--primary" @click="saveEditReply(editingReplyId)">
           <template #icon><SaveIcon class="w-4 h-4" /></template>
           Kaydet
@@ -465,7 +467,7 @@ import { useRequireSteam } from '@/composables/useRequireSteam'
 import { useRequireAuth } from '@/composables/useRequireAuth'
 import { useAuthStore } from '@/stores/auth'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
-import { ForumLayout, ForumSidebar, ForumPostCard, ForumBestAnswer, ForumSkeleton } from '@/components/forum'
+import { ForumLayout, ForumSidebar, ForumPostCard, ForumBestAnswer, ForumSkeleton, ForumReactions, ForumPoll, ForumBookmarkButton } from '@/components/forum'
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -597,7 +599,7 @@ const sidebarStats = computed(() => ({
 const sortOptions = [
   { label: 'En Eski', value: 'oldest' },
   { label: 'En Yeni', value: 'newest' },
-  { label: 'En Cok Begenilen', value: 'likes' }
+  { label: 'En Cok Beğenilen', value: 'likes' }
 ]
 
 // Editor tools
@@ -677,7 +679,7 @@ function formatPostForCard(post) {
     htmlContent: renderMarkdown(post.content),
     author: authorName || 'Anonim',
     authorAvatar: authorAvatar,
-    authorRole: authorRole || 'Uye',
+    authorRole: authorRole || 'Üye',
     authorLevel: authorLevel || 1,
     authorXp: post.authorXp || 0,
     authorXpProgress: post.authorXpProgress || 50,
@@ -727,7 +729,7 @@ function formatReplyForCard(reply, index) {
     htmlContent: renderMarkdown(reply.content),
     author: authorName || 'Anonim',
     authorAvatar: authorAvatar,
-    authorRole: authorRole || 'Uye',
+    authorRole: authorRole || 'Üye',
     authorLevel: authorLevel || 1,
     authorXp: reply.authorXp || 0,
     authorXpProgress: reply.authorXpProgress || 50,
@@ -749,7 +751,7 @@ function handleCategoryClick(cat) {
 }
 
 async function likeTopic() {
-  if (!requireAuth({ message: 'Begenmek icin giris yapmaniz gerekiyor', redirect: false })) return
+  if (!requireAuth({ message: 'Begenmek icin giriş yapmaniz gerekiyor', redirect: false })) return
   // BUGFIX: Add null check for topic
   if (!topic.value || topic.value.likes === undefined) return
 
@@ -772,20 +774,20 @@ async function likeTopic() {
       // Revert on error
       hasLikedTopic.value = wasLiked
       topic.value.likes += wasLiked ? 1 : -1
-      window.$message?.error('Begeni islemi basarisiz')
+      window.$message?.error('Beğeni işlemi başarısız')
     } else {
-      window.$message?.success(hasLikedTopic.value ? 'Begenildi' : 'Begeni kaldirildi')
+      window.$message?.success(hasLikedTopic.value ? 'Beğenildi' : 'Beğeni kaldırıldı')
     }
   } catch (error) {
     // Revert on error
     hasLikedTopic.value = wasLiked
     topic.value.likes += wasLiked ? 1 : -1
-    console.error('Like error:', error)
+    // Like failed - reverted
   }
 }
 
 async function likeReply(replyId) {
-  if (!requireAuth({ message: 'Begenmek icin giris yapmaniz gerekiyor', redirect: false })) return
+  if (!requireAuth({ message: 'Begenmek icin giriş yapmaniz gerekiyor', redirect: false })) return
   const reply = replies.value.find(r => r.id === replyId)
   // BUGFIX: Add null check for reply and likes
   if (!reply || reply.likes === undefined) return
@@ -809,22 +811,22 @@ async function likeReply(replyId) {
       // Revert on error
       reply.hasLiked = wasLiked
       reply.likes += wasLiked ? 1 : -1
-      window.$message?.error('Begeni islemi basarisiz')
+      window.$message?.error('Beğeni işlemi başarısız')
     } else {
-      window.$message?.success(reply.hasLiked ? 'Begenildi' : 'Begeni kaldirildi')
+      window.$message?.success(reply.hasLiked ? 'Beğenildi' : 'Beğeni kaldırıldı')
     }
   } catch (error) {
     // Revert on error
     reply.hasLiked = wasLiked
     reply.likes += wasLiked ? 1 : -1
-    console.error('Like reply error:', error)
+    // Like reply failed - reverted
   }
 }
 
 // Bookmark topic
 const isBookmarked = ref(false)
 async function bookmarkTopic() {
-  if (!requireAuth({ message: 'Yer imi eklemek icin giris yapmaniz gerekiyor', redirect: false })) return
+  if (!requireAuth({ message: 'Yer imi eklemek icin giriş yapmaniz gerekiyor', redirect: false })) return
 
   const wasBookmarked = isBookmarked.value
   isBookmarked.value = !isBookmarked.value
@@ -841,20 +843,20 @@ async function bookmarkTopic() {
 
     if (!response.ok) {
       isBookmarked.value = wasBookmarked
-      window.$message?.error('Yer imi islemi basarisiz')
+      window.$message?.error('Yer imi işlemi başarısız')
     } else {
-      window.$message?.success(isBookmarked.value ? 'Yer imine eklendi' : 'Yer iminden cikarildi')
+      window.$message?.success(isBookmarked.value ? 'Yer imine eklendi' : 'Yer iminden çıkarıldı')
     }
   } catch (error) {
     isBookmarked.value = wasBookmarked
-    console.error('Bookmark error:', error)
+    // Bookmark failed - reverted
   }
 }
 
 // Subscribe to topic
 const isTopicSubscribed = ref(false)
 async function subscribeToTopic() {
-  if (!requireAuth({ message: 'Takip etmek icin giris yapmaniz gerekiyor', redirect: false })) return
+  if (!requireAuth({ message: 'Takip etmek icin giriş yapmaniz gerekiyor', redirect: false })) return
 
   const wasSubscribed = isTopicSubscribed.value
   isTopicSubscribed.value = !isTopicSubscribed.value
@@ -871,26 +873,27 @@ async function subscribeToTopic() {
 
     if (!response.ok) {
       isTopicSubscribed.value = wasSubscribed
-      window.$message?.error('Takip islemi basarisiz')
+      window.$message?.error('Takip işlemi başarısız')
     } else {
       window.$message?.success(isTopicSubscribed.value ? 'Konu takip ediliyor' : 'Takip iptal edildi')
     }
   } catch (error) {
     isTopicSubscribed.value = wasSubscribed
-    console.error('Subscribe error:', error)
+    // Subscribe failed - reverted
   }
 }
 
 // Mark best answer
 async function markBestAnswer(replyId) {
   if (!isLoggedIn.value) {
-    window.$message?.warning('Bu islemi yapmak icin giris yapin')
+    window.$message?.warning('Bu işlemi yapmak icin giriş yapin')
     return
   }
 
   // Only topic author can mark best answer
-  if (topic.value?.author !== authStore.user?.username && !authStore.user?.is_admin) {
-    window.$message?.warning('Sadece konu sahibi en iyi yaniti isaretleyebilir')
+  const topicAuthorName = getAuthorName(topic.value)
+  if (topicAuthorName !== authStore.user?.username && !authStore.user?.is_admin) {
+    window.$message?.warning('Sadece konu sahibi en iyi yanıti isaretleyebilir')
     return
   }
 
@@ -912,13 +915,13 @@ async function markBestAnswer(replyId) {
       const bestReply = replies.value.find(r => r.id === replyId)
       bestAnswer.value = bestReply
       topic.value.isSolved = true
-      window.$message?.success('En iyi yanit isaretlendi')
+      window.$message?.success('En iyi yanıt işaretlendi')
     } else {
-      window.$message?.error('Islem basarisiz')
+      window.$message?.error('İşlem başarısız')
     }
   } catch (error) {
-    console.error('Mark best answer error:', error)
-    window.$message?.error('Bir hata olustu')
+    // Mark best answer failed
+    window.$message?.error('Bir hata oluştu')
   }
 }
 
@@ -941,13 +944,13 @@ async function togglePinTopic() {
 
     if (!response.ok) {
       topic.value.isPinned = wasPinned
-      window.$message?.error('Sabitleme islemi basarisiz')
+      window.$message?.error('Sabitleme işlemi başarısız')
     } else {
-      window.$message?.success(topic.value.isPinned ? 'Konu sabitlendi' : 'Sabitleme kaldirildi')
+      window.$message?.success(topic.value.isPinned ? 'Konu sabitlendi' : 'Sabitleme kaldırıldı')
     }
   } catch (error) {
     topic.value.isPinned = wasPinned
-    console.error('Pin error:', error)
+    // Pin failed
   }
 }
 
@@ -970,19 +973,20 @@ async function toggleLockTopic() {
 
     if (!response.ok) {
       topic.value.isLocked = wasLocked
-      window.$message?.error('Kilitleme islemi basarisiz')
+      window.$message?.error('Kilitleme işlemi başarısız')
     } else {
-      window.$message?.success(topic.value.isLocked ? 'Konu kilitlendi' : 'Kilit kaldirildi')
+      window.$message?.success(topic.value.isLocked ? 'Konu kilitlendi' : 'Kilit kaldırıldı')
     }
   } catch (error) {
     topic.value.isLocked = wasLocked
-    console.error('Lock error:', error)
+    // Lock failed
   }
 }
 
 // Delete topic (admin or owner)
 async function deleteTopic() {
-  const canDelete = isAdmin.value || topic.value?.author === authStore.user?.username
+  const topicAuthorName = getAuthorName(topic.value)
+  const canDelete = isAdmin.value || topicAuthorName === authStore.user?.username
 
   if (!canDelete) {
     window.$message?.warning('Bu konuyu silme yetkiniz yok')
@@ -1009,22 +1013,23 @@ async function deleteTopic() {
       window.$message?.error('Konu silinemedi')
     }
   } catch (error) {
-    console.error('Delete topic error:', error)
-    window.$message?.error('Bir hata olustu')
+    // Delete topic failed
+    window.$message?.error('Bir hata oluştu')
   }
 }
 
 // Delete reply
 async function deleteReply(replyId) {
   const reply = replies.value.find(r => r.id === replyId)
-  const canDelete = isAdmin.value || reply?.author === authStore.user?.username
+  const replyAuthorName = getAuthorName(reply)
+  const canDelete = isAdmin.value || replyAuthorName === authStore.user?.username
 
   if (!canDelete) {
-    window.$message?.warning('Bu yaniti silme yetkiniz yok')
+    window.$message?.warning('Bu yanıti silme yetkiniz yok')
     return
   }
 
-  if (!window.confirm('Bu yaniti silmek istediginizden emin misiniz?')) {
+  if (!window.confirm('Bu yanıti silmek istediginizden emin misiniz?')) {
     return
   }
 
@@ -1039,32 +1044,138 @@ async function deleteReply(replyId) {
 
     if (response.ok) {
       replies.value = replies.value.filter(r => r.id !== replyId)
-      window.$message?.success('Yanit silindi')
+      window.$message?.success('Yanıt silindi')
     } else {
-      window.$message?.error('Yanit silinemedi')
+      window.$message?.error('Yanıt silinemedi')
     }
   } catch (error) {
-    console.error('Delete reply error:', error)
-    window.$message?.error('Bir hata olustu')
+    // Delete reply failed
+    window.$message?.error('Bir hata oluştu')
   }
 }
 
+// Extract author name from item - handles nested objects and various formats
+function getAuthorName(item) {
+  if (!item) return 'Anonim'
+
+  // Direct string author
+  if (typeof item.author === 'string' && item.author.trim()) {
+    return item.author.trim()
+  }
+
+  // Author is an object with username or name
+  if (typeof item.author === 'object' && item.author !== null) {
+    const author = item.author
+    // Check various possible field names
+    if (typeof author.username === 'string' && author.username.trim()) {
+      return author.username.trim()
+    }
+    if (typeof author.name === 'string' && author.name.trim()) {
+      return author.name.trim()
+    }
+    if (typeof author.display_name === 'string' && author.display_name.trim()) {
+      return author.display_name.trim()
+    }
+  }
+
+  // Fallback to author_name field
+  if (typeof item.author_name === 'string' && item.author_name.trim()) {
+    return item.author_name.trim()
+  }
+
+  // Fallback to username field directly on item
+  if (typeof item.username === 'string' && item.username.trim()) {
+    return item.username.trim()
+  }
+
+  return 'Anonim'
+}
+
+// Extract author avatar from item
+function getAuthorAvatar(item) {
+  if (!item) return null
+
+  // Direct avatar field
+  if (typeof item.authorAvatar === 'string' && item.authorAvatar) {
+    return item.authorAvatar
+  }
+
+  // Avatar in author object
+  if (typeof item.author === 'object' && item.author !== null) {
+    if (typeof item.author.avatar === 'string' && item.author.avatar) {
+      return item.author.avatar
+    }
+    if (typeof item.author.avatar_url === 'string' && item.author.avatar_url) {
+      return item.author.avatar_url
+    }
+  }
+
+  // Fallback to avatar field directly
+  if (typeof item.avatar === 'string' && item.avatar) {
+    return item.avatar
+  }
+
+  return null
+}
+
+// Extract content text from item
+function getContentText(item) {
+  if (!item) return ''
+
+  if (typeof item.content === 'string') {
+    return item.content
+  }
+  if (typeof item.body === 'string') {
+    return item.body
+  }
+  if (typeof item.text === 'string') {
+    return item.text
+  }
+
+  return ''
+}
+
 function quotePost(post) {
-  quotedReply.value = post
-  const quoteText = `> @${post.author} yazdi:\n> ${post.content.replace(/\n/g, '\n> ')}\n\n`
-  newReply.value = quoteText + newReply.value
+  const authorName = getAuthorName(post)
+  const authorAvatar = getAuthorAvatar(post)
+  const content = getContentText(post)
+  const contentPreview = content.substring(0, 150) + (content.length > 150 ? '...' : '')
+
+  // Only store primitive values, never raw objects
+  quotedReply.value = {
+    id: post.id,
+    authorName,
+    authorAvatar,
+    content,
+    contentPreview
+  }
   scrollToReplyForm()
 }
 
 function quoteReply(reply) {
-  quotedReply.value = reply
-  const quoteText = `> @${reply.author} yazdi:\n> ${reply.content.replace(/\n/g, '\n> ')}\n\n`
-  newReply.value = quoteText + newReply.value
+  const authorName = getAuthorName(reply)
+  const authorAvatar = getAuthorAvatar(reply)
+  const content = getContentText(reply)
+  const contentPreview = content.substring(0, 150) + (content.length > 150 ? '...' : '')
+
+  // Only store primitive values, never raw objects
+  quotedReply.value = {
+    id: reply.id,
+    authorName,
+    authorAvatar,
+    content,
+    contentPreview
+  }
   scrollToReplyForm()
 }
 
 function replyToUser(reply) {
-  newReply.value = `@${reply.author} ` + newReply.value
+  const authorName = getAuthorName(reply)
+  // Modern mention - sadece @ ile başlat
+  const mention = `@${authorName} `
+  if (!newReply.value.startsWith(mention)) {
+    newReply.value = mention + newReply.value
+  }
   scrollToReplyForm()
 }
 
@@ -1208,11 +1319,12 @@ async function handleMentionInput(e) {
           showMentionDropdown.value = mentionSuggestions.value.length > 0
         }
       } catch (error) {
-        console.error('Mention search error:', error)
+        // Mention search failed
       }
     } else {
-      // Show recent users from replies
-      const uniqueAuthors = [...new Set(replies.value.map(r => r.author))].slice(0, 5)
+      // Show recent users from replies - extract author names properly
+      const authorNames = replies.value.map(r => getAuthorName(r)).filter(name => name && name !== 'Anonim')
+      const uniqueAuthors = [...new Set(authorNames)].slice(0, 5)
       mentionSuggestions.value = uniqueAuthors.map(a => ({ username: a }))
       showMentionDropdown.value = mentionSuggestions.value.length > 0
     }
@@ -1259,6 +1371,8 @@ function saveDraft() {
 }
 
 async function submitReply() {
+  // Prevent double submit
+  if (isSubmitting.value) return
   if (!requireSteam(() => {})) return
   if (!newReply.value.trim()) return
 
@@ -1278,7 +1392,7 @@ async function submitReply() {
       headers,
       body: JSON.stringify({
         content: newReply.value.trim(),
-        quoted_reply_id: quotedReply.value?.id
+        parent_reply_id: quotedReply.value?.id || null
       })
     })
 
@@ -1307,7 +1421,7 @@ async function submitReply() {
       window.$message?.error(errorMessage)
     }
   } catch (error) {
-    console.error('Submit reply error:', error)
+    // Submit reply failed
     if (error instanceof TypeError && error.message.includes('fetch')) {
       window.$message?.error('Ağ bağlantısı hatası, lütfen internet bağlantınızı kontrol edin')
     } else {
@@ -1322,20 +1436,20 @@ async function submitReply() {
 const reportingItem = ref(null)
 
 function reportTopic() {
-  if (!requireAuth({ message: 'Bildirmek icin giris yapmaniz gerekiyor', redirect: false })) return
+  if (!requireAuth({ message: 'Bildirmek icin giriş yapmaniz gerekiyor', redirect: false })) return
   reportingItem.value = { type: 'topic', id: topicId }
   showReportModal.value = true
 }
 
 function reportReply(reply) {
-  if (!requireAuth({ message: 'Bildirmek icin giris yapmaniz gerekiyor', redirect: false })) return
+  if (!requireAuth({ message: 'Bildirmek icin giriş yapmaniz gerekiyor', redirect: false })) return
   reportingItem.value = { type: 'reply', id: reply.id }
   showReportModal.value = true
 }
 
 async function submitReport() {
   if (!reportForm.value.reason) {
-    window.$message?.warning('Lutfen bir neden secin')
+    window.$message?.warning('Lutfen bir neden seçin')
     return
   }
 
@@ -1360,11 +1474,11 @@ async function submitReport() {
     if (response.ok) {
       window.$message?.success('Bildiriminiz alindi')
     } else {
-      window.$message?.error('Bildirim gonderilemedi')
+      window.$message?.error('Bildirim gönderilemedi')
     }
   } catch (error) {
-    console.error('Report error:', error)
-    window.$message?.error('Bir hata olustu')
+    // Report failed
+    window.$message?.error('Bir hata oluştu')
   } finally {
     showReportModal.value = false
     reportForm.value = { reason: null, description: '' }
@@ -1378,8 +1492,9 @@ const editTopicForm = ref({ title: '', content: '' })
 
 function openEditTopic() {
   if (!topic.value) return
-  if (topic.value.author !== authStore.user?.username && !isAdmin.value) {
-    window.$message?.warning('Bu konuyu duzenleme yetkiniz yok')
+  const topicAuthorName = getAuthorName(topic.value)
+  if (topicAuthorName !== authStore.user?.username && !isAdmin.value) {
+    window.$message?.warning('Bu konuyu düzenleme yetkiniz yok')
     return
   }
   editTopicForm.value = {
@@ -1391,11 +1506,11 @@ function openEditTopic() {
 
 async function saveEditTopic() {
   if (editTopicForm.value.title.trim().length < 5) {
-    window.$message?.warning('Baslik en az 5 karakter olmalidir')
+    window.$message?.warning('Başlık en az 5 karakter olmalidir')
     return
   }
   if (editTopicForm.value.content.trim().length < 20) {
-    window.$message?.warning('Icerik en az 20 karakter olmalidir')
+    window.$message?.warning('İçerik en az 20 karakter olmalidir')
     return
   }
 
@@ -1418,13 +1533,13 @@ async function saveEditTopic() {
       topic.value.content = editTopicForm.value.content.trim()
       topic.value.isEdited = true
       showEditTopicModal.value = false
-      window.$message?.success('Konu guncellendi')
+      window.$message?.success('Konu güncellendi')
     } else {
-      window.$message?.error('Konu guncellenemedi')
+      window.$message?.error('Konu güncellenemedi')
     }
   } catch (error) {
-    console.error('Edit topic error:', error)
-    window.$message?.error('Bir hata olustu')
+    // Edit topic failed
+    window.$message?.error('Bir hata oluştu')
   }
 }
 
@@ -1434,8 +1549,9 @@ const editReplyContent = ref('')
 const showEditReplyModal = ref(false)
 
 function startEditReply(reply) {
-  if (reply.author !== authStore.user?.username && !isAdmin.value) {
-    window.$message?.warning('Bu yaniti duzenleme yetkiniz yok')
+  const replyAuthorName = getAuthorName(reply)
+  if (replyAuthorName !== authStore.user?.username && !isAdmin.value) {
+    window.$message?.warning('Bu yanıti düzenleme yetkiniz yok')
     return
   }
   editingReplyId.value = reply.id
@@ -1451,7 +1567,7 @@ function cancelEditReply() {
 
 async function saveEditReply(replyId) {
   if (editReplyContent.value.trim().length < 5) {
-    window.$message?.warning('Yanit en az 5 karakter olmalidir')
+    window.$message?.warning('Yanıt en az 5 karakter olmalidir')
     return
   }
 
@@ -1477,13 +1593,13 @@ async function saveEditReply(replyId) {
       editingReplyId.value = null
       editReplyContent.value = ''
       showEditReplyModal.value = false
-      window.$message?.success('Yanit guncellendi')
+      window.$message?.success('Yanıt güncellendi')
     } else {
-      window.$message?.error('Yanit guncellenemedi')
+      window.$message?.error('Yanıt güncellenemedi')
     }
   } catch (error) {
-    console.error('Edit reply error:', error)
-    window.$message?.error('Bir hata olustu')
+    // Edit reply failed
+    window.$message?.error('Bir hata oluştu')
   }
 }
 
@@ -1566,7 +1682,7 @@ function handleKeydown(e) {
   // ? - Show shortcuts help
   if (e.key === '?') {
     e.preventDefault()
-    window.$message?.info('Kisayollar: R=Yanit, Q=Alinti, L=Begen, B=Yerimine Ekle, S=Paylas')
+    window.$message?.info('Kisayollar: R=Yanıt, Q=Alinti, L=Begen, B=Yerimine Ekle, S=Paylaş')
   }
 
   // Escape - Close modals
@@ -1603,13 +1719,13 @@ function initWebSocket() {
           content: reply.content,
           author: reply.author?.username || 'Unknown',
           authorAvatar: reply.author?.avatar,
-          authorRole: 'Uye',
+          authorRole: 'Üye',
           authorLevel: 15,
           created: 'Az once',
           likes: 0,
           hasLiked: false
         })
-        window.$message?.info(`${reply.author?.username || 'Birisi'} yeni bir yanit yazdi`)
+        window.$message?.info(`${reply.author?.username || 'Birisi'} yeni bir yanıt yazdi`)
       }
     },
     onUserTyping: (user) => {
@@ -1662,21 +1778,21 @@ async function fetchTopic() {
       fetchError.value = 'Konu bulunamadi'
       window.$message?.error('Konu bulunamadi')
     } else if (response.status === 403) {
-      fetchError.value = 'Bu konuyu goruntuleme yetkiniz yok'
-      window.$message?.error('Bu konuyu goruntuleme yetkiniz yok')
+      fetchError.value = 'Bu konuyu göruntuleme yetkiniz yok'
+      window.$message?.error('Bu konuyu göruntuleme yetkiniz yok')
     } else {
-      fetchError.value = 'Konu yuklenemedi'
-      window.$message?.error('Konu yuklenemedi')
+      fetchError.value = 'Konu yüklenemedi'
+      window.$message?.error('Konu yüklenemedi')
     }
   } catch (error) {
     if (error.name === 'AbortError') {
       // Request was cancelled, ignore
       return
     }
-    console.error('Failed to fetch topic:', error)
-    fetchError.value = 'Konu yuklenirken bir hata olustu'
+    // Fetch topic failed
+    fetchError.value = 'Konu yüklenirken bir hata oluştu'
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      window.$message?.error('Ag baglantisi hatasi')
+      window.$message?.error('Ag bağlantisi hatasi')
     }
   } finally {
     isLoading.value = false
@@ -1774,64 +1890,123 @@ onUnmounted(() => {
   z-index: 0;
 }
 
-/* Topic Header */
+/* Topic Header - Minimal Version */
+.forum-topic-header-minimal {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.forum-topic-header__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.forum-topic-header__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.forum-topic-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0;
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+}
+
+.forum-topic-header__badges {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.forum-badge-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.forum-badge-mini--warning {
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+}
+
+.forum-badge-mini--error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.forum-badge-mini--hot {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.forum-badge-mini--success {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.forum-topic-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.forum-stat-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.forum-stat-mini svg {
+  opacity: 0.7;
+}
+
+.forum-stat-mini--live {
+  color: #22c55e;
+}
+
+.forum-live-dot-mini {
+  width: 6px;
+  height: 6px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: forum-pulse 2s ease-in-out infinite;
+}
+
+@keyframes forum-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Old header styles - kept for compatibility */
 .forum-topic-header {
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 15, 20, 0.98) 100%);
   border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: var(--forum-radius-lg);
-  padding: 32px;
-  margin-bottom: 24px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
   transition: all 0.3s ease;
-}
-
-.forum-topic-header:hover {
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.15);
-}
-
-.forum-topic-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--forum-brand), var(--forum-accent), var(--forum-purple));
-  animation: gradient-flow 4s ease infinite;
-  background-size: 200% 100%;
-}
-
-@keyframes gradient-flow {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.forum-topic-header::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  right: 0;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.forum-topic-header__badges {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.forum-topic-header__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 16px;
 }
 
 .forum-stat-pill--live {
@@ -1847,33 +2022,29 @@ onUnmounted(() => {
   animation: forum-pulse 2s ease-in-out infinite;
 }
 
-@keyframes forum-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
 /* Replies Section */
 .forum-replies-section {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .forum-replies-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .forum-replies-header .forum-heading {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  font-size: 14px;
 }
 
 .forum-replies-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .forum-reply--highlighted {
@@ -1889,19 +2060,19 @@ onUnmounted(() => {
 .forum-load-more {
   display: flex;
   justify-content: center;
-  margin-top: 24px;
+  margin-top: 12px;
 }
 
 .forum-load-more__btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 14px 28px;
+  gap: 6px;
+  padding: 8px 16px;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 15, 20, 0.95) 100%);
   border: 1px solid rgba(34, 211, 238, 0.3);
   border-radius: var(--forum-radius);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   transition: all 0.3s ease;
   position: relative;
@@ -1939,12 +2110,13 @@ onUnmounted(() => {
 .forum-typing-indicator {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 8px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, rgba(34, 211, 238, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
   border: 1px solid rgba(34, 211, 238, 0.3);
   border-radius: var(--forum-radius);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
+  font-size: 12px;
   animation: typing-glow 2s ease-in-out infinite;
 }
 
@@ -2009,10 +2181,11 @@ onUnmounted(() => {
 .forum-steam-notice {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
+  gap: 12px;
+  padding: 10px 14px;
   background: rgba(102, 192, 244, 0.1);
   border-bottom: 1px solid var(--forum-border);
+  font-size: 13px;
 }
 
 .forum-steam-notice__icon {
@@ -2028,52 +2201,113 @@ onUnmounted(() => {
   margin: 0;
 }
 
-.forum-quote-preview {
+/* Modern Quote Box - Social Media Style */
+.forum-quote-box {
   position: relative;
-  padding: 16px 24px;
-  background: var(--forum-bg-hover);
-  border-bottom: 1px solid var(--forum-border);
+  margin: 12px 14px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  border-left: 3px solid var(--forum-accent, #6366f1);
 }
 
-.forum-quote-preview__header {
+.forum-quote-box__header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--forum-muted);
+  justify-content: space-between;
   margin-bottom: 8px;
 }
 
-.forum-quote-preview__content {
-  color: var(--text-primary);
-  font-size: 14px;
-  padding-left: 12px;
-  border-left: 3px solid var(--forum-accent);
+.forum-quote-box__user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.forum-quote-preview__close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
+.forum-quote-box__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(99, 102, 241, 0.3);
+}
+
+.forum-quote-box__avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.forum-quote-box__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--forum-accent, #6366f1);
+}
+
+.forum-quote-box__close {
   padding: 4px;
   color: var(--forum-muted);
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
-.forum-quote-preview__close:hover {
-  background: var(--forum-bg-card);
-  color: var(--text-primary);
+.forum-quote-box__close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.forum-quote-box__content {
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+  line-height: 1.5;
+  padding-left: 32px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.forum-quote-box__indicator {
+  position: absolute;
+  bottom: -8px;
+  left: 24px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(99, 102, 241, 0.2);
+}
+
+.forum-quote-box__indicator::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: -7px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid rgba(99, 102, 241, 0.08);
 }
 
 .forum-reply-form__content {
-  padding: 24px;
+  padding: 14px;
 }
 
 .forum-reply-form__content .forum-heading {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 14px;
 }
 
 /* Editor Toolbar */
@@ -2113,8 +2347,8 @@ onUnmounted(() => {
 /* Editor */
 .forum-editor {
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .forum-editor__input {

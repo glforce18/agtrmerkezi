@@ -1,6 +1,6 @@
 <template>
-  <div :class="['forum-skeleton-wrapper', `forum-skeleton-wrapper--${type}`]" role="status" aria-label="Yukleniyor">
-    <span class="forum-sr-only">Icerik yukleniyor...</span>
+  <div :class="['forum-skeleton-wrapper', `forum-skeleton-wrapper--${type}`]" role="status" aria-label="Yükleniyor">
+    <span class="forum-sr-only">İçerik yükleniyor...</span>
 
     <!-- Topic Card Skeleton -->
     <div v-if="type === 'topic-card'" class="forum-skeleton-topic">

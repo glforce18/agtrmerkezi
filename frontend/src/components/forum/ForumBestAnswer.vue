@@ -52,7 +52,7 @@
         <div class="forum-best-answer-content__stats">
           <span class="forum-stat-pill">
             <HeartIcon class="w-4 h-4" />
-            {{ post.likes || 0 }} Begeni
+            {{ post.likes || 0 }} Beğeni
           </span>
           <span class="forum-meta">
             <ClockIcon class="w-3.5 h-3.5" />
@@ -126,9 +126,9 @@ const defaultAvatar = '/images/default-avatar.png'
 
 const markedByLabel = computed(() => {
   if (props.markedBy) {
-    return `${props.markedBy} tarafindan en iyi cevap secildi`
+    return `${props.markedBy} tarafindan en iyi cevap seçildi`
   }
-  return 'Konu sahibi tarafindan en iyi cevap secildi'
+  return 'Konu sahibi tarafindan en iyi cevap seçildi'
 })
 
 const contentText = computed(() => {

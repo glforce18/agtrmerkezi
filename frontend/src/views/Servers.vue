@@ -781,8 +781,7 @@ const toggleFavorite = async (serverId) => {
       body: JSON.stringify({ server_id: serverId })
     })
   } catch (e) {
-    // Backend sync failed, localStorage still has data
-    console.log('Favorite sync failed:', e)
+    // Backend sync failed, localStorage still has data - silent fail
   }
 }
 
@@ -807,11 +806,11 @@ const loadMore = () => {
 
 const getMapThumbnail = (mapName) => {
   const map = mapName || 'de_dust2'
-  return `/maps/${map}.jpg`
+  return `/static/maps/${map}.jpg`
 }
 
 const handleImageError = (e) => {
-  e.target.src = '/maps/default.jpg'
+  e.target.src = '/static/maps/default.jpg'
 }
 
 const getPlayerPercentage = (server) => {
@@ -946,8 +945,7 @@ onMounted(async () => {
         localStorage.setItem('serverFavorites', JSON.stringify([...favorites.value]))
       }
     } catch (e) {
-      // Backend sync failed, use localStorage data
-      console.log('Failed to fetch favorites from backend:', e)
+      // Backend sync failed, use localStorage data - silent fail
     }
   }
 

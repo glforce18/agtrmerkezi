@@ -47,391 +47,88 @@
       </div>
     </section>
 
-    <!-- Stats Section -->
-    <section class="stats-section py-4 relative" ref="statsSection">
+    <!-- Forum Showcase - Ana Forum Bölümü (60%/40% Grid) -->
+    <section class="forum-topics-showcase py-2 relative">
       <div class="container-main relative z-10">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div
-            v-for="(stat, index) in animatedStats"
-            :key="stat.label"
-            class="stat-card group"
-            :style="{ animationDelay: `${index * 0.1}s` }"
-          >
-            <div class="stat-icon-wrapper">
-              <component :is="stat.icon" :style="{ color: stat.color }" class="w-8 h-8" />
-              <div class="stat-icon-glow" :style="{ background: stat.color }"></div>
-            </div>
-            <div class="stat-value">
-              <span class="counter">{{ stat.animated }}</span>
-              <span class="suffix">{{ stat.suffix }}</span>
-            </div>
-            <div class="stat-label">{{ stat.label }}</div>
-            <div class="stat-bar">
-              <div class="stat-bar-fill" :style="{ background: stat.color, width: stat.barWidth }"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+        <!-- Forum Grid Layout - 60%/40% -->
+        <div class="forum-main-grid">
+          <!-- Sol Taraf: Forum İçeriği (60%) -->
+          <div class="forum-content-main">
+            <!-- Canlı Aktivite -->
+            <LiveActivityFeed :activities="liveActivities" />
 
-    <!-- Games Showcase Section -->
-    <section class="games-showcase py-12 relative">
-      <div class="container-main relative z-10">
-        <div class="section-header mb-8">
-          <div class="section-badge">
-            <Gamepad2 class="w-4 h-4" />
-            <span>Oyunlar</span>
-          </div>
-          <h2 class="section-title">
-            <Gamepad2 class="section-icon" />
-            Desteklenen Oyunlar
-          </h2>
-          <p class="section-subtitle">Klasik FPS oyunları için topluluk merkezi</p>
-        </div>
+            <!-- Trend Konular -->
+            <TrendingTopicsSection
+              :topics="trendingTopics"
+              :loading="loadingTrending"
+            />
 
-        <div class="games-grid">
-          <div
-            v-for="game in gamesList"
-            :key="game.slug"
-            class="game-showcase-card"
-            @click="navigateToGame(game.slug)"
-          >
-            <div class="game-banner-wrapper">
-              <img
-                v-if="gameAssets[game.slug]?.hero"
-                :src="gameAssets[game.slug].hero"
-                :alt="game.name"
-                class="game-banner-img"
-              />
-              <div v-else class="game-banner-placeholder" :style="{ background: game.gradient }">
-                <span class="game-placeholder-icon">{{ game.icon }}</span>
-              </div>
-              <div class="game-banner-overlay">
-                <img
-                  v-if="gameAssets[game.slug]?.logo"
-                  :src="gameAssets[game.slug].logo"
-                  :alt="game.name + ' logo'"
-                  class="game-logo-img"
-                />
-                <span v-else class="game-name-text">{{ game.name }}</span>
-              </div>
-            </div>
-            <div class="game-card-footer">
-              <span class="game-icon-small">{{ game.icon }}</span>
-              <span class="game-name-small">{{ game.name }}</span>
-              <ArrowRight class="w-4 h-4 game-arrow" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Forum Categories Showcase -->
-    <section class="forum-showcase py-16 relative">
-      <div class="section-glow section-glow-left"></div>
-      <div class="container-main relative z-10">
-        <div class="section-header mb-10">
-          <div class="section-badge">
-            <MessageSquare class="w-4 h-4" />
-            <span>Topluluk</span>
-          </div>
-          <h2 class="section-title">
-            <MessageSquare class="section-icon" />
-            Forum Kategorileri
-          </h2>
-          <p class="section-subtitle">Half-Life ve CS 1.6 hakkında tartışmalara katılın</p>
-        </div>
-
-        <div class="forum-categories-grid">
-          <!-- Half-Life Category -->
-          <router-link to="/forum/category/half-life-ag" class="forum-category-showcase hl-category">
-            <div class="category-icon-wrapper">
-              <span class="category-emoji">🔶</span>
-              <div class="category-icon-glow"></div>
-            </div>
-            <div class="category-content">
-              <h3 class="category-name">Half-Life / AG</h3>
-              <p class="category-desc">Adrenaline Gamer, modlar, haritalar ve taktikler</p>
-              <div class="category-tags">
-                <span class="category-tag">⚔️ Taktikler</span>
-                <span class="category-tag">🎮 Modlar</span>
-                <span class="category-tag">🗺️ Haritalar</span>
-              </div>
-            </div>
-            <div class="category-arrow">
-              <ArrowRight class="w-5 h-5" />
-            </div>
-            <div class="category-shine"></div>
-          </router-link>
-
-          <!-- CS 1.6 Category -->
-          <router-link to="/forum/category/cs16" class="forum-category-showcase cs-category">
-            <div class="category-icon-wrapper">
-              <span class="category-emoji">🎯</span>
-              <div class="category-icon-glow"></div>
-            </div>
-            <div class="category-content">
-              <h3 class="category-name">Counter-Strike 1.6</h3>
-              <p class="category-desc">Stratejiler, turnuvalar, klanlar ve daha fazlası</p>
-              <div class="category-tags">
-                <span class="category-tag">🎖️ Taktikler</span>
-                <span class="category-tag">🏆 Turnuvalar</span>
-                <span class="category-tag">🔧 Modlar</span>
-              </div>
-            </div>
-            <div class="category-arrow">
-              <ArrowRight class="w-5 h-5" />
-            </div>
-            <div class="category-shine"></div>
-          </router-link>
-
-          <!-- Community Category -->
-          <router-link to="/forum/category/tanisma" class="forum-category-showcase community-category">
-            <div class="category-icon-wrapper">
-              <span class="category-emoji">👋</span>
-              <div class="category-icon-glow"></div>
-            </div>
-            <div class="category-content">
-              <h3 class="category-name">Topluluk</h3>
-              <p class="category-desc">Tanışma, sohbet ve öneri köşesi</p>
-              <div class="category-tags">
-                <span class="category-tag">💬 Sohbet</span>
-                <span class="category-tag">💡 Öneriler</span>
-                <span class="category-tag">📚 Rehberler</span>
-              </div>
-            </div>
-            <div class="category-arrow">
-              <ArrowRight class="w-5 h-5" />
-            </div>
-            <div class="category-shine"></div>
-          </router-link>
-
-          <!-- Support Category -->
-          <router-link to="/forum/category/sunucu-destek" class="forum-category-showcase support-category">
-            <div class="category-icon-wrapper">
-              <span class="category-emoji">🛠️</span>
-              <div class="category-icon-glow"></div>
-            </div>
-            <div class="category-content">
-              <h3 class="category-name">Destek & Yardım</h3>
-              <p class="category-desc">Sunucu kurulumu ve teknik destek</p>
-              <div class="category-tags">
-                <span class="category-tag">🖥️ Kurulum</span>
-                <span class="category-tag">⚙️ Ayarlar</span>
-                <span class="category-tag">❓ SSS</span>
-              </div>
-            </div>
-            <div class="category-arrow">
-              <ArrowRight class="w-5 h-5" />
-            </div>
-            <div class="category-shine"></div>
-          </router-link>
-        </div>
-
-        <div class="text-center mt-10">
-          <router-link to="/forum">
-            <button class="btn-forum-cta muzzle-flash-hover">
-              <MessageSquare class="w-5 h-5" />
-              Tüm Kategorileri Gör
-              <ArrowRight class="w-5 h-5" />
-            </button>
-          </router-link>
-        </div>
-      </div>
-    </section>
-
-    <!-- Featured Servers Section - Sadece veri varsa göster -->
-    <section v-if="popularServers.length > 0" class="servers-section py-20 relative">
-      <div class="section-glow section-glow-right"></div>
-      <div class="container-main relative z-10">
-        <div class="section-header mb-12">
-          <div class="section-badge">
-            <Zap class="w-4 h-4" />
-            <span>Canlı</span>
-          </div>
-          <h2 class="section-title">
-            <Server class="section-icon" />
-            Popüler Sunucular
-          </h2>
-          <p class="section-subtitle">Topluluğumuzun en aktif sunucularında oyna</p>
-        </div>
-
-        <div class="servers-grid grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div
-            v-for="(server, index) in popularServers"
-            :key="server.id"
-            class="server-card"
-            :style="{ animationDelay: `${index * 0.1}s` }"
-          >
-            <div class="server-header">
-              <div class="server-status" :class="server.online ? 'status-online' : 'status-offline'">
-                <span class="status-dot"></span>
-                {{ server.online ? 'Çevrimiçi' : 'Çevrimdışı' }}
-              </div>
-              <n-tag :type="getModeType(server.mode)" size="small" round>
-                {{ server.mode }}
-              </n-tag>
+            <!-- Popüler ve Son Konular -->
+            <div class="forum-showcase-grid">
+              <PopularTopicsSection />
+              <RecentTopicsSection />
             </div>
 
-            <div class="server-info">
-              <div class="server-icon">
-                <Server class="w-6 h-6" />
-              </div>
-              <div class="server-details">
-                <h3 class="server-name">{{ server.name }}</h3>
-                <p class="server-map">
-                  <MapPin class="w-4 h-4" />
-                  {{ server.map }}
-                </p>
-              </div>
-            </div>
-
-            <div class="server-players">
-              <div class="players-bar">
-                <div
-                  class="players-fill"
-                  :style="{ width: `${(server.players / server.maxPlayers) * 100}%` }"
-                ></div>
-              </div>
-              <div class="players-info">
-                <Users class="w-4 h-4" />
-                <span class="players-count">{{ server.players }}</span>
-                <span class="players-divider">/</span>
-                <span class="players-max">{{ server.maxPlayers }}</span>
-              </div>
-            </div>
-
-            <div class="server-footer">
-              <div class="server-ping">
-                <Signal class="w-4 h-4" :class="getPingClass(server.ping)" />
-                <span>{{ server.ping }}ms</span>
-              </div>
-              <n-button size="small" type="primary" @click="connectServer(server)">
-                <template #icon><Play class="w-4 h-4" /></template>
-                Bağlan
-              </n-button>
-            </div>
-          </div>
-        </div>
-
-        <div class="text-center mt-10">
-          <router-link to="/servers">
-            <n-button size="large" class="view-all-btn">
-              Tüm Sunucuları Gör
-              <template #icon><ArrowRight class="w-5 h-5" /></template>
-            </n-button>
-          </router-link>
-        </div>
-      </div>
-    </section>
-
-    <!-- Forum & Leaderboard Split Section - Sadece veri varsa göster -->
-    <section v-if="latestTopics.length > 0 || topPlayers.length > 0" class="split-section py-20 relative">
-      <div class="container-main relative z-10">
-        <div class="grid lg:grid-cols-2 gap-8">
-          <!-- Latest Forum Topics -->
-          <div v-if="latestTopics.length > 0" class="forum-panel">
-            <div class="panel-header">
-              <div class="panel-title">
-                <MessageSquare class="w-6 h-6 text-orange-500" />
-                <h3>Son Forum Konuları</h3>
-              </div>
-              <router-link to="/forum" class="panel-link">
-                Tümünü Gör <ArrowRight class="w-4 h-4" />
+            <!-- Tüm Konuları Gör Butonu -->
+            <div class="forum-view-all">
+              <router-link to="/forum" class="forum-view-all-btn">
+                <MessageSquare class="w-5 h-5" />
+                Tüm Konuları Gör
+                <ArrowRight class="w-4 h-4" />
               </router-link>
             </div>
-
-            <div class="topics-list">
-              <div
-                v-for="(topic, index) in latestTopics"
-                :key="topic.id"
-                class="topic-item"
-                :style="{ animationDelay: `${index * 0.05}s` }"
-              >
-                <div class="topic-avatar">
-                  <div class="avatar-ring">
-                    {{ topic.author.substring(0, 1).toUpperCase() }}
-                  </div>
-                </div>
-                <div class="topic-content">
-                  <h4 class="topic-title">{{ topic.title }}</h4>
-                  <div class="topic-meta">
-                    <span class="meta-author">{{ topic.author }}</span>
-                    <span class="meta-dot"></span>
-                    <span class="meta-stats">
-                      <MessageCircle class="w-3 h-3" /> {{ topic.replies }}
-                    </span>
-                    <span class="meta-stats">
-                      <Eye class="w-3 h-3" /> {{ topic.views }}
-                    </span>
-                  </div>
-                </div>
-                <n-tag :type="getCategoryType(topic.category)" size="small">
-                  {{ topic.category }}
-                </n-tag>
-              </div>
-            </div>
           </div>
 
-          <!-- Top Players Leaderboard -->
-          <div v-if="topPlayers.length > 0" class="leaderboard-panel">
-            <div class="panel-header">
-              <div class="panel-title">
-                <Trophy class="w-6 h-6 text-yellow-500" />
-                <h3>En İyi Oyuncular</h3>
+          <!-- Sağ Sidebar (40%) -->
+          <aside class="forum-sidebar">
+            <!-- Hızlı Erişim -->
+            <div class="quick-access-card">
+              <h3 class="sidebar-card-title">
+                <Zap class="w-5 h-5" />
+                Hızlı Erişim
+              </h3>
+              <div class="quick-access-buttons">
+                <router-link to="/forum" class="quick-btn quick-btn-primary">
+                  <MessageSquare class="w-4 h-4" />
+                  Forum'a Git
+                </router-link>
+                <router-link
+                  :to="isLoggedIn ? '/forum/new-topic' : '/login'"
+                  class="quick-btn quick-btn-success"
+                >
+                  <MessageCircle class="w-4 h-4" />
+                  Yeni Konu Aç
+                </router-link>
               </div>
-              <router-link to="/leaderboard" class="panel-link">
-                Tüm Sıralama <ArrowRight class="w-4 h-4" />
-              </router-link>
             </div>
 
-            <div class="leaderboard-list">
-              <div
-                v-for="(player, index) in topPlayers"
-                :key="player.id"
-                class="player-item"
-                :class="`rank-${index + 1}`"
-              >
-                <div class="player-rank">
-                  <div class="rank-badge" :class="`rank-${index + 1}`">
-                    <Crown v-if="index === 0" class="w-4 h-4" />
-                    <Medal v-else-if="index === 1" class="w-4 h-4" />
-                    <Award v-else-if="index === 2" class="w-4 h-4" />
-                    <span v-else>{{ index + 1 }}</span>
-                  </div>
-                </div>
-                <div class="player-avatar">
-                  <n-avatar :size="48" round :style="{ background: getPlayerGradient(index) }">
-                    {{ player.name.substring(0, 2).toUpperCase() }}
-                  </n-avatar>
-                  <div class="player-level">{{ player.level }}</div>
-                </div>
-                <div class="player-info">
-                  <h4 class="player-name">{{ player.name }}</h4>
-                  <p class="player-title">{{ player.title }}</p>
-                </div>
-                <div class="player-stats">
-                  <div class="stat-item">
-                    <span class="stat-value-small text-green-500">{{ formatNumber(player.kills) }}</span>
-                    <span class="stat-label-small">Kills</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-value-small text-orange-500">{{ player.kd }}</span>
-                    <span class="stat-label-small">K/D</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            <!-- Online Kullanıcılar -->
+            <OnlineUsersWidget
+              :users="onlineUsers"
+              :total="forumStats.onlineUsers"
+            />
+
+            <!-- Canlı Sunucular -->
+            <CompactServersWidget
+              :servers="sidebarServers"
+              :loading="loadingSidebarServers"
+            />
+
+            <!-- Kategoriler -->
+            <QuickCategoriesWidget
+              :categories="forumCategories"
+              :maxDisplay="6"
+            />
+          </aside>
         </div>
       </div>
     </section>
 
     <!-- Active Tournaments Section - Sadece aktif etkinlik varsa göster -->
-    <section v-if="activeEvents.length > 0" class="tournaments-section py-20 relative">
+    <section v-if="activeEvents.length > 0" class="tournaments-section py-4 relative">
       <div class="section-glow section-glow-left"></div>
       <div class="container-main relative z-10">
-        <div class="section-header mb-12 text-center">
+        <div class="section-header mb-3 text-center">
           <div class="section-badge mx-auto">
             <Flame class="w-4 h-4" />
             <span>Aktif Etkinlikler</span>
@@ -443,7 +140,7 @@
           <p class="section-subtitle">Heyecan verici turnuvalara katıl ve ödülleri kazan</p>
         </div>
 
-        <div class="tournaments-grid grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div class="tournaments-grid grid md:grid-cols-2 gap-4 max-w-5xl mx-auto">
           <div
             v-for="(event, index) in activeEvents"
             :key="event.id"
@@ -472,7 +169,7 @@
               <div class="tournament-prize">
                 <Crown class="w-5 h-5" />
                 <span class="prize-amount">{{ event.prize }}</span>
-                <span class="prize-label">Odul</span>
+                <span class="prize-label">Ödül</span>
               </div>
 
               <div class="tournament-progress">
@@ -496,10 +193,10 @@
                       <Lock v-if="!isLoggedIn" class="w-4 h-4" />
                       <Zap v-else class="w-4 h-4" />
                     </template>
-                    {{ isLoggedIn ? 'Hemen Katil' : 'Giris Yap' }}
+                    {{ isLoggedIn ? 'Hemen Katil' : 'Giriş Yap' }}
                   </n-button>
                 </template>
-                Turnuvaya katilmak icin giris yapin
+                Turnuvaya katilmak icin giriş yapin
               </n-tooltip>
             </div>
 
@@ -509,85 +206,17 @@
       </div>
     </section>
 
-    <!-- Activity Feed Section -->
-    <section class="activity-section py-16 relative">
-      <div class="container-main relative z-10">
-        <div class="grid lg:grid-cols-3 gap-8">
-          <!-- Main Activity Feed -->
-          <div class="lg:col-span-2">
-            <ActivityFeed
-              title="Topluluk Aktiviteleri"
-              :compact="false"
-              :limit="8"
-              :show-filters="true"
-            />
-          </div>
-
-          <!-- Sidebar - Clans & Quick Links -->
-          <div class="space-y-6">
-            <!-- Recruiting Clans -->
-            <div class="sidebar-card">
-              <div class="sidebar-header">
-                <Shield class="w-5 h-5 text-orange-500" />
-                <h3>Üye Alan Klanlar</h3>
-              </div>
-              <div class="clans-mini-list">
-                <div v-for="clan in recruitingClans" :key="clan.id" class="clan-mini-item">
-                  <div class="clan-mini-logo">
-                    <span>{{ clan.tag?.charAt(0) || 'K' }}</span>
-                  </div>
-                  <div class="clan-mini-info">
-                    <span class="clan-mini-name">[{{ clan.tag }}] {{ clan.name }}</span>
-                    <span class="clan-mini-members">{{ clan.member_count }} üye</span>
-                  </div>
-                </div>
-                <div v-if="recruitingClans.length === 0" class="empty-mini">
-                  Üye alan klan yok
-                </div>
-              </div>
-              <router-link to="/clans" class="sidebar-link">
-                Tüm Klanları Gör
-                <ArrowRight class="w-4 h-4" />
-              </router-link>
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="sidebar-card">
-              <div class="sidebar-header">
-                <Activity class="w-5 h-5 text-green-500" />
-                <h3>Canlı İstatistikler</h3>
-              </div>
-              <div class="quick-stats">
-                <div class="quick-stat">
-                  <span class="stat-num text-green-500">{{ onlineCount }}</span>
-                  <span class="stat-txt">Çevrimiçi</span>
-                </div>
-                <div class="quick-stat">
-                  <span class="stat-num text-blue-500">{{ activeServers }}</span>
-                  <span class="stat-txt">Aktif Sunucu</span>
-                </div>
-                <div class="quick-stat">
-                  <span class="stat-num text-orange-500">{{ todayTopics }}</span>
-                  <span class="stat-txt">Bugün Konu</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Final CTA Section -->
-    <section class="cta-section py-24 relative">
+    <section class="cta-section py-6 relative">
       <div class="cta-background">
         <div class="cta-gradient"></div>
         <div class="cta-pattern"></div>
       </div>
       <div class="container-main relative z-10 text-center">
-        <h2 class="cta-title mb-6">
-          Toplulugumuza <span class="text-gradient">Katıl</span>
+        <h2 class="cta-title mb-3">
+          Topluluğumuza <span class="text-gradient">Katıl</span>
         </h2>
-        <p class="cta-description mb-10 max-w-2xl mx-auto">
+        <p class="cta-description mb-4 max-w-2xl mx-auto">
           Binlerce CS 1.6 oyuncusuyla tanışmayı, turnuvalara katılmayi ve
           en iyi sunucularda oynamayı mı bekliyorsun? Hemen ücretsiz kayıt ol!
         </p>
@@ -607,7 +236,7 @@
         </div>
 
         <!-- Social Proof -->
-        <div class="social-proof mt-16">
+        <div class="social-proof mt-6">
           <div class="avatars-stack">
             <div v-for="i in 5" :key="i" class="stack-avatar" :style="{ zIndex: 5 - i }">
               <n-avatar :size="40" round :style="{ background: `hsl(${i * 60}, 70%, 50%)` }">
@@ -635,6 +264,14 @@ import { useRequireSteam } from '@/composables/useRequireSteam'
 import { useGameAssets } from '@/composables/useGameAssets'
 import GameIcon from '@/components/game/GameIcon.vue'
 import ActivityFeed from '@/components/social/ActivityFeed.vue'
+import PopularTopicsSection from '@/components/forum/PopularTopicsSection.vue'
+import RecentTopicsSection from '@/components/forum/RecentTopicsSection.vue'
+import LiveActivityFeed from '@/components/forum/LiveActivityFeed.vue'
+import TrendingTopicsSection from '@/components/forum/TrendingTopicsSection.vue'
+import OnlineUsersWidget from '@/components/sidebar/OnlineUsersWidget.vue'
+import CompactServersWidget from '@/components/sidebar/CompactServersWidget.vue'
+import QuickCategoriesWidget from '@/components/sidebar/QuickCategoriesWidget.vue'
+import '@/assets/styles/ui-enhancements.css'
 import {
   Server,
   MessageSquare,
@@ -757,17 +394,34 @@ const topPlayers = ref([])
 const popularServers = ref([])
 const activeEvents = ref([])
 
+// Forum-focused data for sidebar
+const liveActivities = ref([])
+const trendingTopics = ref([])
+const onlineUsers = ref([])
+const sidebarServers = ref([])
+const forumCategories = ref([])
+const forumStats = ref({
+  onlineUsers: 0,
+  totalTopics: 0,
+  topicsToday: 0,
+  totalReplies: 0
+})
+
 // Loading states
 const loadingTopics = ref(true)
 const loadingPlayers = ref(true)
 const loadingServers = ref(true)
 const loadingEvents = ref(true)
+const loadingLiveActivity = ref(true)
+const loadingTrending = ref(true)
+const loadingOnlineUsers = ref(true)
+const loadingSidebarServers = ref(true)
 
 // Fetch functions
 const fetchLatestTopics = async () => {
   loadingTopics.value = true
   try {
-    const response = await fetch('/api/forum/topics?limit=5&sort=latest')
+    const response = await fetch('/api/forum/topics?limit=5&sort=newest')
     if (response.ok) {
       const data = await response.json()
       const topics = Array.isArray(data?.topics) ? data.topics : []
@@ -872,6 +526,100 @@ const fetchLiveStats = async () => {
   }
 }
 
+// ============== FORUM ODAKLI FETCH FONKSİYONLARI ==============
+
+const fetchForumStats = async () => {
+  try {
+    const response = await fetch('/api/forum/stats')
+    if (response.ok) {
+      const data = await response.json()
+      forumStats.value = {
+        onlineUsers: data.onlineUsers || 0,
+        totalTopics: data.totalTopics || 0,
+        topicsToday: data.topicsToday || 0,
+        totalReplies: data.totalReplies || 0
+      }
+    }
+  } catch (error) {
+    console.debug('Forum stats not available:', error)
+  }
+}
+
+const fetchLiveActivity = async () => {
+  loadingLiveActivity.value = true
+  try {
+    const response = await fetch('/api/forum/live-activity?limit=10')
+    if (response.ok) {
+      const data = await response.json()
+      liveActivities.value = data.activities || []
+    }
+  } catch (error) {
+    console.debug('Live activity not available:', error)
+  } finally {
+    loadingLiveActivity.value = false
+  }
+}
+
+const fetchTrendingTopics = async () => {
+  loadingTrending.value = true
+  try {
+    const response = await fetch('/api/forum/trending?days=7&limit=5')
+    if (response.ok) {
+      const data = await response.json()
+      trendingTopics.value = data.topics || []
+    }
+  } catch (error) {
+    console.debug('Trending topics not available:', error)
+  } finally {
+    loadingTrending.value = false
+  }
+}
+
+const fetchOnlineUsers = async () => {
+  loadingOnlineUsers.value = true
+  try {
+    const response = await fetch('/api/forum/online-users?limit=12')
+    if (response.ok) {
+      const data = await response.json()
+      onlineUsers.value = data.users || []
+      if (data.total) {
+        forumStats.value.onlineUsers = data.total
+      }
+    }
+  } catch (error) {
+    console.debug('Online users not available:', error)
+  } finally {
+    loadingOnlineUsers.value = false
+  }
+}
+
+const fetchSidebarServers = async () => {
+  loadingSidebarServers.value = true
+  try {
+    const response = await fetch('/api/servers/live?limit=3')
+    if (response.ok) {
+      const data = await response.json()
+      sidebarServers.value = (data.servers || []).slice(0, 3)
+    }
+  } catch (error) {
+    console.debug('Servers not available:', error)
+  } finally {
+    loadingSidebarServers.value = false
+  }
+}
+
+const fetchForumCategories = async () => {
+  try {
+    const response = await fetch('/api/forum/categories')
+    if (response.ok) {
+      const data = await response.json()
+      forumCategories.value = data.categories || []
+    }
+  } catch (error) {
+    console.debug('Categories not available:', error)
+  }
+}
+
 const getRankTitle = (points) => {
   if (points >= 10000) return 'Legendary Player'
   if (points >= 5000) return 'Elite Player'
@@ -952,19 +700,16 @@ const joinTournament = (event) => {
 
 // Game assets loading
 const loadGameAssets = async () => {
-  console.log('Loading game assets...')
   for (const game of gamesList.value) {
     try {
       const assets = await getGameAssets(game.slug, null, 10)
-      console.log(`Assets for ${game.slug}:`, assets)
       const assetMap = {}
       assets.forEach(asset => {
         assetMap[asset.asset_type] = asset.file_path
       })
       gameAssets.value = { ...gameAssets.value, [game.slug]: assetMap }
-      console.log(`Game assets updated:`, gameAssets.value)
     } catch (e) {
-      console.error(`Failed to load assets for ${game.slug}:`, e)
+      // Asset loading error - silently fail
     }
   }
 }
@@ -1044,6 +789,14 @@ onMounted(() => {
   fetchTopPlayers()
   fetchPopularServers()
   fetchActiveEvents()
+
+  // Fetch forum-focused data for sidebar
+  fetchForumStats()
+  fetchLiveActivity()
+  fetchTrendingTopics()
+  fetchOnlineUsers()
+  fetchSidebarServers()
+  fetchForumCategories()
 
   // Load game assets (banners, logos)
   loadGameAssets()
@@ -3095,5 +2848,182 @@ onUnmounted(() => {
   .game-name-small {
     font-size: 12px;
   }
+}
+
+/* ===== Forum Topics Showcase Section ===== */
+.forum-topics-showcase {
+  background: rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.forum-showcase-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Override section margins for nested components */
+.forum-showcase-grid :deep(.popular-topics-section),
+.forum-showcase-grid :deep(.recent-topics-section) {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .forum-showcase-grid {
+    gap: 12px;
+  }
+}
+
+/* ============== FORUM MAIN GRID - 60%/40% LAYOUT ============== */
+
+.forum-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .forum-main-grid {
+    grid-template-columns: 1fr 300px;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .forum-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .forum-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .forum-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Forum Content Main */
+.forum-content-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Forum View All Button */
+.forum-view-all {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.forum-view-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+}
+
+.forum-view-all-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+}
+
+.forum-view-all-btn:active {
+  transform: translateY(0);
+}
+
+/* Forum Sidebar */
+.forum-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 80px;
+}
+
+/* Quick Access Card */
+.quick-access-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+  color: #f8fafc;
+}
+
+.sidebar-card-title svg {
+  color: #f97316;
+  width: 16px;
+  height: 16px;
+}
+
+.quick-access-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.quick-btn-primary {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+}
+
+.quick-btn-primary:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+}
+
+.quick-btn-success {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+}
+
+.quick-btn-success:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+}
+
+/* Sidebar widgets override */
+.forum-sidebar :deep(.online-users-widget),
+.forum-sidebar :deep(.compact-servers-widget),
+.forum-sidebar :deep(.quick-categories-widget) {
+  margin: 0;
 }
 </style>

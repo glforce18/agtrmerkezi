@@ -51,10 +51,10 @@
                 >
                   <Lock v-if="!isLoggedIn" class="w-4 h-4 mr-1" />
                   <Plus v-else class="w-4 h-4 mr-1" />
-                  {{ isLoggedIn ? 'Sunucu Ekle' : 'Giris Yap' }}
+                  {{ isLoggedIn ? 'Sunucu Ekle' : 'Giriş Yap' }}
                 </n-button>
               </template>
-              Sunucu eklemek icin giris yapin
+              Sunucu eklemek icin giriş yapin
             </n-tooltip>
             <n-button
               quaternary
@@ -259,7 +259,7 @@
               @click.stop="connectToServer(server)"
             >
               <Gamepad2 class="w-4 h-4 mr-1" />
-              Baglan
+              Bağlan
             </n-button>
             <n-button
               size="small"
@@ -344,7 +344,7 @@
         <div class="modal-actions">
           <n-button type="primary" size="large" @click="connectToServer(selectedServer)" class="muzzle-flash-hover">
             <Gamepad2 class="w-5 h-5 mr-2" />
-            Sunucuya Baglan
+            Sunucuya Bağlan
           </n-button>
           <n-button @click="copyAddress(selectedServer.address)">
             <Copy class="w-4 h-4 mr-2" />
@@ -364,7 +364,7 @@
     >
       <div class="submit-form">
         <p class="form-desc mb-4">
-          Kendi sunucunuzu topluluk listesine ekleyin. Sunucunuzun online oldugunu ve Steam hesabinizin bagli oldugunu kontrol edin.
+          Kendi sunucunuzu topluluk listesine ekleyin. Sunucunuzun online oldugunu ve Steam hesabinizin bağlı oldugunu kontrol edin.
         </p>
 
         <n-form ref="submitFormRef" :model="submitForm" :rules="submitRules">
@@ -397,11 +397,11 @@
             />
           </n-form-item>
 
-          <n-form-item label="Aciklama (Opsiyonel)" path="description">
+          <n-form-item label="Açıklama (Opsiyonel)" path="description">
             <n-input
               v-model:value="submitForm.description"
               type="textarea"
-              placeholder="Sunucu hakkinda kisa aciklama..."
+              placeholder="Sunucu hakkinda kisa açıklama..."
               :disabled="submitting"
               :maxlength="500"
               show-count
@@ -536,14 +536,14 @@ const filters = ref({
 
 // Game types config
 const gameTypes = [
-  { value: null, label: 'Tumu', icon: 'cs-crosshair', color: '#f97316' },
+  { value: null, label: 'Tümu', icon: 'cs-crosshair', color: '#f97316' },
   { value: 'ag', label: 'AG', icon: 'ag', color: '#f97316' },
   { value: 'cs16', label: 'CS 1.6', icon: 'cs16', color: '#22c55e' },
   { value: 'hldm', label: 'HLDM', icon: 'hldm', color: '#8b5cf6' }
 ]
 
 const countryOptions = [
-  { label: 'Turkiye', value: 'TR' },
+  { label: 'Türkiye', value: 'TR' },
   { label: 'Almanya', value: 'DE' },
   { label: 'ABD', value: 'US' },
   { label: 'Rusya', value: 'RU' }
@@ -645,7 +645,7 @@ const refreshData = async () => {
   if (isLoggedIn.value) {
     await fetchMyServers()
   }
-  message.success('Veriler guncellendi')
+  message.success('Veriler güncellendi')
 }
 
 const showServerDetail = async (server) => {
@@ -669,7 +669,7 @@ const connectToServer = (server) => {
   window.location.href = `${protocol}${server.address}`
 
   gameEffects.showAchievement({
-    title: 'Sunucuya Baglaniliyor',
+    title: 'Sunucuya Bağlaniliyor',
     description: server.name,
     gameIcon: getGameIcon(server.game_type),
     color: getGameColor(server.game_type)
@@ -739,7 +739,7 @@ const submitServer = async () => {
       description: submitForm.value.description || null
     })
 
-    message.success(response.message || 'Sunucu basariyla eklendi!')
+    message.success(response.message || 'Sunucu başarıyla eklendi!')
     showSubmitModal.value = false
 
     // Refresh data
@@ -753,7 +753,7 @@ const submitServer = async () => {
     })
   } catch (error) {
     console.error('Failed to submit server:', error)
-    message.error(error.message || 'Sunucu eklenirken bir hata olustu')
+    message.error(error.message || 'Sunucu eklenirken bir hata oluştu')
   } finally {
     submitting.value = false
   }
@@ -776,7 +776,7 @@ const deleteServer = async () => {
     await fetchMyServers()
   } catch (error) {
     console.error('Failed to delete server:', error)
-    message.error(error.message || 'Sunucu silinirken bir hata olustu')
+    message.error(error.message || 'Sunucu silinirken bir hata oluştu')
   }
 }
 

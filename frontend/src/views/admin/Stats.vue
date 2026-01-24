@@ -5,7 +5,7 @@
       <header class="page-header">
         <div class="header-left">
           <h1>Platform Istatistikleri</h1>
-          <p>Kullanici ve Steam baglanti istatistikleri</p>
+          <p>Kullanıcı ve Steam bağlanti istatistikleri</p>
         </div>
         <div class="header-right">
           <n-button type="primary" @click="refreshAll" :loading="loading">
@@ -27,7 +27,7 @@
                 <Users :size="24" />
               </div>
               <div class="stat-value">{{ formatNumber(overview.total_users) }}</div>
-              <div class="stat-label">Toplam Kullanici</div>
+              <div class="stat-label">Toplam Kullanıcı</div>
               <div class="stat-meta">
                 <span class="meta-item">
                   <TrendingUp :size="14" />
@@ -48,7 +48,7 @@
                 </svg>
               </div>
               <div class="stat-value">{{ formatNumber(overview.steam_linked) }}</div>
-              <div class="stat-label">Steam Bagli</div>
+              <div class="stat-label">Steam Bağlı</div>
               <div class="stat-percent">%{{ overview.steam_percentage || 0 }}</div>
             </div>
           </div>
@@ -62,7 +62,7 @@
                 <MailCheck :size="24" />
               </div>
               <div class="stat-value">{{ formatNumber(overview.email_verified) }}</div>
-              <div class="stat-label">Email Dogrulanmis</div>
+              <div class="stat-label">Email Doğrulanmis</div>
               <div class="stat-percent">%{{ overview.email_verified_percentage || 0 }}</div>
             </div>
           </div>
@@ -89,7 +89,7 @@
           <!-- Registration Chart -->
           <div class="chart-card">
             <div class="chart-header">
-              <h3><TrendingUp :size="18" /> Kayit Grafigi</h3>
+              <h3><TrendingUp :size="18" /> Kayıt Grafigi</h3>
               <n-select
                 v-model:value="selectedDays"
                 :options="dayOptions"
@@ -119,7 +119,7 @@
                     v-for="(item, index) in registrationData.daily_registrations.slice(-14)"
                     :key="index"
                     class="chart-bar-group"
-                    :title="`${item.date}: ${item.count} kayit`"
+                    :title="`${item.date}: ${item.count} kayıt`"
                   >
                     <div class="bar-wrapper">
                       <div
@@ -164,14 +164,14 @@
                 <div class="pie-legend-item">
                   <div class="pie-legend-color steam"></div>
                   <div class="pie-legend-info">
-                    <span class="pie-legend-label">Steam Bagli</span>
+                    <span class="pie-legend-label">Steam Bağlı</span>
                     <span class="pie-legend-value">{{ formatNumber(steamBreakdown.steam_linked) }}</span>
                   </div>
                 </div>
                 <div class="pie-legend-item">
                   <div class="pie-legend-color non-steam"></div>
                   <div class="pie-legend-info">
-                    <span class="pie-legend-label">Normal Kayit</span>
+                    <span class="pie-legend-label">Normal Kayıt</span>
                     <span class="pie-legend-value">{{ formatNumber(steamBreakdown.non_steam_users) }}</span>
                   </div>
                 </div>
@@ -200,7 +200,7 @@
                 </div>
                 <div class="activity-info">
                   <span class="activity-value">{{ formatNumber(activityData.user_activity?.active_users) }}</span>
-                  <span class="activity-label">Aktif Kullanici</span>
+                  <span class="activity-label">Aktif Kullanıcı</span>
                 </div>
                 <div class="activity-breakdown">
                   <div class="breakdown-item">
@@ -220,7 +220,7 @@
                 </div>
                 <div class="activity-info">
                   <span class="activity-value">{{ formatNumber(activityData.user_activity?.total_logins) }}</span>
-                  <span class="activity-label">Toplam Giris</span>
+                  <span class="activity-label">Toplam Giriş</span>
                 </div>
               </div>
 
@@ -268,27 +268,27 @@
       <section class="engagement-section">
         <div class="chart-card full-width">
           <div class="chart-header">
-            <h3><Target :size="18" /> Steam Kullanici Analizi</h3>
+            <h3><Target :size="18" /> Steam Kullanıcı Analizi</h3>
           </div>
           <div class="engagement-grid">
             <div class="engagement-stat">
               <div class="engagement-circle paying">
                 <span class="engagement-value">{{ steamBreakdown.steam_engagement?.paying_users || 0 }}</span>
               </div>
-              <span class="engagement-label">Odeme Yapan Steam Kullanicisi</span>
+              <span class="engagement-label">Ödeme Yapan Steam Kullanıcısi</span>
               <span class="engagement-percent">%{{ steamBreakdown.steam_engagement?.paying_percentage || 0 }}</span>
             </div>
             <div class="engagement-stat">
               <div class="engagement-circle servers">
                 <span class="engagement-value">{{ steamBreakdown.steam_engagement?.server_owners || 0 }}</span>
               </div>
-              <span class="engagement-label">Sunucu Sahibi Steam Kullanicisi</span>
+              <span class="engagement-label">Sunucu Sahibi Steam Kullanıcısi</span>
             </div>
             <div class="engagement-stat">
               <div class="engagement-circle verified">
                 <span class="engagement-value">{{ steamBreakdown.steam_with_verified_email || 0 }}</span>
               </div>
-              <span class="engagement-label">Email Dogrulamis Steam Kullanicisi</span>
+              <span class="engagement-label">Email Doğrulamis Steam Kullanıcısi</span>
             </div>
           </div>
         </div>
@@ -298,11 +298,11 @@
       <section class="recent-users-section">
         <div class="chart-card full-width">
           <div class="chart-header">
-            <h3><UserPlus :size="18" /> Son Kayit Olan Kullanicilar</h3>
+            <h3><UserPlus :size="18" /> Son Kayıt Olan Kullanıcılar</h3>
             <div class="header-actions">
               <n-switch v-model:value="steamOnlyFilter" size="small">
                 <template #checked>Steam</template>
-                <template #unchecked>Tumu</template>
+                <template #unchecked>Tümu</template>
               </n-switch>
               <n-button quaternary size="small" @click="fetchRecentUsers">
                 <RefreshCw :size="14" />
@@ -415,7 +415,7 @@ const activityDayOptions = [
 // Table columns
 const userColumns = [
   {
-    title: 'Kullanici',
+    title: 'Kullanıcı',
     key: 'username',
     render(row) {
       return h('div', { class: 'user-cell' }, [
@@ -482,7 +482,7 @@ const userColumns = [
     }
   },
   {
-    title: 'Kayit Tarihi',
+    title: 'Kayıt Tarihi',
     key: 'created_at',
     width: 150,
     render(row) {
@@ -494,7 +494,7 @@ const userColumns = [
 
 const spenderColumns = [
   {
-    title: 'Sira',
+    title: 'Sıra',
     key: 'rank',
     width: 60,
     render(row, index) {
@@ -506,7 +506,7 @@ const spenderColumns = [
     }
   },
   {
-    title: 'Kullanici',
+    title: 'Kullanıcı',
     key: 'username',
     render(row) {
       return h('div', { class: 'user-cell' }, [
@@ -531,7 +531,7 @@ const spenderColumns = [
     }
   },
   {
-    title: 'Islem Sayisi',
+    title: 'İşlem Sayisi',
     key: 'payment_count',
     width: 120,
     render(row) {
@@ -645,7 +645,7 @@ const refreshAll = async () => {
     fetchRecentUsers(),
     fetchTopSpenders()
   ])
-  message.success('Istatistikler guncellendi')
+  message.success('Istatistikler güncellendi')
   loading.value = false
 }
 

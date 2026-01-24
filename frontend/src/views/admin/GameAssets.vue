@@ -7,9 +7,9 @@
           <div class="header-title-group">
             <h1 class="header-title">
               <Gamepad2 :size="28" />
-              Oyun Gorselleri
+              Oyun Görselleri
             </h1>
-            <p class="header-subtitle">CS 1.6 ve Half-Life oyun gorsellerini yonetin</p>
+            <p class="header-subtitle">CS 1.6 ve Half-Life oyun görsellerini yonetin</p>
           </div>
           <div class="header-actions">
             <button class="btn-secondary" @click="refreshAssets" :disabled="loading">
@@ -32,7 +32,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ totalAssets }}</span>
-            <span class="stat-label">Toplam Gorsel</span>
+            <span class="stat-label">Toplam Görsel</span>
           </div>
         </div>
         <div class="stat-card">
@@ -50,7 +50,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ loadedAssets }}</span>
-            <span class="stat-label">Yuklenen</span>
+            <span class="stat-label">Yüklenen</span>
           </div>
         </div>
         <div class="stat-card">
@@ -88,16 +88,16 @@
       <div class="assets-section">
         <div v-if="loading" class="loading-state">
           <div class="loading-spinner" />
-          <span>Gorsel yukleniyor...</span>
+          <span>Görsel yükleniyor...</span>
         </div>
 
         <div v-else-if="filteredAssets.length === 0" class="empty-state">
           <Package :size="64" />
-          <h3>Gorsel Bulunamadi</h3>
-          <p>Bu oyun icin henuz gorsel eklenmemis.</p>
+          <h3>Görsel Bulunamadi</h3>
+          <p>Bu oyun icin henuz görsel eklenmemis.</p>
           <button class="btn-primary" @click="showScrapeModal = true">
             <Download :size="18" />
-            <span>Gorsel Cek</span>
+            <span>Görsel Cek</span>
           </button>
         </div>
 
@@ -129,7 +129,7 @@
               </div>
               <div v-if="asset.loadStatus === 'error'" class="asset-error">
                 <AlertCircle :size="32" />
-                <span>Yuklenemedi</span>
+                <span>Yüklenemedi</span>
               </div>
             </div>
             <div class="asset-info">
@@ -151,7 +151,7 @@
             <Download :size="24" class="text-orange-500" />
             <div>
               <h2>Asset Cek</h2>
-              <p>SteamGridDB'den oyun gorsellerini cek</p>
+              <p>SteamGridDB'den oyun görsellerini cek</p>
             </div>
             <button class="modal-close" @click="showScrapeModal = false">
               <X :size="20" />
@@ -160,7 +160,7 @@
 
           <div class="modal-body">
             <div class="form-group">
-              <label class="form-label">Oyun Sec</label>
+              <label class="form-label">Oyun Seç</label>
               <div class="game-select-grid">
                 <button
                   v-for="game in games"
@@ -213,7 +213,7 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn-secondary" @click="showScrapeModal = false">Iptal</button>
+            <button class="btn-secondary" @click="showScrapeModal = false">İptal</button>
             <button
               class="btn-primary"
               :disabled="scrapeProgress.active || scrapeForm.games.length === 0"
@@ -376,7 +376,7 @@ const refreshAssets = async () => {
     }
   } catch (error) {
     console.error('Failed to fetch assets:', error)
-    window.$message?.error('Gorsel yuklenemedi')
+    window.$message?.error('Görsel yüklenemedi')
   } finally {
     loading.value = false
   }
@@ -393,7 +393,7 @@ const toggleGameSelection = (slug) => {
 
 const startScrape = async () => {
   if (scrapeForm.games.length === 0) {
-    window.$message?.warning('Lutfen en az bir oyun secin')
+    window.$message?.warning('Lutfen en az bir oyun seçin')
     return
   }
 
@@ -403,7 +403,7 @@ const startScrape = async () => {
 
   try {
     for (const gameSlug of scrapeForm.games) {
-      scrapeProgress.message = `${gameSlug} gorselleri cekiliyor...`
+      scrapeProgress.message = `${gameSlug} görselleri cekiliyor...`
       scrapeProgress.current++
 
       try {
@@ -415,12 +415,12 @@ const startScrape = async () => {
       }
     }
 
-    window.$message?.success('Gorsel cekme islemi tamamlandi')
+    window.$message?.success('Görsel cekme işlemi tamamlandı')
     showScrapeModal.value = false
     refreshAssets()
   } catch (error) {
     console.error('Scrape failed:', error)
-    window.$message?.error('Gorsel cekme islemi basarisiz')
+    window.$message?.error('Görsel cekme işlemi başarısız')
   } finally {
     scrapeProgress.active = false
   }
@@ -441,15 +441,15 @@ const copyAssetUrl = async (asset) => {
 }
 
 const deleteAsset = async (asset) => {
-  if (!confirm(`"${asset.name}" gorselini silmek istediginize emin misiniz?`)) return
+  if (!confirm(`"${asset.name}" görselini silmek istediginize emin misiniz?`)) return
 
   try {
     await api.delete(`/game-assets/${asset.id}`)
     assets.value = assets.value.filter(a => a.id !== asset.id)
-    window.$message?.success('Gorsel silindi')
+    window.$message?.success('Görsel silindi')
   } catch (error) {
     console.error('Delete failed:', error)
-    window.$message?.error('Gorsel silinemedi')
+    window.$message?.error('Görsel silinemedi')
   }
 }
 

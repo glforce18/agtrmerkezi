@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 
 class CSRFMiddleware(BaseHTTPMiddleware):
     """CSRF koruma middleware'i"""
-    
+
     SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
     CSRF_COOKIE_NAME = "csrf_token"
     CSRF_HEADER_NAME = "X-CSRF-Token"
     CSRF_FORM_FIELD = "csrf_token"
-    
+
     def __init__(self, app, exempt_paths: list = None):
         super().__init__(app)
         # SECURITY NOTE: Media upload paths exempt from CSRF but protected by auth middleware
@@ -42,51 +42,55 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/api/clans",  # Clans API - protected by JWT auth
             "/api/leaderboard",  # Leaderboard API - protected by JWT auth
             "/api/errors",  # Error reporting
-            "/ws"  # WebSocket connections
+            "/ws",  # WebSocket connections
         ]
-    
+
     async def dispatch(self, request: Request, call_next):
         # Safe metodlar için token kontrolü yok
         if request.method in self.SAFE_METHODS:
             response = await call_next(request)
             return await self._set_csrf_cookie(request, response)
-        
+
         # Exempt paths kontrolü
         if any(request.url.path.startswith(path) for path in self.exempt_paths):
             return await call_next(request)
-        
+
         # API dışı istekler için tam koruma
         if not request.url.path.startswith("/api/"):
             response = await call_next(request)
             return await self._set_csrf_cookie(request, response)
-        
+
         # CSRF token doğrulama
         cookie_token = request.cookies.get(self.CSRF_COOKIE_NAME)
-        
+
         # Header'dan veya form'dan token al
         header_token = request.headers.get(self.CSRF_HEADER_NAME)
-        
+
         if not header_token:
             # Form verisinden kontrol et (multipart için)
             content_type = request.headers.get("content-type", "")
-            if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+            if (
+                "application/x-www-form-urlencoded" in content_type
+                or "multipart/form-data" in content_type
+            ):
                 try:
                     form = await request.form()
                     header_token = form.get(self.CSRF_FORM_FIELD)
                 except Exception as e:
                     logger.warning(f"CSRF form parse error: {e}")
-        
+
         # Token kontrolü
         if not cookie_token or not header_token or cookie_token != header_token:
-            logger.warning(f"CSRF token hatasi: {request.url.path} - IP: {request.client.host if request.client else 'unknown'}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="CSRF token geçersiz veya eksik"
+            logger.warning(
+                f"CSRF token hatasi: {request.url.path} - IP: {request.client.host if request.client else 'unknown'}"
             )
-        
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token geçersiz veya eksik"
+            )
+
         response = await call_next(request)
         return await self._set_csrf_cookie(request, response)
-    
+
     async def _set_csrf_cookie(self, request: Request, response: Response) -> Response:
         """CSRF token cookie'si oluştur veya yenile"""
         if not request.cookies.get(self.CSRF_COOKIE_NAME):
@@ -97,7 +101,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 httponly=False,  # JavaScript'ten okunabilmeli
                 samesite="strict",
                 secure=True,
-                max_age=86400
+                path="/",  # Tum site icin gecerli
+                max_age=86400,  # 24 saat
             )
         return response
 

@@ -4,7 +4,7 @@
       <div class="max-w-md mx-auto">
         <div class="text-center mb-8">
           <h1 class="text-3xl font-display font-bold mb-2">
-            <span class="text-gradient-orange">Şifremi Unuttum</span>
+            <span class="text-gradient-orange">Şifremi Unuttüm</span>
           </h1>
           <p class="opacity-60">
             E-posta adresinizi girin, size şifre sıfırlama linki gönderelim.

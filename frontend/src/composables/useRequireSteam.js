@@ -22,7 +22,7 @@ export function useRequireSteam() {
     const { redirect = true } = options
 
     if (!isLoggedIn.value) {
-      window.$message?.warning('Bu islem icin giris yapmaniz gerekiyor')
+      window.$message?.warning('Bu islem icin giriş yapmaniz gerekiyor')
 
       // Redirect to login with return URL
       if (redirect) {
@@ -48,7 +48,7 @@ export function useRequireSteam() {
    * Shows message and optionally redirects
    */
   const requireAuthOnly = (callback, options = {}) => {
-    const { redirect = true, message = 'Bu islem icin giris yapmaniz gerekiyor' } = options
+    const { redirect = true, message = 'Bu islem icin giriş yapmaniz gerekiyor' } = options
 
     if (!isLoggedIn.value) {
       window.$message?.warning(message)

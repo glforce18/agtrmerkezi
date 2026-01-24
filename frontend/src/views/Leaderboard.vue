@@ -26,7 +26,7 @@
           <div class="flex-1 text-center md:text-left">
             <h3 class="text-lg font-bold mb-1">ELO Sistemine Katil</h3>
             <p class="text-sm text-gray-400">
-              ELO sistemine katilmak icin giris yapin.
+              ELO sistemine katilmak icin giriş yapin.
             </p>
           </div>
           <div class="flex flex-col items-center gap-2">
@@ -35,7 +35,7 @@
               @click="$router.push({ name: 'login', query: { redirect: $route.fullPath } })"
             >
               <UserIcon class="w-5 h-5" />
-              Giris Yap
+              Giriş Yap
             </button>
           </div>
         </div>
@@ -50,7 +50,7 @@
           <div class="flex-1 text-center md:text-left">
             <h3 class="text-lg font-bold mb-1">ELO Sistemine Katil</h3>
             <p class="text-sm text-gray-400">
-              ELO sistemine katilmak icin Steam hesabinizi baglayin.
+              ELO sistemine katilmak icin Steam hesabinizi bağlayin.
             </p>
           </div>
           <div class="flex flex-col items-center gap-2">
@@ -59,9 +59,9 @@
               @click="connectSteam"
             >
               <SteamIcon class="w-5 h-5" />
-              Steam Bagla
+              Steam Bağla
             </button>
-            <span class="text-xs text-gray-500">Steam hesabi baglayarak katilabilirsiniz</span>
+            <span class="text-xs text-gray-500">Steam hesabi bağlayarak katilabilirsiniz</span>
           </div>
         </div>
       </div>
@@ -75,7 +75,7 @@
           <div class="flex-1 text-center md:text-left">
             <h3 class="text-lg font-bold mb-1">ELO Sistemine Katil</h3>
             <p class="text-sm text-gray-400">
-              Rekabetci siralamalara katilmak icin ELO puanlariyla yarisma baslatin.
+              Rekabetci sıralamalara katilmak icin ELO puanlariyla yarışma baslatin.
             </p>
           </div>
           <div class="flex flex-col items-center gap-2">
@@ -147,7 +147,7 @@
               </div>
             </div>
             <div v-if="searchQuery && filteredData.length === 0" class="search-no-results">
-              Sonuc bulunamadi
+              Sonuç bulunamadi
             </div>
           </div>
 
@@ -160,7 +160,7 @@
               class="tier-select"
               style="width: 140px;"
               clearable
-              placeholder="Tum Seviyeler"
+              placeholder="Tüm Seviyeler"
             />
           </div>
 
@@ -181,7 +181,7 @@
 
           <!-- Sort -->
           <div class="filter-group">
-            <label class="filter-label">Siralama</label>
+            <label class="filter-label">Sıralama</label>
             <n-select
               v-model:value="sortBy"
               :options="sortOptions"
@@ -335,7 +335,7 @@
             <span>#{{ currentUserRank.position }}</span>
           </div>
           <div class="flex-1">
-            <p class="text-sm text-gray-400">Sizin Siraniz</p>
+            <p class="text-sm text-gray-400">Sizin Sıraniz</p>
             <h4 class="font-bold text-lg flex items-center gap-2">
               {{ currentUserRank.name }}
               <div v-if="activeCategory === 'elo' && currentUserRank.tier" class="inline-tier-badge" :style="{ '--tier-color': currentUserRank.tier.color }">
@@ -357,11 +357,11 @@
             <div class="progress-bar">
               <div class="progress-fill" :style="{ width: getProgressToNextTier(currentUserRank) + '%', backgroundColor: currentUserRank.next_tier.color }"></div>
             </div>
-            <span class="text-xs text-gray-500">{{ currentUserRank.elo_to_next_tier }} ELO kaldi</span>
+            <span class="text-xs text-gray-500">{{ currentUserRank.elo_to_next_tier }} ELO kaldı</span>
           </div>
           <button class="share-btn-alt" @click="sharePosition(currentUserRank)">
             <Share2Icon class="w-5 h-5" />
-            <span>Paylas</span>
+            <span>Paylaş</span>
           </button>
         </div>
       </div>
@@ -374,7 +374,7 @@
             <span>{{ getCategoryTitle() }}</span>
           </h2>
           <div class="table-actions">
-            <span class="results-count">{{ filteredData.length }} sonuc</span>
+            <span class="results-count">{{ filteredData.length }} sonuç</span>
           </div>
         </div>
 
@@ -382,21 +382,21 @@
         <div v-if="currentData.length === 0 && !loadingPlayers && !loadingServers && !loadingElo" class="empty-state">
           <TrophyIcon class="w-16 h-16 text-gray-600 mb-4" />
           <h3 class="text-xl font-semibold text-gray-400 mb-2">Henuz veri yok</h3>
-          <p class="text-gray-500">Bu kategoride henuz siralama verisi bulunmuyor.</p>
+          <p class="text-gray-500">Bu kategoride henuz sıralama verisi bulunmuyor.</p>
         </div>
 
         <!-- Loading State -->
         <div v-else-if="loadingPlayers || loadingServers || loadingElo" class="loading-state">
           <div class="loading-spinner"></div>
-          <p class="text-gray-400 mt-4">Yukleniyor...</p>
+          <p class="text-gray-400 mt-4">Yükleniyor...</p>
         </div>
 
         <div v-else class="table-wrapper">
           <table class="leaderboard-table">
             <thead>
               <tr>
-                <th class="rank-col">Sira</th>
-                <th class="player-col">{{ activeCategory === 'players' || activeCategory === 'elo' ? 'Oyuncu' : activeCategory === 'servers' ? 'Sunucu' : 'Kullanici' }}</th>
+                <th class="rank-col">Sıra</th>
+                <th class="player-col">{{ activeCategory === 'players' || activeCategory === 'elo' ? 'Oyuncu' : activeCategory === 'servers' ? 'Sunucu' : 'Kullanıcı' }}</th>
                 <template v-if="activeCategory === 'players'">
                   <th>K/D</th>
                   <th>Isabet</th>
@@ -516,7 +516,7 @@
                     <n-tag type="primary" size="small">{{ item.servers }} sunucu</n-tag>
                   </td>
                   <td>
-                    <n-tag type="info" size="small">{{ item.posts }} paylasim</n-tag>
+                    <n-tag type="info" size="small">{{ item.posts }} paylaşim</n-tag>
                   </td>
                 </template>
                 <td class="score-col">
@@ -603,14 +603,14 @@
             </div>
           </div>
           <div class="preview-footer">
-            <span class="last-seen">Son gorulme: 5 dakika once</span>
+            <span class="last-seen">Son görulme: 5 dakika once</span>
           </div>
         </div>
       </Transition>
     </Teleport>
 
     <!-- Share Modal -->
-    <n-modal v-model:show="shareModal.visible" preset="card" title="Siralamanizi Paylasin" class="share-modal">
+    <n-modal v-model:show="shareModal.visible" preset="card" title="Sıralamanizi Paylaşin" class="share-modal">
       <div class="share-content">
         <div class="share-preview glass-morphism">
           <div class="share-rank">#{{ shareModal.data?.position }}</div>
@@ -646,6 +646,7 @@ import { ref, computed, h, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { NAvatar, NTag, NProgress, useMessage } from 'naive-ui'
 import { useAuthStore } from '@/stores/auth'
 import { useRequireSteam } from '@/composables/useRequireSteam'
+import { getDefaultAvatar, getInitialsAvatar } from '@/constants'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
   TrophyIcon,
@@ -726,10 +727,10 @@ const shareModal = ref({
 
 // Category tabs config
 const categoryTabs = [
-  { value: 'elo', label: 'ELO Siralaması', icon: AwardIcon, count: null },
+  { value: 'elo', label: 'ELO Sıralaması', icon: AwardIcon, count: null },
   { value: 'players', label: 'En Iyi Oyuncular', icon: TrophyIcon, count: null },
-  { value: 'servers', label: 'Populer Sunucular', icon: ServerIcon, count: null },
-  { value: 'users', label: 'Aktif Kullanicilar', icon: UsersIcon, count: null }
+  { value: 'servers', label: 'Popüler Sunucular', icon: ServerIcon, count: null },
+  { value: 'users', label: 'Aktif Kullanıcılar', icon: UsersIcon, count: null }
 ]
 
 const timeOptions = [
@@ -748,7 +749,7 @@ const sortOptions = computed(() => {
     ]
   }
   return [
-    { label: 'Siralama', value: 'rank' },
+    { label: 'Sıralama', value: 'rank' },
     { label: 'Skor', value: 'score' },
     { label: 'Kills', value: 'kills' },
     { label: 'Isabet', value: 'accuracy' }
@@ -787,7 +788,7 @@ const currentUserRank = computed(() => {
 const statsCards = computed(() => [
   {
     id: 'competitors',
-    label: 'Toplam Yarismacilar',
+    label: 'Toplam Yarışmacilar',
     value: totalCompetitors.value,
     icon: UsersIcon,
     color: '#f97316',
@@ -941,7 +942,7 @@ const joinEloSystem = async () => {
     }
   } catch (error) {
     console.error('Join ELO error:', error)
-    message.error('Bir hata olustu')
+    message.error('Bir hata oluştu')
   } finally {
     joiningElo.value = false
   }
@@ -957,7 +958,7 @@ const fetchPlayers = async () => {
         id: p.user_id || i + 1,
         position: i + 1,
         name: p.username || 'Oyuncu',
-        avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`,
+        avatar: p.avatar || getDefaultAvatar(p.username),
         rank: getRankFromPoints(p.total_profit),
         score: Math.round(p.total_profit) || 0,
         kills: Math.round(p.total_profit * 10) || 0,
@@ -1094,7 +1095,7 @@ const formatNumber = (num) => {
 }
 
 const getAvatarUrl = (avatar, username) => {
-  if (!avatar) return `https://api.dicebear.com/7.x/initials/svg?seed=${username || 'user'}`
+  if (!avatar) return getInitialsAvatar(username)
   if (avatar.startsWith('http')) return avatar
   return `/static/${avatar}`
 }
@@ -1104,7 +1105,7 @@ const getSearchPlaceholder = () => {
     case 'elo': return 'Oyuncu ara...'
     case 'players': return 'Oyuncu ara...'
     case 'servers': return 'Sunucu ara...'
-    case 'users': return 'Kullanici ara...'
+    case 'users': return 'Kullanıcı ara...'
     default: return 'Ara...'
   }
 }
@@ -1125,11 +1126,11 @@ const getCategoryIcon = () => {
 
 const getCategoryTitle = () => {
   switch (activeCategory.value) {
-    case 'elo': return 'ELO Siralamasi'
-    case 'players': return 'Oyuncu Siralamasi'
-    case 'servers': return 'Sunucu Siralamasi'
-    case 'users': return 'Kullanici Siralamasi'
-    default: return 'Siralama'
+    case 'elo': return 'ELO Sıralamasi'
+    case 'players': return 'Oyuncu Sıralamasi'
+    case 'servers': return 'Sunucu Sıralamasi'
+    case 'users': return 'Kullanıcı Sıralamasi'
+    default: return 'Sıralama'
   }
 }
 
@@ -1194,7 +1195,7 @@ const shareToTwitter = () => {
   const scoreText = activeCategory.value === 'elo'
     ? `${shareModal.value.data?.elo} ELO`
     : `${formatNumber(shareModal.value.data?.score || 0)} Skor`
-  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. siradayim! ${scoreText}`
+  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. sıradayim! ${scoreText}`
   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
 }
 
@@ -1202,7 +1203,7 @@ const shareToDiscord = () => {
   const scoreText = activeCategory.value === 'elo'
     ? `${shareModal.value.data?.elo} ELO`
     : `${formatNumber(shareModal.value.data?.score || 0)} Skor`
-  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. siradayim! ${scoreText}`
+  const text = `AGTR Merkezi'nde #${shareModal.value.data?.position}. sıradayim! ${scoreText}`
   navigator.clipboard.writeText(text)
   message.success('Discord icin kopyalandi!')
 }

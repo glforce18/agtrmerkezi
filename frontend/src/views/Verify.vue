@@ -38,7 +38,7 @@
           <div class="step-number">4</div>
           <div class="step-content">
             <h3>Doğrulama</h3>
-            <p>Tur bittikten sonra server seed açıklanır. Sonucu kendin hesaplayabilirsin.</p>
+            <p>Tur bittikten sonra server seed açıklanır. Sonuçu kendin hesaplayabilirsin.</p>
           </div>
         </div>
       </div>

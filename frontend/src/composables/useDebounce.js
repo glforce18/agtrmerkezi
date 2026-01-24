@@ -193,7 +193,7 @@ export function useDebouncedValidation(validateFn, delay = 500) {
       const result = await validateFn(value)
       error.value = result
     } catch (e) {
-      error.value = e.message || 'Dogrulama hatasi'
+      error.value = e.message || 'Doğrulama hatasi'
     } finally {
       validating.value = false
     }

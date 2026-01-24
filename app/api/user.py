@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 # Image processing (optional)
 try:
     from PIL import Image
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -51,19 +52,27 @@ router = APIRouter()
 
 # ==================== HELPER FUNCTIONS ====================
 
+
 def format_avatar_url(avatar_path: str) -> str:
     """Format avatar path to full URL with proper prefix"""
     if not avatar_path:
         return None
-    if avatar_path.startswith(('http://', 'https://', '/')):
+    if avatar_path.startswith(("http://", "https://", "/")):
         return avatar_path
     # Avatars are stored in /static/images/
     return f"/static/images/{avatar_path}"
 
 
-def log_audit(db: Session, user_id: int, action: str, entity_type: str = None,
-              entity_id: int = None, old_values: dict = None, new_values: dict = None,
-              ip_address: str = None):
+def log_audit(
+    db: Session,
+    user_id: int,
+    action: str,
+    entity_type: str = None,
+    entity_id: int = None,
+    old_values: dict = None,
+    new_values: dict = None,
+    ip_address: str = None,
+):
     """Audit log kaydi"""
     try:
         audit = AuditLog(
@@ -73,7 +82,7 @@ def log_audit(db: Session, user_id: int, action: str, entity_type: str = None,
             entity_id=entity_id,
             old_values=old_values,
             new_values=new_values,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
         db.add(audit)
     except Exception as e:
@@ -81,10 +90,26 @@ def log_audit(db: Session, user_id: int, action: str, entity_type: str = None,
 
 
 class ProfileUpdateRequest(BaseModel):
+    username: Optional[str] = None
     display_name: Optional[str] = None
     email: Optional[EmailStr] = None
     bio: Optional[str] = None
-    
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v):
+        if v is not None:
+            v = v.strip().lower()
+            if len(v) < 3 or len(v) > 20:
+                raise ValueError("Kullanici adi 3-20 karakter olmali")
+            # Sadece harf, rakam ve alt çizgi
+            if not re.match(r"^[a-z0-9_]+$", v):
+                raise ValueError("Kullanici adi sadece harf, rakam ve alt cizgi icerebilir")
+            # Rakam veya alt çizgi ile başlayamaz
+            if v[0].isdigit() or v[0] == "_":
+                raise ValueError("Kullanici adi harf ile baslamali")
+        return v
+
     @field_validator("display_name")
     @classmethod
     def validate_display_name(cls, v):
@@ -93,7 +118,7 @@ class ProfileUpdateRequest(BaseModel):
             if len(v) < 2 or len(v) > 50:
                 raise ValueError("Gorunen isim 2-50 karakter olmali")
         return v
-    
+
     @field_validator("bio")
     @classmethod
     def validate_bio(cls, v):
@@ -106,17 +131,17 @@ class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
     confirm_password: str
-    
+
     @field_validator("new_password")
     @classmethod
     def validate_new_password(cls, v):
         if len(v) < settings.PASSWORD_MIN_LENGTH:
             raise ValueError(f"Sifre en az {settings.PASSWORD_MIN_LENGTH} karakter olmali")
-        if settings.PASSWORD_REQUIRE_UPPERCASE and not re.search(r'[A-Z]', v):
+        if settings.PASSWORD_REQUIRE_UPPERCASE and not re.search(r"[A-Z]", v):
             raise ValueError("Sifre en az bir buyuk harf icermeli")
-        if settings.PASSWORD_REQUIRE_LOWERCASE and not re.search(r'[a-z]', v):
+        if settings.PASSWORD_REQUIRE_LOWERCASE and not re.search(r"[a-z]", v):
             raise ValueError("Sifre en az bir kucuk harf icermeli")
-        if settings.PASSWORD_REQUIRE_DIGIT and not re.search(r'\d', v):
+        if settings.PASSWORD_REQUIRE_DIGIT and not re.search(r"\d", v):
             raise ValueError("Sifre en az bir rakam icermeli")
         return v
 
@@ -126,7 +151,7 @@ class TicketCreateRequest(BaseModel):
     message: str
     priority: str = "medium"
     server_id: Optional[int] = None
-    
+
     @field_validator("subject")
     @classmethod
     def validate_subject(cls, v):
@@ -134,7 +159,7 @@ class TicketCreateRequest(BaseModel):
         if len(v) < 5 or len(v) > 200:
             raise ValueError("Konu 5-200 karakter olmali")
         return v
-    
+
     @field_validator("message")
     @classmethod
     def validate_message(cls, v):
@@ -147,7 +172,7 @@ class TicketCreateRequest(BaseModel):
 
 class TicketReplyRequest(BaseModel):
     content: str
-    
+
     @field_validator("content")
     @classmethod
     def validate_content(cls, v):
@@ -160,12 +185,12 @@ class TicketReplyRequest(BaseModel):
 
 class SteamLinkRequest(BaseModel):
     steam_id: str
-    
+
     @field_validator("steam_id")
     @classmethod
     def validate_steam_id(cls, v):
         # STEAM_X:Y:Z formatı
-        if not re.match(r'^STEAM_[0-5]:[01]:\d+$', v):
+        if not re.match(r"^STEAM_[0-5]:[01]:\d+$", v):
             raise ValueError("Gecersiz SteamID formati (STEAM_X:Y:Z)")
         return v
 
@@ -178,26 +203,41 @@ class NotificationSettingsRequest(BaseModel):
 
 
 @router.get("/profile")
-async def get_profile(db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def get_profile(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)
+):
     """Kullanici profili"""
     # Aktif sunucu sayisi
-    server_count = db.query(GameServer).filter(
-        GameServer.owner_id == current_user.id,
-        GameServer.status.notin_([ServerStatus.DELETED, ServerStatus.EXPIRED])
-    ).count() if hasattr(GameServer, 'status') else 0
-    
+    server_count = (
+        db.query(GameServer)
+        .filter(
+            GameServer.owner_id == current_user.id,
+            GameServer.status.notin_([ServerStatus.DELETED, ServerStatus.EXPIRED]),
+        )
+        .count()
+        if hasattr(GameServer, "status")
+        else 0
+    )
+
     # Okunmamis bildirim sayisi
-    unread_notifications = db.query(Notification).filter(
-        Notification.user_id == current_user.id,
-        Notification.is_read == False
-    ).count()
-    
+    unread_notifications = (
+        db.query(Notification)
+        .filter(Notification.user_id == current_user.id, Notification.is_read == False)
+        .count()
+    )
+
     # Acik destek talebi sayisi
-    open_tickets = db.query(SupportTicket).filter(
-        SupportTicket.user_id == current_user.id,
-        SupportTicket.status.in_([TicketStatus.OPEN, TicketStatus.WAITING, TicketStatus.ANSWERED])
-    ).count()
-    
+    open_tickets = (
+        db.query(SupportTicket)
+        .filter(
+            SupportTicket.user_id == current_user.id,
+            SupportTicket.status.in_(
+                [TicketStatus.OPEN, TicketStatus.WAITING, TicketStatus.ANSWERED]
+            ),
+        )
+        .count()
+    )
+
     return {
         "id": current_user.id,
         "username": current_user.username,
@@ -213,13 +253,14 @@ async def get_profile(db: Session = Depends(get_db), current_user: User = Depend
         "reputation": current_user.reputation,
         "two_factor_enabled": current_user.two_factor_enabled,
         "email_verified": current_user.email_verified,
+        "username_changed": getattr(current_user, "username_changed", False),
         "last_login": current_user.last_login.isoformat() if current_user.last_login else None,
         "created_at": current_user.created_at.isoformat(),
         "stats": {
             "server_count": server_count,
             "unread_notifications": unread_notifications,
-            "open_tickets": open_tickets
-        }
+            "open_tickets": open_tickets,
+        },
     }
 
 
@@ -228,49 +269,99 @@ from app.models.database import ServerStatus
 
 
 @router.put("/profile")
-async def update_profile(data: ProfileUpdateRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def update_profile(
+    data: ProfileUpdateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Profil guncelle"""
     old_values = {}
     new_values = {}
-    
+
+    # Username değişikliği - Sadece 1 kez değiştirilebilir
+    if data.username and data.username != current_user.username:
+        # Daha önce değiştirmiş mi kontrol et
+        if getattr(current_user, "username_changed", False):
+            raise HTTPException(
+                status_code=400,
+                detail="Kullanici adinizi daha once degistirdiniz. Sadece 1 kez degistirme hakkiniz vardi.",
+            )
+
+        # Benzersizlik kontrolü
+        existing = (
+            db.query(User)
+            .filter(User.username == data.username, User.id != current_user.id)
+            .first()
+        )
+        if existing:
+            raise HTTPException(status_code=400, detail="Bu kullanici adi zaten kullaniliyor")
+
+        old_values["username"] = current_user.username
+        new_values["username"] = data.username
+        current_user.username = data.username
+        current_user.username_changed = True  # Hakkini kullandi
+        logger.info(
+            f"Username degistirildi: {old_values['username']} -> {data.username} (Hak kullanildi)"
+        )
+
     if data.display_name and data.display_name != current_user.display_name:
         old_values["display_name"] = current_user.display_name
         new_values["display_name"] = data.display_name
         current_user.display_name = data.display_name
-    
+
     if data.email and data.email != current_user.email:
-        existing = db.query(User).filter(User.email == data.email, User.id != current_user.id).first()
+        existing = (
+            db.query(User).filter(User.email == data.email, User.id != current_user.id).first()
+        )
         if existing:
             raise HTTPException(status_code=400, detail="Bu e-posta adresi kullaniliyor")
         old_values["email"] = current_user.email
         new_values["email"] = data.email
         current_user.email = data.email
         current_user.email_verified = False  # Yeni email dogrulanmali
-    
+
     if data.bio is not None:
         old_values["bio"] = current_user.bio
         new_values["bio"] = data.bio
         current_user.bio = data.bio
-    
+
     if new_values:
         client_ip = request.client.host if request.client else None
-        log_audit(db, current_user.id, "profile_update", "user", current_user.id,
-                  old_values=old_values, new_values=new_values, ip_address=client_ip)
-    
+        log_audit(
+            db,
+            current_user.id,
+            "profile_update",
+            "user",
+            current_user.id,
+            old_values=old_values,
+            new_values=new_values,
+            ip_address=client_ip,
+        )
+
     db.commit()
-    
+
     logger.info(f"Profil guncellendi: {current_user.username}")
-    
-    return {"success": True, "message": "Profil guncellendi"}
+
+    return {"success": True, "message": "Profil guncellendi", "username": current_user.username}
 
 
 @router.post("/change-password")
-async def change_password(data: PasswordChangeRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def change_password(
+    data: PasswordChangeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Sifre degistir"""
     # OAuth kullanıcıları (Steam, Discord) şifre değiştiremez
-    auth_provider = getattr(current_user, 'auth_provider', None) or getattr(current_user, 'oauth_provider', None)
-    if auth_provider and auth_provider not in ('local', 'email', None):
-        raise HTTPException(status_code=400, detail="OAuth ile giris yaptiginiz icin sifre degistiremezsiniz")
+    auth_provider = getattr(current_user, "auth_provider", None) or getattr(
+        current_user, "oauth_provider", None
+    )
+    if auth_provider and auth_provider not in ("local", "email", None):
+        raise HTTPException(
+            status_code=400, detail="OAuth ile giris yaptiginiz icin sifre degistiremezsiniz"
+        )
 
     # OAuth kullanıcılarının password_hash'i olmayabilir
     if not current_user.password_hash:
@@ -284,58 +375,93 @@ async def change_password(data: PasswordChangeRequest, request: Request, db: Ses
 
     if data.current_password == data.new_password:
         raise HTTPException(status_code=400, detail="Yeni sifre eskisiyle ayni olamaz")
-    
+
     current_user.password_hash = hash_password(data.new_password)
     current_user.password_changed_at = datetime.utcnow()
-    
+
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "password_change", "user", current_user.id,
-              ip_address=client_ip)
-    
+    log_audit(db, current_user.id, "password_change", "user", current_user.id, ip_address=client_ip)
+
     db.commit()
-    
+
     logger.info(f"Sifre degistirildi: {current_user.username}")
-    
+
     return {"success": True, "message": "Sifre degistirildi"}
 
 
 @router.get("/tickets")
-async def my_tickets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
-    tickets = db.query(SupportTicket).filter(SupportTicket.user_id == current_user.id).order_by(SupportTicket.updated_at.desc()).all()
-    return {"tickets": [{"id": t.id, "subject": t.subject, "status": t.status.value, "priority": t.priority.value, "created_at": t.created_at.isoformat(), "updated_at": t.updated_at.isoformat()} for t in tickets]}
+async def my_tickets(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)
+):
+    tickets = (
+        db.query(SupportTicket)
+        .filter(SupportTicket.user_id == current_user.id)
+        .order_by(SupportTicket.updated_at.desc())
+        .all()
+    )
+    return {
+        "tickets": [
+            {
+                "id": t.id,
+                "subject": t.subject,
+                "status": t.status.value,
+                "priority": t.priority.value,
+                "created_at": t.created_at.isoformat(),
+                "updated_at": t.updated_at.isoformat(),
+            }
+            for t in tickets
+        ]
+    }
 
 
 @router.post("/tickets")
-async def create_ticket(data: TicketCreateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def create_ticket(
+    data: TicketCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     if len(data.subject) < 5:
         raise HTTPException(status_code=400, detail="Konu en az 5 karakter olmali")
     if len(data.message) < 20:
         raise HTTPException(status_code=400, detail="Mesaj en az 20 karakter olmali")
-    
+
     try:
         priority = TicketPriority(data.priority)
     except ValueError:
         priority = TicketPriority.MEDIUM
-    
+
     ticket = SupportTicket(user_id=current_user.id, subject=data.subject, priority=priority)
     db.add(ticket)
     db.flush()
-    
+
     message = TicketMessage(ticket_id=ticket.id, user_id=current_user.id, content=data.message)
     db.add(message)
     db.commit()
-    
+
     return {"success": True, "ticket_id": ticket.id, "message": "Destek talebi olusturuldu"}
 
 
 @router.get("/tickets/{ticket_id}")
-async def get_ticket(ticket_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
-    ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id, SupportTicket.user_id == current_user.id).first()
+async def get_ticket(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    ticket = (
+        db.query(SupportTicket)
+        .filter(SupportTicket.id == ticket_id, SupportTicket.user_id == current_user.id)
+        .first()
+    )
     if not ticket:
         raise HTTPException(status_code=404, detail="Destek talebi bulunamadi")
-    
-    messages = db.query(TicketMessage).filter(TicketMessage.ticket_id == ticket_id).order_by(TicketMessage.created_at).all()
-    
+
+    messages = (
+        db.query(TicketMessage)
+        .filter(TicketMessage.ticket_id == ticket_id)
+        .order_by(TicketMessage.created_at)
+        .all()
+    )
+
     return {
         "ticket": {
             "id": ticket.id,
@@ -343,78 +469,109 @@ async def get_ticket(ticket_id: int, db: Session = Depends(get_db), current_user
             "status": ticket.status.value,
             "priority": ticket.priority.value,
             "created_at": ticket.created_at.isoformat(),
-            "updated_at": ticket.updated_at.isoformat()
+            "updated_at": ticket.updated_at.isoformat(),
         },
-        "messages": [{
-            "id": m.id,
-            "content": m.content,
-            "is_staff_reply": m.is_staff_reply,
-            "created_at": m.created_at.isoformat()
-        } for m in messages]
+        "messages": [
+            {
+                "id": m.id,
+                "content": m.content,
+                "is_staff_reply": m.is_staff_reply,
+                "created_at": m.created_at.isoformat(),
+            }
+            for m in messages
+        ],
     }
 
 
 @router.post("/tickets/{ticket_id}/reply")
-async def reply_ticket(ticket_id: int, data: TicketReplyRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def reply_ticket(
+    ticket_id: int,
+    data: TicketReplyRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Destek talebine yanit ver"""
-    ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id, SupportTicket.user_id == current_user.id).first()
+    ticket = (
+        db.query(SupportTicket)
+        .filter(SupportTicket.id == ticket_id, SupportTicket.user_id == current_user.id)
+        .first()
+    )
     if not ticket:
         raise HTTPException(status_code=404, detail="Destek talebi bulunamadi")
-    
+
     if ticket.status == TicketStatus.CLOSED:
         raise HTTPException(status_code=400, detail="Bu talep kapatilmis")
-    
-    message = TicketMessage(ticket_id=ticket_id, user_id=current_user.id, content=data.content, is_staff_reply=False)
+
+    message = TicketMessage(
+        ticket_id=ticket_id, user_id=current_user.id, content=data.content, is_staff_reply=False
+    )
     db.add(message)
-    
+
     ticket.status = TicketStatus.WAITING
     ticket.updated_at = datetime.utcnow()
-    
+
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "ticket_reply", "support_ticket", ticket_id,
-              ip_address=client_ip)
-    
+    log_audit(
+        db, current_user.id, "ticket_reply", "support_ticket", ticket_id, ip_address=client_ip
+    )
+
     db.commit()
-    
+
     return {"success": True, "message": "Yanit gonderildi"}
 
 
 @router.post("/tickets/{ticket_id}/close")
-async def close_ticket(ticket_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def close_ticket(
+    ticket_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Destek talebini kapat"""
-    ticket = db.query(SupportTicket).filter(
-        SupportTicket.id == ticket_id,
-        SupportTicket.user_id == current_user.id
-    ).first()
-    
+    ticket = (
+        db.query(SupportTicket)
+        .filter(SupportTicket.id == ticket_id, SupportTicket.user_id == current_user.id)
+        .first()
+    )
+
     if not ticket:
         raise HTTPException(status_code=404, detail="Destek talebi bulunamadi")
-    
+
     if ticket.status == TicketStatus.CLOSED:
         raise HTTPException(status_code=400, detail="Bu talep zaten kapali")
-    
+
     ticket.status = TicketStatus.CLOSED
     ticket.closed_at = datetime.utcnow()
     ticket.updated_at = datetime.utcnow()
-    
+
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "ticket_close", "support_ticket", ticket_id,
-              ip_address=client_ip)
-    
+    log_audit(
+        db, current_user.id, "ticket_close", "support_ticket", ticket_id, ip_address=client_ip
+    )
+
     db.commit()
-    
+
     return {"success": True, "message": "Destek talebi kapatildi"}
 
 
 # ==================== AVATAR ====================
 
+
 @router.post("/avatar")
-async def upload_avatar(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def upload_avatar(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Avatar yukle - Smart Media sistemiyle entegre"""
     # Dosya tipi kontrolu
     allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
     if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="Sadece JPEG, PNG, GIF ve WebP dosyalari yuklenebilir")
+        raise HTTPException(
+            status_code=400, detail="Sadece JPEG, PNG, GIF ve WebP dosyalari yuklenebilir"
+        )
 
     # Boyut kontrolu (5MB raw, resize sonrasi kucuk olacak)
     content = await file.read()
@@ -435,8 +592,8 @@ async def upload_avatar(request: Request, file: UploadFile = File(...), db: Sess
         try:
             img = Image.open(BytesIO(content))
             # RGBA'ya cevir (transparanlik icin)
-            if img.mode != 'RGBA':
-                img = img.convert('RGBA')
+            if img.mode != "RGBA":
+                img = img.convert("RGBA")
 
             # Kare yap (ortadan kes)
             width, height = img.size
@@ -449,10 +606,10 @@ async def upload_avatar(request: Request, file: UploadFile = File(...), db: Sess
             img = img.resize((200, 200), Image.Resampling.LANCZOS)
 
             # PNG kaydet
-            img.save(png_path, 'PNG', optimize=True, compress_level=9)
+            img.save(png_path, "PNG", optimize=True, compress_level=9)
 
             # WebP kaydet (daha kucuk)
-            img.save(webp_path, 'WEBP', quality=85, method=6)
+            img.save(webp_path, "WEBP", quality=85, method=6)
 
             logger.info(f"Avatar resized and saved: {base_filename}")
         except Exception as e:
@@ -484,8 +641,15 @@ async def upload_avatar(request: Request, file: UploadFile = File(...), db: Sess
     current_user.avatar = f"avatars/{base_filename}.png"
 
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "avatar_upload", "user", current_user.id,
-              new_values={"avatar": current_user.avatar}, ip_address=client_ip)
+    log_audit(
+        db,
+        current_user.id,
+        "avatar_upload",
+        "user",
+        current_user.id,
+        new_values={"avatar": current_user.avatar},
+        ip_address=client_ip,
+    )
 
     db.commit()
 
@@ -494,12 +658,16 @@ async def upload_avatar(request: Request, file: UploadFile = File(...), db: Sess
     return {
         "success": True,
         "avatar": format_avatar_url(current_user.avatar),
-        "avatar_webp": f"/static/images/avatars/{base_filename}.webp"
+        "avatar_webp": f"/static/images/avatars/{base_filename}.webp",
     }
 
 
 @router.delete("/avatar")
-async def delete_avatar(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def delete_avatar(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Avatar sil"""
     if not current_user.avatar:
         raise HTTPException(status_code=400, detail="Avatar bulunamadi")
@@ -520,7 +688,7 @@ async def delete_avatar(request: Request, db: Session = Depends(get_db), current
             try:
                 # PNG ve WebP versiyonlarini sil
                 static_path.unlink()
-                webp_path = static_path.with_suffix('.webp')
+                webp_path = static_path.with_suffix(".webp")
                 if webp_path.exists():
                     webp_path.unlink()
             except Exception:
@@ -530,8 +698,15 @@ async def delete_avatar(request: Request, db: Session = Depends(get_db), current
     current_user.avatar = None
 
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "avatar_delete", "user", current_user.id,
-              old_values={"avatar": old_avatar}, ip_address=client_ip)
+    log_audit(
+        db,
+        current_user.id,
+        "avatar_delete",
+        "user",
+        current_user.id,
+        old_values={"avatar": old_avatar},
+        ip_address=client_ip,
+    )
 
     db.commit()
 
@@ -540,53 +715,76 @@ async def delete_avatar(request: Request, db: Session = Depends(get_db), current
 
 # ==================== STEAM ====================
 
+
 @router.post("/link-steam")
-async def link_steam(data: SteamLinkRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def link_steam(
+    data: SteamLinkRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Steam hesabi bagla"""
     # Baska kullanici kullanıyor mu?
-    existing = db.query(User).filter(
-        User.steam_id == data.steam_id,
-        User.id != current_user.id
-    ).first()
-    
+    existing = (
+        db.query(User).filter(User.steam_id == data.steam_id, User.id != current_user.id).first()
+    )
+
     if existing:
         raise HTTPException(status_code=400, detail="Bu SteamID baska bir hesaba bagli")
-    
+
     old_steam = current_user.steam_id
     current_user.steam_id = data.steam_id
-    
+
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "steam_link", "user", current_user.id,
-              old_values={"steam_id": old_steam},
-              new_values={"steam_id": data.steam_id},
-              ip_address=client_ip)
-    
+    log_audit(
+        db,
+        current_user.id,
+        "steam_link",
+        "user",
+        current_user.id,
+        old_values={"steam_id": old_steam},
+        new_values={"steam_id": data.steam_id},
+        ip_address=client_ip,
+    )
+
     db.commit()
-    
+
     logger.info(f"Steam baglandi: {current_user.username} -> {data.steam_id}")
-    
+
     return {"success": True, "message": "Steam hesabi baglandi", "steam_id": data.steam_id}
 
 
 @router.delete("/unlink-steam")
-async def unlink_steam(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def unlink_steam(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Steam hesabi baglantisini kaldir"""
     if not current_user.steam_id:
         raise HTTPException(status_code=400, detail="Steam hesabi bagli degil")
-    
+
     old_steam = current_user.steam_id
     current_user.steam_id = None
-    
+
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "steam_unlink", "user", current_user.id,
-              old_values={"steam_id": old_steam}, ip_address=client_ip)
-    
+    log_audit(
+        db,
+        current_user.id,
+        "steam_unlink",
+        "user",
+        current_user.id,
+        old_values={"steam_id": old_steam},
+        ip_address=client_ip,
+    )
+
     db.commit()
-    
+
     return {"success": True, "message": "Steam baglantisi kaldirildi"}
 
 
 # ==================== NOTIFICATIONS ====================
+
 
 @router.get("/notifications")
 async def get_notifications(
@@ -594,182 +792,375 @@ async def get_notifications(
     per_page: int = Query(20, ge=1, le=50),
     unread_only: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_required)
+    current_user: User = Depends(get_current_user_required),
 ):
     """Bildirimler"""
     query = db.query(Notification).filter(Notification.user_id == current_user.id)
-    
+
     if unread_only:
         query = query.filter(Notification.is_read == False)
-    
+
     total = query.count()
-    unread_count = db.query(Notification).filter(
-        Notification.user_id == current_user.id,
-        Notification.is_read == False
-    ).count()
-    
-    notifications = query.order_by(desc(Notification.created_at)).offset((page - 1) * per_page).limit(per_page).all()
-    
+    unread_count = (
+        db.query(Notification)
+        .filter(Notification.user_id == current_user.id, Notification.is_read == False)
+        .count()
+    )
+
+    notifications = (
+        query.order_by(desc(Notification.created_at))
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
     return {
-        "notifications": [{
-            "id": n.id,
-            "type": n.type,
-            "title": n.title,
-            "message": n.message,
-            "link": n.link,
-            "is_read": n.is_read,
-            "created_at": n.created_at.isoformat()
-        } for n in notifications],
+        "notifications": [
+            {
+                "id": n.id,
+                "type": n.type,
+                "title": n.title,
+                "message": n.message,
+                "link": n.link,
+                "is_read": n.is_read,
+                "created_at": n.created_at.isoformat(),
+            }
+            for n in notifications
+        ],
         "unread_count": unread_count,
         "pagination": {
             "page": page,
             "per_page": per_page,
             "total": total,
-            "pages": (total + per_page - 1) // per_page
-        }
+            "pages": (total + per_page - 1) // per_page,
+        },
     }
 
 
 @router.post("/notifications/{notification_id}/read")
-async def mark_notification_read(notification_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def mark_notification_read(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Bildirimi okundu isaretle"""
-    notification = db.query(Notification).filter(
-        Notification.id == notification_id,
-        Notification.user_id == current_user.id
-    ).first()
-    
+    notification = (
+        db.query(Notification)
+        .filter(Notification.id == notification_id, Notification.user_id == current_user.id)
+        .first()
+    )
+
     if not notification:
         raise HTTPException(status_code=404, detail="Bildirim bulunamadi")
-    
+
     notification.is_read = True
     notification.read_at = datetime.utcnow()
     db.commit()
-    
+
     return {"success": True}
 
 
 @router.post("/notifications/read-all")
-async def mark_all_notifications_read(db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def mark_all_notifications_read(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)
+):
     """Tum bildirimleri okundu isaretle"""
     db.query(Notification).filter(
-        Notification.user_id == current_user.id,
-        Notification.is_read == False
+        Notification.user_id == current_user.id, Notification.is_read == False
     ).update({"is_read": True, "read_at": datetime.utcnow()})
-    
+
     db.commit()
-    
+
     return {"success": True, "message": "Tum bildirimler okundu olarak isaretlendi"}
 
 
 @router.delete("/notifications/{notification_id}")
-async def delete_notification(notification_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def delete_notification(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Bildirimi sil"""
-    notification = db.query(Notification).filter(
-        Notification.id == notification_id,
-        Notification.user_id == current_user.id
-    ).first()
-    
+    notification = (
+        db.query(Notification)
+        .filter(Notification.id == notification_id, Notification.user_id == current_user.id)
+        .first()
+    )
+
     if not notification:
         raise HTTPException(status_code=404, detail="Bildirim bulunamadi")
-    
+
     db.delete(notification)
     db.commit()
-    
+
     return {"success": True}
 
 
 # ==================== SESSIONS ====================
 
+
 @router.get("/sessions")
-async def get_sessions(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def get_sessions(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Aktif oturumlar"""
-    sessions = db.query(UserSession).filter(
-        UserSession.user_id == current_user.id,
-        UserSession.is_active == True,
-        UserSession.expires_at > datetime.utcnow()
-    ).order_by(desc(UserSession.last_activity)).all()
-    
+    sessions = (
+        db.query(UserSession)
+        .filter(
+            UserSession.user_id == current_user.id,
+            UserSession.is_active == True,
+            UserSession.expires_at > datetime.utcnow(),
+        )
+        .order_by(desc(UserSession.last_activity))
+        .all()
+    )
+
     # Mevcut oturumun token'ini al
     current_token = request.cookies.get("access_token")
-    
+
     return {
-        "sessions": [{
-            "id": s.id,
-            "ip_address": s.ip_address,
-            "user_agent": s.user_agent[:100] if s.user_agent else None,
-            "device_type": s.device_type,
-            "location": s.location,
-            "created_at": s.created_at.isoformat(),
-            "last_activity": s.last_activity.isoformat() if s.last_activity else None,
-            "is_current": current_token and s.token_hash == hash_token(current_token)
-        } for s in sessions]
+        "sessions": [
+            {
+                "id": s.id,
+                "ip_address": s.ip_address,
+                "user_agent": s.user_agent[:100] if s.user_agent else None,
+                "device_type": s.device_type,
+                "location": s.location,
+                "created_at": s.created_at.isoformat(),
+                "last_activity": s.last_activity.isoformat() if s.last_activity else None,
+                "is_current": current_token and s.token_hash == hash_token(current_token),
+            }
+            for s in sessions
+        ]
     }
 
 
 @router.delete("/sessions/{session_id}")
-async def revoke_session(session_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def revoke_session(
+    session_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Oturumu sonlandir"""
-    session = db.query(UserSession).filter(
-        UserSession.id == session_id,
-        UserSession.user_id == current_user.id
-    ).first()
-    
+    session = (
+        db.query(UserSession)
+        .filter(UserSession.id == session_id, UserSession.user_id == current_user.id)
+        .first()
+    )
+
     if not session:
         raise HTTPException(status_code=404, detail="Oturum bulunamadi")
-    
+
     session.is_active = False
     session.revoked_at = datetime.utcnow()
-    
+
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "session_revoke", "user_session", session_id,
-              ip_address=client_ip)
-    
+    log_audit(
+        db, current_user.id, "session_revoke", "user_session", session_id, ip_address=client_ip
+    )
+
     db.commit()
-    
+
     return {"success": True, "message": "Oturum sonlandirildi"}
 
 
 @router.delete("/sessions")
-async def revoke_all_sessions(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def revoke_all_sessions(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Diger tum oturumlari sonlandir"""
     # Mevcut session haric tumunu kapat
     current_token = request.cookies.get("access_token")
     current_token_hash = hash_token(current_token) if current_token else None
-    
+
     db.query(UserSession).filter(
         UserSession.user_id == current_user.id,
         UserSession.is_active == True,
-        UserSession.token_hash != current_token_hash
+        UserSession.token_hash != current_token_hash,
     ).update({"is_active": False, "revoked_at": datetime.utcnow()})
-    
+
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "sessions_revoke_all", "user", current_user.id,
-              ip_address=client_ip)
-    
+    log_audit(
+        db, current_user.id, "sessions_revoke_all", "user", current_user.id, ip_address=client_ip
+    )
+
     db.commit()
-    
+
     return {"success": True, "message": "Diger tum oturumlar sonlandirildi"}
 
 
 # ==================== PUBLIC PROFILE ====================
 
+# ==================== STEAM ID DONUSUM FONKSIYONLARI ====================
+
+
+def steam64_to_steam2(steam64: str) -> str:
+    """SteamID64'u STEAM_0:X:Y formatına çevirir"""
+    try:
+        steam64_int = int(steam64)
+        y = steam64_int & 1
+        z = (steam64_int - 76561197960265728) >> 1
+        return f"STEAM_0:{y}:{z}"
+    except:
+        return None
+
+
+def steam64_to_steam3(steam64: str) -> str:
+    """SteamID64'u [U:1:X] formatına çevirir"""
+    try:
+        steam64_int = int(steam64)
+        account_id = steam64_int - 76561197960265728
+        return f"[U:1:{account_id}]"
+    except:
+        return None
+
+
+def steam2_to_steam64(steam2: str) -> str:
+    """STEAM_X:Y:Z formatını SteamID64'e çevirir"""
+    try:
+        # STEAM_0:1:12345 veya STEAM_1:1:12345 formatı
+        match = re.match(r"STEAM_[01]:([01]):(\d+)", steam2)
+        if match:
+            y = int(match.group(1))
+            z = int(match.group(2))
+            steam64 = 76561197960265728 + (z * 2) + y
+            return str(steam64)
+    except:
+        pass
+    return None
+
+
+def get_all_steam_ids(steam_id: str) -> dict:
+    """Tüm Steam ID formatlarını döndürür"""
+    result = {
+        "steam64": None,
+        "steam2": None,  # STEAM_0:X:Y
+        "steam3": None,  # [U:1:X]
+        "profile_url": None,
+    }
+
+    if not steam_id:
+        return result
+
+    # SteamID64 ise (17 haneli sayı)
+    if re.match(r"^\d{17}$", steam_id):
+        result["steam64"] = steam_id
+        result["steam2"] = steam64_to_steam2(steam_id)
+        result["steam3"] = steam64_to_steam3(steam_id)
+        result["profile_url"] = f"https://steamcommunity.com/profiles/{steam_id}"
+
+    # STEAM_X:Y:Z formatı ise
+    elif steam_id.upper().startswith("STEAM_"):
+        result["steam2"] = steam_id.upper().replace("STEAM_1:", "STEAM_0:")  # Normalize et
+        steam64 = steam2_to_steam64(steam_id)
+        if steam64:
+            result["steam64"] = steam64
+            result["steam3"] = steam64_to_steam3(steam64)
+            result["profile_url"] = f"https://steamcommunity.com/profiles/{steam64}"
+
+    # [U:1:X] formatı ise
+    elif steam_id.startswith("[U:1:"):
+        match = re.match(r"\[U:1:(\d+)\]", steam_id)
+        if match:
+            account_id = int(match.group(1))
+            steam64 = str(76561197960265728 + account_id)
+            result["steam64"] = steam64
+            result["steam2"] = steam64_to_steam2(steam64)
+            result["steam3"] = steam_id
+            result["profile_url"] = f"https://steamcommunity.com/profiles/{steam64}"
+
+    return result
+
+
+# ==================== PUBLIC PROFILE ====================
+
+
+@router.get("/profile/{username}")
+async def get_public_profile_by_username(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """Public profil goruntule (username ile)"""
+    return await _get_public_profile(username, db, current_user)
+
+
 @router.get("/users/{username}")
-async def get_public_profile(username: str, db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_current_user)):
+async def get_public_profile(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """Public profil goruntule"""
-    user = db.query(User).filter(User.username == username.lower()).first()
-    
+    return await _get_public_profile(username, db, current_user)
+
+
+async def _get_public_profile(username: str, db: Session, current_user: Optional[User]):
+    """Public profil helper fonksiyonu"""
+    from sqlalchemy import func
+
+    # Case-insensitive username arama
+    user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
+
+    if not user:
+        # ID ile de dene (sayısal ise)
+        if username.isdigit():
+            user = db.query(User).filter(User.id == int(username)).first()
+
     if not user:
         raise HTTPException(status_code=404, detail="Kullanici bulunamadi")
-    
+
     if user.status == UserStatus.BANNED:
         return {
             "id": user.id,
             "username": user.username,
             "display_name": "Yasakli Kullanici",
             "status": "banned",
-            "message": "Bu kullanici yasaklanmis"
+            "message": "Bu kullanici yasaklanmis",
         }
-    
+
+    # Forum gonderilerini say
+    forum_posts = user.post_count or 0
+
+    # Sunucu sayısını getir
+    servers_count = 0
+    try:
+        servers_count = db.query(GameServer).filter(GameServer.owner_id == user.id).count()
+    except:
+        pass
+
+    # Son forum konularini getir (opsiyonel)
+    recent_topics = []
+    try:
+        from app.models.database import ForumTopic
+
+        topics = (
+            db.query(ForumTopic)
+            .filter(ForumTopic.author_id == user.id, ForumTopic.is_deleted == False)
+            .order_by(ForumTopic.created_at.desc())
+            .limit(5)
+            .all()
+        )
+        recent_topics = [
+            {
+                "id": t.id,
+                "title": t.title,
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+                "replies_count": t.reply_count or 0,
+            }
+            for t in topics
+        ]
+    except Exception:
+        pass  # Forum tablosu yoksa atla
+
+    # Steam ID'lerin tüm formatlarını al
+    steam_ids = get_all_steam_ids(user.steam_id)
+
     return {
         "id": user.id,
         "username": user.username,
@@ -777,40 +1168,58 @@ async def get_public_profile(username: str, db: Session = Depends(get_db), curre
         "avatar": format_avatar_url(user.avatar),
         "bio": user.bio,
         "role": user.role.value,
-        "post_count": user.post_count,
-        "reputation": user.reputation,
-        "created_at": user.created_at.isoformat(),
-        "last_seen": user.last_login.isoformat() if user.last_login else None
+        "level": getattr(user, "level", 1),
+        "verified": getattr(user, "email_verified", False),
+        "steam_id": user.steam_id,  # Orijinal Steam ID
+        "steam_ids": steam_ids,  # Tüm Steam ID formatları
+        "post_count": getattr(user, "post_count", 0),
+        "forum_posts": forum_posts,
+        "servers_count": servers_count,
+        "achievements_count": 0,  # Basari sayisi - sonra eklenebilir
+        "reputation": getattr(user, "reputation", 0),
+        "is_online": getattr(user, "is_online", False),
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "last_seen": user.last_login.isoformat() if user.last_login else None,
+        "recent_topics": recent_topics,
     }
 
 
 # ==================== ACTIVITY LOG ====================
+
 
 @router.get("/activity")
 async def get_activity(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=50),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_required)
+    current_user: User = Depends(get_current_user_required),
 ):
     """Hesap aktivite gecmisi"""
     query = db.query(AuditLog).filter(AuditLog.user_id == current_user.id)
-    
+
     total = query.count()
-    activities = query.order_by(desc(AuditLog.created_at)).offset((page - 1) * per_page).limit(per_page).all()
-    
+    activities = (
+        query.order_by(desc(AuditLog.created_at))
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
     return {
-        "activities": [{
-            "id": a.id,
-            "action": a.action,
-            "entity_type": a.entity_type,
-            "ip_address": a.ip_address,
-            "created_at": a.created_at.isoformat()
-        } for a in activities],
+        "activities": [
+            {
+                "id": a.id,
+                "action": a.action,
+                "entity_type": a.entity_type,
+                "ip_address": a.ip_address,
+                "created_at": a.created_at.isoformat(),
+            }
+            for a in activities
+        ],
         "pagination": {
             "page": page,
             "per_page": per_page,
             "total": total,
-            "pages": (total + per_page - 1) // per_page
-        }
+            "pages": (total + per_page - 1) // per_page,
+        },
     }

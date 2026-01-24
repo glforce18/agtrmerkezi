@@ -31,6 +31,9 @@
 
               <!-- Toast Notifications -->
               <ToastContainer />
+
+              <!-- Cookie Consent Banner -->
+              <CookieBanner />
             </div>
           </n-loading-bar-provider>
         </n-dialog-provider>
@@ -48,6 +51,7 @@ import Footer from '@/components/layout/Footer.vue'
 import CommandPalette from '@/components/ui/CommandPalette.vue'
 import ChatManager from '@/components/social/ChatManager.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
+import CookieBanner from '@/components/common/CookieBanner.vue'
 
 const authStore = useAuthStore()
 const themeStore = useThemeStore()

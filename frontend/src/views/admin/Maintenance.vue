@@ -10,7 +10,7 @@
       <!-- Loading -->
       <div v-if="loading" class="loading-box">
         <div class="spinner"></div>
-        <span>Yukleniyor...</span>
+        <span>Yükleniyor...</span>
       </div>
 
       <!-- Features Grid -->
@@ -48,10 +48,10 @@
       <!-- Bulk Actions -->
       <div class="bulk-actions">
         <button class="bulk-btn danger" @click="enableAll" :disabled="bulkSaving">
-          Tumunu Bakima Al
+          Tümunu Bakima Al
         </button>
         <button class="bulk-btn success" @click="disableAll" :disabled="bulkSaving">
-          Tumunu Ac
+          Tümunu Ac
         </button>
       </div>
 
@@ -99,7 +99,7 @@ const fetchFeatures = async () => {
       showToast(data.detail || 'Veri alinamadi', 'error')
     }
   } catch (e) {
-    showToast('Baglanti hatasi', 'error')
+    showToast('Bağlanti hatasi', 'error')
   }
   loading.value = false
 }
@@ -117,13 +117,13 @@ const toggleMaintenance = async (item) => {
     })
     const data = await res.json()
     if (res.ok) {
-      showToast(data.message || 'Guncellendi', 'success')
+      showToast(data.message || 'Güncellendi', 'success')
       await fetchFeatures()
     } else {
-      showToast(data.detail || 'Hata olustu', 'error')
+      showToast(data.detail || 'Hata oluştu', 'error')
     }
   } catch (e) {
-    showToast('Baglanti hatasi', 'error')
+    showToast('Bağlanti hatasi', 'error')
   }
   saving.value = null
 }
@@ -136,11 +136,11 @@ const enableAll = async () => {
       headers: getHeaders()
     })
     if (res.ok) {
-      showToast('Tum ozellikler bakima alindi', 'success')
+      showToast('Tüm ozellikler bakima alindi', 'success')
       await fetchFeatures()
     }
   } catch (e) {
-    showToast('Hata olustu', 'error')
+    showToast('Hata oluştu', 'error')
   }
   bulkSaving.value = false
 }
@@ -153,11 +153,11 @@ const disableAll = async () => {
       headers: getHeaders()
     })
     if (res.ok) {
-      showToast('Tum bakimlar kapatildi', 'success')
+      showToast('Tüm bakimlar kapatildi', 'success')
       await fetchFeatures()
     }
   } catch (e) {
-    showToast('Hata olustu', 'error')
+    showToast('Hata oluştu', 'error')
   }
   bulkSaving.value = false
 }

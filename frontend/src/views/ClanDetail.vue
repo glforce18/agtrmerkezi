@@ -230,10 +230,10 @@
           {{ applicationMessage.length }}/500 karakter
         </div>
         <div class="flex justify-end gap-3">
-          <n-button @click="showApplicationModal = false">Iptal</n-button>
+          <n-button @click="showApplicationModal = false">İptal</n-button>
           <n-button type="primary" :disabled="!isApplicationValid" @click="handleApply">
             <template #icon><UserPlus class="w-4 h-4" /></template>
-            Basvuru Gonder
+            Basvuru Gönder
           </n-button>
         </div>
       </div>

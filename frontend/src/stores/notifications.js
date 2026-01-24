@@ -150,7 +150,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
       return newNotifications
     } catch (e) {
-      console.error('Failed to fetch notifications:', e)
+      // Notification fetch failed - silent
       error.value = 'Bildirimler yüklenemedi'
       return []
     } finally {
@@ -176,7 +176,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     try {
       await api.post(`/notifications/${notificationId}/read`)
     } catch (e) {
-      console.error('Failed to mark as read:', e)
+      // Mark as read failed - revert
       // Revert on error
       notification.read_at = null
       unreadCount.value++
@@ -196,7 +196,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     try {
       await api.post('/notifications/read-all')
     } catch (e) {
-      console.error('Failed to mark all as read:', e)
+      // Mark all as read failed - revert
       // Revert on error
       previousUnread.forEach(n => {
         n.read_at = null
@@ -221,7 +221,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     try {
       await api.delete(`/notifications/${notificationId}`)
     } catch (e) {
-      console.error('Failed to delete notification:', e)
+      // Delete notification failed - revert
       // Revert on error
       notifications.value.splice(index, 0, notification)
       if (wasUnread) {
@@ -239,9 +239,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
     unreadCount.value = 0
 
     try {
-      await api.delete('/notifications/all')
+      await api.delete('/notifications')
     } catch (e) {
-      console.error('Failed to clear notifications:', e)
       // Revert on error
       notifications.value = previousNotifications
       unreadCount.value = previousUnread
@@ -346,19 +345,19 @@ export const useNotificationsStore = defineStore('notifications', () => {
     settings.value = { ...settings.value, ...newSettings }
 
     try {
-      await api.put('/notifications/settings', settings.value)
+      await api.put('/notifications/preferences', settings.value)
     } catch (e) {
-      console.error('Failed to update settings:', e)
+      // Silent fail - settings will revert
       settings.value = previousSettings
     }
   }
 
   const fetchSettings = async () => {
     try {
-      const response = await api.get('/notifications/settings')
+      const response = await api.get('/notifications/preferences')
       settings.value = { ...settings.value, ...response }
     } catch (e) {
-      console.error('Failed to fetch notification settings:', e)
+      // Silent fail - use default settings
     }
   }
 

@@ -744,7 +744,7 @@
                     </div>
                     <div v-else class="image-placeholder" @click="showImagePicker = true">
                       <ImageIcon :size="32" />
-                      <span>Görsel Sec</span>
+                      <span>Görsel Seç</span>
                     </div>
                     <div class="image-input-group">
                       <input
@@ -869,7 +869,7 @@
           <div v-if="showImagePicker" class="modal-backdrop" @click.self="showImagePicker = false">
             <div class="modal picker-modal">
               <div class="modal-header">
-                <h2>Görsel Sec</h2>
+                <h2>Görsel Seç</h2>
                 <button class="modal-close" @click="showImagePicker = false">
                   <X :size="24" />
                 </button>
@@ -900,7 +900,7 @@
                 </button>
                 <button class="btn-primary" @click="selectPickerImage" :disabled="!pickerSelected">
                   <Check :size="18" />
-                  Sec
+                  Seç
                 </button>
               </div>
             </div>

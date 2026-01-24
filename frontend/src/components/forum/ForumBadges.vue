@@ -1,5 +1,5 @@
 <template>
-  <div :class="['forum-user-badges', { 'forum-user-badges--max-5': max === 5 }]" role="list" aria-label="Kullanici rozetleri">
+  <div :class="['forum-user-badges', { 'forum-user-badges--max-5': max === 5 }]" role="list" aria-label="Kullanıcı rozetleri">
     <!-- Level Badge (always first if shown) -->
     <n-tooltip v-if="showLevel && level" trigger="hover" placement="top">
       <template #trigger>

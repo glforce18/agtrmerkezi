@@ -394,6 +394,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useMessage } from 'naive-ui'
 import { useAuthStore } from '@/stores/auth'
 import { useRequireSteam } from '@/composables/useRequireSteam'
+import { DEFAULT_ASSETS } from '@/constants'
 import MaintenanceOverlay from '@/components/MaintenanceOverlay.vue'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import {
@@ -581,7 +582,7 @@ const formatArmor = (amount) => {
 const getDefaultAvatar = (username) => {
   // Dicebear ile kullanıcı adından avatar oluştur
   const name = username || 'user'
-  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=ff6b00,00d4ff,00ff88,ffcc00,ff3366,9945ff`
+  return `${DEFAULT_ASSETS.INITIALS_API}?seed=${encodeURIComponent(name)}&backgroundColor=ff6b00,00d4ff,00ff88,ffcc00,ff3366,9945ff`
 }
 
 const getAvatarUrl = (avatar, username) => {
@@ -660,7 +661,7 @@ const fetchCurrentRound = async () => {
       console.warn('Jackpot round fetch failed:', res.status)
     }
   } catch (e) {
-    console.error('Error fetching jackpot round:', e.message)
+    // Jackpot round fetch failed
   }
 }
 
@@ -673,7 +674,7 @@ const fetchHistory = async () => {
       console.warn('Jackpot history fetch failed:', res.status)
     }
   } catch (e) {
-    console.error('Error fetching jackpot history:', e.message)
+    // Jackpot history fetch failed
   }
 }
 
@@ -709,7 +710,7 @@ const placeBet = async () => {
       await fetchCurrentRound()
       // Update balance
       authStore.fetchUser().catch(err => {
-        console.error('Failed to fetch user after bet:', err)
+        // User fetch after bet failed
       })
       message.success('Bahis başarıyla yapıldı')
     } else {
@@ -787,7 +788,7 @@ const handleWebSocketMessage = (message) => {
       // Tur bilgisini güncelle
       if (message.data) {
         fetchCurrentRound().catch(err => {
-          console.error('Failed to fetch current round after new bet:', err)
+          // Current round fetch after bet failed
         })
       }
       break
@@ -1031,12 +1032,12 @@ const showWinner = (data) => {
 
   // History'yi güncelle
   fetchHistory().catch(err => {
-    console.error('Failed to fetch history after winner:', err)
+    // History fetch after winner failed
   })
 
   // Bakiye güncelle
   authStore.fetchUser().catch(err => {
-    console.error('Failed to fetch user after winner:', err)
+    // User fetch after winner failed
   })
 }
 
@@ -1058,10 +1059,10 @@ onMounted(() => {
 
   // İlk veri yükle with error handling
   fetchCurrentRound().catch(err => {
-    console.error('Failed to fetch current round on mount:', err)
+    // Initial round fetch failed
   })
   fetchHistory().catch(err => {
-    console.error('Failed to fetch history on mount:', err)
+    // Initial history fetch failed
   })
 
   // WebSocket bağlan
@@ -1111,7 +1112,7 @@ onUnmounted(() => {
     sharedAudioContext.close().catch(err => {
       // Only log if it's not an expected close error
       if (err.name !== 'InvalidStateError') {
-        console.error('Failed to close AudioContext:', err)
+        // AudioContext close failed
       }
     })
     sharedAudioContext = null

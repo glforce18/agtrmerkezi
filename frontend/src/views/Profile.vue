@@ -85,15 +85,15 @@
 
             <!-- User Stats Row with Icons -->
             <div class="stats-row">
-              <div class="stat-card">
+              <router-link to="/my-servers" class="stat-card stat-card-clickable">
                 <div class="stat-icon stat-icon-orange">
                   <ServerIcon class="w-5 h-5" />
                 </div>
                 <div class="stat-content">
                   <span class="stat-value">{{ user?.servers_count || 0 }}</span>
-                  <span class="stat-label">Sunucu</span>
+                  <span class="stat-label">Sunucularım</span>
                 </div>
-              </div>
+              </router-link>
 
               <div class="stat-card">
                 <div class="stat-icon stat-icon-blue">
@@ -218,104 +218,62 @@
                 </div>
 
                 <n-form @submit.prevent="updateProfile" class="space-y-5" aria-label="Profil bilgileri formu">
-                  <div class="grid md:grid-cols-2 gap-5">
-                    <!-- Modern Input with Icon -->
-                    <div class="input-group">
-                      <label for="username" class="sr-only">Kullanıcı Adı</label>
-                      <div class="input-icon-wrapper" aria-hidden="true">
-                        <UserIcon class="w-4 h-4" />
-                      </div>
-                      <n-input
-                        id="username"
-                        v-model:value="profileForm.username"
-                        placeholder="Kullanıcı Adı"
-                        class="modern-input"
-                        :status="validationStatus.username"
-                        aria-describedby="username-status"
-                      />
-                      <CheckCircleIcon v-if="profileForm.username" class="input-valid-icon" aria-hidden="true" />
-                      <span id="username-status" class="sr-only">
-                        {{ profileForm.username ? 'Kullanıcı adı girildi' : 'Kullanıcı adı gerekli' }}
-                      </span>
+                  <!-- Kullanıcı Adı - 1 kez değiştirilebilir -->
+                  <div class="input-group">
+                    <label for="username" class="input-label">Kullanıcı Adı</label>
+                    <div class="input-icon-wrapper" aria-hidden="true">
+                      <UserIcon class="w-4 h-4" />
                     </div>
+                    <n-input
+                      id="username"
+                      v-model:value="profileForm.username"
+                      placeholder="Kullanıcı Adı"
+                      class="modern-input"
+                      :disabled="user?.username_changed"
+                      :status="validationStatus.username"
+                      aria-describedby="username-status"
+                    />
+                    <CheckCircleIcon v-if="profileForm.username && !user?.username_changed" class="input-valid-icon" aria-hidden="true" />
+                    <LockIcon v-if="user?.username_changed" class="input-lock-icon" aria-hidden="true" />
+                  </div>
+                  <!-- Kullanıcı adı uyarısı -->
+                  <n-alert
+                    v-if="!user?.username_changed"
+                    type="warning"
+                    :bordered="false"
+                    class="username-warning"
+                  >
+                    <template #icon><AlertTriangleIcon class="w-4 h-4" /></template>
+                    Kullanıcı adınızı sadece <strong>1 kez</strong> değiştirebilirsiniz. Değiştirdikten sonra bir daha değiştiremezsiniz!
+                  </n-alert>
+                  <n-alert
+                    v-else
+                    type="info"
+                    :bordered="false"
+                    class="username-warning"
+                  >
+                    <template #icon><LockIcon class="w-4 h-4" /></template>
+                    Kullanıcı adı değiştirme hakkınızı kullandınız. Artık değiştiremezsiniz.
+                  </n-alert>
 
-                    <div class="input-group">
-                      <label for="email" class="sr-only">E-posta Adresi</label>
-                      <div class="input-icon-wrapper" aria-hidden="true">
-                        <MailIcon class="w-4 h-4" />
-                      </div>
-                      <n-input
-                        id="email"
-                        v-model:value="profileForm.email"
-                        type="email"
-                        placeholder="E-posta Adresi"
-                        class="modern-input"
-                        :status="validationStatus.email"
-                        aria-describedby="email-status"
-                        autocomplete="email"
-                      />
-                      <CheckCircleIcon v-if="isValidEmail(profileForm.email)" class="input-valid-icon" aria-hidden="true" />
-                      <XCircleIcon v-else-if="profileForm.email" class="input-invalid-icon" aria-hidden="true" />
-                      <span id="email-status" class="sr-only">
-                        {{ isValidEmail(profileForm.email) ? 'Geçerli e-posta' : 'Geçersiz e-posta formatı' }}
-                      </span>
+                  <!-- E-posta -->
+                  <div class="input-group">
+                    <label for="email" class="input-label">E-posta Adresi</label>
+                    <div class="input-icon-wrapper" aria-hidden="true">
+                      <MailIcon class="w-4 h-4" />
                     </div>
-
-                    <div class="input-group">
-                      <label for="first-name" class="sr-only">Ad</label>
-                      <div class="input-icon-wrapper" aria-hidden="true">
-                        <UserIcon class="w-4 h-4" />
-                      </div>
-                      <n-input
-                        id="first-name"
-                        v-model:value="profileForm.first_name"
-                        placeholder="Ad"
-                        class="modern-input"
-                        autocomplete="given-name"
-                      />
-                    </div>
-
-                    <div class="input-group">
-                      <label for="last-name" class="sr-only">Soyad</label>
-                      <div class="input-icon-wrapper" aria-hidden="true">
-                        <UserIcon class="w-4 h-4" />
-                      </div>
-                      <n-input
-                        id="last-name"
-                        v-model:value="profileForm.last_name"
-                        placeholder="Soyad"
-                        class="modern-input"
-                        autocomplete="family-name"
-                      />
-                    </div>
-
-                    <div class="input-group">
-                      <label for="phone" class="sr-only">Telefon</label>
-                      <div class="input-icon-wrapper" aria-hidden="true">
-                        <PhoneIcon class="w-4 h-4" />
-                      </div>
-                      <n-input
-                        id="phone"
-                        v-model:value="profileForm.phone"
-                        placeholder="Telefon"
-                        class="modern-input"
-                        autocomplete="tel"
-                      />
-                    </div>
-
-                    <div class="input-group">
-                      <label for="country" class="sr-only">Ülke</label>
-                      <div class="input-icon-wrapper" aria-hidden="true">
-                        <GlobeIcon class="w-4 h-4" />
-                      </div>
-                      <n-input
-                        id="country"
-                        v-model:value="profileForm.country"
-                        placeholder="Ülke"
-                        class="modern-input"
-                        autocomplete="country-name"
-                      />
-                    </div>
+                    <n-input
+                      id="email"
+                      v-model:value="profileForm.email"
+                      type="email"
+                      placeholder="E-posta Adresi"
+                      class="modern-input"
+                      :status="validationStatus.email"
+                      aria-describedby="email-status"
+                      autocomplete="email"
+                    />
+                    <CheckCircleIcon v-if="isValidEmail(profileForm.email)" class="input-valid-icon" aria-hidden="true" />
+                    <XCircleIcon v-else-if="profileForm.email" class="input-invalid-icon" aria-hidden="true" />
                   </div>
 
                   <div class="input-group">
@@ -375,37 +333,88 @@
 
                 <div class="connected-accounts-list">
                   <!-- Steam -->
-                  <div class="account-item" :class="{ 'connected': connectedAccounts.steam.connected }">
+                  <div class="account-item account-item--steam" :class="{ 'connected': connectedAccounts.steam.connected }">
                     <div class="account-info">
                       <div class="account-icon steam-icon">
                         <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
                           <path d="M12 2C6.48 2 2 6.48 2 12c0 5.17 3.95 9.42 9 9.95v-2.02c-3.94-.49-7-3.86-7-7.93 0-4.42 3.58-8 8-8s8 3.58 8 8c0 .88-.14 1.73-.41 2.52l1.77.71c.41-1.01.64-2.1.64-3.23 0-5.52-4.48-10-10-10zm-1.5 11.5l-2.47-.99c.13 1.67 1.52 3 3.22 3 1.79 0 3.25-1.46 3.25-3.25s-1.46-3.25-3.25-3.25c-.67 0-1.29.2-1.81.55l2.56 1.03c.81.32 1.2 1.24.88 2.05-.32.8-1.24 1.19-2.05.87l-.33-.01z"/>
                         </svg>
                       </div>
-                      <div>
-                        <h4 class="font-medium">Steam</h4>
-                        <p class="text-xs text-gray-400">
-                          {{ connectedAccounts.steam.connected ? connectedAccounts.steam.username : 'Bağlı değil' }}
-                        </p>
+                      <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                          <h4 class="font-medium">Steam Hesabi</h4>
+                          <div class="flex gap-2">
+                            <n-button
+                              v-if="connectedAccounts.steam.connected"
+                              size="tiny"
+                              type="error"
+                              ghost
+                              @click="disconnectAccount('steam')"
+                            >
+                              Kaldir
+                            </n-button>
+                            <n-button
+                              v-else
+                              size="tiny"
+                              type="primary"
+                              @click="connectAccount('steam')"
+                            >
+                              Bagla
+                            </n-button>
+                          </div>
+                        </div>
+                        <template v-if="connectedAccounts.steam.connected && user?.steam_id">
+                          <!-- Steam Profile Link -->
+                          <a
+                            :href="getSteamProfileUrl(user?.steam_id)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="steam-profile-link mb-3"
+                            @click.stop
+                          >
+                            <ExternalLinkIcon class="w-3 h-3" />
+                            Steam Profilini Görüntüle
+                          </a>
+
+                          <!-- All Steam IDs -->
+                          <div class="steam-ids-grid">
+                            <!-- Steam2 ID (Oyun için) -->
+                            <div class="steam-id-item">
+                              <span class="steam-id-label">Steam ID (Oyun)</span>
+                              <div class="steam-id-value-wrapper">
+                                <code class="steam-id-value">{{ getSteam2Id(user?.steam_id) }}</code>
+                                <button @click.stop="copyToClipboard(getSteam2Id(user?.steam_id))" class="copy-btn" title="Kopyala">
+                                  <CopyIcon class="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <!-- Steam64 ID -->
+                            <div class="steam-id-item">
+                              <span class="steam-id-label">Steam64 ID</span>
+                              <div class="steam-id-value-wrapper">
+                                <code class="steam-id-value">{{ getSteam64Id(user?.steam_id) }}</code>
+                                <button @click.stop="copyToClipboard(getSteam64Id(user?.steam_id))" class="copy-btn" title="Kopyala">
+                                  <CopyIcon class="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <!-- Steam3 ID -->
+                            <div class="steam-id-item">
+                              <span class="steam-id-label">Steam3 ID</span>
+                              <div class="steam-id-value-wrapper">
+                                <code class="steam-id-value">{{ getSteam3Id(user?.steam_id) }}</code>
+                                <button @click.stop="copyToClipboard(getSteam3Id(user?.steam_id))" class="copy-btn" title="Kopyala">
+                                  <CopyIcon class="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+                        <p v-else class="text-xs text-gray-400">Steam hesabi bagli degil</p>
                       </div>
                     </div>
-                    <n-button
-                      v-if="connectedAccounts.steam.connected"
-                      size="small"
-                      type="error"
-                      ghost
-                      @click="disconnectAccount('steam')"
-                    >
-                      Kaldır
-                    </n-button>
-                    <n-button
-                      v-else
-                      size="small"
-                      type="primary"
-                      @click="connectAccount('steam')"
-                    >
-                      Bağla
-                    </n-button>
                   </div>
 
                   <!-- Discord -->
@@ -499,14 +508,14 @@
                 <MailCheckIcon v-if="user?.email_verified" class="w-5 h-5" />
                 <MailWarningIcon v-else class="w-5 h-5" />
               </div>
-              <h3 class="section-title">E-posta Dogrulama</h3>
+              <h3 class="section-title">E-posta Doğrulama</h3>
               <n-tag
                 :type="user?.email_verified ? 'success' : 'warning'"
                 size="medium"
                 round
                 class="ml-auto"
               >
-                {{ user?.email_verified ? 'Dogrulandi' : 'Dogrulanmadi' }}
+                {{ user?.email_verified ? 'Doğrulandi' : 'Doğrulanmadi' }}
               </n-tag>
             </div>
 
@@ -514,15 +523,15 @@
             <div v-if="user?.email_verified" class="email-verified-state">
               <n-alert type="success" :bordered="false">
                 <template #icon><CheckCircleIcon class="w-5 h-5" /></template>
-                <template #header>E-posta Adresiniz Dogrulandi</template>
-                E-posta adresiniz ({{ user?.email }}) basariyla dogrulandi.
+                <template #header>E-posta Adresiniz Doğrulandi</template>
+                E-posta adresiniz ({{ user?.email }}) başarıyla doğrulandi.
               </n-alert>
             </div>
 
             <!-- Not Verified State -->
             <div v-else class="email-not-verified-state">
               <p class="text-gray-400 mb-4">
-                E-posta adresinizi dogrulamaniz gerekmektedir. Dogrulama yapmadiginiz surece bazi ozellikler kisitli olabilir.
+                E-posta adresinizi doğrulamaniz gerekmektedir. Doğrulama yapmadiginiz surece bazi ozellikler kisitli olabilir.
               </p>
 
               <div class="flex flex-wrap items-center gap-4">
@@ -535,7 +544,7 @@
                   class="btn-save"
                 >
                   <template #icon><SendIcon class="w-4 h-4" /></template>
-                  Dogrulama Emaili Gonder
+                  Doğrulama Emaili Gönder
                 </n-button>
                 <n-button
                   v-else
@@ -1368,7 +1377,9 @@ import {
   RefreshCwIcon,
   UsersIcon,
   CircleDotIcon,
-  MegaphoneIcon
+  MegaphoneIcon,
+  ExternalLinkIcon,
+  CopyIcon
 } from 'lucide-vue-next'
 import { formatDistanceToNow, format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -1415,9 +1426,9 @@ const getRoleBadgeStyle = (rank) => {
 // Profile completeness
 const profileCompleteness = computed(() => {
   let score = 0
-  const fields = ['username', 'email', 'first_name', 'last_name', 'phone', 'country', 'bio', 'avatar']
+  const fields = ['username', 'email', 'bio', 'avatar', 'steam_id']
   fields.forEach(field => {
-    if (user.value?.[field]) score += 12.5
+    if (user.value?.[field]) score += 20
   })
   return Math.round(score)
 })
@@ -1537,11 +1548,11 @@ const sendEmailVerification = async () => {
     await authAPI.sendVerificationEmail()
     uiStore.addNotification({
       type: 'success',
-      message: 'Dogrulama emaili gonderildi! Lutfen gelen kutunuzu kontrol edin.'
+      message: 'Doğrulama emaili gönderildi! Lutfen gelen kutunuzu kontrol edin.'
     })
     startEmailCountdown(60)
   } catch (error) {
-    const message = error.response?.data?.detail || 'Email gonderilemedi'
+    const message = error.response?.data?.detail || 'Email gönderilemedi'
     uiStore.addNotification({
       type: 'error',
       message
@@ -1588,10 +1599,6 @@ const checkEmailVerificationStatus = async () => {
 const profileForm = reactive({
   username: '',
   email: '',
-  first_name: '',
-  last_name: '',
-  phone: '',
-  country: '',
   bio: ''
 })
 
@@ -1667,7 +1674,7 @@ const fetchSessions = async () => {
       is_current: s.is_current || false
     }))
   } catch (error) {
-    console.error('Sessions fetch error:', error)
+    // Sessions fetch failed
   } finally {
     sessionsLoading.value = false
   }
@@ -1734,7 +1741,7 @@ const fetchActivities = async (loadMore = false) => {
     hasMoreActivities.value = newActivities.length === 10
     if (loadMore) activitiesPage.value++
   } catch (error) {
-    console.error('Activities fetch error:', error)
+    // Activities fetch failed
     // Fallback to empty if API fails
     if (!loadMore) activities.value = []
   } finally {
@@ -1808,6 +1815,120 @@ const formatMemberSince = (timestamp) => {
   return `${Math.floor(diffDays / 365)} yil`
 }
 
+// ==================== STEAM ID DONUSUM FONKSIYONLARI ====================
+
+// Steam64'u Steam2'ye çevir (STEAM_0:X:Y)
+const steam64ToSteam2 = (steam64) => {
+  try {
+    const steam64Int = BigInt(steam64)
+    const y = steam64Int & BigInt(1)
+    const z = (steam64Int - BigInt('76561197960265728')) >> BigInt(1)
+    return `STEAM_0:${y}:${z}`
+  } catch {
+    return null
+  }
+}
+
+// Steam64'u Steam3'e çevir ([U:1:X])
+const steam64ToSteam3 = (steam64) => {
+  try {
+    const steam64Int = BigInt(steam64)
+    const accountId = steam64Int - BigInt('76561197960265728')
+    return `[U:1:${accountId}]`
+  } catch {
+    return null
+  }
+}
+
+// Steam2'yi Steam64'e çevir
+const steam2ToSteam64 = (steam2) => {
+  try {
+    const match = steam2.match(/STEAM_[01]:([01]):(\d+)/i)
+    if (match) {
+      const y = parseInt(match[1])
+      const z = parseInt(match[2])
+      const steam64 = BigInt('76561197960265728') + BigInt(z * 2) + BigInt(y)
+      return steam64.toString()
+    }
+  } catch {}
+  return null
+}
+
+// Steam ID'den Steam64 al
+const getSteam64Id = (steamId) => {
+  if (!steamId) return '-'
+  // Zaten Steam64 ise
+  if (/^\d{17}$/.test(steamId)) return steamId
+  // Steam2 formatı ise
+  if (steamId.toUpperCase().startsWith('STEAM_')) {
+    return steam2ToSteam64(steamId) || '-'
+  }
+  // Steam3 formatı ise
+  if (steamId.startsWith('[U:1:')) {
+    const match = steamId.match(/\[U:1:(\d+)\]/)
+    if (match) {
+      const accountId = BigInt(match[1])
+      return (BigInt('76561197960265728') + accountId).toString()
+    }
+  }
+  return '-'
+}
+
+// Steam ID'den Steam2 al (STEAM_0:X:Y)
+const getSteam2Id = (steamId) => {
+  if (!steamId) return '-'
+  // Zaten Steam2 ise
+  if (steamId.toUpperCase().startsWith('STEAM_')) {
+    return steamId.toUpperCase().replace('STEAM_1:', 'STEAM_0:')
+  }
+  // Steam64 ise çevir
+  const steam64 = getSteam64Id(steamId)
+  if (steam64 && steam64 !== '-') {
+    return steam64ToSteam2(steam64) || '-'
+  }
+  return '-'
+}
+
+// Steam ID'den Steam3 al ([U:1:X])
+const getSteam3Id = (steamId) => {
+  if (!steamId) return '-'
+  // Zaten Steam3 ise
+  if (steamId.startsWith('[U:1:')) return steamId
+  // Steam64 ise çevir
+  const steam64 = getSteam64Id(steamId)
+  if (steam64 && steam64 !== '-') {
+    return steam64ToSteam3(steam64) || '-'
+  }
+  return '-'
+}
+
+// Steam profil URL'i oluştur
+const getSteamProfileUrl = (steamId) => {
+  if (!steamId) return '#'
+  const steam64 = getSteam64Id(steamId)
+  if (steam64 && steam64 !== '-') {
+    return `https://steamcommunity.com/profiles/${steam64}`
+  }
+  return '#'
+}
+
+// Panoya kopyala
+const copyToClipboard = async (text) => {
+  if (!text || text === '-') return
+  try {
+    await navigator.clipboard.writeText(text)
+    window.$message?.success('Kopyalandi!')
+  } catch {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    window.$message?.success('Kopyalandi!')
+  }
+}
+
 // API helper
 const apiCall = async (url, options = {}) => {
   const token = localStorage.getItem('access_token')
@@ -1834,27 +1955,56 @@ const updateProfile = async () => {
     return
   }
 
+  // Username değişikliği kontrolü
+  const usernameChanged = profileForm.username !== user.value?.username
+  if (usernameChanged && user.value?.username_changed) {
+    window.$message?.error('Kullanıcı adınızı daha önce değiştirdiniz. Artık değiştiremezsiniz.')
+    return
+  }
+
+  // Kullanıcı adı değişecekse uyar
+  if (usernameChanged && !user.value?.username_changed) {
+    const confirmed = await new Promise(resolve => {
+      window.$dialog?.warning({
+        title: 'Kullanıcı Adı Değişikliği',
+        content: 'Kullanıcı adınızı sadece 1 kez değiştirebilirsiniz. Bu işlem geri alınamaz! Devam etmek istiyor musunuz?',
+        positiveText: 'Evet, Değiştir',
+        negativeText: 'İptal',
+        onPositiveClick: () => resolve(true),
+        onNegativeClick: () => resolve(false),
+        onClose: () => resolve(false)
+      })
+    })
+    if (!confirmed) return
+  }
+
   saving.value = true
   try {
     const data = {
-      display_name: profileForm.first_name && profileForm.last_name
-        ? `${profileForm.first_name} ${profileForm.last_name}`
-        : null,
       email: profileForm.email,
       bio: profileForm.bio
     }
 
-    await apiCall('/api/user/profile', {
+    // Kullanıcı adı değişecekse ekle
+    if (usernameChanged) {
+      data.username = profileForm.username
+    }
+
+    const response = await apiCall('/api/user/profile', {
       method: 'PUT',
       body: JSON.stringify(data)
     })
 
     // Update local user data
-    authStore.updateUser({
+    const updateData = {
       email: profileForm.email,
-      bio: profileForm.bio,
-      display_name: data.display_name
-    })
+      bio: profileForm.bio
+    }
+    if (usernameChanged) {
+      updateData.username = profileForm.username
+      updateData.username_changed = true
+    }
+    authStore.updateUser(updateData)
 
     window.$message?.success('Profil başarıyla güncellendi')
     hasUnsavedChanges.value = false
@@ -2126,7 +2276,7 @@ const loadSettings = () => {
       const parsed = JSON.parse(saved)
       Object.assign(settings, parsed)
     } catch (e) {
-      console.error('Settings parse error:', e)
+      // Settings parse error - using defaults
     }
   }
 }
@@ -2341,13 +2491,8 @@ const bioRemaining = computed(() => bioMaxLength - bioCharCount.value)
 onMounted(async () => {
   // Initialize form from user data
   if (user.value) {
-    const displayParts = user.value.display_name?.split(' ') || []
     profileForm.username = user.value.username || ''
     profileForm.email = user.value.email || ''
-    profileForm.first_name = displayParts[0] || user.value.first_name || ''
-    profileForm.last_name = displayParts.slice(1).join(' ') || user.value.last_name || ''
-    profileForm.phone = user.value.phone || ''
-    profileForm.country = user.value.country || ''
     profileForm.bio = user.value.bio || ''
     initialFormState.value = { ...profileForm }
   }
@@ -2383,13 +2528,8 @@ watch(profileForm, trackChanges, { deep: true })
 // Watch user data changes
 watch(user, (newUser) => {
   if (newUser && !hasUnsavedChanges.value) {
-    const displayParts = newUser.display_name?.split(' ') || []
     profileForm.username = newUser.username || ''
     profileForm.email = newUser.email || ''
-    profileForm.first_name = displayParts[0] || newUser.first_name || ''
-    profileForm.last_name = displayParts.slice(1).join(' ') || newUser.last_name || ''
-    profileForm.phone = newUser.phone || ''
-    profileForm.country = newUser.country || ''
     profileForm.bio = newUser.bio || ''
     initialFormState.value = { ...profileForm }
   }
@@ -2635,6 +2775,17 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.stat-card-clickable {
+  cursor: pointer;
+}
+
+.stat-card-clickable:hover {
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.3);
+  transform: translateY(-2px);
 }
 
 .stat-card:hover {
@@ -3009,6 +3160,33 @@ onUnmounted(() => {
   color: #ef4444;
 }
 
+.input-lock-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #6b7280;
+}
+
+.input-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #d1d5db;
+  margin-bottom: 0.5rem;
+}
+
+.username-warning {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.username-warning strong {
+  color: #fbbf24;
+}
+
 /* Buttons */
 .btn-save {
   background: linear-gradient(135deg, #f97316, #ea580c) !important;
@@ -3070,6 +3248,96 @@ onUnmounted(() => {
 
 .steam-icon {
   background: linear-gradient(135deg, #1b2838, #2a475e);
+}
+
+/* Steam Account Item */
+.account-item--steam.connected {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.account-item--steam .account-info {
+  width: 100%;
+}
+
+/* Steam Profile Link */
+.steam-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #66c0f4;
+  background: rgba(102, 192, 244, 0.1);
+  border: 1px solid rgba(102, 192, 244, 0.2);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.steam-profile-link:hover {
+  background: rgba(102, 192, 244, 0.2);
+  border-color: rgba(102, 192, 244, 0.4);
+  color: #9dd5fa;
+}
+
+/* Steam IDs Grid */
+.steam-ids-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.steam-id-item {
+  padding: 10px 12px;
+  background: rgba(27, 40, 56, 0.5);
+  border: 1px solid rgba(102, 192, 244, 0.15);
+  border-radius: 8px;
+}
+
+.steam-id-label {
+  display: block;
+  font-size: 10px;
+  color: #66c0f4;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.steam-id-value-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.steam-id-value {
+  flex: 1;
+  font-size: 12px;
+  color: #e2e8f0;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  background: transparent;
+  word-break: break-all;
+}
+
+.copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: rgba(102, 192, 244, 0.1);
+  border: 1px solid rgba(102, 192, 244, 0.2);
+  border-radius: 4px;
+  color: #66c0f4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.copy-btn:hover {
+  background: rgba(102, 192, 244, 0.25);
+  border-color: rgba(102, 192, 244, 0.4);
 }
 
 .discord-icon {

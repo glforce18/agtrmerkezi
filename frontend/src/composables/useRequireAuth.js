@@ -18,14 +18,14 @@ export function useRequireAuth() {
    * Check if user is authenticated, redirect to login if not
    * @param {Object} options - Options
    * @param {boolean} options.redirect - Whether to redirect to login (default: true)
-   * @param {string} options.message - Custom message to show (default: 'Lutfen giris yapin')
+   * @param {string} options.message - Custom message to show (default: 'Lutfen giriş yapin')
    * @param {Function} options.onSuccess - Callback to run if authenticated
    * @returns {boolean} - Whether user is authenticated
    */
   const requireAuth = (options = {}) => {
     const {
       redirect = true,
-      message = 'Bu islem icin giris yapmaniz gerekiyor',
+      message = 'Bu islem icin giriş yapmaniz gerekiyor',
       onSuccess = null
     } = typeof options === 'function' ? { onSuccess: options } : options
 
@@ -71,12 +71,12 @@ export function useRequireAuth() {
    */
   const checkAuthOrPrompt = (callback) => {
     if (!isLoggedIn.value) {
-      window.$message?.info('Bu islem icin giris yapmaniz gerekiyor')
+      window.$message?.info('Bu islem icin giriş yapmaniz gerekiyor')
       // Show a confirmation to redirect
       window.$dialog?.warning({
-        title: 'Giris Gerekli',
-        content: 'Bu islemi yapabilmek icin giris yapmaniz gerekiyor. Giris sayfasina yonlendirilmek ister misiniz?',
-        positiveText: 'Giris Yap',
+        title: 'Giriş Gerekli',
+        content: 'Bu islemi yapabilmek icin giriş yapmaniz gerekiyor. Giriş sayfasina yonlendirilmek ister misiniz?',
+        positiveText: 'Giriş Yap',
         negativeText: 'Vazgec',
         onPositiveClick: () => {
           router.push({

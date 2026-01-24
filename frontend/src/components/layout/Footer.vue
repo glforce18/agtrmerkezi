@@ -33,7 +33,7 @@
             </div>
           </router-link>
           <p class="brand-description">
-            Counter-Strike 1.6 Turkiye Toplulugu. Binlerce oyuncunun bulustugu profesyonel oyun platformu.
+            Counter-Strike 1.6 Türkiye Topluluğu. Binlerce oyuncunun bulustugu profesyonel oyun platformu.
           </p>
 
           <!-- Social Media Links -->
@@ -306,9 +306,11 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import DOMPurify from 'dompurify'
 import { useThemeStore } from '@/stores/theme'
 import { useSettingsStore } from '@/stores/settings'
+import { useCookies } from '@/composables/useCookies'
 
 const themeStore = useThemeStore()
 const settingsStore = useSettingsStore()
+const { getLanguagePreference, setLanguagePreference } = useCookies()
 
 const isDark = computed(() => themeStore.isDark)
 const currentYear = computed(() => new Date().getFullYear())
@@ -393,12 +395,15 @@ const scrollToTop = () => {
   })
 }
 
-// Language
-const currentLanguage = ref({
-  code: 'tr',
-  name: 'Turkce',
-  flag: '\ud83c\uddf9\ud83c\uddf7'
-})
+// Language - dil ayarlarini cookie'den yukle
+const langs = {
+  tr: { code: 'tr', name: 'Turkce', flag: '\ud83c\uddf9\ud83c\uddf7' },
+  en: { code: 'en', name: 'English', flag: '\ud83c\uddfa\ud83c\uddf8' },
+  de: { code: 'de', name: 'Deutsch', flag: '\ud83c\udde9\ud83c\uddea' }
+}
+
+const savedLang = getLanguagePreference()
+const currentLanguage = ref(langs[savedLang] || langs.tr)
 
 const languageOptions = [
   { label: '\ud83c\uddf9\ud83c\uddf7 Turkce', key: 'tr' },
@@ -407,12 +412,9 @@ const languageOptions = [
 ]
 
 const handleLanguageSelect = (key) => {
-  const langs = {
-    tr: { code: 'tr', name: 'Turkce', flag: '\ud83c\uddf9\ud83c\uddf7' },
-    en: { code: 'en', name: 'English', flag: '\ud83c\uddfa\ud83c\uddf8' },
-    de: { code: 'de', name: 'Deutsch', flag: '\ud83c\udde9\ud83c\uddea' }
-  }
   currentLanguage.value = langs[key] || langs.tr
+  // Cookie'ye kaydet
+  setLanguagePreference(key)
 }
 
 // Social Links
@@ -469,10 +471,10 @@ const resourceLinks = [
 
 // Legal Links
 const legalLinks = [
-  { path: '/terms', label: 'Kullanım Kosullari' },
-  { path: '/privacy', label: 'Gizlilik Politikasi' },
-  { path: '/cookies', label: 'Çerez Politikasi' },
-  { path: '/contact', label: 'İletişim' }
+  { path: '/terms', label: 'Kullanim Kosullari' },
+  { path: '/gizlilik-politikasi', label: 'Gizlilik Politikasi' },
+  { path: '/gizlilik-politikasi#cerez', label: 'Cerez Politikasi' },
+  { path: '/contact', label: 'Iletisim' }
 ]
 
 // Partners (will be loaded from API/settings when available)

@@ -22,7 +22,7 @@
       </span>
       <span v-if="topic.isSolved" class="forum-badge forum-badge--solved">
         <CheckCircleIcon class="w-3 h-3" />
-        Cozuldu
+        Çözüldü
       </span>
       <span v-if="topic.isLocked" class="forum-badge forum-badge--locked">
         <LockIcon class="w-3 h-3" />
@@ -30,7 +30,7 @@
       </span>
       <span v-if="topic.isHot && !topic.isPinned" class="forum-badge forum-badge--hot">
         <FlameIcon class="w-3 h-3" />
-        Populer
+        Popüler
       </span>
     </div>
 
@@ -50,7 +50,7 @@
           v-if="topic.authorOnline"
           class="forum-topic-card__online-indicator"
           role="status"
-          aria-label="Cevrimici"
+          aria-label="Çevrimiçi"
         />
       </div>
 
@@ -58,7 +58,7 @@
       <div class="forum-topic-card__info">
         <!-- Title -->
         <h3 class="forum-topic-title">
-          <span v-if="topic.isUnread" class="forum-topic-card__unread-dot" aria-label="Okunmamis" />
+          <span v-if="topic.isUnread" class="forum-topic-card__unread-dot" aria-label="Okunmamış" />
           {{ topic.title }}
         </h3>
 
@@ -97,15 +97,15 @@
 
       <!-- Stats -->
       <div class="forum-topic-card__stats">
-        <div class="forum-stat-pill" title="Yanitlar">
+        <div class="forum-stat-pill" title="Yanıtlar">
           <MessageSquareIcon class="forum-stat-pill__icon w-4 h-4" />
           <span class="forum-stat-pill__value">{{ formatNumber(topic.replies || 0) }}</span>
         </div>
-        <div class="forum-stat-pill" title="Goruntulenme">
+        <div class="forum-stat-pill" title="Görüntülenme">
           <EyeIcon class="forum-stat-pill__icon w-4 h-4" />
           <span class="forum-stat-pill__value">{{ formatNumber(topic.views || 0) }}</span>
         </div>
-        <div v-if="!compact" class="forum-stat-pill" title="Begeniler">
+        <div v-if="!compact" class="forum-stat-pill" title="Beğeniler">
           <HeartIcon class="forum-stat-pill__icon w-4 h-4" />
           <span class="forum-stat-pill__value">{{ formatNumber(topic.likes || 0) }}</span>
         </div>
@@ -113,7 +113,7 @@
 
       <!-- Last reply info (optional) -->
       <div v-if="topic.lastReply && !compact" class="forum-topic-card__last-reply">
-        <span class="forum-meta">Son yanit:</span>
+        <span class="forum-meta">Son yanıt:</span>
         <n-avatar round :size="20" :src="topic.lastReply.avatar" />
         <span class="forum-meta">{{ topic.lastReply.author }}</span>
         <span class="forum-meta">{{ topic.lastReply.time }}</span>
@@ -123,6 +123,33 @@
     <!-- Arrow indicator -->
     <div class="forum-topic-card__arrow" aria-hidden="true">
       <ChevronRightIcon class="w-5 h-5" />
+    </div>
+
+    <!-- Quick Actions (visible on hover) -->
+    <div class="forum-topic-card__quick-actions" @click.stop>
+      <button
+        class="quick-action-btn"
+        :class="{ 'is-liked': topic.isLiked }"
+        title="Beğen"
+        @click="handleLike"
+      >
+        <HeartIcon class="w-4 h-4" />
+      </button>
+      <button
+        class="quick-action-btn"
+        :class="{ 'is-bookmarked': topic.isBookmarked }"
+        title="Kaydet"
+        @click="handleBookmark"
+      >
+        <BookmarkIcon class="w-4 h-4" />
+      </button>
+      <button
+        class="quick-action-btn"
+        title="Paylaş"
+        @click="handleShare"
+      >
+        <ShareIcon class="w-4 h-4" />
+      </button>
     </div>
   </article>
 </template>
@@ -140,7 +167,9 @@ import {
   MessageSquareIcon,
   EyeIcon,
   HeartIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  BookmarkIcon,
+  ShareIcon
 } from 'lucide-vue-next'
 
 import { computed } from 'vue'
@@ -175,14 +204,14 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['click'])
+const emit = defineEmits(['click', 'like', 'bookmark', 'share'])
 
 const router = useRouter()
 
 const defaultAvatar = '/images/default-avatar.png'
 
 // Computed properties for safe access
-const topicTitle = computed(() => props.topic.title || 'Basliksiz Konu')
+const topicTitle = computed(() => props.topic.title || 'Başlıksiz Konu')
 const topicAuthor = computed(() => props.topic.author || 'Anonim')
 const topicReplies = computed(() => props.topic.replies || 0)
 const topicViews = computed(() => props.topic.views || 0)
@@ -200,7 +229,7 @@ const formatNumber = (num) => {
 
 const navigateToTopic = (event) => {
   // Prevent navigation if clicking on a link inside the card
-  if (event.target.tagName === 'A') return
+  if (event?.target?.tagName === 'A') return
 
   emit('click', props.topic)
   // Use slug if available, fallback to id for navigation
@@ -215,18 +244,40 @@ const handleKeydown = (event) => {
     navigateToTopic(event)
   }
 }
+
+// Quick action handlers
+const handleLike = () => {
+  emit('like', props.topic)
+}
+
+const handleBookmark = () => {
+  emit('bookmark', props.topic)
+}
+
+const handleShare = () => {
+  const url = `${window.location.origin}/forum/topic/${props.topic.slug || props.topic.id}`
+  if (navigator.share) {
+    navigator.share({
+      title: props.topic.title,
+      url: url
+    })
+  } else {
+    navigator.clipboard.writeText(url)
+    emit('share', props.topic)
+  }
+}
 </script>
 
 <style scoped>
 .forum-topic-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: 6px;
+  padding: 10px 14px;
   position: relative;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 15, 20, 0.95) 100%);
   border: 1px solid rgba(71, 85, 105, 0.3);
-  border-radius: 12px;
+  border-radius: 10px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
@@ -298,14 +349,14 @@ const handleKeydown = (event) => {
 
 .forum-topic-card__badges {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .forum-topic-card__content {
   display: grid;
   grid-template-columns: auto 1fr auto auto;
-  gap: 16px;
+  gap: 10px;
   align-items: center;
 }
 
@@ -328,7 +379,7 @@ const handleKeydown = (event) => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .forum-topic-card__unread-dot {
@@ -414,6 +465,66 @@ const handleKeydown = (event) => {
   color: var(--forum-brand);
 }
 
+/* Quick Actions */
+.forum-topic-card__quick-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.forum-topic-card:hover .forum-topic-card__quick-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.quick-action-btn:hover {
+  background: rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #f97316;
+  transform: scale(1.1);
+}
+
+.quick-action-btn.is-liked {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.quick-action-btn.is-liked:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.quick-action-btn.is-bookmarked {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+}
+
+.quick-action-btn.is-bookmarked:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .forum-topic-card__content {
@@ -428,6 +539,10 @@ const handleKeydown = (event) => {
 
   .forum-topic-card__arrow,
   .forum-topic-card__last-reply {
+    display: none;
+  }
+
+  .forum-topic-card__quick-actions {
     display: none;
   }
 }

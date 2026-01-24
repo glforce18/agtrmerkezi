@@ -6,7 +6,7 @@
         <div class="verify-icon loading">
           <Loader2Icon class="w-12 h-12 animate-spin" />
         </div>
-        <h1 class="verify-title">E-posta Dogrulaniyor</h1>
+        <h1 class="verify-title">E-posta Doğrulaniyor</h1>
         <p class="verify-description">Lutfen bekleyin...</p>
       </div>
 
@@ -15,9 +15,9 @@
         <div class="verify-icon success">
           <CheckCircleIcon class="w-12 h-12" />
         </div>
-        <h1 class="verify-title">E-posta Dogrulandi!</h1>
+        <h1 class="verify-title">E-posta Doğrulandi!</h1>
         <p class="verify-description">
-          E-posta adresiniz basariyla dogrulandi. Artik tum ozellikleri kullanabilirsiniz.
+          E-posta adresiniz başarıyla doğrulandi. Artik tüm ozellikleri kullanabilirsiniz.
         </p>
         <router-link to="/profile" class="verify-btn success">
           <UserIcon class="w-4 h-4" />
@@ -30,7 +30,7 @@
         <div class="verify-icon error">
           <XCircleIcon class="w-12 h-12" />
         </div>
-        <h1 class="verify-title">Dogrulama Basarisiz</h1>
+        <h1 class="verify-title">Doğrulama Başarısiz</h1>
         <p class="verify-description">
           {{ errorMessage }}
         </p>
@@ -43,7 +43,7 @@
           >
             <SendIcon v-if="!resending" class="w-4 h-4" />
             <Loader2Icon v-else class="w-4 h-4 animate-spin" />
-            <span>{{ resending ? 'Gonderiliyor...' : 'Yeni Link Gonder' }}</span>
+            <span>{{ resending ? 'Gönderiliyor...' : 'Yeni Link Gönder' }}</span>
           </button>
           <router-link to="/" class="verify-btn secondary">
             <HomeIcon class="w-4 h-4" />
@@ -86,7 +86,7 @@ async function verifyEmail() {
 
   if (!token) {
     loading.value = false
-    errorMessage.value = 'Dogrulama tokeni bulunamadi.'
+    errorMessage.value = 'Doğrulama tokeni bulunamadi.'
     return
   }
 
@@ -94,14 +94,14 @@ async function verifyEmail() {
     await authAPI.verifyEmail(token)
     success.value = true
 
-    // Kullanici giris yapmissa bilgilerini guncelle
+    // Kullanıcı giriş yapmissa bilgilerini güncelle
     if (authStore.isAuthenticated) {
       await authStore.fetchUser()
     }
 
     uiStore.addNotification({
       type: 'success',
-      message: 'E-posta adresiniz basariyla dogrulandi!'
+      message: 'E-posta adresiniz başarıyla doğrulandi!'
     })
 
     // 3 saniye sonra profile yonlendir
@@ -113,7 +113,7 @@ async function verifyEmail() {
       }
     }, 3000)
   } catch (error) {
-    errorMessage.value = error.response?.data?.detail || 'Dogrulama basarisiz oldu.'
+    errorMessage.value = error.response?.data?.detail || 'Doğrulama başarısız oldu.'
     canResend.value = authStore.isAuthenticated
   } finally {
     loading.value = false
@@ -128,14 +128,14 @@ async function resendVerification() {
     await authAPI.sendVerificationEmail()
     uiStore.addNotification({
       type: 'success',
-      message: 'Yeni dogrulama emaili gonderildi!'
+      message: 'Yeni doğrulama emaili gönderildi!'
     })
-    errorMessage.value = 'Yeni dogrulama emaili gonderildi. Lutfen gelen kutunuzu kontrol edin.'
+    errorMessage.value = 'Yeni doğrulama emaili gönderildi. Lutfen gelen kutunuzu kontrol edin.'
     canResend.value = false
   } catch (error) {
     uiStore.addNotification({
       type: 'error',
-      message: error.response?.data?.detail || 'Email gonderilemedi.'
+      message: error.response?.data?.detail || 'Email gönderilemedi.'
     })
   } finally {
     resending.value = false

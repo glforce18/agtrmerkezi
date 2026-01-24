@@ -114,7 +114,7 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label>Sira</label>
+                  <label>Sıra</label>
                   <input v-model.number="formData.display_order" type="number" />
                 </div>
                 <div class="form-group">

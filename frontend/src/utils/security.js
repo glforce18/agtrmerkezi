@@ -5,6 +5,8 @@
 
 import DOMPurify from 'dompurify'
 
+const isDev = import.meta.env.DEV
+
 // Configure DOMPurify
 DOMPurify.setConfig({
   ALLOWED_TAGS: [
@@ -339,10 +341,10 @@ export function initSecurity() {
 
   // Warn about insecure context in production
   if (!isSecureContext() && window.location.hostname !== 'localhost') {
-    console.warn('[Security] Running in insecure context (HTTP)')
+    if (isDev) console.warn('[Security] Running in insecure context (HTTP)')
   }
 
-  console.log('%c[Security] Initialized', 'color: #22c55e')
+  if (isDev) console.log('%c[Security] Initialized', 'color: #22c55e')
 }
 
 export default {

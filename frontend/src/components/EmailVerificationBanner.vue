@@ -9,9 +9,9 @@
           <MailWarningIcon class="w-5 h-5" />
         </div>
         <div class="banner-text">
-          <span class="banner-title">E-posta Dogrulamasi Gerekli</span>
+          <span class="banner-title">E-posta Doğrulamasi Gerekli</span>
           <span class="banner-description">
-            Tum ozellikleri kullanabilmek icin e-posta adresinizi dogrulayin.
+            Tüm ozellikleri kullanabilmek icin e-posta adresinizi doğrulayin.
           </span>
         </div>
         <div class="banner-actions">
@@ -23,7 +23,7 @@
           >
             <SendIcon v-if="!sending" class="w-4 h-4" />
             <LoaderIcon v-else class="w-4 h-4 animate-spin" />
-            <span>{{ sending ? 'Gonderiliyor...' : 'Email Dogrula' }}</span>
+            <span>{{ sending ? 'Gönderiliyor...' : 'Email Doğrula' }}</span>
           </button>
           <button
             v-else
@@ -70,9 +70,9 @@ let countdownInterval = null
 const showBanner = computed(() => {
   if (dismissed.value) return false
   if (!authStore.user) return false
-  // Steam kullanicilari icin gosterme
+  // Steam kullanıcılari icin gösterme
   if (authStore.user.steam_id) return false
-  // Email zaten dogrulanmissa gosterme
+  // Email zaten doğrulanmissa gösterme
   if (authStore.user.email_verified) return false
   return true
 })
@@ -87,11 +87,11 @@ async function sendVerification() {
     await authAPI.sendVerificationEmail()
     uiStore.addNotification({
       type: 'success',
-      message: 'Dogrulama emaili gonderildi! Lutfen gelen kutunuzu kontrol edin.'
+      message: 'Doğrulama emaili gönderildi! Lutfen gelen kutunuzu kontrol edin.'
     })
     startCountdown(60)
   } catch (error) {
-    const message = error.response?.data?.detail || 'Email gonderilemedi'
+    const message = error.response?.data?.detail || 'Email gönderilemedi'
     uiStore.addNotification({
       type: 'error',
       message
@@ -121,7 +121,7 @@ function startCountdown(seconds) {
 
 function dismissBanner() {
   dismissed.value = true
-  // 1 saat sonra tekrar goster
+  // 1 saat sonra tekrar göster
   setTimeout(() => {
     dismissed.value = false
   }, 60 * 60 * 1000)

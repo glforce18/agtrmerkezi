@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user_required, get_current_user_with_steam
 from app.models.connection import get_db
-from app.models.database import User, JackpotStatus
+from app.models.database import JackpotStatus, User
 from app.services.jackpot import get_jackpot_service
 
 # Alias
@@ -26,6 +26,7 @@ router = APIRouter()
 
 
 # ==================== SCHEMAS ====================
+
 
 class PlaceBetRequest(BaseModel):
     amount: float = Field(gt=0, description="Bahis miktarı (Coin)")
@@ -77,6 +78,7 @@ class HistoryItem(BaseModel):
 
 # ==================== JACKPOT ENDPOINTS ====================
 
+
 @router.get("/jackpot/current", response_model=RoundInfoResponse)
 async def get_current_round(db: Session = Depends(get_db)):
     """Aktif jackpot turunu getir"""
@@ -96,7 +98,7 @@ async def place_jackpot_bet(
     request: Request,
     data: PlaceBetRequest,
     current_user: User = Depends(get_current_user_with_steam),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Jackpot'a bahis yap (Steam hesabi baglantisi gerekli)"""
     client_ip = request.client.host if request.client else None
@@ -104,28 +106,30 @@ async def place_jackpot_bet(
 
     jackpot = get_jackpot_service(db)
     bet = jackpot.place_bet(
-        user_id=current_user.id,
-        amount=data.amount,
-        ip_address=client_ip,
-        user_agent=user_agent
+        user_id=current_user.id, amount=data.amount, ip_address=client_ip, user_agent=user_agent
     )
 
     # Güncel bakiye
-    from app.services.wallet import get_wallet_service
     from app.models.database import WalletType
+    from app.services.wallet import get_wallet_service
+
     wallet = get_wallet_service(db)
     new_balance = wallet.get_balance(current_user.id, WalletType.COIN)
 
     # WebSocket broadcast - yeni bahis
     try:
-        from app.api.websocket import broadcast_jackpot_bet, broadcast_jackpot_round_update
+        from app.api.websocket import (
+            broadcast_jackpot_bet,
+            broadcast_jackpot_round_update,
+        )
+
         bet_broadcast_data = {
             "user_id": current_user.id,
             "username": current_user.username,
             "avatar": current_user.avatar,
             "amount": bet.amount,
             "tickets": f"{bet.ticket_start}-{bet.ticket_end}",
-            "win_chance": round(bet.win_chance, 2)
+            "win_chance": round(bet.win_chance, 2),
         }
         asyncio.create_task(broadcast_jackpot_bet(bet_broadcast_data))
 
@@ -139,11 +143,15 @@ async def place_jackpot_bet(
         success=True,
         message=f"{data.amount} Coin ile bahis yapıldı!",
         bet_id=bet.id,
-        round_number=bet.round.round_number if hasattr(bet, 'round') else bet.game.round_number if hasattr(bet, 'game') else 0,
+        round_number=(
+            bet.round.round_number
+            if hasattr(bet, "round")
+            else bet.game.round_number if hasattr(bet, "game") else 0
+        ),
         amount=bet.amount,
         tickets=f"{int(bet.ticket_start)}-{int(bet.ticket_end)}",
-        win_chance=round(bet.win_chance, 2) if hasattr(bet, 'win_chance') else 0,
-        new_balance=new_balance
+        win_chance=round(bet.win_chance, 2) if hasattr(bet, "win_chance") else 0,
+        new_balance=new_balance,
     )
 
 
@@ -160,10 +168,7 @@ async def get_round_info(round_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/jackpot/history", response_model=List[HistoryItem])
-async def get_jackpot_history(
-    limit: int = 10,
-    db: Session = Depends(get_db)
-):
+async def get_jackpot_history(limit: int = 10, db: Session = Depends(get_db)):
     """Son jackpot turlarını getir"""
     jackpot = get_jackpot_service(db)
     return jackpot.get_recent_rounds(min(limit, 50))
@@ -174,14 +179,13 @@ async def finish_jackpot_round(
     round_id: int,
     client_seed: Optional[str] = None,
     current_user: User = Depends(get_current_user_required),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Jackpot turunu bitir (admin veya otomatik)"""
     # Admin kontrolü (normalde bu otomatik çalışır)
     if current_user.role.value not in ["admin", "superadmin"]:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bu işlem için yetkiniz yok"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Bu işlem için yetkiniz yok"
         )
 
     jackpot = get_jackpot_service(db)
@@ -198,7 +202,7 @@ async def finish_jackpot_round(
             "total_pot": result["total_pot"],
             "winner_index": result.get("winner_index", 0),  # Animasyon için index
             "players": jackpot.get_round_info(round_id).get("players", []),
-            "duration": 10  # 10 saniye animasyon
+            "duration": 10,  # 10 saniye animasyon
         }
         asyncio.create_task(broadcast_jackpot_rolling(animation_data))
 
@@ -206,6 +210,7 @@ async def finish_jackpot_round(
         async def delayed_winner_broadcast():
             await asyncio.sleep(10)
             from app.api.websocket import broadcast_jackpot_winner
+
             winner_data = {
                 "round_id": result["round_id"],
                 "round_number": result["round_number"],
@@ -215,7 +220,7 @@ async def finish_jackpot_round(
                 "total_pot": result["total_pot"],
                 "winner_amount": result["winner_amount"],
                 "server_seed": result["server_seed"],
-                "client_seed": result["client_seed"]
+                "client_seed": result["client_seed"],
             }
             await broadcast_jackpot_winner(winner_data)
 
@@ -229,8 +234,9 @@ async def finish_jackpot_round(
 @router.get("/jackpot/verify/{round_id}")
 async def verify_round_fairness(round_id: int, db: Session = Depends(get_db)):
     """Tur adilliğini doğrula (Provably Fair)"""
-    from app.models.games import JackpotRound
     import hashlib
+
+    from app.models.games import JackpotRound
 
     round = db.query(JackpotRound).filter(JackpotRound.id == round_id).first()
 
@@ -239,14 +245,11 @@ async def verify_round_fairness(round_id: int, db: Session = Depends(get_db)):
 
     if round.status != JackpotStatus.COMPLETED:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Sadece bitmiş turlar doğrulanabilir"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Sadece bitmiş turlar doğrulanabilir"
         )
 
     # Server seed'in hash'ini doğrula
-    calculated_hash = hashlib.sha256(
-        round.server_seed_revealed.encode()
-    ).hexdigest()
+    calculated_hash = hashlib.sha256(round.server_seed_revealed.encode()).hexdigest()
 
     hash_matches = calculated_hash == round.server_seed
 
@@ -270,75 +273,74 @@ async def verify_round_fairness(round_id: int, db: Session = Depends(get_db)):
         "winning_ticket": round.winner_ticket,
         "calculated_ticket": calculated_ticket,
         "ticket_verified": ticket_matches,
-        "fully_verified": hash_matches and ticket_matches
+        "fully_verified": hash_matches and ticket_matches,
     }
 
 
 # ==================== OYUNCU İSTATİSTİKLERİ ====================
 
+
 @router.get("/stats/me")
 async def get_my_game_stats(
-    current_user: User = Depends(get_current_user_required),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user_required), db: Session = Depends(get_db)
 ):
-    """Kendi oyun istatistiklerimi getir"""
-    from app.models.games import GameHistory
-    from sqlalchemy import func
+    """Kendi oyun istatistiklerimi getir - JackpotHistory'den"""
+    from app.models.database import JackpotHistory
 
-    # Toplam istatistikler
-    stats = db.query(
-        func.count(GameHistory.id).label("total_games"),
-        func.sum(GameHistory.bet_amount).label("total_bet"),
-        func.sum(GameHistory.win_amount).label("total_won"),
-        func.sum(GameHistory.profit).label("total_profit"),
-        func.sum(func.cast(GameHistory.is_winner, Integer)).label("wins")
-    ).filter(GameHistory.user_id == current_user.id).first()
+    # JackpotHistory aggregate tablosundan
+    stats = db.query(JackpotHistory).filter(JackpotHistory.user_id == current_user.id).first()
 
-    total_games = stats.total_games or 0
-    wins = stats.wins or 0
+    if not stats:
+        return {
+            "user_id": current_user.id,
+            "username": current_user.username,
+            "total_games": 0,
+            "total_bet": 0,
+            "total_won": 0,
+            "total_profit": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate": 0,
+            "biggest_win": 0,
+        }
+
+    total_games = stats.total_games_played or 0
+    wins = stats.win_count or 0
+    profit = (stats.total_won or 0) - (stats.total_lost or 0)
 
     return {
         "user_id": current_user.id,
         "username": current_user.username,
         "total_games": total_games,
-        "total_bet": stats.total_bet or 0,
+        "total_bet": stats.total_wagered or 0,
         "total_won": stats.total_won or 0,
-        "total_profit": stats.total_profit or 0,
+        "total_profit": profit,
         "wins": wins,
         "losses": total_games - wins,
-        "win_rate": round((wins / total_games * 100) if total_games > 0 else 0, 2)
+        "win_rate": round((wins / total_games * 100) if total_games > 0 else 0, 2),
+        "biggest_win": stats.biggest_win or 0,
     }
 
 
 @router.get("/leaderboard")
 async def get_game_leaderboard(
-    period: str = "all",  # all, week, month
+    period: str = "all",  # all, week, month (period şu an kullanılmıyor - JackpotHistory aggregate table)
     limit: int = 20,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """Oyun liderlik tablosu"""
-    from app.models.games import GameHistory
-    from sqlalchemy import func
-    from datetime import datetime, timedelta
+    """Oyun liderlik tablosu - JackpotHistory aggregate tablosundan"""
+    from app.models.database import JackpotHistory
 
-    query = db.query(
-        GameHistory.user_id,
-        func.sum(GameHistory.profit).label("total_profit"),
-        func.count(GameHistory.id).label("games_played"),
-        func.sum(func.cast(GameHistory.is_winner, Integer)).label("wins")
+    # JackpotHistory aggregate istatistikleri içeriyor
+    # period filtresi şu an desteklenmiyor (aggregate table)
+    query = (
+        db.query(JackpotHistory)
+        .filter(JackpotHistory.total_games_played > 0)
+        .order_by((JackpotHistory.total_won - JackpotHistory.total_lost).desc())
+        .limit(limit)
     )
 
-    # Dönem filtresi
-    if period == "week":
-        start_date = datetime.utcnow() - timedelta(days=7)
-        query = query.filter(GameHistory.created_at >= start_date)
-    elif period == "month":
-        start_date = datetime.utcnow() - timedelta(days=30)
-        query = query.filter(GameHistory.created_at >= start_date)
-
-    results = query.group_by(GameHistory.user_id).order_by(
-        func.sum(GameHistory.profit).desc()
-    ).limit(limit).all()
+    results = query.all()
 
     # N+1 query fix: Batch load all users in a single query
     user_ids = [row.user_id for row in results]
@@ -349,18 +351,18 @@ async def get_game_leaderboard(
     for i, row in enumerate(results):
         user = users_map.get(row.user_id)
         if user:
-            leaderboard.append({
-                "rank": i + 1,
-                "user_id": row.user_id,
-                "username": user.username,
-                "avatar": user.avatar,
-                "total_profit": row.total_profit or 0,
-                "games_played": row.games_played or 0,
-                "wins": row.wins or 0
-            })
+            profit = (row.total_won or 0) - (row.total_lost or 0)
+            leaderboard.append(
+                {
+                    "rank": i + 1,
+                    "user_id": row.user_id,
+                    "username": user.username,
+                    "avatar": user.avatar,
+                    "total_profit": profit,
+                    "games_played": row.total_games_played or 0,
+                    "wins": row.win_count or 0,
+                    "biggest_win": row.biggest_win or 0,
+                }
+            )
 
     return leaderboard
-
-
-# Integer import için
-from sqlalchemy import Integer

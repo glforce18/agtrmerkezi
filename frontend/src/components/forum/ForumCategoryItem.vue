@@ -57,7 +57,7 @@
           <div class="forum-stat-pill">
             <MessageSquareIcon class="forum-stat-pill__icon w-3.5 h-3.5" />
             <span class="forum-stat-pill__value">{{ formatNumber(category.posts || 0) }}</span>
-            <span>Gonderi</span>
+            <span>Gönderi</span>
           </div>
           <div v-if="category.newToday" class="forum-stat-pill forum-stat-pill--highlight">
             <SparklesIcon class="forum-stat-pill__icon w-3.5 h-3.5" />

@@ -2,7 +2,7 @@
   <div class="forum-page min-h-screen relative overflow-hidden">
     <!-- Skip to content link for accessibility -->
     <a href="#forum-main-content" class="forum-skip-link">
-      Ana icerigi atla
+      Ana içeriği atla
     </a>
 
     <!-- Subtle Background -->

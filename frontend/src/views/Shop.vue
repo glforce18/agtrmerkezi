@@ -36,81 +36,68 @@
         </div>
       </div>
 
-      <!-- Payment Method Toggle -->
-      <div class="payment-section">
-        <div class="payment-toggle-wrapper">
-          <div class="payment-toggle">
-            <div class="toggle-slider" :class="{ armor: paymentMethod === 'armor' }"></div>
-            <button
-              class="toggle-btn"
-              :class="{ active: paymentMethod === 'tl' }"
-              @click="paymentMethod = 'tl'"
-            >
-              <div class="toggle-icon tl-icon">
-                <Banknote :size="20" />
-              </div>
-              <div class="toggle-content">
-                <span class="toggle-label">TL ile Öde</span>
-                <span class="toggle-desc">Türk Lirası</span>
-              </div>
-            </button>
-            <button
-              class="toggle-btn"
-              :class="{ active: paymentMethod === 'armor' }"
-              @click="paymentMethod = 'armor'"
-            >
-              <div class="toggle-icon armor-icon">
-                <Shield :size="20" />
-              </div>
-              <div class="toggle-content">
-                <span class="toggle-label">Armor ile Öde</span>
-                <span class="toggle-desc">{{ ARMOR_RATE }}x Bonus</span>
-              </div>
-            </button>
-          </div>
+      <!-- Compact Filter Bar -->
+      <div class="shop-filter-bar">
+        <!-- Payment Toggle (Compact) -->
+        <div class="payment-toggle-compact">
+          <button
+            class="pay-btn"
+            :class="{ active: paymentMethod === 'tl' }"
+            @click="paymentMethod = 'tl'"
+          >
+            <Banknote :size="16" />
+            TL
+          </button>
+          <button
+            class="pay-btn"
+            :class="{ active: paymentMethod === 'armor' }"
+            @click="paymentMethod = 'armor'"
+          >
+            <Shield :size="16" />
+            Armor
+          </button>
         </div>
-      </div>
 
-      <!-- Game Type Filter -->
-      <div class="filter-section">
-        <div class="filter-wrapper">
+        <!-- Divider -->
+        <div class="filter-divider"></div>
+
+        <!-- Game Type Filter (Compact) -->
+        <div class="game-filter-compact">
           <button
             v-for="game in gameTypes"
             :key="game.value"
-            class="game-filter-btn"
+            class="game-btn"
             :class="{ active: selectedGame === game.value }"
             @click="selectedGame = game.value"
           >
-            <div class="filter-icon-wrapper" :class="game.value">
-              <component :is="game.icon" :size="22" />
-            </div>
-            <span class="filter-label">{{ game.label }}</span>
-            <span class="filter-count" v-if="game.value !== 'all'">
-              {{ getGameCount(game.value) }}
-            </span>
-            <div class="filter-active-indicator"></div>
+            <component :is="game.icon" :size="16" />
+            <span>{{ game.label }}</span>
+            <span class="game-count" v-if="game.value !== 'all'">{{ getGameCount(game.value) }}</span>
           </button>
         </div>
-      </div>
 
-      <!-- View Toggle -->
-      <div class="view-toggle-section">
-        <button
-          class="view-toggle-btn"
-          :class="{ active: viewMode === 'grid' }"
-          @click="viewMode = 'grid'"
-        >
-          <LayoutGrid :size="18" />
-          Kart Görünümü
-        </button>
-        <button
-          class="view-toggle-btn"
-          :class="{ active: viewMode === 'table' }"
-          @click="viewMode = 'table'"
-        >
-          <Table2 :size="18" />
-          Karşılaştırma
-        </button>
+        <!-- Divider -->
+        <div class="filter-divider"></div>
+
+        <!-- View Toggle (Compact) -->
+        <div class="view-toggle-compact">
+          <button
+            class="view-btn"
+            :class="{ active: viewMode === 'grid' }"
+            @click="viewMode = 'grid'"
+            title="Kart Görünümü"
+          >
+            <LayoutGrid :size="16" />
+          </button>
+          <button
+            class="view-btn"
+            :class="{ active: viewMode === 'table' }"
+            @click="viewMode = 'table'"
+            title="Karşılaştırma"
+          >
+            <Table2 :size="16" />
+          </button>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -252,14 +239,14 @@
                     @click="isLoggedIn ? requireSteam(() => selectPackage(pkg)) : null"
                     :disabled="!isLoggedIn"
                   >
-                    <span v-if="!isLoggedIn" class="login-badge">Giris Yap</span>
+                    <span v-if="!isLoggedIn" class="login-badge">Giriş Yap</span>
                     <span v-else-if="!hasSteam && user" class="steam-badge">Steam gerekli</span>
                     <span class="btn-text">Satin Al</span>
                     <ShoppingCart :size="18" />
                     <div class="btn-shine"></div>
                   </button>
                 </template>
-                Satin almak icin giris yapin
+                Satin almak icin giriş yapin
               </n-tooltip>
             </div>
           </div>
@@ -322,12 +309,12 @@
                       @click="isLoggedIn ? requireSteam(() => selectPackage(pkg)) : null"
                       :disabled="!isLoggedIn"
                     >
-                      <span v-if="!isLoggedIn" class="login-badge-sm">Giris Yap</span>
+                      <span v-if="!isLoggedIn" class="login-badge-sm">Giriş Yap</span>
                       <span v-else-if="!hasSteam && user" class="steam-badge-sm">Steam gerekli</span>
                       <span v-else>Satin Al</span>
                     </button>
                   </template>
-                  Satin almak icin giris yapin
+                  Satin almak icin giriş yapin
                 </n-tooltip>
               </td>
             </tr>
@@ -1493,244 +1480,145 @@ onMounted(() => {
 }
 
 /* ============================================
-   PAYMENT TOGGLE
+   COMPACT FILTER BAR
    ============================================ */
 
-.payment-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 32px;
-}
-
-.payment-toggle-wrapper {
-  position: relative;
-}
-
-.payment-toggle {
-  position: relative;
-  display: flex;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 6px;
-}
-
-.toggle-slider {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: calc(50% - 6px);
-  height: calc(100% - 12px);
-  background: linear-gradient(135deg, #f97316, #ea580c);
-  border-radius: 16px;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
-}
-
-.toggle-slider.armor {
-  transform: translateX(100%);
-}
-
-.toggle-btn {
-  position: relative;
+.shop-filter-bar {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 32px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Payment Toggle Compact */
+.payment-toggle-compact {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.pay-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
   background: transparent;
   border: none;
-  border-radius: 16px;
-  cursor: pointer;
-  z-index: 1;
-  transition: all 0.3s;
-}
-
-.toggle-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-}
-
-.toggle-btn:not(.active) .toggle-icon {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-secondary);
-}
-
-.toggle-btn.active .toggle-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-}
-
-.toggle-content {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-
-.toggle-label {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text-secondary);
-  transition: color 0.3s;
-}
-
-.toggle-desc {
-  font-size: 11px;
-  color: var(--text-muted);
-  transition: color 0.3s;
-}
-
-.toggle-btn.active .toggle-label {
-  color: white;
-}
-
-.toggle-btn.active .toggle-desc {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* ============================================
-   GAME FILTER
-   ============================================ */
-
-.filter-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 24px;
-}
-
-.filter-wrapper {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.game-filter-btn {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 24px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.game-filter-btn:hover {
-  border-color: rgba(249, 115, 22, 0.5);
-  transform: translateY(-2px);
-}
-
-.game-filter-btn:hover .filter-icon-wrapper {
-  transform: scale(1.1) rotate(5deg);
-}
-
-.game-filter-btn.active {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(249, 115, 22, 0.1));
-  border-color: #f97316;
-  color: #f97316;
-}
-
-.filter-icon-wrapper {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  transition: all 0.3s;
-}
-
-.game-filter-btn.active .filter-icon-wrapper {
-  background: #f97316;
-  color: white;
-  animation: icon-bounce 0.5s ease;
-}
-
-@keyframes icon-bounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-}
-
-.filter-icon-wrapper.ag { color: #f97316; }
-.filter-icon-wrapper.cs16 { color: #3b82f6; }
-.filter-icon-wrapper.hldm { color: #10b981; }
-
-.filter-count {
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 12px;
   font-weight: 600;
-}
-
-.game-filter-btn.active .filter-count {
-  background: rgba(249, 115, 22, 0.3);
-}
-
-.filter-active-indicator {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 3px;
-  background: #f97316;
-  border-radius: 3px 3px 0 0;
-  transition: width 0.3s;
-}
-
-.game-filter-btn.active .filter-active-indicator {
-  width: 60%;
-}
-
-/* ============================================
-   VIEW TOGGLE
-   ============================================ */
-
-.view-toggle-section {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 32px;
-}
-
-.view-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: var(--text-secondary);
-  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.view-toggle-btn:hover {
-  border-color: rgba(249, 115, 22, 0.5);
+.pay-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
 }
 
-.view-toggle-btn.active {
+.pay-btn.active {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+/* Game Filter Compact */
+.game-filter-compact {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.game-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.game-btn:hover {
+  border-color: rgba(249, 115, 22, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.game-btn.active {
   background: rgba(249, 115, 22, 0.15);
-  border-color: #f97316;
+  border-color: rgba(249, 115, 22, 0.5);
   color: #f97316;
+}
+
+.game-count {
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+.game-btn.active .game-count {
+  background: rgba(249, 115, 22, 0.3);
+}
+
+/* View Toggle Compact */
+.view-toggle-compact {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 2px;
+  margin-left: auto;
+}
+
+.view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-btn:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.view-btn.active {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+@media (max-width: 768px) {
+  .shop-filter-bar {
+    justify-content: center;
+  }
+  .filter-divider {
+    display: none;
+  }
+  .view-toggle-compact {
+    margin-left: 0;
+  }
 }
 
 /* ============================================
@@ -1742,7 +1630,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 0;
+  padding: 40px 0;
 }
 
 .loading-spinner {
@@ -1808,9 +1696,9 @@ onMounted(() => {
 
 .packages-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 28px;
-  margin-bottom: 48px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 /* ============================================
@@ -1822,7 +1710,7 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
+  border-radius: 16px;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   transform-style: preserve-3d;
@@ -1935,7 +1823,7 @@ onMounted(() => {
 /* Package Image */
 .package-image-wrapper {
   position: relative;
-  height: 180px;
+  height: 140px;
   overflow: hidden;
 }
 
@@ -1962,7 +1850,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 20px;
+  padding: 12px;
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
 }
@@ -2008,30 +1896,30 @@ onMounted(() => {
 
 /* Card Content */
 .card-content {
-  padding: 24px;
+  padding: 16px;
 }
 
 .package-header {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .package-name {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: var(--text-primary);
 }
 
 .package-tagline {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 /* Price Section */
 .price-section {
-  margin-bottom: 20px;
-  padding-bottom: 20px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -2054,7 +1942,7 @@ onMounted(() => {
 }
 
 .price-amount {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 800;
   color: var(--text-primary);
   line-height: 1;
@@ -2106,18 +1994,18 @@ onMounted(() => {
 /* Specs Row */
 .specs-row {
   display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .spec-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: 6px;
+  padding: 6px 10px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  font-size: 13px;
+  border-radius: 8px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
@@ -2129,15 +2017,15 @@ onMounted(() => {
 .features-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 24px;
+  gap: 6px;
+  margin-bottom: 14px;
 }
 
 .feature-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 11px;
   color: var(--text-secondary);
   opacity: 0;
   animation: feature-appear 0.4s ease forwards;
@@ -2159,9 +2047,9 @@ onMounted(() => {
 }
 
 .feature-check {
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
   background: rgba(16, 185, 129, 0.15);
   display: flex;
   align-items: center;

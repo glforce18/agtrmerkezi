@@ -24,7 +24,7 @@ from sqlalchemy import (
     inspect,
     text,
 )
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import backref, declarative_base, relationship, sessionmaker
 from sqlalchemy.pool import QueuePool
 from sqlalchemy.sql import func
 
@@ -34,6 +34,7 @@ Base = declarative_base()
 
 
 # ==================== ENUM VALIDATION ====================
+
 
 def validate_enum_value(value, enum_class, column_name: str):
     """Validate that a value is a valid enum member"""
@@ -47,8 +48,7 @@ def validate_enum_value(value, enum_class, column_name: str):
         except ValueError:
             valid_values = [e.value for e in enum_class]
             raise ValueError(
-                f"Invalid value '{value}' for {column_name}. "
-                f"Valid values are: {valid_values}"
+                f"Invalid value '{value}' for {column_name}. " f"Valid values are: {valid_values}"
             )
     raise ValueError(
         f"Invalid type {type(value).__name__} for {column_name}. "
@@ -58,10 +58,12 @@ def validate_enum_value(value, enum_class, column_name: str):
 
 def create_enum_validator(enum_class, column_name: str):
     """Create a validator function for enum columns"""
+
     def validator(target, value, oldvalue, initiator):
         if value is None:
             return value
         return validate_enum_value(value, enum_class, column_name)
+
     return validator
 
 
@@ -77,8 +79,9 @@ def get_engine(database_url: str = None):
     if _engine is None:
         if database_url is None:
             from app.core.config import settings
+
             database_url = settings.DATABASE_URL
-        
+
         _engine = create_engine(
             database_url,
             poolclass=QueuePool,
@@ -87,7 +90,7 @@ def get_engine(database_url: str = None):
             pool_timeout=30,
             pool_recycle=3600,
             pool_pre_ping=True,
-            echo=False
+            echo=False,
         )
     return _engine
 
@@ -103,6 +106,7 @@ def get_session_local(engine=None):
 
 
 # ==================== DATABASE HEALTH CHECK ====================
+
 
 def check_database_connection() -> dict:
     """Database baglanti kontrolu"""
@@ -145,15 +149,15 @@ def get_missing_columns(table_name: str) -> list:
     try:
         engine = get_engine()
         inspector = inspect(engine)
-        
+
         if table_name not in inspector.get_table_names():
             return []
-        
-        existing_columns = {col['name'] for col in inspector.get_columns(table_name)}
-        
+
+        existing_columns = {col["name"] for col in inspector.get_columns(table_name)}
+
         if table_name not in Base.metadata.tables:
             return []
-        
+
         required_columns = {col.name for col in Base.metadata.tables[table_name].columns}
         return list(required_columns - existing_columns)
     except Exception as e:
@@ -163,16 +167,17 @@ def get_missing_columns(table_name: str) -> list:
 
 # ==================== AUTO REPAIR SYSTEM ====================
 
+
 def create_missing_tables() -> dict:
     """Eksik tablolari olustur"""
     results = {"created": [], "errors": []}
     try:
         engine = get_engine()
         missing = get_missing_tables()
-        
+
         if not missing:
             return {"created": [], "errors": [], "message": "Tum tablolar mevcut"}
-        
+
         for table_name in missing:
             try:
                 if table_name in Base.metadata.tables:
@@ -182,7 +187,7 @@ def create_missing_tables() -> dict:
             except Exception as e:
                 results["errors"].append({"table": table_name, "error": str(e)})
                 logger.error(f"Tablo olusturma hatasi ({table_name}): {e}")
-        
+
         return results
     except Exception as e:
         logger.error(f"Tablo olusturma genel hatasi: {e}")
@@ -195,29 +200,29 @@ def add_missing_columns() -> dict:
     try:
         engine = get_engine()
         inspector = inspect(engine)
-        
+
         for table_name in inspector.get_table_names():
             if table_name not in Base.metadata.tables:
                 continue
-            
+
             missing_cols = get_missing_columns(table_name)
-            
+
             for col_name in missing_cols:
                 try:
                     col = Base.metadata.tables[table_name].columns[col_name]
                     col_type = col.type.compile(engine.dialect)
-                    
+
                     # Default deger belirle
                     default = ""
                     if col.default is not None:
-                        if hasattr(col.default, 'arg'):
+                        if hasattr(col.default, "arg"):
                             if callable(col.default.arg):
                                 default = ""
                             else:
                                 default = f" DEFAULT '{col.default.arg}'"
-                        
+
                     nullable = "" if col.nullable else " NOT NULL"
-                    
+
                     # Nullable olmayan kolonlara default ekle
                     if not col.nullable and not default:
                         if "INT" in col_type.upper():
@@ -230,20 +235,22 @@ def add_missing_columns() -> dict:
                             default = " DEFAULT 0"
                         else:
                             nullable = ""  # NULL'a izin ver
-                    
+
                     alter_sql = f"ALTER TABLE `{table_name}` ADD COLUMN `{col_name}` {col_type}{nullable}{default}"
-                    
+
                     with engine.connect() as conn:
                         conn.execute(text(alter_sql))
                         conn.commit()
-                    
+
                     results["added"].append(f"{table_name}.{col_name}")
                     logger.info(f"Kolon eklendi: {table_name}.{col_name}")
-                    
+
                 except Exception as e:
-                    results["errors"].append({"column": f"{table_name}.{col_name}", "error": str(e)})
+                    results["errors"].append(
+                        {"column": f"{table_name}.{col_name}", "error": str(e)}
+                    )
                     logger.error(f"Kolon ekleme hatasi ({table_name}.{col_name}): {e}")
-        
+
         return results
     except Exception as e:
         logger.error(f"Kolon ekleme genel hatasi: {e}")
@@ -253,20 +260,20 @@ def add_missing_columns() -> dict:
 def repair_database() -> dict:
     """Tam database onarimi - eksik tablo ve kolonlari ekle"""
     logger.info("Database onarim basladi...")
-    
+
     results = {
         "connection": check_database_connection(),
         "tables": create_missing_tables(),
         "columns": add_missing_columns(),
-        "status": "completed"
+        "status": "completed",
     }
-    
+
     # Hata varsa status'u guncelle
     if results["connection"]["status"] == "unhealthy":
         results["status"] = "failed"
     elif results["tables"]["errors"] or results["columns"]["errors"]:
         results["status"] = "completed_with_errors"
-    
+
     logger.info(f"Database onarim tamamlandi: {results['status']}")
     return results
 
@@ -275,19 +282,19 @@ def init_database(database_url: str = None) -> dict:
     """Database'i baslat - tum tablolari olustur, eksikleri tamamla"""
     try:
         engine = get_engine(database_url)
-        
+
         # Tum tablolari olustur (varsa atla)
         Base.metadata.create_all(bind=engine)
         logger.info("Database tablolari kontrol edildi/olusturuldu")
-        
+
         # Eksik kolonlari ekle
         col_result = add_missing_columns()
-        
+
         return {
             "status": "success",
             "message": "Database basariyla basladi",
             "columns_added": col_result["added"],
-            "errors": col_result["errors"]
+            "errors": col_result["errors"],
         }
     except Exception as e:
         logger.error(f"Database baslama hatasi: {e}")
@@ -299,13 +306,9 @@ def get_database_stats() -> dict:
     try:
         engine = get_engine()
         inspector = inspect(engine)
-        
-        stats = {
-            "tables": {},
-            "total_tables": 0,
-            "total_rows": 0
-        }
-        
+
+        stats = {"tables": {}, "total_tables": 0, "total_rows": 0}
+
         for table_name in inspector.get_table_names():
             try:
                 with engine.connect() as conn:
@@ -315,7 +318,7 @@ def get_database_stats() -> dict:
                     stats["total_rows"] += count
             except Exception:
                 stats["tables"][table_name] = -1
-        
+
         stats["total_tables"] = len(stats["tables"])
         return stats
     except Exception as e:
@@ -325,8 +328,10 @@ def get_database_stats() -> dict:
 
 # ==================== ENUMS ====================
 
+
 class UserRole(enum.Enum):
     """Legacy role enum - use Role table for new system"""
+
     USER = "user"
     MODERATOR = "moderator"
     ADMIN = "admin"
@@ -335,8 +340,10 @@ class UserRole(enum.Enum):
 
 # ==================== ROLE & PERMISSION SYSTEM ====================
 
+
 class Role(Base):
     """Discord-like role system"""
+
     __tablename__ = "roles"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -357,11 +364,14 @@ class Role(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    user_roles = relationship("UserRoleAssignment", back_populates="role", cascade="all, delete-orphan")
+    user_roles = relationship(
+        "UserRoleAssignment", back_populates="role", cascade="all, delete-orphan"
+    )
 
 
 class UserRoleAssignment(Base):
     """User to Role mapping - can assign by user_id, steam_id, or username"""
+
     __tablename__ = "user_role_assignments"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -384,8 +394,8 @@ class UserRoleAssignment(Base):
     assigner = relationship("User", foreign_keys=[assigned_by])
 
     __table_args__ = (
-        Index('ix_user_role_steam', 'steam_id'),
-        Index('ix_user_role_user', 'user_id'),
+        Index("ix_user_role_steam", "steam_id"),
+        Index("ix_user_role_user", "user_id"),
     )
 
 
@@ -406,7 +416,6 @@ DEFAULT_PERMISSIONS = {
     "admin.settings.view": False,
     "admin.settings.edit": False,
     "admin.announcements.manage": False,
-
     # Forum
     "forum.post": True,
     "forum.edit_own": True,
@@ -416,20 +425,16 @@ DEFAULT_PERMISSIONS = {
     "forum.pin": False,
     "forum.lock": False,
     "forum.moderate": False,
-
     # Servers
     "servers.create": False,
     "servers.manage_own": True,
     "servers.manage_any": False,
-
     # Shop
     "shop.purchase": True,
     "shop.discount": False,  # Gets discounts
-
     # Jackpot
     "jackpot.play": True,
     "jackpot.high_limit": False,  # Can bet higher amounts
-
     # Special
     "bypass_cooldowns": False,
     "see_hidden": False,
@@ -492,6 +497,7 @@ class TicketPriority(enum.Enum):
 
 # ==================== USER MODELS ====================
 
+
 def _get_default_email_notifications() -> dict:
     """Return default email notification settings - callable for SQLAlchemy default"""
     return {
@@ -500,13 +506,13 @@ def _get_default_email_notifications() -> dict:
         "forum_replies": True,
         "mentions": True,
         "announcements": False,
-        "weekly_digest": False
+        "weekly_digest": False,
     }
 
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(100), unique=True, nullable=False, index=True)
@@ -521,26 +527,27 @@ class User(Base):
     post_count = Column(Integer, default=0)
     forum_post_count = Column(Integer, default=0)  # Forum post sayisi
     reputation = Column(Integer, default=0)
-    
+
     # Leaderboard / Oyun istatistikleri
     elo = Column(Integer, default=1000)
     wins = Column(Integer, default=0)
     losses = Column(Integer, default=0)
     kd_ratio = Column(Float, default=0.0)
-    
+
     # Email bildirimleri tercihleri - use callable to avoid mutable default sharing
     email_notifications = Column(JSON, default=_get_default_email_notifications, nullable=False)
-    
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     last_login = Column(DateTime)
+    last_seen = Column(DateTime)  # Son aktivite zamanı (online status için)
     last_ip = Column(String(45))
-    
+
     # 2FA alanlari
     two_factor_enabled = Column(Boolean, default=False)
     two_factor_secret = Column(String(32))
     two_factor_backup_codes = Column(JSON)
-    
+
     # Guvenlik alanlari
     login_attempts = Column(Integer, default=0)
     lockout_until = Column(DateTime)
@@ -548,18 +555,23 @@ class User(Base):
     must_change_password = Column(Boolean, default=False)
     reset_token = Column(String(64), index=True)
     reset_token_expires = Column(DateTime)
-    
+
     # Profil alanlari
     email_verified = Column(Boolean, default=False)
     email_verification_token = Column(String(64), index=True)
     email_verification_sent_at = Column(DateTime)
     bio = Column(Text)
+    username_changed = Column(Boolean, default=False)  # Kullanici adi degistirildi mi (1 hak)
 
     # Relationships
     servers = relationship("GameServer", back_populates="owner", lazy="dynamic")
     payments = relationship("Payment", back_populates="user", lazy="dynamic")
-    topics = relationship("ForumTopic", back_populates="author", foreign_keys="ForumTopic.author_id", lazy="dynamic")
-    posts = relationship("ForumPost", back_populates="author", foreign_keys="ForumPost.author_id", lazy="dynamic")
+    topics = relationship(
+        "ForumTopic", back_populates="author", foreign_keys="ForumTopic.author_id", lazy="dynamic"
+    )
+    posts = relationship(
+        "ForumPost", back_populates="author", foreign_keys="ForumPost.author_id", lazy="dynamic"
+    )
     notifications = relationship("Notification", backref="user", lazy="dynamic")
     # Forum Reply relationship (ForumReply tablosu icin)
     forum_replies = relationship("ForumReply", back_populates="author", lazy="dynamic")
@@ -568,13 +580,19 @@ class User(Base):
     two_factor_auth = relationship("TwoFactorAuth", back_populates="user", uselist=False)
     backup_codes = relationship("BackupCode", back_populates="user", lazy="dynamic")
     oauth_accounts = relationship("OAuthAccount", back_populates="user", lazy="dynamic")
-    security_events = relationship("SecurityEvent", foreign_keys="SecurityEvent.user_id", back_populates="user", lazy="dynamic")
+    security_events = relationship(
+        "SecurityEvent", foreign_keys="SecurityEvent.user_id", back_populates="user", lazy="dynamic"
+    )
     login_history = relationship("LoginHistory", back_populates="user", lazy="dynamic")
     device_sessions = relationship("DeviceSession", back_populates="user", lazy="dynamic")
-    gdpr_requests = relationship("GDPRRequest", foreign_keys="GDPRRequest.user_id", back_populates="user", lazy="dynamic")
+    gdpr_requests = relationship(
+        "GDPRRequest", foreign_keys="GDPRRequest.user_id", back_populates="user", lazy="dynamic"
+    )
     download_history = relationship("DownloadHistory", back_populates="user", lazy="dynamic")
     user_activities = relationship("UserActivity", back_populates="user", lazy="dynamic")
-    favorite_servers = relationship("UserFavoriteServer", back_populates="user", cascade="all, delete-orphan")
+    favorite_servers = relationship(
+        "UserFavoriteServer", back_populates="user", cascade="all, delete-orphan"
+    )
 
     @property
     def is_online(self):
@@ -582,12 +600,13 @@ class User(Base):
         if not self.last_login:
             return False
         from datetime import timedelta
+
         return datetime.utcnow() - self.last_login < timedelta(minutes=5)
 
 
 class UserSession(Base):
     __tablename__ = "user_sessions"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     token_hash = Column(String(255), unique=True, nullable=False)
@@ -604,9 +623,10 @@ class UserSession(Base):
 
 # ==================== SERVER MODELS ====================
 
+
 class ServerPackage(Base):
     __tablename__ = "server_packages"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     slug = Column(String(50), unique=True, nullable=False)
     name = Column(String(100), nullable=False)
@@ -624,7 +644,7 @@ class ServerPackage(Base):
 
 class GameServer(Base):
     __tablename__ = "game_servers"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(100), nullable=False)
@@ -650,11 +670,24 @@ class GameServer(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     last_started = Column(DateTime)
-    
+
+    # New columns for server panel v6.0
+    unique_code = Column(String(20), unique=True)  # AGTR-2026-00001 format
+    mod_type = Column(String(50))  # ag, ag_openag, cstrike, valve, valvenewvalve
+    server_path = Column(String(500))  # /home/gameservers/servers/server_X
+    screen_name = Column(String(50))  # screen session name
+    process_pid = Column(Integer)  # running process PID
+    last_heartbeat = Column(DateTime)  # last monitoring check
+    installation_id = Column(Integer)  # installation record reference
+
+    # Owner Steam ID for quick lookup (denormalized for performance)
+    owner_steam_id = Column(String(50), index=True)  # STEAM_0:0:123456 format
+
     __table_args__ = (
         UniqueConstraint("ip_address", "port", name="uq_server_ip_port"),
+        Index("ix_game_servers_owner_steam_id", "owner_steam_id"),
     )
-    
+
     # Relationships
     owner = relationship("User", back_populates="servers")
     package = relationship("ServerPackage", backref="servers")
@@ -662,7 +695,7 @@ class GameServer(Base):
 
 class ServerAction(Base):
     __tablename__ = "server_actions"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
@@ -672,13 +705,248 @@ class ServerAction(Base):
     created_at = Column(DateTime, default=func.now())
 
 
+# ==================== SERVER PANEL v6.0 MODELS ====================
+
+
+class InstallationStatus(enum.Enum):
+    PENDING = "pending"
+    INSTALLING = "installing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class AdminAuthType(enum.Enum):
+    STEAM = "steam"
+    IP = "ip"
+    NAME = "name"
+
+
+class BanType(enum.Enum):
+    STEAM = "steam"
+    IP = "ip"
+    BOTH = "both"
+
+
+class CommandType(enum.Enum):
+    RCON = "rcon"
+    CONSOLE = "console"
+    SCHEDULED = "scheduled"
+    SYSTEM = "system"
+
+
+class RotationType(enum.Enum):
+    SEQUENTIAL = "sequential"
+    RANDOM = "random"
+    VOTE = "vote"
+
+
+class OwnershipAction(enum.Enum):
+    CREATED = "created"
+    TRANSFERRED = "transferred"
+    EXPIRED = "expired"
+    DELETED = "deleted"
+    RENEWED = "renewed"
+    SUSPENDED = "suspended"
+    UNSUSPENDED = "unsuspended"
+
+
+class ServerInstallation(Base):
+    """Sunucu kurulum takibi"""
+
+    __tablename__ = "server_installations"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    unique_code = Column(String(20), unique=True, nullable=False)
+    status = Column(Enum(InstallationStatus), default=InstallationStatus.PENDING)
+    progress_percent = Column(Integer, default=0)
+    current_step = Column(String(100))
+    total_steps = Column(Integer, default=8)
+    error_message = Column(Text)
+    template_type = Column(String(50))
+    celery_task_id = Column(String(100))
+    started_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="installation")
+    user = relationship("User", backref="server_installations")
+
+
+class ServerOwnershipHistory(Base):
+    """Sunucu sahiplik gecmisi"""
+
+    __tablename__ = "server_ownership_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    unique_code = Column(String(20))
+    action = Column(Enum(OwnershipAction), nullable=False)
+    details = Column(JSON)
+    ip_address = Column(String(45))
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="ownership_history")
+    user = relationship("User", backref="server_ownership_history")
+
+
+class ServerAdminEntry(Base):
+    """AMXModX admin kayitlari"""
+
+    __tablename__ = "server_admin_entries"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    steam_id = Column(String(50), nullable=False)
+    name = Column(String(100))
+    flags = Column(String(50), default="abcdefghijklmnopqrstu")
+    password = Column(String(100))
+    access_level = Column(Integer, default=0)
+    auth_type = Column(Enum(AdminAuthType), default=AdminAuthType.STEAM)
+    added_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    expires_at = Column(DateTime)
+    is_active = Column(Boolean, default=True)
+    notes = Column(Text)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    __table_args__ = (UniqueConstraint("server_id", "steam_id", name="uq_server_admin"),)
+
+    # Relationships
+    server = relationship("GameServer", backref="admin_entries")
+    added_by_user = relationship("User", backref="added_server_admins")
+
+
+class ServerBan(Base):
+    """Sunucu ban kayitlari"""
+
+    __tablename__ = "server_bans"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    steam_id = Column(String(50))
+    ip_address = Column(String(45))
+    name = Column(String(100))
+    reason = Column(String(500))
+    banned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    banned_by_admin = Column(String(100))
+    duration_minutes = Column(Integer, default=0)  # 0 = permanent
+    expires_at = Column(DateTime)
+    is_active = Column(Boolean, default=True)
+    ban_type = Column(Enum(BanType), default=BanType.STEAM)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="bans")
+    banned_by_user = relationship("User", backref="issued_bans")
+
+
+class ServerConsoleHistory(Base):
+    """RCON komut gecmisi"""
+
+    __tablename__ = "server_console_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    command = Column(String(500), nullable=False)
+    response = Column(Text)
+    command_type = Column(Enum(CommandType), default=CommandType.RCON)
+    execution_time_ms = Column(Integer)
+    ip_address = Column(String(45))
+    is_success = Column(Boolean, default=True)
+    error_message = Column(String(500))
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="console_history")
+    user = relationship("User", backref="console_commands")
+
+
+class ServerStatsHourly(Base):
+    """Saatlik sunucu istatistikleri"""
+
+    __tablename__ = "server_stats_hourly"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    hour_timestamp = Column(DateTime, nullable=False)
+    avg_players = Column(Float, default=0)
+    max_players = Column(Integer, default=0)
+    min_players = Column(Integer, default=0)
+    unique_players = Column(Integer, default=0)
+    total_joins = Column(Integer, default=0)
+    total_leaves = Column(Integer, default=0)
+    map_changes = Column(Integer, default=0)
+    most_played_map = Column(String(64))
+    cpu_usage_avg = Column(Float)
+    ram_usage_avg = Column(Float)
+    uptime_percent = Column(Float, default=100)
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (UniqueConstraint("server_id", "hour_timestamp", name="uq_server_hour"),)
+
+    # Relationships
+    server = relationship("GameServer", backref="hourly_stats")
+
+
+class ServerQuickCommand(Base):
+    """Hizli RCON komutlari"""
+
+    __tablename__ = "server_quick_commands"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)
+    command = Column(String(500), nullable=False)
+    description = Column(String(255))
+    icon = Column(String(50))
+    display_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="quick_commands")
+    creator = relationship("User", backref="created_quick_commands")
+
+
+class ServerMapPool(Base):
+    """Harita havuzlari"""
+
+    __tablename__ = "server_map_pools"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)
+    maps = Column(JSON, nullable=False)
+    is_active = Column(Boolean, default=False)
+    rotation_type = Column(Enum(RotationType), default=RotationType.SEQUENTIAL)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="map_pools")
+    creator = relationship("User", backref="created_map_pools")
+
+
 # ==================== PAYMENT MODELS ====================
+
 
 class Payment(Base):
     __tablename__ = "payments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Changed to SET NULL for soft delete protection
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )  # Changed to SET NULL for soft delete protection
     amount = Column(Float, nullable=False)
     original_amount = Column(Float)  # Indirim oncesi tutar
     discount_amount = Column(Float, default=0)  # Indirim miktari
@@ -706,7 +974,7 @@ class Payment(Base):
 
 class BankTransfer(Base):
     __tablename__ = "bank_transfers"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     payment_id = Column(Integer, ForeignKey("payments.id", ondelete="CASCADE"), nullable=False)
     sender_name = Column(String(100))
@@ -720,6 +988,7 @@ class BankTransfer(Base):
 
 
 # ==================== FORUM MODELS ====================
+
 
 class ForumCategory(Base):
     __tablename__ = "forum_categories"
@@ -746,7 +1015,7 @@ class ForumCategory(Base):
 
     # Relationships
     topics = relationship("ForumTopic", back_populates="category", lazy="dynamic")
-    
+
     @property
     def last_topic(self):
         """Son konu"""
@@ -757,8 +1026,12 @@ class ForumTopic(Base):
     __tablename__ = "forum_topics"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    category_id = Column(Integer, ForeignKey("forum_categories.id", ondelete="CASCADE"), nullable=False, index=True)
-    author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    category_id = Column(
+        Integer, ForeignKey("forum_categories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    author_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     title = Column(String(200), nullable=False)
     slug = Column(String(220), nullable=False, index=True)
     content = Column(Text)  # Konu icerigi
@@ -786,11 +1059,17 @@ class ForumTopic(Base):
     # Composite indexes for common queries
     __table_args__ = (
         # Kategori + is_active + is_pinned + created_at (kategori sayfalari icin)
-        Index('ix_forum_topics_category_active_pinned', 'category_id', 'is_active', 'is_pinned', 'created_at'),
+        Index(
+            "ix_forum_topics_category_active_pinned",
+            "category_id",
+            "is_active",
+            "is_pinned",
+            "created_at",
+        ),
         # is_active + view_count (populer konular icin)
-        Index('ix_forum_topics_active_views', 'is_active', 'view_count'),
+        Index("ix_forum_topics_active_views", "is_active", "view_count"),
         # is_active + created_at (yeni konular icin)
-        Index('ix_forum_topics_active_created', 'is_active', 'created_at'),
+        Index("ix_forum_topics_active_created", "is_active", "created_at"),
     )
 
     # user_id alias for backward compatibility
@@ -808,7 +1087,7 @@ class ForumTopic(Base):
 
 class ForumPost(Base):
     __tablename__ = "forum_posts"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -820,7 +1099,7 @@ class ForumPost(Base):
     like_count = Column(Integer, default=0)
     is_first_post = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
-    
+
     # Relationships
     author = relationship("User", back_populates="posts", foreign_keys=[author_id])
     topic = relationship("ForumTopic", back_populates="posts")
@@ -835,19 +1114,24 @@ class ForumPostLike(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=func.now())
 
-    __table_args__ = (
-        UniqueConstraint("post_id", "user_id", name="uq_post_like"),
-    )
+    __table_args__ = (UniqueConstraint("post_id", "user_id", name="uq_post_like"),)
 
 
 class ForumReply(Base):
     """Forum Yaniti - forum_replies tablosu"""
+
     __tablename__ = "forum_replies"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    parent_reply_id = Column(Integer, ForeignKey("forum_replies.id", ondelete="SET NULL"), index=True)  # Nested replies
+    topic_id = Column(
+        Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    parent_reply_id = Column(
+        Integer, ForeignKey("forum_replies.id", ondelete="SET NULL"), index=True
+    )  # Nested replies
     content = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True, index=True)
     is_best_answer = Column(Boolean, default=False)  # Best answer feature
@@ -860,7 +1144,7 @@ class ForumReply(Base):
 
     # Composite index for topic replies query (topic_id + is_active + created_at)
     __table_args__ = (
-        Index('ix_forum_replies_topic_active_created', 'topic_id', 'is_active', 'created_at'),
+        Index("ix_forum_replies_topic_active_created", "topic_id", "is_active", "created_at"),
     )
 
     # Relationships
@@ -871,6 +1155,7 @@ class ForumReply(Base):
 
 class ForumReportStatus(enum.Enum):
     """Forum report status"""
+
     PENDING = "pending"
     REVIEWED = "reviewed"
     RESOLVED = "resolved"
@@ -879,6 +1164,7 @@ class ForumReportStatus(enum.Enum):
 
 class ForumReport(Base):
     """Forum content reports - spam, harassment etc."""
+
     __tablename__ = "forum_reports"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -896,8 +1182,8 @@ class ForumReport(Base):
     # Unique constraint to prevent duplicate reports from same user
     __table_args__ = (
         UniqueConstraint("reporter_id", "content_type", "content_id", name="uq_forum_report"),
-        Index('idx_forum_report_content', 'content_type', 'content_id'),
-        Index('idx_forum_report_status', 'status'),
+        Index("idx_forum_report_content", "content_type", "content_id"),
+        Index("idx_forum_report_status", "status"),
     )
 
     # Relationships
@@ -907,8 +1193,10 @@ class ForumReport(Base):
 
 # ==================== FORUM TAG SYSTEM ====================
 
+
 class ForumTag(Base):
     """Forum etiketleri"""
+
     __tablename__ = "forum_tags"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -924,6 +1212,7 @@ class ForumTag(Base):
 
 class ForumTopicTag(Base):
     """Konu-Etiket iliskisi"""
+
     __tablename__ = "forum_topic_tags"
 
     topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), primary_key=True)
@@ -936,12 +1225,16 @@ class ForumTopicTag(Base):
 
 # ==================== FORUM MENTION SYSTEM ====================
 
+
 class ForumMention(Base):
     """Forum mentionlari - @kullanici_adi"""
+
     __tablename__ = "forum_mentions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     mentioned_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content_type = Column(String(20), nullable=False)  # topic, reply
     content_id = Column(Integer, nullable=False)
@@ -953,35 +1246,41 @@ class ForumMention(Base):
     mentioner = relationship("User", foreign_keys=[mentioned_by], backref="mentions_made")
 
     __table_args__ = (
-        Index('idx_mention_user', 'user_id', 'is_read'),
-        Index('idx_mention_content', 'content_type', 'content_id'),
+        Index("idx_mention_user", "user_id", "is_read"),
+        Index("idx_mention_content", "content_type", "content_id"),
     )
 
 
 # ==================== FORUM SUBSCRIPTION SYSTEM ====================
 
+
 class ForumSubscription(Base):
     """Forum konu abonelikleri"""
+
     __tablename__ = "forum_subscriptions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    topic_id = Column(
+        Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at = Column(DateTime, default=func.now())
 
     # Relationships
     user = relationship("User", backref="forum_subscriptions")
     topic = relationship("ForumTopic", backref="subscriptions")
 
-    __table_args__ = (
-        UniqueConstraint('user_id', 'topic_id', name='uq_forum_subscription'),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "topic_id", name="uq_forum_subscription"),)
 
 
 # ==================== FORUM BADGE SYSTEM ====================
 
+
 class ForumBadge(Base):
     """Forum rozet/badge tanimlari"""
+
     __tablename__ = "forum_badges"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1000,6 +1299,7 @@ class ForumBadge(Base):
 
 class UserForumBadge(Base):
     """Kullanicilarin kazandigi rozetler"""
+
     __tablename__ = "user_forum_badges"
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
@@ -1013,11 +1313,14 @@ class UserForumBadge(Base):
 
 # ==================== SUPPORT MODELS ====================
 
+
 class SupportTicket(Base):
     __tablename__ = "support_tickets"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Changed to SET NULL for soft delete protection
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )  # Changed to SET NULL for soft delete protection
     subject = Column(String(200), nullable=False)
     status = Column(String(20), default="open")  # open, pending, resolved, closed
     priority = Column(String(20), default="medium")  # low, medium, high
@@ -1036,9 +1339,11 @@ class SupportTicket(Base):
 
 class TicketMessage(Base):
     __tablename__ = "ticket_messages"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ticket_id = Column(Integer, ForeignKey("support_tickets.id", ondelete="CASCADE"), nullable=False)
+    ticket_id = Column(
+        Integer, ForeignKey("support_tickets.id", ondelete="CASCADE"), nullable=False
+    )
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     content = Column(Text, nullable=False)
     is_admin = Column(Boolean, default=False)
@@ -1047,16 +1352,17 @@ class TicketMessage(Base):
     author_name = Column(String(100))
     attachment = Column(String(255))
     created_at = Column(DateTime, default=func.now())
-    
+
     # Relationships
     ticket = relationship("SupportTicket", backref="messages")
 
 
 # ==================== SYSTEM MODELS ====================
 
+
 class SystemLog(Base):
     __tablename__ = "system_logs"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     level = Column(String(20), nullable=False)
     category = Column(String(50), nullable=False)
@@ -1069,7 +1375,7 @@ class SystemLog(Base):
 
 class Announcement(Base):
     __tablename__ = "announcements"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(200), nullable=False)
     slug = Column(String(220), unique=True, index=True)
@@ -1084,8 +1390,9 @@ class Announcement(Base):
 
 class SiteSettings(Base):
     """Site genel ayarlari - tek satir"""
+
     __tablename__ = "site_settings"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     site_name = Column(String(100), default="AGTR Merkezi")
     site_description = Column(Text, default="Half-Life & CS 1.6 Gaming Platform")
@@ -1093,31 +1400,31 @@ class SiteSettings(Base):
     discord_url = Column(String(255))
     maintenance_mode = Column(Boolean, default=False)
     registration_enabled = Column(Boolean, default=True)
-    
+
     # Fiyatlandirma
     price_per_slot = Column(Float, default=5.0)
     discount_3_month = Column(Float, default=0.10)
     discount_6_month = Column(Float, default=0.15)
     discount_12_month = Column(Float, default=0.25)
-    
+
     # Tema ayarlari
     theme_settings = Column(JSON, default={})
 
     # Branding / Logo ayarlari
-    logo_url = Column(String(500), default='/logo-navbar.png')
+    logo_url = Column(String(500), default="/logo-navbar.png")
     logo_dark_url = Column(String(500))
     logo_mobile_url = Column(String(500))
-    logo_width = Column(String(20), default='auto')
-    logo_height = Column(String(20), default='36')
-    logo_text = Column(String(50), default='AGTR')
-    logo_subtitle = Column(String(50), default='MERKEZİ')
+    logo_width = Column(String(20), default="auto")
+    logo_height = Column(String(20), default="36")
+    logo_text = Column(String(50), default="AGTR")
+    logo_subtitle = Column(String(50), default="MERKEZİ")
     show_logo_text = Column(Boolean, default=False)
     footer_logo_url = Column(String(500))
-    footer_logo_width = Column(String(20), default='auto')
-    footer_logo_height = Column(String(20), default='48')
-    favicon_url = Column(String(500), default='/favicon.ico')
-    primary_color = Column(String(20), default='#f97316')
-    secondary_color = Column(String(20), default='#3b82f6')
+    footer_logo_width = Column(String(20), default="auto")
+    footer_logo_height = Column(String(20), default="48")
+    favicon_url = Column(String(500), default="/favicon.ico")
+    primary_color = Column(String(20), default="#f97316")
+    secondary_color = Column(String(20), default="#3b82f6")
 
     # Timestamps
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -1125,10 +1432,12 @@ class SiteSettings(Base):
 
 # ==================== AUDIT LOG ====================
 
+
 class AuditLog(Base):
     """Admin ve kullanici islemlerini logla"""
+
     __tablename__ = "audit_logs"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     action = Column(String(100), nullable=False)
@@ -1143,10 +1452,12 @@ class AuditLog(Base):
 
 # ==================== PLUGIN SYSTEM ====================
 
+
 class Plugin(Base):
     """Admin tarafindan eklenen plugin havuzu"""
+
     __tablename__ = "plugins"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     slug = Column(String(100), unique=True, nullable=False)
@@ -1169,8 +1480,9 @@ class Plugin(Base):
 
 class ServerPlugin(Base):
     """Sunucuya yuklu pluginler"""
+
     __tablename__ = "server_plugins"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
     plugin_id = Column(Integer, ForeignKey("plugins.id", ondelete="CASCADE"))
@@ -1180,18 +1492,18 @@ class ServerPlugin(Base):
     config_values = Column(JSON)
     installed_at = Column(DateTime, default=func.now())
     installed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
-    
-    __table_args__ = (
-        UniqueConstraint("server_id", "plugin_id", name="uq_server_plugin"),
-    )
+
+    __table_args__ = (UniqueConstraint("server_id", "plugin_id", name="uq_server_plugin"),)
 
 
 # ==================== SCHEDULED TASKS ====================
 
+
 class ScheduledTask(Base):
     """Zamanlanmis gorevler"""
+
     __tablename__ = "scheduled_tasks"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"))
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
@@ -1210,8 +1522,9 @@ class ScheduledTask(Base):
 
 class TaskLog(Base):
     """Zamanlanmis gorev loglari"""
+
     __tablename__ = "task_logs"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     task_id = Column(Integer, ForeignKey("scheduled_tasks.id", ondelete="CASCADE"), nullable=False)
     status = Column(String(20), nullable=False)  # success, failed, skipped
@@ -1223,10 +1536,12 @@ class TaskLog(Base):
 
 # ==================== NOTIFICATIONS ====================
 
+
 class Notification(Base):
     """Kullanici bildirimleri"""
+
     __tablename__ = "notifications"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     type = Column(String(50), nullable=False)  # server, payment, ticket, system
@@ -1241,10 +1556,12 @@ class Notification(Base):
 
 # ==================== RESOURCE MONITORING ====================
 
+
 class ResourceLog(Base):
     """Sunucu kaynak kullanim loglari"""
+
     __tablename__ = "resource_logs"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
     cpu_percent = Column(Float)
@@ -1256,10 +1573,12 @@ class ResourceLog(Base):
 
 # ==================== BACKUP SYSTEM ====================
 
+
 class BackupLog(Base):
     """Yedekleme loglari"""
+
     __tablename__ = "backup_logs"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"))
     backup_type = Column(String(20), nullable=False)  # full, config, database
@@ -1273,10 +1592,12 @@ class BackupLog(Base):
 
 # ==================== RCON SYSTEM ====================
 
+
 class RconLog(Base):
     """RCON komut loglari"""
+
     __tablename__ = "rcon_logs"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
@@ -1288,10 +1609,12 @@ class RconLog(Base):
 
 # ==================== SERVER CONFIG HISTORY ====================
 
+
 class ConfigHistory(Base):
     """server.cfg degisiklik gecmisi"""
+
     __tablename__ = "config_history"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
@@ -1303,8 +1626,10 @@ class ConfigHistory(Base):
 
 # ==================== USER FAVORITES ====================
 
+
 class UserFavorite(Base):
     """Kullanici favori sunuculari (game_servers icin)"""
+
     __tablename__ = "user_favorites"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1312,13 +1637,12 @@ class UserFavorite(Base):
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=func.now())
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "server_id", name="uq_user_favorite"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "server_id", name="uq_user_favorite"),)
 
 
 class UserFavoriteServer(Base):
     """Kullanici favori sunuculari - Community sunuculari icin (cihazlar arasi senkronizasyon)"""
+
     __tablename__ = "user_favorite_servers"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -1330,8 +1654,8 @@ class UserFavoriteServer(Base):
 
     # Unique constraint - one favorite per user per server
     __table_args__ = (
-        UniqueConstraint('user_id', 'server_id', name='uq_user_server_favorite'),
-        Index('idx_user_favorites_user', 'user_id'),
+        UniqueConstraint("user_id", "server_id", name="uq_user_server_favorite"),
+        Index("idx_user_favorites_user", "user_id"),
     )
 
     user = relationship("User", back_populates="favorite_servers")
@@ -1339,12 +1663,16 @@ class UserFavoriteServer(Base):
 
 # ==================== USER PREFERENCES ====================
 
+
 class UserPreference(Base):
     """Kullanici tercihleri - tema, dil vs."""
+
     __tablename__ = "user_preferences"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
     theme = Column(String(20), default="dark")
     language = Column(String(10), default="tr")
     notifications_email = Column(Boolean, default=True)
@@ -1352,11 +1680,13 @@ class UserPreference(Base):
     dashboard_widgets = Column(JSON)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
+
 # ==================== COUPON ====================
 class Coupon(Base):
     """Kupon/Indirim kodlari"""
+
     __tablename__ = "coupons"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String(50), unique=True, nullable=False, index=True)
     description = Column(String(200))
@@ -1376,8 +1706,9 @@ class Coupon(Base):
 # ==================== INVOICE ====================
 class Invoice(Base):
     """Faturalar"""
+
     __tablename__ = "invoices"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     payment_id = Column(Integer, ForeignKey("payments.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
@@ -1396,12 +1727,14 @@ class Invoice(Base):
 # ==================== TRANSACTION ====================
 class WalletType(enum.Enum):
     """Cüzdan türleri"""
+
     REAL = "real"  # TL bakiye
     COIN = "coin"  # Sanal para
 
 
 class TransactionType(enum.Enum):
     """İşlem türleri"""
+
     DEPOSIT = "deposit"  # Para yatırma
     WITHDRAW = "withdraw"  # Para çekme
     PAYMENT = "payment"  # Ödeme (sunucu kiralama vb.)
@@ -1416,6 +1749,7 @@ class TransactionType(enum.Enum):
 
 class Transaction(Base):
     """Bakiye islemleri - Çift cüzdan ledger sistemi"""
+
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1444,9 +1778,9 @@ class Transaction(Base):
 
     # Index
     __table_args__ = (
-        Index('idx_tx_user_wallet', 'user_id', 'wallet_type'),
-        Index('idx_tx_user_type', 'user_id', 'type'),
-        Index('idx_tx_created', 'created_at'),
+        Index("idx_tx_user_wallet", "user_id", "wallet_type"),
+        Index("idx_tx_user_type", "user_id", "type"),
+        Index("idx_tx_created", "created_at"),
     )
 
     # Relationships
@@ -1457,6 +1791,7 @@ class Transaction(Base):
 # ==================== BANNER/ADVERTISEMENT ====================
 class BannerPosition(enum.Enum):
     """Banner pozisyonlari"""
+
     HOME_HERO = "home_hero"  # Anasayfa hero section
     HOME_MIDDLE = "home_middle"  # Anasayfa ortası
     HOME_BOTTOM = "home_bottom"  # Anasayfa altı
@@ -1468,6 +1803,7 @@ class BannerPosition(enum.Enum):
 
 class BannerType(enum.Enum):
     """Banner türleri"""
+
     IMAGE = "image"  # Görsel banner
     HTML = "html"  # HTML/custom content
     VIDEO = "video"  # Video banner
@@ -1475,6 +1811,7 @@ class BannerType(enum.Enum):
 
 class Banner(Base):
     """Banner/Reklam yönetimi"""
+
     __tablename__ = "banners"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1528,12 +1865,16 @@ class Banner(Base):
 
 # ==================== SECURITY MODELS (AŞAMA 4) ====================
 
+
 class TwoFactorAuth(Base):
     """Two-Factor Authentication"""
+
     __tablename__ = "two_factor_auth"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
     secret = Column(String(255), nullable=False)
     is_enabled = Column(Boolean, default=False)
     verified_at = Column(DateTime)
@@ -1548,6 +1889,7 @@ class TwoFactorAuth(Base):
 
 class BackupCode(Base):
     """Backup codes for 2FA"""
+
     __tablename__ = "backup_codes"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1563,6 +1905,7 @@ class BackupCode(Base):
 
 class OAuthAccount(Base):
     """OAuth/Social accounts"""
+
     __tablename__ = "oauth_accounts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1578,9 +1921,7 @@ class OAuthAccount(Base):
     linked_at = Column(DateTime, default=func.now())
     last_used_at = Column(DateTime)
 
-    __table_args__ = (
-        UniqueConstraint('provider', 'provider_id', name='uq_oauth_provider_id'),
-    )
+    __table_args__ = (UniqueConstraint("provider", "provider_id", name="uq_oauth_provider_id"),)
 
     # Relationship
     user = relationship("User", back_populates="oauth_accounts")
@@ -1588,6 +1929,7 @@ class OAuthAccount(Base):
 
 class SecurityEvent(Base):
     """Security events and suspicious activity"""
+
     __tablename__ = "security_events"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1610,6 +1952,7 @@ class SecurityEvent(Base):
 
 class LoginHistory(Base):
     """Login history tracking"""
+
     __tablename__ = "login_history"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1632,6 +1975,7 @@ class LoginHistory(Base):
 
 class DeviceSession(Base):
     """Device sessions and trusted devices"""
+
     __tablename__ = "device_sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1647,9 +1991,7 @@ class DeviceSession(Base):
     last_active_at = Column(DateTime, default=func.now())
     created_at = Column(DateTime, default=func.now())
 
-    __table_args__ = (
-        UniqueConstraint('user_id', 'device_id', name='uq_user_device'),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "device_id", name="uq_user_device"),)
 
     # Relationship
     user = relationship("User", back_populates="device_sessions")
@@ -1657,6 +1999,7 @@ class DeviceSession(Base):
 
 class GDPRRequest(Base):
     """GDPR data requests"""
+
     __tablename__ = "gdpr_requests"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1677,6 +2020,7 @@ class GDPRRequest(Base):
 
 class DownloadHistory(Base):
     """Download history (for GDPR export)"""
+
     __tablename__ = "download_history"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1691,6 +2035,7 @@ class DownloadHistory(Base):
 
 class UserActivity(Base):
     """User activity log (for GDPR export)"""
+
     __tablename__ = "user_activity"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1706,8 +2051,10 @@ class UserActivity(Base):
 
 # ==================== CMS MODELS ====================
 
+
 class SiteImage(Base):
     """Site görselleri yönetimi - admin panelden yüklenen tüm görseller"""
+
     __tablename__ = "site_images"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1742,6 +2089,7 @@ class SiteImage(Base):
 
 class PageContent(Base):
     """Sayfa içerik yönetimi - CMS benzeri"""
+
     __tablename__ = "page_contents"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1771,15 +2119,15 @@ class PageContent(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-    __table_args__ = (
-        UniqueConstraint('page_slug', 'section_slug', name='uq_page_section'),
-    )
+    __table_args__ = (UniqueConstraint("page_slug", "section_slug", name="uq_page_section"),)
 
 
 # ==================== JACKPOT SYSTEM MODELS ====================
 
+
 class JackpotStatus(enum.Enum):
     """Jackpot durumları"""
+
     WAITING = "waiting"  # Oyuncu bekleniyor
     ACTIVE = "active"  # Oyun aktif, bahisler alınıyor
     ROLLING = "rolling"  # Çekiliş yapılıyor
@@ -1789,6 +2137,7 @@ class JackpotStatus(enum.Enum):
 
 class JackpotGame(Base):
     """Jackpot oyun turları"""
+
     __tablename__ = "jackpot_games"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1826,6 +2175,7 @@ class JackpotGame(Base):
 
 class JackpotBet(Base):
     """Jackpot bahisleri"""
+
     __tablename__ = "jackpot_bets"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1846,8 +2196,8 @@ class JackpotBet(Base):
     created_at = Column(DateTime, default=func.now())
 
     __table_args__ = (
-        Index('idx_jackpot_bet_game', 'game_id'),
-        Index('idx_jackpot_bet_user', 'user_id'),
+        Index("idx_jackpot_bet_game", "game_id"),
+        Index("idx_jackpot_bet_user", "user_id"),
     )
 
     # Relationships
@@ -1857,6 +2207,7 @@ class JackpotBet(Base):
 
 class JackpotHistory(Base):
     """Jackpot geçmişi (istatistikler için)"""
+
     __tablename__ = "jackpot_history"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1879,8 +2230,10 @@ class JackpotHistory(Base):
 
 # ==================== ARMOR (COIN) EXCHANGE ====================
 
+
 class ArmorExchangeRate(Base):
     """TL -> Armor dönüşüm oranları"""
+
     __tablename__ = "armor_exchange_rates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1904,8 +2257,10 @@ class ArmorExchangeRate(Base):
 
 # ==================== COMMUNITY SERVERS (SCRAPED) ====================
 
+
 class CommunityServer(Base):
     """Taranan topluluk sunuculari - Scraper tarafindan eklenir"""
+
     __tablename__ = "community_servers"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1950,11 +2305,11 @@ class CommunityServer(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     __table_args__ = (
-        UniqueConstraint('ip_address', 'port', name='uq_community_server_addr'),
-        Index('idx_community_server_game', 'game_type'),
-        Index('idx_community_server_online', 'is_online'),
-        Index('idx_community_server_country', 'country'),
-        Index('idx_community_server_submitted_by', 'submitted_by'),
+        UniqueConstraint("ip_address", "port", name="uq_community_server_addr"),
+        Index("idx_community_server_game", "game_type"),
+        Index("idx_community_server_online", "is_online"),
+        Index("idx_community_server_country", "country"),
+        Index("idx_community_server_submitted_by", "submitted_by"),
     )
 
     # Relationship
@@ -1967,6 +2322,7 @@ class CommunityServer(Base):
 
 class ServerScanLog(Base):
     """Sunucu tarama loglari"""
+
     __tablename__ = "server_scan_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1992,8 +2348,10 @@ class ServerScanLog(Base):
 
 # ==================== CONTENT MODERATION SYSTEM ====================
 
+
 class ContentBlacklist(Base):
     """Forum icerik kara listesi - yasakli kelimeler"""
+
     __tablename__ = "content_blacklist"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -2009,10 +2367,13 @@ class ContentBlacklist(Base):
 
 class UserWarning(Base):
     """Kullanici uyarilari"""
+
     __tablename__ = "user_warnings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     reason = Column(String(255), nullable=False)
     warned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     expires_at = Column(DateTime)  # Uyarinin gecerlilik suresi
@@ -2022,17 +2383,18 @@ class UserWarning(Base):
     user = relationship("User", foreign_keys=[user_id], backref="warnings")
     warner = relationship("User", foreign_keys=[warned_by])
 
-    __table_args__ = (
-        Index('idx_warning_user_expires', 'user_id', 'expires_at'),
-    )
+    __table_args__ = (Index("idx_warning_user_expires", "user_id", "expires_at"),)
 
 
 class ForumBan(Base):
     """Forum banlari (soft ban - sadece forum erisimi engellenir)"""
+
     __tablename__ = "forum_bans"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     reason = Column(String(255), nullable=False)
     banned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     expires_at = Column(DateTime, nullable=False)  # Ban bitis zamani
@@ -2042,13 +2404,12 @@ class ForumBan(Base):
     user = relationship("User", foreign_keys=[user_id], backref="forum_bans")
     banner = relationship("User", foreign_keys=[banned_by])
 
-    __table_args__ = (
-        Index('idx_forum_ban_user_expires', 'user_id', 'expires_at'),
-    )
+    __table_args__ = (Index("idx_forum_ban_user_expires", "user_id", "expires_at"),)
 
 
 class ModerationLog(Base):
     """Moderasyon islem loglari"""
+
     __tablename__ = "moderation_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -2067,24 +2428,338 @@ class ModerationLog(Base):
     moderator = relationship("User", foreign_keys=[moderator_id])
 
 
+# ==================== FORUM REACTION SYSTEM ====================
+
+
+class ReactionType(enum.Enum):
+    """Tepki türleri"""
+
+    LIKE = "like"  # 👍
+    LOVE = "love"  # ❤️
+    LAUGH = "laugh"  # 😂
+    THINKING = "thinking"  # 🤔
+    SOLUTION = "solution"  # ✅
+    PLAYED = "played"  # 🎮
+
+
+class ForumReaction(Base):
+    """Forum tepkileri - çoklu tepki desteği"""
+
+    __tablename__ = "forum_reactions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    content_type = Column(String(20), nullable=False)  # topic, reply
+    content_id = Column(Integer, nullable=False)
+    reaction_type = Column(Enum(ReactionType), nullable=False)
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "content_type", "content_id", "reaction_type", name="uq_forum_reaction"
+        ),
+        Index("idx_reaction_content", "content_type", "content_id"),
+    )
+
+    user = relationship("User", backref="forum_reactions")
+
+
+# ==================== FORUM POLL SYSTEM ====================
+
+
+class ForumPoll(Base):
+    """Forum anketleri"""
+
+    __tablename__ = "forum_polls"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    topic_id = Column(
+        Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    question = Column(String(500), nullable=False)
+    is_multiple_choice = Column(Boolean, default=False)
+    is_anonymous = Column(Boolean, default=False)
+    ends_at = Column(DateTime)  # NULL = süresiz
+    total_votes = Column(Integer, default=0)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    topic = relationship("ForumTopic", backref=backref("poll", uselist=False))
+    options = relationship("ForumPollOption", back_populates="poll", cascade="all, delete-orphan")
+
+
+class ForumPollOption(Base):
+    """Anket seçenekleri"""
+
+    __tablename__ = "forum_poll_options"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    poll_id = Column(
+        Integer, ForeignKey("forum_polls.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    text = Column(String(200), nullable=False)
+    vote_count = Column(Integer, default=0)
+    display_order = Column(Integer, default=0)
+
+    poll = relationship("ForumPoll", back_populates="options")
+    votes = relationship("ForumPollVote", back_populates="option", cascade="all, delete-orphan")
+
+
+class ForumPollVote(Base):
+    """Anket oyları"""
+
+    __tablename__ = "forum_poll_votes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    poll_id = Column(
+        Integer, ForeignKey("forum_polls.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    option_id = Column(
+        Integer, ForeignKey("forum_poll_options.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("poll_id", "option_id", "user_id", name="uq_poll_vote"),
+        Index("idx_poll_vote_user", "poll_id", "user_id"),
+    )
+
+    option = relationship("ForumPollOption", back_populates="votes")
+    user = relationship("User", backref="poll_votes")
+
+
+# ==================== FORUM TOPIC TEMPLATES ====================
+
+
+class ForumTopicTemplate(Base):
+    """Konu şablonları"""
+
+    __tablename__ = "forum_topic_templates"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    slug = Column(String(100), unique=True, nullable=False)
+    description = Column(String(500))
+    icon = Column(String(50))
+    color = Column(String(20), default="#6b7280")
+    title_template = Column(String(200))  # "[BUG] {title}" gibi
+    content_template = Column(Text)  # Markdown içerik şablonu
+    required_fields = Column(JSON)  # ["platform", "game_version"] gibi
+    category_ids = Column(JSON)  # Bu şablon hangi kategorilerde kullanılabilir
+    is_active = Column(Boolean, default=True)
+    usage_count = Column(Integer, default=0)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+
+    creator = relationship("User", backref="created_templates")
+
+
+# ==================== FORUM DRAFT SYSTEM ====================
+
+
+class ForumDraft(Base):
+    """Taslaklar - cross-device sync için"""
+
+    __tablename__ = "forum_drafts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    draft_type = Column(String(20), nullable=False)  # new_topic, reply, edit_topic, edit_reply
+    category_id = Column(Integer, ForeignKey("forum_categories.id", ondelete="CASCADE"))
+    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"))
+    reply_id = Column(Integer, ForeignKey("forum_replies.id", ondelete="CASCADE"))
+    title = Column(String(200))
+    content = Column(Text)
+    tags = Column(JSON)  # ["tag1", "tag2"]
+    poll_data = Column(JSON)  # Anket varsa
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (Index("idx_draft_user_type", "user_id", "draft_type"),)
+
+    user = relationship("User", backref="forum_drafts")
+
+
+# ==================== FORUM REPUTATION SYSTEM ====================
+
+
+class ForumReputation(Base):
+    """Forum itibar puanları"""
+
+    __tablename__ = "forum_reputation"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, unique=True
+    )
+    total_points = Column(Integer, default=0)
+    level = Column(Integer, default=1)
+    topics_created = Column(Integer, default=0)
+    replies_given = Column(Integer, default=0)
+    likes_received = Column(Integer, default=0)
+    likes_given = Column(Integer, default=0)
+    solutions_marked = Column(Integer, default=0)  # Yanıtları çözüm olarak işaretlenme
+    helpful_count = Column(Integer, default=0)
+    spam_count = Column(Integer, default=0)  # Negatif
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    user = relationship("User", backref=backref("forum_reputation", uselist=False))
+
+
+class ForumReputationLog(Base):
+    """İtibar değişiklik logları"""
+
+    __tablename__ = "forum_reputation_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    points = Column(Integer, nullable=False)  # + veya -
+    reason = Column(
+        String(100), nullable=False
+    )  # topic_created, reply_liked, solution_marked, spam_reported
+    source_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    content_type = Column(String(20))
+    content_id = Column(Integer)
+    created_at = Column(DateTime, default=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    source_user = relationship("User", foreign_keys=[source_user_id])
+
+
+# ==================== FORUM SPAM FILTER ====================
+
+
+class SpamFilterRule(Base):
+    """Spam filtre kuralları"""
+
+    __tablename__ = "spam_filter_rules"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    rule_type = Column(String(50), nullable=False)  # keyword, regex, link_pattern, flood
+    pattern = Column(String(500), nullable=False)
+    action = Column(String(20), default="block")  # block, flag, warn
+    is_active = Column(Boolean, default=True)
+    hit_count = Column(Integer, default=0)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+
+    creator = relationship("User")
+
+
+class SpamLog(Base):
+    """Spam tespit logları"""
+
+    __tablename__ = "spam_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    rule_id = Column(Integer, ForeignKey("spam_filter_rules.id", ondelete="SET NULL"))
+    content_type = Column(String(20), nullable=False)
+    content_preview = Column(String(500))
+    action_taken = Column(String(20), nullable=False)
+    ip_address = Column(String(45))
+    created_at = Column(DateTime, default=func.now())
+
+    user = relationship("User", backref="spam_logs")
+    rule = relationship("SpamFilterRule")
+
+
+# ==================== FORUM BOOKMARK SYSTEM ====================
+
+
+class ForumBookmark(Base):
+    """Konu yer imleri"""
+
+    __tablename__ = "forum_bookmarks"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (UniqueConstraint("user_id", "topic_id", name="uq_forum_bookmark"),)
+
+    user = relationship("User", backref="forum_bookmarks")
+    topic = relationship("ForumTopic", backref="bookmarks")
+
+
+# ==================== FORUM TOPIC LIKE (separate from reactions) ====================
+
+
+class ForumTopicLike(Base):
+    """Konu beğenileri"""
+
+    __tablename__ = "forum_topic_likes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (UniqueConstraint("topic_id", "user_id", name="uq_topic_like"),)
+
+
+class ForumReplyLike(Base):
+    """Yanıt beğenileri"""
+
+    __tablename__ = "forum_reply_likes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    reply_id = Column(Integer, ForeignKey("forum_replies.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (UniqueConstraint("reply_id", "user_id", name="uq_reply_like"),)
+
+
 # ==================== ENUM VALIDATION EVENT LISTENERS ====================
 # Register validators for critical enum columns to ensure data integrity
 
 from sqlalchemy import event
 
 # User model enum validators
-event.listen(User.role, 'set', create_enum_validator(UserRole, 'User.role'), propagate=True)
-event.listen(User.status, 'set', create_enum_validator(UserStatus, 'User.status'), propagate=True)
+event.listen(User.role, "set", create_enum_validator(UserRole, "User.role"), propagate=True)
+event.listen(User.status, "set", create_enum_validator(UserStatus, "User.status"), propagate=True)
 
 # GameServer model enum validators
-event.listen(GameServer.game_type, 'set', create_enum_validator(GameType, 'GameServer.game_type'), propagate=True)
-event.listen(GameServer.status, 'set', create_enum_validator(ServerStatus, 'GameServer.status'), propagate=True)
+event.listen(
+    GameServer.game_type,
+    "set",
+    create_enum_validator(GameType, "GameServer.game_type"),
+    propagate=True,
+)
+event.listen(
+    GameServer.status,
+    "set",
+    create_enum_validator(ServerStatus, "GameServer.status"),
+    propagate=True,
+)
 
 # Payment model enum validators
-event.listen(Payment.method, 'set', create_enum_validator(PaymentMethod, 'Payment.method'), propagate=True)
-event.listen(Payment.status, 'set', create_enum_validator(PaymentStatus, 'Payment.status'), propagate=True)
+event.listen(
+    Payment.method, "set", create_enum_validator(PaymentMethod, "Payment.method"), propagate=True
+)
+event.listen(
+    Payment.status, "set", create_enum_validator(PaymentStatus, "Payment.status"), propagate=True
+)
 
 # ServerPackage model enum validator
-event.listen(ServerPackage.game_type, 'set', create_enum_validator(GameType, 'ServerPackage.game_type'), propagate=True)
+event.listen(
+    ServerPackage.game_type,
+    "set",
+    create_enum_validator(GameType, "ServerPackage.game_type"),
+    propagate=True,
+)
 
 logger.debug("Enum validation event listeners registered")

@@ -109,7 +109,7 @@
                   <span class="label-text">Beni Hatırla</span>
                 </label>
                 <router-link to="/forgot-password" class="link link-primary text-sm">
-                  Şifremi Unuttum
+                  Şifremi Unuttüm
                 </router-link>
               </div>
 

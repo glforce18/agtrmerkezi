@@ -212,7 +212,7 @@
                     <button
                       class="action-btn view"
                       @click.stop="viewCategoryTopics(category)"
-                      title="Konulari Gor"
+                      title="Konulari Gör"
                     >
                       <ExternalLink :size="16" />
                     </button>
@@ -268,7 +268,7 @@
                   <option value="">Tüm Durumlar</option>
                   <option value="open">Açık</option>
                   <option value="closed">Kapalı</option>
-                  <option value="pinned">Sabitlenmis</option>
+                  <option value="pinned">Sabitlenmiş</option>
                 </select>
               </div>
 
@@ -297,7 +297,7 @@
               <div v-if="selectedTopics.length > 0" class="bulk-actions-bar">
                 <span class="selection-info">
                   <CheckSquare :size="18" />
-                  {{ selectedTopics.length }} konu secildi
+                  {{ selectedTopics.length }} konu seçildi
                 </span>
                 <div class="bulk-buttons">
                   <button class="bulk-btn" @click="bulkPinTopics">
@@ -378,7 +378,7 @@
                     <td class="col-topic">
                       <div class="topic-cell">
                         <div class="topic-badges">
-                          <Pin v-if="topic.is_pinned" :size="14" class="badge-icon pinned" title="Sabitlenmis" />
+                          <Pin v-if="topic.is_pinned" :size="14" class="badge-icon pinned" title="Sabitlenmiş" />
                           <Lock v-if="topic.is_locked" :size="14" class="badge-icon locked" title="Kilitli" />
                         </div>
                         <span class="topic-title">{{ topic.title }}</span>
@@ -799,7 +799,7 @@
                       </label>
                       <label class="checkbox-label">
                         <input v-model="categoryForm.is_private" type="checkbox" />
-                        <span class="checkbox-text">Özel (Sadece yetkililere gorunur)</span>
+                        <span class="checkbox-text">Özel (Sadece yetkililere görunur)</span>
                       </label>
                     </div>
                   </div>

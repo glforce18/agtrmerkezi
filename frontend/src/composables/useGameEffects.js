@@ -163,14 +163,14 @@ export function useGameEffects() {
       reward: '+500 XP'
     }),
     dailyLogin: () => showAchievement({
-      title: 'Gunluk Giris',
-      description: 'Bugun giris yaptin',
+      title: 'Gunluk Giriş',
+      description: 'Bugun giriş yaptin',
       gameIcon: 'achievement-streak',
       color: '#06b6d4',
       reward: '+50 XP'
     }),
     purchase: () => showAchievement({
-      title: 'Satin Alma Basarili!',
+      title: 'Satin Alma Başarılı!',
       description: 'Paketin aktif edildi',
       gameIcon: 'hud-money',
       color: '#22c55e',

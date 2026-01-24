@@ -223,7 +223,7 @@
                 </div>
                 <div class="notification-footer">
                   <router-link to="/notifications" class="notification-view-all">
-                    Tüm bildirimleri gor
+                    Tüm bildirimleri gör
                   </router-link>
                 </div>
               </div>
@@ -279,12 +279,12 @@
                     <n-icon :component="LayoutDashboard" size="18" />
                     <span>Dashboard</span>
                   </button>
-                  <button class="user-dropdown-item" @click="navigateTo('/servers')">
+                  <button class="user-dropdown-item" @click="navigateTo('/my-servers')">
                     <n-icon :component="Server" size="18" />
                     <span>Sunucularım</span>
                   </button>
                   <button
-                    v-if="['admin', 'superadmin'].includes(user.role)"
+                    v-if="user.role === 'superadmin'"
                     class="user-dropdown-item user-dropdown-item-admin"
                     @click="navigateTo('/admin')"
                   >
@@ -1095,16 +1095,34 @@ watch(logoUrl, () => {
   color: var(--n-text-color, #f8fafc);
 }
 
-/* Highlighted nav link (e.g., Forum) */
+/* Highlighted nav link (e.g., Forum) - Enhanced with pulse animation */
 .nav-link-highlight {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(251, 146, 60, 0.1) 100%);
-  border: 1px solid rgba(249, 115, 22, 0.3);
-  color: #f97316;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border: 1px solid rgba(249, 115, 22, 0.5);
+  color: white !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+  animation: forum-link-pulse 3s ease-in-out infinite;
+}
+
+@keyframes forum-link-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+  }
 }
 
 .nav-link-highlight:hover {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(251, 146, 60, 0.15) 100%);
-  border-color: rgba(249, 115, 22, 0.5);
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  border-color: rgba(249, 115, 22, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+}
+
+.nav-link-highlight .nav-link-text {
+  color: white !important;
 }
 
 .nav-link-underline {

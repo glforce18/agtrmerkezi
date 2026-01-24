@@ -85,7 +85,8 @@ import {
   Palette,
   MessageSquare,
   Wrench,
-  BarChart3
+  BarChart3,
+  Activity
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -122,14 +123,15 @@ fetchPendingCount()
 // Consolidated menu - removed redundant pages
 const menuItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/admin/users', label: 'Kullanicilar', icon: Users },
+  { path: '/admin/users', label: 'Kullanıcılar', icon: Users },
   { path: '/admin/servers', label: 'Sunucular', icon: Server },
-  { path: '/admin/payments', label: 'Odemeler', icon: CreditCard },
+  { path: '/admin/payments', label: 'Ödemeler', icon: CreditCard },
   { path: '/admin/packages', label: 'Paketler', icon: Package },
   { path: '/admin/stats', label: 'Istatistikler', icon: BarChart3 },
   { path: '/admin/forum', label: 'Forum', icon: MessageSquare },
   { path: '/admin/media', label: 'Medya', icon: Image },
   { path: '/admin/pages', label: 'Sayfalar', icon: FileText },
+  { path: '/admin/health', label: 'Sistem Saglik', icon: Activity },
   { path: '/admin/maintenance', label: 'Bakim Modu', icon: Wrench },
   { path: '/admin/settings', label: 'Ayarlar', icon: Settings }
 ]

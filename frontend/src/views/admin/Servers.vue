@@ -82,6 +82,22 @@
           </button>
         </div>
 
+        <!-- Steam ID Search -->
+        <div class="steam-search-wrapper">
+          <Hash :size="18" class="search-icon" />
+          <input
+            v-model="steamIdSearch"
+            type="text"
+            placeholder="Steam ID ile ara (STEAM_0:0:123)"
+            class="search-input steam-input"
+            @keyup.enter="searchBySteamId"
+          />
+          <button class="btn btn-sm btn-primary" @click="searchBySteamId" :disabled="!steamIdSearch || steamSearching">
+            <Loader2 v-if="steamSearching" :size="14" class="spin" />
+            <Search v-else :size="14" />
+          </button>
+        </div>
+
         <div class="filter-group">
           <div class="filter-item">
             <Gamepad2 :size="16" class="filter-icon" />
@@ -705,7 +721,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
 import AdminLayout from '@/components/admin/AdminLayout.vue'
-import { adminApi } from '@/services/api'
+import { adminApi, api } from '@/services/api'
 import { useUIStore } from '@/stores/ui'
 import {
   Search,
@@ -743,7 +759,8 @@ import {
   AlertTriangle,
   CheckCircle,
   AlertCircle,
-  Info
+  Info,
+  Hash
 } from 'lucide-vue-next'
 import { format, formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -763,6 +780,9 @@ const searchQuery = ref('')
 const filterGame = ref('')
 const filterStatus = ref('')
 const viewMode = ref('grid')
+const steamIdSearch = ref('')
+const steamSearching = ref(false)
+const steamSearchResult = ref(null)
 
 const selectedServer = ref(null)
 const deleteTarget = ref(null)
@@ -859,6 +879,33 @@ const clearSearch = () => {
   fetchServers()
 }
 
+const searchBySteamId = async () => {
+  if (!steamIdSearch.value) return
+  steamSearching.value = true
+  try {
+    const response = await api.get(`/v2/servers/search/steam/${encodeURIComponent(steamIdSearch.value)}`)
+    steamSearchResult.value = response.data
+    if (response.data.servers && response.data.servers.length > 0) {
+      // Filter servers by the found ones
+      servers.value = response.data.servers.map(s => ({
+        ...s,
+        is_online: s.status === 'running',
+        players: s.current_players,
+        owner_username: response.data.owner?.username || 'Bilinmiyor',
+        owner_steam_id: response.data.steam_id
+      }))
+      addToast(`${response.data.server_count} sunucu bulundu (${response.data.owner?.username || 'Bilinmiyor'})`, 'success')
+    } else {
+      addToast('Bu Steam ID ile sunucu bulunamadi', 'warning')
+    }
+  } catch (error) {
+    console.error('Steam search error:', error)
+    addToast(error.response?.data?.detail || 'Arama basarisiz', 'error')
+  } finally {
+    steamSearching.value = false
+  }
+}
+
 const applyFilters = () => {
   currentPage.value = 1
   fetchServers()
@@ -890,13 +937,13 @@ const getGameLabel = (game) => {
 }
 
 const getMapThumbnail = (mapName) => {
-  if (!mapName || mapName === 'N/A') return null
+  if (!mapName || mapName === 'N/A') return '/static/maps/default.jpg'
   // Common map thumbnails - can be extended or connected to a map image service
-  return `/maps/${mapName}.jpg`
+  return `/static/maps/${mapName}.jpg`
 }
 
 const handleImageError = (e) => {
-  e.target.style.display = 'none'
+  e.target.src = '/static/maps/default.jpg'
 }
 
 const getPlayerBadgeClass = (server) => {
@@ -1298,6 +1345,37 @@ onUnmounted(() => {
   position: relative;
   display: flex;
   align-items: center;
+}
+
+.steam-search-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-width: 300px;
+  gap: 8px;
+}
+
+.steam-search-wrapper .search-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.steam-search-wrapper .steam-input {
+  padding-left: 40px;
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.steam-search-wrapper .steam-input:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.btn-sm {
+  padding: 8px 12px;
+  font-size: 13px;
 }
 
 .search-icon {

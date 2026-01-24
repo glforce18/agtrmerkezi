@@ -206,7 +206,9 @@
                       <span class="status-dot" :class="user.status"></span>
                     </div>
                     <div class="user-info">
-                      <span class="username">{{ user.username }}</span>
+                      <router-link :to="`/user/${user.username}`" class="username username-link" target="_blank">
+                        {{ user.username }}
+                      </router-link>
                       <span class="email">{{ user.email }}</span>
                     </div>
                   </div>
@@ -294,7 +296,9 @@
             </div>
 
             <div class="card-info">
-              <h3 class="card-username">{{ user.username }}</h3>
+              <router-link :to="`/user/${user.username}`" class="card-username card-username-link" target="_blank">
+                {{ user.username }}
+              </router-link>
               <p class="card-email">{{ user.email }}</p>
             </div>
 
@@ -1620,6 +1624,16 @@ watch(users, () => {
   color: var(--text-primary, #fff);
 }
 
+.username-link {
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.username-link:hover {
+  color: #f97316;
+  text-decoration: underline;
+}
+
 .email {
   font-size: 13px;
   color: var(--text-secondary, #a0a0c0);
@@ -1857,6 +1871,16 @@ tr:hover .row-actions {
   font-weight: 700;
   color: var(--text-primary, #fff);
   margin-bottom: 4px;
+  display: block;
+}
+
+.card-username-link {
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.card-username-link:hover {
+  color: #f97316;
 }
 
 .card-email {

@@ -57,10 +57,10 @@ export const SPACING = {
 
 // Typography Scale
 export const TYPOGRAPHY = {
-  // Font Families
+  // Font Families - Turkish character support
   fontSans: 'Inter, system-ui, sans-serif',
-  fontDisplay: 'Orbitron, sans-serif',
-  fontMono: 'Fira Code, monospace',
+  fontDisplay: 'Rajdhani, Poppins, sans-serif',
+  fontMono: 'JetBrains Mono, Fira Code, monospace',
 
   // Font Sizes
   xs: '0.75rem',    // 12px

@@ -6,7 +6,7 @@
       </span>
       <span class="prompt-text">{{ message }}</span>
       <n-button size="small" type="primary" @click="goToLogin">
-        Giris Yap
+        Giriş Yap
       </n-button>
     </div>
   </div>
@@ -21,7 +21,7 @@ import { Lock } from 'lucide-vue-next'
 const props = defineProps({
   message: {
     type: String,
-    default: 'Tum ozellikleri kullanmak icin giris yapin'
+    default: 'Tüm ozellikleri kullanmak icin giriş yapin'
   }
 })
 

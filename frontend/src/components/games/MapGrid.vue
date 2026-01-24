@@ -103,7 +103,7 @@ const activeFilter = ref(props.initialFilter)
 
 // Map type filters
 const mapTypes = [
-  { value: null, label: 'Tumu' },
+  { value: null, label: 'Tümu' },
   { value: 'de_', label: 'Bomba (de_)' },
   { value: 'cs_', label: 'Rehine (cs_)' },
   { value: 'fy_', label: 'Fun (fy_)' },

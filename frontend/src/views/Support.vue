@@ -127,7 +127,7 @@ const faqs = [
     answer: 'Sunucu panelinin ust kisminda IP adresiniz görüntülenir. Ayrica "IP Kopyala" butonu ile panoya kopyalayabilirsiniz.'
   },
   {
-    question: 'RCON şifremi unuttum ne yapmalıyım?',
+    question: 'RCON şifremi unuttüm ne yapmalıyım?',
     answer: 'Sunucu panelindeki "Ayarlar" sekmesinden RCON şifrenizi değiştirebilirsiniz.'
   },
   {

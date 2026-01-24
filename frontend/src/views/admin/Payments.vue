@@ -18,7 +18,7 @@
               @click="bulkReject"
             >
               <XCircle :size="18" />
-              <span>Secilenleri Reddet ({{ selectedPayments.length }})</span>
+              <span>Seçilenleri Reddet ({{ selectedPayments.length }})</span>
             </button>
             <button
               v-if="selectedPayments.length > 0"
@@ -26,7 +26,7 @@
               @click="bulkApprove"
             >
               <CheckCircle :size="18" />
-              <span>Secilenleri Onayla ({{ selectedPayments.length }})</span>
+              <span>Seçilenleri Onayla ({{ selectedPayments.length }})</span>
             </button>
             <button class="btn btn-outline" @click="exportPayments">
               <FileDown :size="18" />
@@ -123,7 +123,7 @@
               :class="{ active: activeStatus === 'all' }"
               @click="setStatus('all')"
             >
-              Tumu
+              Tümu
             </button>
             <button
               class="filter-pill pending"
@@ -327,7 +327,7 @@
               <Receipt :size="64" />
             </div>
             <h3>Ödeme Bulunamadı</h3>
-            <p>Secilen kriterlere uygun ödeme kaydina rastlanmadi.</p>
+            <p>Seçilen kriterlere uygun ödeme kaydina rastlanmadi.</p>
             <button class="btn btn-outline" @click="resetFilters">
               <RotateCcw :size="16" />
               Filtreleri Sifirla

@@ -58,35 +58,35 @@
                 <MessageSquareIcon class="w-3.5 h-3.5" />
               </span>
               <span class="forum-stat-enhanced__value">{{ totalPosts }}</span>
-              <span class="forum-stat-enhanced__label">Gonderi</span>
+              <span class="forum-stat-enhanced__label">Gönderi</span>
             </span>
             <span class="forum-stat-enhanced">
               <span class="forum-stat-enhanced__icon">
                 <EyeIcon class="w-3.5 h-3.5" />
               </span>
               <span class="forum-stat-enhanced__value">{{ formatNumber(totalViews) }}</span>
-              <span class="forum-stat-enhanced__label">Goruntulenme</span>
+              <span class="forum-stat-enhanced__label">Görüntülenme</span>
             </span>
           </div>
         </div>
         <div class="forum-category-header__action">
-          <n-tooltip :disabled="isLoggedIn" trigger="hover">
+          <n-tooltip :disabled="isLoggedIn && hasSteam" trigger="hover">
             <template #trigger>
               <n-button
                 type="primary"
                 size="large"
                 class="forum-btn-enhanced forum-btn-enhanced--primary"
-                :class="{ 'forum-btn--disabled': !isLoggedIn }"
+                :class="{ 'forum-btn--disabled': !isLoggedIn || !hasSteam }"
                 @click="handleNewTopic"
               >
                 <template #icon>
-                  <LockIcon v-if="!isLoggedIn" class="w-5 h-5" />
+                  <LockIcon v-if="!isLoggedIn || !hasSteam" class="w-5 h-5" />
                   <PlusCircleIcon v-else class="w-5 h-5" />
                 </template>
-                {{ isLoggedIn ? 'Yeni Konu Ac' : 'Giris Yap' }}
+                {{ !isLoggedIn ? 'Giris Yap' : (!hasSteam ? 'Steam Bagla' : 'Yeni Konu Ac') }}
               </n-button>
             </template>
-            Konu olusturmak icin giris yapin
+            {{ !isLoggedIn ? 'Konu olusturmak icin giris yapin' : 'Konu olusturmak icin Steam hesabinizi baglayin' }}
           </n-tooltip>
         </div>
       </section>
@@ -118,13 +118,13 @@
 
         <div class="forum-filters__controls">
           <!-- View Mode Toggle -->
-          <div class="forum-view-toggle" role="group" aria-label="Gorunum modu">
+          <div class="forum-view-toggle" role="group" aria-label="Görunum modu">
             <button
               @click="handleViewModeChange('list')"
               :class="['forum-view-toggle__btn', { active: viewMode === 'list' }]"
               :aria-pressed="viewMode === 'list'"
-              aria-label="Liste Gorunumu"
-              title="Liste Gorunumu"
+              aria-label="Liste Görunumu"
+              title="Liste Görunumu"
             >
               <ListIcon class="w-4 h-4" />
             </button>
@@ -132,8 +132,8 @@
               @click="handleViewModeChange('compact')"
               :class="['forum-view-toggle__btn', { active: viewMode === 'compact' }]"
               :aria-pressed="viewMode === 'compact'"
-              aria-label="Kompakt Gorunum"
-              title="Kompakt Gorunum"
+              aria-label="Kompakt Görunum"
+              title="Kompakt Görunum"
             >
               <LayoutGridIcon class="w-4 h-4" />
             </button>
@@ -210,9 +210,9 @@
           <h3 class="forum-empty-title">Henuz Konu Yok</h3>
           <p class="forum-empty-description">Bu kategoride henuz bir konu acilmamis. Ilk konuyu acarak tartismayi baslatin!</p>
           <div class="forum-empty-actions">
-            <n-button type="primary" size="large" class="forum-btn-enhanced forum-btn-enhanced--primary" @click="handleNewTopic" :disabled="!isLoggedIn">
+            <n-button type="primary" size="large" class="forum-btn-enhanced forum-btn-enhanced--primary" @click="handleNewTopic" :disabled="!isLoggedIn || !hasSteam">
               <template #icon><PlusCircleIcon class="w-5 h-5" /></template>
-              {{ isLoggedIn ? 'Ilk Konuyu Ac' : 'Giris Yap' }}
+              {{ !isLoggedIn ? 'Giris Yap' : (!hasSteam ? 'Steam Bagla' : 'Ilk Konuyu Ac') }}
             </n-button>
             <n-button quaternary size="large" class="forum-btn-enhanced forum-btn-enhanced--secondary" @click="router.push('/forum')">
               <template #icon><ArrowLeftIcon class="w-5 h-5" /></template>
@@ -258,16 +258,19 @@
 
     <!-- Right Sidebar -->
     <template #sidebar-right>
+      <!-- Pinned Topics for this category -->
+      <PinnedTopicsSection :topics="pinnedTopicsInCategory" :maxShow="5" />
+
       <!-- Online Users -->
       <div class="forum-sidebar-card">
         <h3 class="forum-sidebar-card__title">
           <UsersIcon class="w-4 h-4" />
-          Cevrimici Kullanicilar
+          Çevrimiçi Kullanıcılar
         </h3>
         <div class="forum-online-indicator">
           <span class="forum-online-dot"></span>
           <span class="forum-online-count">{{ onlineUsers }}</span>
-          <span class="forum-meta">cevrimici</span>
+          <span class="forum-meta">çevrimiçi</span>
         </div>
       </div>
 
@@ -284,11 +287,11 @@
           </div>
           <div class="forum-stat-box">
             <span class="forum-stat-box__value">{{ totalPosts }}</span>
-            <span class="forum-stat-box__label">Toplam Gonderi</span>
+            <span class="forum-stat-box__label">Toplam Gönderi</span>
           </div>
           <div class="forum-stat-box">
             <span class="forum-stat-box__value">{{ formatNumber(totalViews) }}</span>
-            <span class="forum-stat-box__label">Goruntulenme</span>
+            <span class="forum-stat-box__label">Görüntülenme</span>
           </div>
         </div>
       </div>
@@ -297,7 +300,7 @@
       <div class="forum-sidebar-card">
         <h3 class="forum-sidebar-card__title">
           <StarIcon class="w-4 h-4" />
-          Populer Kategoriler
+          Popüler Kategoriler
         </h3>
         <div class="forum-sidebar-categories">
           <button
@@ -320,8 +323,8 @@
       <div class="forum-modal__header">
         <EditIcon class="w-6 h-6 text-orange-500" />
         <div>
-          <h2 class="forum-heading forum-heading--lg">Yeni Konu Olustur</h2>
-          <p class="forum-meta">Topluluga paylasma istediginiz konuyu yazin</p>
+          <h2 class="forum-heading forum-heading--lg">Yeni Konu Oluştur</h2>
+          <p class="forum-meta">Topluluga paylaşma istediginiz konuyu yazin</p>
         </div>
         <button class="forum-modal__close" @click="showNewTopicModal = false">
           <XIcon class="w-5 h-5" />
@@ -357,7 +360,7 @@
           <input
             v-model="newTopic.title"
             type="text"
-            placeholder="Dikkat cekici bir baslik girin..."
+            placeholder="Dikkat cekici bir başlık girin..."
             class="forum-form-input"
             :class="{ error: titleError }"
           />
@@ -370,11 +373,11 @@
         <div class="forum-form-group">
           <label class="forum-form-label">
             <FileTextIcon class="w-4 h-4" />
-            Icerik
+            İçerik
           </label>
           <textarea
             v-model="newTopic.content"
-            placeholder="Konu iceriginizi detayli bir sekilde aciklayin..."
+            placeholder="Konu içeriğinizi detayli bir sekilde açıklayin..."
             class="forum-form-textarea"
             :class="{ error: contentError }"
             rows="8"
@@ -411,11 +414,11 @@
 
       <div class="forum-modal__footer">
         <n-button quaternary size="large" @click="showNewTopicModal = false">
-          Iptal
+          İptal
         </n-button>
         <n-button type="primary" size="large" :loading="isCreating" @click="createTopic">
           <template #icon><SendIcon class="w-5 h-5" /></template>
-          Konuyu Olustur
+          Konuyu Oluştur
         </n-button>
       </div>
     </div>
@@ -444,6 +447,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRequireSteam } from '@/composables/useRequireSteam'
 import SteamRequiredModal from '@/components/SteamRequiredModal.vue'
 import { ForumLayout, ForumSidebar, ForumTopicCard, ForumSkeleton } from '@/components/forum'
+import PinnedTopicsSection from '@/components/forum/PinnedTopicsSection.vue'
 import {
   HomeIcon,
   MessageSquareIcon,
@@ -490,7 +494,7 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const categoryId = route.params.id
-const { showSteamModal, requireSteam, connectSteam, closeModal: closeSteamModal } = useRequireSteam()
+const { hasSteam, showSteamModal, requireSteam, connectSteam, closeModal: closeSteamModal } = useRequireSteam()
 const { getGameAssets } = useGameAssets()
 
 // Game banner for gaming categories
@@ -551,7 +555,7 @@ const CATEGORY_VIEW_KEY = 'forum_category_view'
 // Refs with persistence
 const searchQuery = ref('')
 const searchFocused = ref(false)
-const sortBy = ref(localStorage.getItem(CATEGORY_SORT_KEY) || 'latest')
+const sortBy = ref(localStorage.getItem(CATEGORY_SORT_KEY) || 'newest')
 const sortDropdownOpen = ref(false)
 const viewMode = ref(localStorage.getItem(CATEGORY_VIEW_KEY) || 'list')
 const showNewTopicModal = ref(false)
@@ -573,9 +577,9 @@ let searchDebounceTimer = null
 
 // Sort options with icons
 const sortOptions = [
-  { label: 'En Yeni', value: 'latest', icon: CalendarIcon },
-  { label: 'Populer', value: 'popular', icon: TrendingUpIcon },
-  { label: 'En Cok Yanit', value: 'mostReplies', icon: MessageSquareIcon },
+  { label: 'En Yeni', value: 'newest', icon: CalendarIcon },
+  { label: 'Popüler', value: 'popular', icon: TrendingUpIcon },
+  { label: 'En Cok Yanıt', value: 'most_replies', icon: MessageSquareIcon },
   { label: 'En Eski', value: 'oldest', icon: ClockIcon }
 ]
 
@@ -587,7 +591,7 @@ const currentSortOption = computed(() => {
 const category = ref({
   id: 1,
   name: 'Genel Tartisma',
-  description: 'CS 1.6 hakkinda genel konular, sorular ve paylasimlar icin acik tartisma alani',
+  description: 'CS 1.6 hakkinda genel konular, sorular ve paylaşimlar icin açık tartisma alani',
   icon: MessageSquareIcon,
   gradient: 'primary-secondary'
 })
@@ -633,6 +637,16 @@ const formatNumber = (num) => {
   return num
 }
 
+// Extract author name from item - handles nested objects
+const getAuthorName = (item) => {
+  if (!item) return 'Anonim'
+  if (typeof item.author === 'string' && item.author.trim()) return item.author.trim()
+  if (typeof item.author === 'object' && item.author) {
+    return item.author.username || item.author.name || 'Anonim'
+  }
+  return item.author_name || 'Anonim'
+}
+
 // Get gradient color
 const getCategoryGradient = (gradient) => {
   const gradients = {
@@ -658,11 +672,16 @@ const adjustColor = (color, amount) => {
 
 // Format topic for ForumTopicCard component
 const formatTopicForCard = (topic) => {
+  // Handle author as object or string
+  const authorObj = typeof topic.author === 'object' ? topic.author : null
+  const authorName = authorObj ? (authorObj.username || authorObj.name || 'Anonim') : (topic.author || 'Anonim')
+  const authorAvatar = authorObj ? authorObj.avatar : topic.authorAvatar
+
   return {
     id: topic.id,
     title: topic.title,
-    author: topic.author,
-    authorAvatar: topic.authorAvatar,
+    author: authorName,
+    authorAvatar: authorAvatar,
     authorOnline: topic.authorOnline,
     created: topic.created,
     replies: topic.replies,
@@ -681,6 +700,18 @@ const formatTopicForCard = (topic) => {
 // Computed values
 const totalPosts = computed(() => {
   return topics.value.reduce((sum, topic) => sum + topic.replies + 1, 0)
+})
+
+// Pinned topics in this category
+const pinnedTopicsInCategory = computed(() => {
+  return topics.value
+    .filter(t => t.isPinned)
+    .map(t => ({
+      id: t.id,
+      title: t.title,
+      replies: t.replies || 0,
+      views: t.views || 0
+    }))
 })
 
 const totalViews = computed(() => {
@@ -717,7 +748,7 @@ const filteredTopics = computed(() => {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(t =>
       t.title.toLowerCase().includes(query) ||
-      t.author.toLowerCase().includes(query) ||
+      getAuthorName(t).toLowerCase().includes(query) ||
       t.preview?.toLowerCase().includes(query) ||
       (t.tags || []).some(tag => tag.toLowerCase().includes(query))
     )
@@ -735,15 +766,15 @@ const filteredTopics = computed(() => {
   const unpinned = filtered.filter(t => !t.isPinned)
 
   // Sort unpinned topics
-  if (sortBy.value === 'latest') {
+  if (sortBy.value === 'newest') {
     unpinned.sort((a, b) => b.id - a.id)
   } else if (sortBy.value === 'popular') {
     unpinned.sort((a, b) => b.views - a.views)
-  } else if (sortBy.value === 'mostReplies') {
+  } else if (sortBy.value === 'most_replies') {
     unpinned.sort((a, b) => b.replies - a.replies)
   } else if (sortBy.value === 'oldest') {
     unpinned.sort((a, b) => a.id - b.id)
-  } else if (sortBy.value === 'mostLikes') {
+  } else if (sortBy.value === 'most_likes') {
     unpinned.sort((a, b) => (b.likes || 0) - (a.likes || 0))
   } else if (sortBy.value === 'unsolved') {
     // Show unsolved topics first
@@ -842,19 +873,19 @@ const validateForm = () => {
   contentError.value = ''
 
   if (!newTopic.title || newTopic.title.trim().length < 5) {
-    titleError.value = 'Baslik en az 5 karakter olmalidir'
+    titleError.value = 'Başlık en az 5 karakter olmalidir'
     return false
   }
   if (newTopic.title.length > 100) {
-    titleError.value = 'Baslik 100 karakterden uzun olamaz'
+    titleError.value = 'Başlık 100 karakterden uzun olamaz'
     return false
   }
   if (!newTopic.content || newTopic.content.trim().length < 20) {
-    contentError.value = 'Icerik en az 20 karakter olmalidir'
+    contentError.value = 'İçerik en az 20 karakter olmalidir'
     return false
   }
   if (newTopic.content.length > 5000) {
-    contentError.value = 'Icerik 5000 karakterden uzun olamaz'
+    contentError.value = 'İçerik 5000 karakterden uzun olamaz'
     return false
   }
   return true
@@ -889,6 +920,9 @@ const getHeaders = () => {
 }
 
 const createTopic = async () => {
+  // Prevent double submit
+  if (isCreating.value) return
+
   if (!validateForm()) {
     window.$message?.warning('Lutfen formu dogru sekilde doldurun')
     return
@@ -929,13 +963,13 @@ const createTopic = async () => {
     })
 
     if (response.ok) {
-      const data = await response.json().catch(() => ({}))
+      const data = await response.json().catch((e) => { console.warn('JSON parse error:', e); return {} })
       showNewTopicModal.value = false
       newTopic.title = ''
       newTopic.content = ''
       newTopic.tags = []
       newTopic.type = 'discussion'
-      window.$message?.success('Konu basariyla olusturuldu')
+      window.$message?.success('Konu başarıyla oluşturuldu')
 
       // Navigate to new topic if ID available, otherwise refresh list
       if (data.id || data.topic?.id) {
@@ -946,20 +980,20 @@ const createTopic = async () => {
     } else {
       const error = await response.json().catch(() => ({}))
       if (response.status === 401) {
-        window.$message?.error('Oturum suresi doldu, lutfen tekrar giris yapin')
+        window.$message?.error('Oturum suresi doldu, lutfen tekrar giriş yapin')
         router.push({ name: 'login', query: { redirect: route.fullPath } })
       } else if (response.status === 403) {
-        window.$message?.error('Bu islemi yapma yetkiniz yok')
+        window.$message?.error('Bu işlemi yapma yetkiniz yok')
       } else {
-        window.$message?.error(error.detail || 'Konu olusturulamadi')
+        window.$message?.error(error.detail || 'Konu oluşturulamadi')
       }
     }
   } catch (error) {
     console.error('Create topic error:', error)
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      window.$message?.error('Ag baglantisi hatasi, lutfen internet baglantinizi kontrol edin')
+      window.$message?.error('Ag bağlantisi hatasi, lutfen internet bağlantinizi kontrol edin')
     } else {
-      window.$message?.error('Bir hata olustu, lutfen tekrar deneyin')
+      window.$message?.error('Bir hata oluştu, lutfen tekrar deneyin')
     }
   } finally {
     isCreating.value = false
@@ -1015,11 +1049,11 @@ const fetchTopics = async () => {
       }
     } else {
       const errorData = await response.json().catch(() => ({}))
-      fetchError.value = errorData.detail || `Kategori yuklenemedi (${response.status})`
+      fetchError.value = errorData.detail || `Kategori yüklenemedi (${response.status})`
       console.error('Category fetch failed:', response.status, errorData)
     }
   } catch (error) {
-    fetchError.value = 'Baglanti hatasi olustu'
+    fetchError.value = 'Bağlanti hatasi oluştu'
     console.error('Failed to fetch topics:', error)
   } finally {
     isLoading.value = false
@@ -1134,7 +1168,7 @@ const toggleInfiniteScroll = () => {
 const isSubscribed = ref(false)
 const subscribeToCategory = async () => {
   if (!isLoggedIn.value) {
-    window.$message?.warning('Abone olmak icin giris yapin')
+    window.$message?.warning('Abone olmak icin giriş yapin')
     return
   }
 
@@ -1148,11 +1182,11 @@ const subscribeToCategory = async () => {
       isSubscribed.value = !isSubscribed.value
       window.$message?.success(isSubscribed.value ? 'Kategoriye abone olundu' : 'Abonelik iptal edildi')
     } else {
-      window.$message?.error('Islem basarisiz oldu')
+      window.$message?.error('İşlem başarısız oldu')
     }
   } catch (error) {
     console.error('Subscribe error:', error)
-    window.$message?.error('Bir hata olustu')
+    window.$message?.error('Bir hata oluştu')
   }
 }
 
@@ -1241,12 +1275,12 @@ onUnmounted(() => {
 .forum-category-header {
   display: flex;
   align-items: flex-start;
-  gap: 24px;
-  padding: 32px;
+  gap: 14px;
+  padding: 14px 16px;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 15, 20, 0.95) 100%);
   border: 1px solid rgba(249, 115, 22, 0.2);
-  border-radius: var(--forum-radius-lg);
-  margin-bottom: 24px;
+  border-radius: 12px;
+  margin-bottom: 10px;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(10px);
@@ -1275,15 +1309,14 @@ onUnmounted(() => {
 }
 
 .forum-category-header__icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 16px;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.3);
-  animation: icon-glow 3s ease-in-out infinite;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
   transition: transform 0.3s ease;
 }
 
@@ -1302,18 +1335,20 @@ onUnmounted(() => {
 }
 
 .forum-category-header__info .forum-heading {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  font-size: 1.1rem;
 }
 
 .forum-category-header__info .forum-meta {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   max-width: 600px;
+  font-size: 0.85rem;
 }
 
 .forum-category-header__stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 }
 
 .forum-category-header__action {
@@ -1324,12 +1359,12 @@ onUnmounted(() => {
 .forum-filters {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 10px;
+  padding: 8px 12px;
   background: var(--forum-bg-card);
   border: 1px solid var(--forum-border);
-  border-radius: var(--forum-radius);
-  margin-bottom: 24px;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
 .forum-filters__search {
@@ -1352,12 +1387,12 @@ onUnmounted(() => {
 
 .forum-filters__search-input {
   width: 100%;
-  padding: 12px 40px;
+  padding: 8px 36px;
   background: var(--forum-bg-hover);
   border: 1px solid var(--forum-border);
-  border-radius: var(--forum-radius-sm);
+  border-radius: 8px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.2s ease;
 }
 
@@ -1400,7 +1435,7 @@ onUnmounted(() => {
 }
 
 .forum-view-toggle__btn {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 6px;
   color: var(--forum-muted);
   transition: all 0.2s ease;
@@ -1423,13 +1458,13 @@ onUnmounted(() => {
 .forum-sort-dropdown__trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  gap: 6px;
+  padding: 6px 12px;
   background: var(--forum-bg-hover);
   border: 1px solid var(--forum-border);
-  border-radius: var(--forum-radius-sm);
+  border-radius: 8px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1477,46 +1512,48 @@ onUnmounted(() => {
 .forum-topics-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 6px;
+  margin-bottom: 12px;
 }
 
 .forum-topics-list--compact {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
 }
 
 /* Empty State */
 .forum-empty-state {
   text-align: center;
-  padding: 60px 24px;
+  padding: 30px 20px;
   background: var(--forum-bg-card);
   border: 1px solid var(--forum-border);
-  border-radius: var(--forum-radius-lg);
+  border-radius: 12px;
 }
 
 .forum-empty-state__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100px;
-  height: 100px;
+  width: 60px;
+  height: 60px;
   background: var(--forum-bg-hover);
   border-radius: 50%;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   color: var(--forum-muted);
 }
 
 .forum-empty-state .forum-heading {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  font-size: 1rem;
 }
 
 .forum-empty-state .forum-meta {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   max-width: 400px;
   margin-left: auto;
   margin-right: auto;
+  font-size: 0.85rem;
 }
 
 .forum-empty-state__actions {
@@ -1528,33 +1565,35 @@ onUnmounted(() => {
 /* Error State */
 .forum-error-state {
   text-align: center;
-  padding: 60px 24px;
+  padding: 30px 20px;
   background: var(--forum-bg-card);
   border: 1px solid var(--forum-danger);
-  border-radius: var(--forum-radius-lg);
+  border-radius: 12px;
 }
 
 .forum-error-state__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100px;
-  height: 100px;
+  width: 60px;
+  height: 60px;
   background: rgba(239, 68, 68, 0.1);
   border-radius: 50%;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .forum-error-state .forum-heading {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: var(--forum-danger);
+  font-size: 1rem;
 }
 
 .forum-error-state .forum-meta {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   max-width: 400px;
   margin-left: auto;
   margin-right: auto;
+  font-size: 0.85rem;
 }
 
 .forum-error-state__actions {
@@ -1568,23 +1607,23 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  padding: 20px;
+  gap: 6px;
+  padding: 10px;
   background: var(--forum-bg-card);
   border: 1px solid var(--forum-border);
-  border-radius: var(--forum-radius);
+  border-radius: 10px;
 }
 
 .forum-pagination__btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
+  gap: 4px;
+  padding: 6px 12px;
   background: var(--forum-bg-hover);
   border: 1px solid var(--forum-border);
-  border-radius: var(--forum-radius-sm);
+  border-radius: 8px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 12px;
   transition: all 0.2s ease;
 }
 
@@ -1604,14 +1643,14 @@ onUnmounted(() => {
 }
 
 .forum-pagination__page {
-  min-width: 40px;
-  height: 40px;
+  min-width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--forum-radius-sm);
+  border-radius: 8px;
   color: var(--forum-muted);
-  font-size: 14px;
+  font-size: 12px;
   transition: all 0.2s ease;
 }
 
@@ -1633,9 +1672,9 @@ onUnmounted(() => {
 .forum-sidebar-card {
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 15, 20, 0.95) 100%);
   border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: var(--forum-radius);
-  padding: 20px;
-  margin-bottom: 16px;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(10px);
@@ -1666,11 +1705,11 @@ onUnmounted(() => {
 .forum-sidebar-card__title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 /* Online Indicator */

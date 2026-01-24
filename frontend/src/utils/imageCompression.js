@@ -1,6 +1,6 @@
 /**
  * AGTR Merkezi - Client-Side Image Compression Utility
- * Yuklemeden once resimleri sikistirarak bant genisligi tasarrufu saglar
+ * Yüklemeden once resimleri sikistirarak bant genisligi tasarrufu saglar
  */
 
 /**
@@ -51,7 +51,7 @@ export async function compressImage(file, options = {}) {
           reject(error)
         }
       }
-      img.onerror = () => reject(new Error('Resim yuklenemedi'))
+      img.onerror = () => reject(new Error('Resim yüklenemedi'))
       img.src = event.target.result
     }
     reader.onerror = () => reject(new Error('Dosya okunamadi'))

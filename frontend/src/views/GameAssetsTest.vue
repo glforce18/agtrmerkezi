@@ -11,15 +11,15 @@
         <button @click="testAPI('halflife')" :disabled="loading">Half-Life Assets</button>
         <button @click="testAPI('csgo')" :disabled="loading">CS:GO Assets</button>
       </div>
-      <div v-if="loading" class="loading">Yukleniyor...</div>
+      <div v-if="loading" class="loading">Yükleniyor...</div>
       <pre v-if="apiResponse" class="api-response">{{ JSON.stringify(apiResponse, null, 2) }}</pre>
       <div v-if="apiError" class="error">{{ apiError }}</div>
     </section>
 
     <!-- Database Assets -->
     <section class="test-section">
-      <h2>2. Veritabanindaki Tum Assets ({{ allAssets.length }} adet)</h2>
-      <button @click="loadAllAssets" :disabled="loading">Tum Assets'i Yukle</button>
+      <h2>2. Veritabanindaki Tüm Assets ({{ allAssets.length }} adet)</h2>
+      <button @click="loadAllAssets" :disabled="loading">Tüm Assets'i Yükle</button>
 
       <div v-if="allAssets.length > 0" class="assets-grid">
         <div v-for="asset in allAssets" :key="asset.id" class="asset-card">
@@ -46,15 +46,15 @@
 
     <!-- Direct Image Test -->
     <section class="test-section">
-      <h2>3. Direkt Gorsel Testi</h2>
+      <h2>3. Direkt Görsel Testi</h2>
       <div class="direct-test">
         <input v-model="testImageUrl" placeholder="/static/assets/games/cs16/heroes/cs16_hero.webp" />
         <button @click="testDirectImage">Test Et</button>
       </div>
       <div v-if="directTestResult" class="direct-result">
         <img :src="directTestResult" alt="Test" @error="directTestError = true" @load="directTestError = false" />
-        <p v-if="directTestError" class="error">Gorsel yuklenemedi!</p>
-        <p v-else class="success">Gorsel yuklendi!</p>
+        <p v-if="directTestError" class="error">Görsel yüklenemedi!</p>
+        <p v-else class="success">Görsel yüklendi!</p>
       </div>
     </section>
 

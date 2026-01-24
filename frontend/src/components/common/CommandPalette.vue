@@ -184,7 +184,7 @@ const quickActions = [
 const pages = [
   { path: '/', title: 'Ana Sayfa', icon: Home },
   { path: '/dashboard', title: 'Dashboard', icon: LayoutDashboard },
-  { path: '/servers', title: 'Sunucularım', icon: Server },
+  { path: '/my-servers', title: 'Sunucularım', icon: Server },
   { path: '/leaderboard', title: 'Lider Tablosu', icon: Trophy },
   { path: '/forum', title: 'Forum', icon: MessageSquare },
   { path: '/shop', title: 'Premium Paketler', icon: ShoppingBag },

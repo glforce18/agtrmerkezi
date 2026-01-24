@@ -356,7 +356,7 @@ function initCharts() {
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
-      intersect: false,
+      interseçt: false,
       mode: 'index'
     },
     plugins: {

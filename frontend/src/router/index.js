@@ -16,6 +16,12 @@ const routes = [
     meta: { title: 'Dashboard', requiresAuth: true }
   },
   {
+    path: '/my-servers',
+    name: 'my-servers',
+    component: () => import('@/views/MyServers.vue'),
+    meta: { title: 'Sunucularim', requiresAuth: true }
+  },
+  {
     path: '/servers',
     name: 'servers',
     component: () => import('@/views/Servers.vue'),
@@ -106,6 +112,12 @@ const routes = [
     meta: { title: 'Provably Fair' }
   },
   {
+    path: '/gizlilik-politikasi',
+    name: 'privacy-policy',
+    component: () => import('@/views/PrivacyPolicy.vue'),
+    meta: { title: 'Gizlilik Politikasi' }
+  },
+  {
     path: '/wallet',
     name: 'wallet',
     component: () => import('@/views/Wallet.vue'),
@@ -116,6 +128,12 @@ const routes = [
     name: 'profile',
     component: () => import('@/views/Profile.vue'),
     meta: { title: 'Profil', requiresAuth: true }
+  },
+  {
+    path: '/user/:username',
+    name: 'user-profile',
+    component: () => import('@/views/UserProfile.vue'),
+    meta: { title: 'Kullanıcı Profili' }
   },
   {
     path: '/admin',
@@ -202,6 +220,12 @@ const routes = [
     meta: { title: 'Oyun Gorselleri', requiresAuth: true, requiresAdmin: true }
   },
   {
+    path: '/admin/health',
+    name: 'admin-health',
+    component: () => import('@/views/admin/SystemHealth.vue'),
+    meta: { title: 'Sistem Saglik Monitoru', requiresAuth: true, requiresAdmin: true }
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/Login.vue'),
@@ -229,7 +253,7 @@ const routes = [
     path: '/verify-email',
     name: 'verify-email',
     component: () => import('@/views/VerifyEmail.vue'),
-    meta: { title: 'E-posta Dogrulama' }
+    meta: { title: 'E-posta Doğrulama' }
   },
   {
     path: '/terms',
@@ -303,11 +327,11 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Check admin access
-  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+  // Check admin panel access (sadece superadmin)
+  if (to.meta.requiresAdmin && !authStore.canAccessAdminPanel) {
     uiStore.addNotification({
       type: 'error',
-      message: 'Bu sayfaya erişim yetkiniz yok!'
+      message: 'Admin paneline sadece Super Admin erişebilir!'
     })
     return next({ name: 'home' })
   }

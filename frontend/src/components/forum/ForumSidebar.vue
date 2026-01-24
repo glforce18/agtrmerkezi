@@ -53,12 +53,12 @@
         <div class="forum-stat-pill">
           <MessageSquareIcon class="forum-stat-pill__icon w-4 h-4" />
           <span class="forum-stat-pill__value">{{ formatCount(postsCount) }}</span>
-          <span>Gonderi</span>
+          <span>Gönderi</span>
         </div>
         <div class="forum-stat-pill">
           <UsersIcon class="forum-stat-pill__icon w-4 h-4" />
           <span class="forum-stat-pill__value">{{ formatCount(membersCount) }}</span>
-          <span>Uye</span>
+          <span>Üye</span>
         </div>
       </div>
     </div>

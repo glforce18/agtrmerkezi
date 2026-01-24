@@ -35,9 +35,9 @@ from app.models.database import (
     ServerPackage,
     ServerPlugin,
     ServerStatus,
+    TransactionType,
     User,
     WalletType,
-    TransactionType,
 )
 from app.services.wallet import get_wallet_service
 
@@ -46,9 +46,19 @@ router = APIRouter()
 
 # Korunmasi gereken config ayarlari
 PROTECTED_CONFIG_KEYS = [
-    "sv_lan", "sv_downloadurl", "sv_allowdownload", "sv_allowupload",
-    "rcon_password", "sv_password", "ip", "port", "hostport",
-    "sys_ticrate", "fps_max", "sv_maxrate", "sv_minrate"
+    "sv_lan",
+    "sv_downloadurl",
+    "sv_allowdownload",
+    "sv_allowupload",
+    "rcon_password",
+    "sv_password",
+    "ip",
+    "port",
+    "hostport",
+    "sys_ticrate",
+    "fps_max",
+    "sv_maxrate",
+    "sv_minrate",
 ]
 
 
@@ -75,8 +85,8 @@ class WalletPackageOrderRequest(BaseModel):
     payment_type: str = "tl"  # "tl" or "armor"
 
 
-# Exchange rate: 1 TL = 100 Armor
-ARMOR_RATE = 100
+# Exchange rate: 1 TL = X Armor (from settings)
+ARMOR_RATE = settings.ARMOR_RATE
 
 
 class ServerActionRequest(BaseModel):
@@ -111,9 +121,17 @@ class ScheduledTaskRequest(BaseModel):
 
 # ==================== HELPER FUNCTIONS ====================
 
-def log_audit(db: Session, user_id: int, action: str, entity_type: str = None,
-              entity_id: int = None, old_values: dict = None, new_values: dict = None,
-              ip_address: str = None):
+
+def log_audit(
+    db: Session,
+    user_id: int,
+    action: str,
+    entity_type: str = None,
+    entity_id: int = None,
+    old_values: dict = None,
+    new_values: dict = None,
+    ip_address: str = None,
+):
     """Audit log kaydi"""
     try:
         audit = AuditLog(
@@ -123,7 +141,7 @@ def log_audit(db: Session, user_id: int, action: str, entity_type: str = None,
             entity_id=entity_id,
             old_values=old_values,
             new_values=new_values,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
         db.add(audit)
         db.commit()
@@ -139,7 +157,7 @@ def calculate_custom_price(slots: int, features: List[str], months: int):
         "custom_domain": settings.PRICE_CUSTOM_DOMAIN,
         "priority_support": settings.PRICE_PRIORITY_SUPPORT,
         "auto_backup": settings.PRICE_AUTO_BACKUP,
-        "amvp": settings.PRICE_AMVP_PLUGIN
+        "amvp": settings.PRICE_AMVP_PLUGIN,
     }
     for feature in features:
         if feature in feature_prices:
@@ -155,11 +173,23 @@ def calculate_custom_price(slots: int, features: List[str], months: int):
     subtotal = monthly_total * months
     discount_amount = subtotal * discount_percent
     total = subtotal - discount_amount
-    return {"base_price": base_price, "features_price": features_price, "monthly_total": monthly_total, "subtotal": subtotal, "discount_percent": discount_percent * 100, "discount_amount": discount_amount, "total": total}
+    return {
+        "base_price": base_price,
+        "features_price": features_price,
+        "monthly_total": monthly_total,
+        "subtotal": subtotal,
+        "discount_percent": discount_percent * 100,
+        "discount_amount": discount_amount,
+        "total": total,
+    }
 
 
 def find_available_slot(db: Session):
-    used_slots = db.query(GameServer.ip_address, GameServer.port).filter(GameServer.status.notin_([ServerStatus.DELETED, ServerStatus.EXPIRED])).all()
+    used_slots = (
+        db.query(GameServer.ip_address, GameServer.port)
+        .filter(GameServer.status.notin_([ServerStatus.DELETED, ServerStatus.EXPIRED]))
+        .all()
+    )
     used_set = {(s.ip_address, s.port) for s in used_slots}
     for ip in settings.GAME_SERVER_IPS:
         for port in range(settings.GAME_PORT_START, settings.GAME_PORT_END + 1):
@@ -175,16 +205,17 @@ async def get_all_public_servers(
     per_page: int = 20,
     game_type: str = None,
     online_only: bool = False,
-    search: str = None
+    search: str = None,
 ):
     """Public - Tum sunuculari listele (Servers.vue icin)"""
     query = db.query(GameServer).filter(
-        GameServer.is_public == True if hasattr(GameServer, 'is_public') else True
+        GameServer.is_public == True if hasattr(GameServer, "is_public") else True
     )
 
     # Filter by game type
     if game_type:
         from app.models import GameType
+
         try:
             game_type_enum = GameType(game_type)
             query = query.filter(GameServer.game_type == game_type_enum)
@@ -206,9 +237,15 @@ async def get_all_public_servers(
     offset = (page - 1) * per_page
     # MySQL/MariaDB compatible ordering (COALESCE for NULL handling)
     from sqlalchemy import case
-    servers = query.order_by(
-        case((GameServer.current_players.is_(None), 0), else_=GameServer.current_players).desc()
-    ).offset(offset).limit(per_page).all()
+
+    servers = (
+        query.order_by(
+            case((GameServer.current_players.is_(None), 0), else_=GameServer.current_players).desc()
+        )
+        .offset(offset)
+        .limit(per_page)
+        .all()
+    )
 
     result = []
     for s in servers:
@@ -228,19 +265,121 @@ async def get_all_public_servers(
             "status": s.status.value if s.status else "offline",
             "is_online": s.status == ServerStatus.RUNNING if s.status else False,
             "ping": 0,
-            "country": "TR"
+            "country": "TR",
         }
         result.append(server_data)
 
     # If no servers, return demo servers
     if len(result) == 0:
         result = [
-            {"id": 1, "name": "AGTR Public #1 [Dust2]", "game_type": "cs16", "ip": "agtr1.com", "port": 27015, "address": "agtr1.com:27015", "slots": 32, "max_players": 32, "current_players": 18, "players": 18, "current_map": "de_dust2", "map": "de_dust2", "status": "running", "is_online": True, "ping": 15, "country": "TR"},
-            {"id": 2, "name": "AGTR Public #2 [Inferno]", "game_type": "cs16", "ip": "agtr2.com", "port": 27015, "address": "agtr2.com:27015", "slots": 32, "max_players": 32, "current_players": 12, "players": 12, "current_map": "de_inferno", "map": "de_inferno", "status": "running", "is_online": True, "ping": 18, "country": "TR"},
-            {"id": 3, "name": "AGTR Zombie Mod", "game_type": "cs16", "ip": "agtr3.com", "port": 27015, "address": "agtr3.com:27015", "slots": 32, "max_players": 32, "current_players": 24, "players": 24, "current_map": "zm_ice_attack", "map": "zm_ice_attack", "status": "running", "is_online": True, "ping": 12, "country": "TR"},
-            {"id": 4, "name": "AGTR Deathmatch", "game_type": "cs16", "ip": "agtr4.com", "port": 27015, "address": "agtr4.com:27015", "slots": 20, "max_players": 20, "current_players": 8, "players": 8, "current_map": "aim_headshot", "map": "aim_headshot", "status": "running", "is_online": True, "ping": 20, "country": "TR"},
-            {"id": 5, "name": "AGTR AWP Only", "game_type": "cs16", "ip": "agtr5.com", "port": 27015, "address": "agtr5.com:27015", "slots": 16, "max_players": 16, "current_players": 6, "players": 6, "current_map": "awp_india", "map": "awp_india", "status": "running", "is_online": True, "ping": 14, "country": "TR"},
-            {"id": 6, "name": "AGTR Surf", "game_type": "cs16", "ip": "agtr6.com", "port": 27015, "address": "agtr6.com:27015", "slots": 24, "max_players": 24, "current_players": 15, "players": 15, "current_map": "surf_ski_2", "map": "surf_ski_2", "status": "running", "is_online": True, "ping": 16, "country": "TR"}
+            {
+                "id": 1,
+                "name": "AGTR Public #1 [Dust2]",
+                "game_type": "cs16",
+                "ip": "agtr1.com",
+                "port": 27015,
+                "address": "agtr1.com:27015",
+                "slots": 32,
+                "max_players": 32,
+                "current_players": 18,
+                "players": 18,
+                "current_map": "de_dust2",
+                "map": "de_dust2",
+                "status": "running",
+                "is_online": True,
+                "ping": 15,
+                "country": "TR",
+            },
+            {
+                "id": 2,
+                "name": "AGTR Public #2 [Inferno]",
+                "game_type": "cs16",
+                "ip": "agtr2.com",
+                "port": 27015,
+                "address": "agtr2.com:27015",
+                "slots": 32,
+                "max_players": 32,
+                "current_players": 12,
+                "players": 12,
+                "current_map": "de_inferno",
+                "map": "de_inferno",
+                "status": "running",
+                "is_online": True,
+                "ping": 18,
+                "country": "TR",
+            },
+            {
+                "id": 3,
+                "name": "AGTR Zombie Mod",
+                "game_type": "cs16",
+                "ip": "agtr3.com",
+                "port": 27015,
+                "address": "agtr3.com:27015",
+                "slots": 32,
+                "max_players": 32,
+                "current_players": 24,
+                "players": 24,
+                "current_map": "zm_ice_attack",
+                "map": "zm_ice_attack",
+                "status": "running",
+                "is_online": True,
+                "ping": 12,
+                "country": "TR",
+            },
+            {
+                "id": 4,
+                "name": "AGTR Deathmatch",
+                "game_type": "cs16",
+                "ip": "agtr4.com",
+                "port": 27015,
+                "address": "agtr4.com:27015",
+                "slots": 20,
+                "max_players": 20,
+                "current_players": 8,
+                "players": 8,
+                "current_map": "aim_headshot",
+                "map": "aim_headshot",
+                "status": "running",
+                "is_online": True,
+                "ping": 20,
+                "country": "TR",
+            },
+            {
+                "id": 5,
+                "name": "AGTR AWP Only",
+                "game_type": "cs16",
+                "ip": "agtr5.com",
+                "port": 27015,
+                "address": "agtr5.com:27015",
+                "slots": 16,
+                "max_players": 16,
+                "current_players": 6,
+                "players": 6,
+                "current_map": "awp_india",
+                "map": "awp_india",
+                "status": "running",
+                "is_online": True,
+                "ping": 14,
+                "country": "TR",
+            },
+            {
+                "id": 6,
+                "name": "AGTR Surf",
+                "game_type": "cs16",
+                "ip": "agtr6.com",
+                "port": 27015,
+                "address": "agtr6.com:27015",
+                "slots": 24,
+                "max_players": 24,
+                "current_players": 15,
+                "players": 15,
+                "current_map": "surf_ski_2",
+                "map": "surf_ski_2",
+                "status": "running",
+                "is_online": True,
+                "ping": 16,
+                "country": "TR",
+            },
         ]
         total = len(result)
 
@@ -250,17 +389,22 @@ async def get_all_public_servers(
         "total": total,
         "page": page,
         "per_page": per_page,
-        "total_pages": (total + per_page - 1) // per_page
+        "total_pages": (total + per_page - 1) // per_page,
     }
 
 
 @router.get("/live")
 async def get_live_servers(db: Session = Depends(get_db), limit: int = 20):
     """Public - Canli sunucu listesi (ana sayfa icin)"""
-    servers = db.query(GameServer).filter(
-        GameServer.status == ServerStatus.RUNNING,
-        GameServer.is_public == True if hasattr(GameServer, 'is_public') else True
-    ).limit(limit).all()
+    servers = (
+        db.query(GameServer)
+        .filter(
+            GameServer.status == ServerStatus.RUNNING,
+            GameServer.is_public == True if hasattr(GameServer, "is_public") else True,
+        )
+        .limit(limit)
+        .all()
+    )
 
     result = []
     for s in servers:
@@ -276,7 +420,7 @@ async def get_live_servers(db: Session = Depends(get_db), limit: int = 20):
             "current_map": s.current_map or "de_dust2",
             "map": s.current_map or "de_dust2",
             "is_online": True,
-            "ping": 0
+            "ping": 0,
         }
 
         # Gercek zamanli sorgu (opsiyonel, performans icin cache edilebilir)
@@ -303,12 +447,90 @@ async def get_live_servers(db: Session = Depends(get_db), limit: int = 20):
     # If no servers, return demo servers for display
     if len(result) == 0:
         result = [
-            {"id": 1, "name": "AGTR Public #1 [Dust2]", "game_type": "cs16", "ip": "agtr1.com:27015", "slots": 32, "max_players": 32, "current_players": 18, "players": 18, "current_map": "de_dust2", "map": "de_dust2", "is_online": True, "ping": 15},
-            {"id": 2, "name": "AGTR Public #2 [Inferno]", "game_type": "cs16", "ip": "agtr2.com:27015", "slots": 32, "max_players": 32, "current_players": 12, "players": 12, "current_map": "de_inferno", "map": "de_inferno", "is_online": True, "ping": 18},
-            {"id": 3, "name": "AGTR Zombie Mod", "game_type": "cs16", "ip": "agtr3.com:27015", "slots": 32, "max_players": 32, "current_players": 24, "players": 24, "current_map": "zm_ice_attack", "map": "zm_ice_attack", "is_online": True, "ping": 12},
-            {"id": 4, "name": "AGTR Deathmatch", "game_type": "cs16", "ip": "agtr4.com:27015", "slots": 20, "max_players": 20, "current_players": 8, "players": 8, "current_map": "aim_headshot", "map": "aim_headshot", "is_online": True, "ping": 20},
-            {"id": 5, "name": "AGTR AWP Only", "game_type": "cs16", "ip": "agtr5.com:27015", "slots": 16, "max_players": 16, "current_players": 6, "players": 6, "current_map": "awp_india", "map": "awp_india", "is_online": True, "ping": 14},
-            {"id": 6, "name": "AGTR Surf", "game_type": "cs16", "ip": "agtr6.com:27015", "slots": 24, "max_players": 24, "current_players": 15, "players": 15, "current_map": "surf_ski_2", "map": "surf_ski_2", "is_online": True, "ping": 16}
+            {
+                "id": 1,
+                "name": "AGTR Public #1 [Dust2]",
+                "game_type": "cs16",
+                "ip": "agtr1.com:27015",
+                "slots": 32,
+                "max_players": 32,
+                "current_players": 18,
+                "players": 18,
+                "current_map": "de_dust2",
+                "map": "de_dust2",
+                "is_online": True,
+                "ping": 15,
+            },
+            {
+                "id": 2,
+                "name": "AGTR Public #2 [Inferno]",
+                "game_type": "cs16",
+                "ip": "agtr2.com:27015",
+                "slots": 32,
+                "max_players": 32,
+                "current_players": 12,
+                "players": 12,
+                "current_map": "de_inferno",
+                "map": "de_inferno",
+                "is_online": True,
+                "ping": 18,
+            },
+            {
+                "id": 3,
+                "name": "AGTR Zombie Mod",
+                "game_type": "cs16",
+                "ip": "agtr3.com:27015",
+                "slots": 32,
+                "max_players": 32,
+                "current_players": 24,
+                "players": 24,
+                "current_map": "zm_ice_attack",
+                "map": "zm_ice_attack",
+                "is_online": True,
+                "ping": 12,
+            },
+            {
+                "id": 4,
+                "name": "AGTR Deathmatch",
+                "game_type": "cs16",
+                "ip": "agtr4.com:27015",
+                "slots": 20,
+                "max_players": 20,
+                "current_players": 8,
+                "players": 8,
+                "current_map": "aim_headshot",
+                "map": "aim_headshot",
+                "is_online": True,
+                "ping": 20,
+            },
+            {
+                "id": 5,
+                "name": "AGTR AWP Only",
+                "game_type": "cs16",
+                "ip": "agtr5.com:27015",
+                "slots": 16,
+                "max_players": 16,
+                "current_players": 6,
+                "players": 6,
+                "current_map": "awp_india",
+                "map": "awp_india",
+                "is_online": True,
+                "ping": 14,
+            },
+            {
+                "id": 6,
+                "name": "AGTR Surf",
+                "game_type": "cs16",
+                "ip": "agtr6.com:27015",
+                "slots": 24,
+                "max_players": 24,
+                "current_players": 15,
+                "players": 15,
+                "current_map": "surf_ski_2",
+                "map": "surf_ski_2",
+                "is_online": True,
+                "ping": 16,
+            },
         ][:limit]
 
     return {"servers": result, "total": len(result)}
@@ -316,8 +538,27 @@ async def get_live_servers(db: Session = Depends(get_db), limit: int = 20):
 
 @router.get("/packages")
 async def list_packages(db: Session = Depends(get_db)):
-    packages = db.query(ServerPackage).filter(ServerPackage.is_active == True).order_by(ServerPackage.display_order).all()
-    return {"packages": [{"id": p.id, "slug": p.slug, "name": p.name, "game_type": p.game_type.value, "slots": p.slots, "features": p.features or [], "description": p.description, "price_monthly": p.price_monthly} for p in packages]}
+    packages = (
+        db.query(ServerPackage)
+        .filter(ServerPackage.is_active == True)
+        .order_by(ServerPackage.display_order)
+        .all()
+    )
+    return {
+        "packages": [
+            {
+                "id": p.id,
+                "slug": p.slug,
+                "name": p.name,
+                "game_type": p.game_type.value,
+                "slots": p.slots,
+                "features": p.features or [],
+                "description": p.description,
+                "price_monthly": p.price_monthly,
+            }
+            for p in packages
+        ]
+    }
 
 
 @router.post("/calculate-price")
@@ -325,19 +566,35 @@ async def calculate_price(data: CustomPackageRequest):
     if data.slots < 8 or data.slots > 32:
         raise HTTPException(status_code=400, detail="Slot sayisi 8-32 arasi olmali")
     price = calculate_custom_price(data.slots, data.features, data.months)
-    return {"calculation": price, "summary": {"slots": data.slots, "features": data.features, "months": data.months, "total_price": price["total"]}}
+    return {
+        "calculation": price,
+        "summary": {
+            "slots": data.slots,
+            "features": data.features,
+            "months": data.months,
+            "total_price": price["total"],
+        },
+    }
 
 
 @router.post("/order/package")
-async def order_package(data: PackageOrderRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
-    package = db.query(ServerPackage).filter(ServerPackage.id == data.package_id, ServerPackage.is_active == True).first()
+async def order_package(
+    data: PackageOrderRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    package = (
+        db.query(ServerPackage)
+        .filter(ServerPackage.id == data.package_id, ServerPackage.is_active == True)
+        .first()
+    )
     if not package:
         raise HTTPException(status_code=404, detail="Paket bulunamadi")
-    
+
     ip, port = find_available_slot(db)
     if not ip:
         raise HTTPException(status_code=503, detail="Su anda musait sunucu slotu yok")
-    
+
     discount = 0.0
     if data.months >= 12:
         discount = settings.DISCOUNT_12_MONTH
@@ -346,9 +603,10 @@ async def order_package(data: PackageOrderRequest, db: Session = Depends(get_db)
     elif data.months >= 3:
         discount = settings.DISCOUNT_3_MONTH
     total_price = package.price_monthly * data.months * (1 - discount)
-    
+
     server = GameServer(
         owner_id=current_user.id,
+        owner_steam_id=current_user.steam_id,  # Steam ID ile hızlı arama için
         name=data.server_name,
         game_type=package.game_type,
         ip_address=ip,
@@ -360,11 +618,11 @@ async def order_package(data: PackageOrderRequest, db: Session = Depends(get_db)
         features=package.features,
         status=ServerStatus.PENDING,
         monthly_price=package.price_monthly,
-        auto_renew=data.auto_renew
+        auto_renew=data.auto_renew,
     )
     db.add(server)
     db.flush()
-    
+
     payment = Payment(
         user_id=current_user.id,
         amount=total_price,
@@ -372,12 +630,21 @@ async def order_package(data: PackageOrderRequest, db: Session = Depends(get_db)
         reference_code=generate_reference_code("SRV"),
         description=f"{package.name} - {data.months} Aylik",
         server_id=server.id,
-        months=data.months
+        months=data.months,
     )
     db.add(payment)
     db.commit()
-    
-    return {"success": True, "order": {"server_id": server.id, "payment_id": payment.id, "reference_code": payment.reference_code, "amount": total_price, "server_info": {"name": server.name, "ip": f"{ip}:{port}", "slots": server.slots}}}
+
+    return {
+        "success": True,
+        "order": {
+            "server_id": server.id,
+            "payment_id": payment.id,
+            "reference_code": payment.reference_code,
+            "amount": total_price,
+            "server_info": {"name": server.name, "ip": f"{ip}:{port}", "slots": server.slots},
+        },
+    }
 
 
 @router.post("/order/package-wallet")
@@ -385,16 +652,17 @@ async def order_package_with_wallet(
     data: WalletPackageOrderRequest,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_required)
+    current_user: User = Depends(get_current_user_required),
 ):
     """
     Sunucu paketini cuzdan bakiyesiyle satin al (TL veya Armor)
     1 TL = 100 Armor
     """
-    package = db.query(ServerPackage).filter(
-        ServerPackage.id == data.package_id,
-        ServerPackage.is_active == True
-    ).first()
+    package = (
+        db.query(ServerPackage)
+        .filter(ServerPackage.id == data.package_id, ServerPackage.is_active == True)
+        .first()
+    )
     if not package:
         raise HTTPException(status_code=404, detail="Paket bulunamadi")
 
@@ -422,7 +690,7 @@ async def order_package_with_wallet(
         if balances["balance_coin"] < total_price_armor:
             raise HTTPException(
                 status_code=400,
-                detail=f"Yetersiz Armor bakiye. Mevcut: {int(balances['balance_coin'])}, Gerekli: {total_price_armor}"
+                detail=f"Yetersiz Armor bakiye. Mevcut: {int(balances['balance_coin'])}, Gerekli: {total_price_armor}",
             )
         wallet_type = WalletType.COIN
         amount_to_deduct = total_price_armor
@@ -431,7 +699,7 @@ async def order_package_with_wallet(
         if balances["balance_real"] < total_price_tl:
             raise HTTPException(
                 status_code=400,
-                detail=f"Yetersiz TL bakiye. Mevcut: {balances['balance_real']:.2f} TL, Gerekli: {total_price_tl:.2f} TL"
+                detail=f"Yetersiz TL bakiye. Mevcut: {balances['balance_real']:.2f} TL, Gerekli: {total_price_tl:.2f} TL",
             )
         wallet_type = WalletType.REAL
         amount_to_deduct = total_price_tl
@@ -454,14 +722,16 @@ async def order_package_with_wallet(
         extra_data={
             "package_id": package.id,
             "months": data.months,
-            "payment_type": data.payment_type
-        }
+            "payment_type": data.payment_type,
+        },
     )
 
     # Sunucu olustur
     from datetime import timedelta
+
     server = GameServer(
         owner_id=current_user.id,
+        owner_steam_id=current_user.steam_id,  # Steam ID ile hızlı arama için
         name=data.server_name,
         game_type=package.game_type,
         ip_address=ip,
@@ -474,7 +744,7 @@ async def order_package_with_wallet(
         status=ServerStatus.RUNNING,  # Direkt aktif
         monthly_price=package.price_monthly,
         auto_renew=data.auto_renew,
-        expires_at=datetime.utcnow() + timedelta(days=30 * data.months)
+        expires_at=datetime.utcnow() + timedelta(days=30 * data.months),
     )
     db.add(server)
     db.flush()
@@ -487,7 +757,7 @@ async def order_package_with_wallet(
         reference_code=generate_reference_code("WLT"),
         description=f"{package.name} - {data.months} Aylik ({currency_name} ile)",
         server_id=server.id,
-        months=data.months
+        months=data.months,
     )
     db.add(payment)
     db.commit()
@@ -505,34 +775,68 @@ async def order_package_with_wallet(
                 "name": server.name,
                 "ip": f"{ip}:{port}",
                 "slots": server.slots,
-                "expires_at": server.expires_at.isoformat() if server.expires_at else None
-            }
+                "expires_at": server.expires_at.isoformat() if server.expires_at else None,
+            },
         },
-        "new_balance": tx.balance_after
+        "new_balance": tx.balance_after,
     }
 
 
 @router.get("/my-servers")
-async def my_servers(db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
-    servers = db.query(GameServer).filter(GameServer.owner_id == current_user.id, GameServer.status != ServerStatus.DELETED).order_by(GameServer.created_at.desc()).all()
-    return {"servers": [{"id": s.id, "name": s.name, "game_type": s.game_type.value, "ip_address": s.ip_address, "port": s.port, "slots": s.slots, "status": s.status.value, "rcon_password": s.rcon_password, "monthly_price": s.monthly_price, "expires_at": s.expires_at.isoformat() if s.expires_at else None, "created_at": s.created_at.isoformat()} for s in servers], "count": len(servers)}
+async def my_servers(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)
+):
+    servers = (
+        db.query(GameServer)
+        .filter(GameServer.owner_id == current_user.id, GameServer.status != ServerStatus.DELETED)
+        .order_by(GameServer.created_at.desc())
+        .all()
+    )
+    return {
+        "servers": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "game_type": s.game_type.value,
+                "ip_address": s.ip_address,
+                "port": s.port,
+                "slots": s.slots,
+                "status": s.status.value,
+                "rcon_password": s.rcon_password,
+                "monthly_price": s.monthly_price,
+                "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+                "created_at": s.created_at.isoformat(),
+            }
+            for s in servers
+        ],
+        "count": len(servers),
+    }
 
 
 @router.post("/my-servers/{server_id}/action")
-async def server_action(server_id: int, data: ServerActionRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
-    server = db.query(GameServer).filter(GameServer.id == server_id, GameServer.owner_id == current_user.id).first()
+async def server_action(
+    server_id: int,
+    data: ServerActionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
     if server.status == ServerStatus.PENDING:
         raise HTTPException(status_code=400, detail="Sunucu henuz aktif degil")
-    
+
     allowed_actions = ["start", "stop", "restart"]
     if data.action not in allowed_actions:
         raise HTTPException(status_code=400, detail="Gecersiz aksiyon")
-    
+
     action_log = ServerAction(server_id=server_id, user_id=current_user.id, action=data.action)
     db.add(action_log)
-    
+
     if data.action == "start":
         start_physical_server(server.id)
         server.status = ServerStatus.RUNNING
@@ -547,7 +851,7 @@ async def server_action(server_id: int, data: ServerActionRequest, db: Session =
         server.status = ServerStatus.RUNNING
         server.last_started = datetime.utcnow()
         message = "Sunucu yeniden baslatildi"
-    
+
     db.commit()
     return {"success": True, "message": message, "new_status": server.status.value}
 
@@ -563,7 +867,15 @@ def run_server_command(command: str, server_id: int, *args) -> dict:
         env["HOME"] = "/root"
         env["TERM"] = "xterm"
         env["SCREENDIR"] = "/run/screen/S-root"
-        result = subprocess.run(cmd_list, shell=False, capture_output=True, text=True, timeout=60, env=env, cwd=settings.HLDS_PATH)
+        result = subprocess.run(
+            cmd_list,
+            shell=False,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+            cwd=settings.HLDS_PATH,
+        )
         output = result.stdout.strip()
         if "OK:" in output:
             return {"success": True, "message": output}
@@ -576,7 +888,9 @@ def run_server_command(command: str, server_id: int, *args) -> dict:
         return {"success": False, "message": "Internal server error"}
 
 
-def create_physical_server(server_id: int, ip: str, port: int, game: str, slots: int, rcon: str, name: str) -> dict:
+def create_physical_server(
+    server_id: int, ip: str, port: int, game: str, slots: int, rcon: str, name: str
+) -> dict:
     """Fiziksel sunucu olustur"""
     game_map = {"ag": "ag", "cs16": "cstrike", "hldm": "valve"}
     game_type = game_map.get(game, "ag")
@@ -612,16 +926,22 @@ def get_game_dir(server: GameServer) -> str:
 
 # ==================== SERVER STATUS & INFO ====================
 
+
 @router.get("/my-servers/{server_id}/status")
-async def get_server_status(server_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def get_server_status(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Sunucu gercek durumunu kontrol et (screen + port)"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id, 
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     status = {
         "db_status": server.status.value,
         "screen_running": False,
@@ -629,19 +949,18 @@ async def get_server_status(server_id: int, db: Session = Depends(get_db), curre
         "players": 0,
         "max_players": server.slots,
         "map": None,
-        "hostname": None
+        "hostname": None,
     }
-    
+
     # Screen kontrolu - pipe olmadan guvenli kontrol
     try:
         result = subprocess.run(
-            ["screen", "-list"],
-            shell=False, capture_output=True, text=True, timeout=5
+            ["screen", "-list"], shell=False, capture_output=True, text=True, timeout=5
         )
         status["screen_running"] = f"server_{server_id}" in result.stdout
     except Exception:
         pass
-    
+
     # A2S sorgusu (oyuncu sayisi, map, hostname)
     try:
         address = (server.ip_address, server.port)
@@ -652,7 +971,7 @@ async def get_server_status(server_id: int, db: Session = Depends(get_db), curre
         status["hostname"] = info.server_name
     except Exception:
         pass
-    
+
     # Gercek durumu belirle
     if status["screen_running"] and status["port_open"]:
         real_status = "running"
@@ -660,9 +979,9 @@ async def get_server_status(server_id: int, db: Session = Depends(get_db), curre
         real_status = "starting"
     else:
         real_status = "stopped"
-    
+
     status["real_status"] = real_status
-    
+
     # DB durumunu guncelle (uyumsuzluk varsa)
     if real_status == "running" and server.status != ServerStatus.RUNNING:
         server.status = ServerStatus.RUNNING
@@ -670,213 +989,260 @@ async def get_server_status(server_id: int, db: Session = Depends(get_db), curre
     elif real_status == "stopped" and server.status == ServerStatus.RUNNING:
         server.status = ServerStatus.STOPPED
         db.commit()
-    
+
     return status
 
 
 @router.get("/my-servers/{server_id}/players")
-async def get_server_players(server_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def get_server_players(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Sunucudaki oyunculari listele"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     try:
         address = (server.ip_address, server.port)
         players = a2s.players(address, timeout=2)
         return {
             "players": [
-                {
-                    "name": p.name,
-                    "score": p.score,
-                    "duration": round(p.duration, 1)
-                } for p in players
+                {"name": p.name, "score": p.score, "duration": round(p.duration, 1)}
+                for p in players
             ],
-            "count": len(players)
+            "count": len(players),
         }
     except Exception as e:
         return {"players": [], "count": 0, "error": str(e)}
 
 
 @router.get("/my-servers/{server_id}/resources")
-async def get_server_resources(server_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def get_server_resources(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Sunucu kaynak kullanimini goster"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
-    resources = {
-        "cpu_percent": 0,
-        "memory_mb": 0,
-        "pid": None
-    }
-    
+
+    resources = {"cpu_percent": 0, "memory_mb": 0, "pid": None}
+
     # Screen PID bul - shell=False ile guvenli
     try:
         result = subprocess.run(
-            ["screen", "-list"],
-            shell=False, capture_output=True, text=True, timeout=5
+            ["screen", "-list"], shell=False, capture_output=True, text=True, timeout=5
         )
         # Parse screen output to find server PID
         screen_pid = None
-        for line in result.stdout.split('\n'):
+        for line in result.stdout.split("\n"):
             if f"server_{server_id}" in line:
                 # Format: "	12345.server_1	(Detached)"
-                parts = line.strip().split('.')
+                parts = line.strip().split(".")
                 if parts and parts[0].isdigit():
                     screen_pid = int(parts[0])
                     break
 
         if screen_pid:
             # Screen icindeki hlds process'ini bul
-            for proc in psutil.process_iter(['pid', 'ppid', 'name', 'cpu_percent', 'memory_info']):
-                if proc.info['ppid'] == screen_pid or proc.info['pid'] == screen_pid:
-                    if 'hlds' in proc.info['name'].lower():
-                        resources["pid"] = proc.info['pid']
-                        resources["cpu_percent"] = proc.info['cpu_percent']
-                        resources["memory_mb"] = round(proc.info['memory_info'].rss / 1024 / 1024, 2)
+            for proc in psutil.process_iter(["pid", "ppid", "name", "cpu_percent", "memory_info"]):
+                if proc.info["ppid"] == screen_pid or proc.info["pid"] == screen_pid:
+                    if "hlds" in proc.info["name"].lower():
+                        resources["pid"] = proc.info["pid"]
+                        resources["cpu_percent"] = proc.info["cpu_percent"]
+                        resources["memory_mb"] = round(
+                            proc.info["memory_info"].rss / 1024 / 1024, 2
+                        )
                         break
     except Exception as e:
         logger.error(f"Resource monitor hatasi: {e}")
-    
+
     return resources
 
 
 # ==================== RCON ====================
 
+
 @router.post("/my-servers/{server_id}/rcon")
-async def execute_rcon(server_id: int, data: RconCommandRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def execute_rcon(
+    server_id: int,
+    data: RconCommandRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """RCON komutu calistir"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     if server.status != ServerStatus.RUNNING:
         raise HTTPException(status_code=400, detail="Sunucu calismiyordu")
-    
+
     if not server.rcon_password:
         raise HTTPException(status_code=400, detail="RCON sifresi ayarlanmamis")
-    
+
     # Tehlikeli komutlari engelle
     dangerous_commands = ["quit", "exit", "rcon_password", "_restart", "sv_password"]
     cmd_lower = data.command.lower().strip()
     for dangerous in dangerous_commands:
         if cmd_lower.startswith(dangerous):
             raise HTTPException(status_code=403, detail=f"'{dangerous}' komutu yasakli")
-    
+
     client_ip = request.client.host if request.client else None
-    
+
     try:
         # RCON baglantisi
         from rcon.source import Client
-        
-        with Client(server.ip_address, server.port, passwd=server.rcon_password, timeout=5) as client:
+
+        with Client(
+            server.ip_address, server.port, passwd=server.rcon_password, timeout=5
+        ) as client:
             response = client.run(data.command)
-        
+
         # Log kaydet
         rcon_log = RconLog(
             server_id=server_id,
             user_id=current_user.id,
             command=data.command,
             response=response[:2000] if response else None,
-            ip_address=client_ip
+            ip_address=client_ip,
         )
         db.add(rcon_log)
         db.commit()
-        
+
         logger.info(f"RCON: {current_user.username} -> server_{server_id}: {data.command}")
-        
+
         return {"success": True, "response": response}
-    
+
     except Exception as e:
         logger.error(f"RCON hatasi: {e}")
         return {"success": False, "error": str(e)}
 
 
 @router.get("/my-servers/{server_id}/rcon-history")
-async def get_rcon_history(server_id: int, limit: int = 50, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def get_rcon_history(
+    server_id: int,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """RCON komut gecmisi"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
-    logs = db.query(RconLog).filter(
-        RconLog.server_id == server_id
-    ).order_by(RconLog.created_at.desc()).limit(limit).all()
-    
+
+    logs = (
+        db.query(RconLog)
+        .filter(RconLog.server_id == server_id)
+        .order_by(RconLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
     return {
         "history": [
             {
                 "id": log.id,
                 "command": log.command,
                 "response": log.response[:500] if log.response else None,
-                "created_at": log.created_at.isoformat()
-            } for log in logs
+                "created_at": log.created_at.isoformat(),
+            }
+            for log in logs
         ]
     }
 
 
 # ==================== MAP CHANGER ====================
 
+
 @router.post("/my-servers/{server_id}/change-map")
-async def change_map(server_id: int, data: MapChangeRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def change_map(
+    server_id: int,
+    data: MapChangeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Harita degistir"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     if server.status != ServerStatus.RUNNING:
         raise HTTPException(status_code=400, detail="Sunucu calismiyordu")
-    
+
     # Map adini dogrula
     if not data.map_name or len(data.map_name) > 64:
         raise HTTPException(status_code=400, detail="Gecersiz harita adi")
-    
+
     try:
         from rcon.source import Client
-        
-        with Client(server.ip_address, server.port, passwd=server.rcon_password, timeout=5) as client:
+
+        with Client(
+            server.ip_address, server.port, passwd=server.rcon_password, timeout=5
+        ) as client:
             client.run(f"changelevel {data.map_name}")
-        
+
         client_ip = request.client.host if request.client else None
-        log_audit(db, current_user.id, "map_change", "server", server_id,
-                  new_values={"map": data.map_name}, ip_address=client_ip)
-        
+        log_audit(
+            db,
+            current_user.id,
+            "map_change",
+            "server",
+            server_id,
+            new_values={"map": data.map_name},
+            ip_address=client_ip,
+        )
+
         return {"success": True, "message": f"Harita {data.map_name} olarak degistiriliyor"}
-    
+
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 @router.get("/my-servers/{server_id}/maps")
-async def list_maps(server_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def list_maps(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Kullanilabilir haritalari listele"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     server_path = get_server_path(server.id)
     game_dir = get_game_dir(server)
     maps_path = server_path / game_dir / "maps"
-    
+
     maps = []
     try:
         if maps_path.exists():
@@ -885,39 +1251,46 @@ async def list_maps(server_id: int, db: Session = Depends(get_db), current_user:
         maps.sort()
     except Exception as e:
         logger.error(f"Map listesi hatasi: {e}")
-    
+
     return {"maps": maps, "count": len(maps)}
 
 
 # ==================== CONFIG EDITOR ====================
 
+
 @router.get("/my-servers/{server_id}/config")
-async def get_config(server_id: int, config_type: str = "server.cfg", db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def get_config(
+    server_id: int,
+    config_type: str = "server.cfg",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Config dosyasini oku (indirme yok, sadece icerik)"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     # Izin verilen config dosyalari
     allowed_configs = ["server.cfg", "mapcycle.txt", "motd.txt", "listenserver.cfg"]
     if config_type not in allowed_configs:
         raise HTTPException(status_code=403, detail="Bu config dosyasina erisim izni yok")
-    
+
     server_path = get_server_path(server.id)
     game_dir = get_game_dir(server)
     config_path = server_path / game_dir / config_type
-    
+
     try:
         if not config_path.exists():
             return {"content": "", "exists": False}
-        
-        content = config_path.read_text(encoding='utf-8', errors='ignore')
-        
+
+        content = config_path.read_text(encoding="utf-8", errors="ignore")
+
         # Korunmasi gereken satirlari maskele (sadece gosterimde)
-        lines = content.split('\n')
+        lines = content.split("\n")
         masked_lines = []
         for line in lines:
             line_lower = line.lower().strip()
@@ -929,49 +1302,56 @@ async def get_config(server_id: int, config_type: str = "server.cfg", db: Sessio
                     break
             if not is_protected:
                 masked_lines.append(line)
-        
+
         return {
-            "content": '\n'.join(masked_lines),
+            "content": "\n".join(masked_lines),
             "original_content": content,  # Duzenleme icin
             "exists": True,
-            "protected_keys": PROTECTED_CONFIG_KEYS
+            "protected_keys": PROTECTED_CONFIG_KEYS,
         }
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Config okuma hatasi: {e}")
 
 
 @router.put("/my-servers/{server_id}/config")
-async def update_config(server_id: int, data: ConfigUpdateRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def update_config(
+    server_id: int,
+    data: ConfigUpdateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Config dosyasini guncelle (korumali ayarlar degistirilemez)"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     # Izin verilen config dosyalari
     allowed_configs = ["server.cfg", "mapcycle.txt", "motd.txt"]
     if data.config_type not in allowed_configs:
         raise HTTPException(status_code=403, detail="Bu config dosyasini duzenleyemezsiniz")
-    
+
     server_path = get_server_path(server.id)
     game_dir = get_game_dir(server)
     config_path = server_path / game_dir / data.config_type
-    
+
     # Eski icerigi oku
     old_content = ""
     try:
         if config_path.exists():
-            old_content = config_path.read_text(encoding='utf-8', errors='ignore')
+            old_content = config_path.read_text(encoding="utf-8", errors="ignore")
     except Exception:
         pass
-    
+
     # Korumali ayarlari kontrol et - yeni icerikte degistirilmeye calisilmis mi?
-    new_lines = data.content.split('\n')
-    old_lines = old_content.split('\n')
-    
+    new_lines = data.content.split("\n")
+    old_lines = old_content.split("\n")
+
     # Korumali ayarlarin orijinal degerlerini bul
     protected_values = {}
     for line in old_lines:
@@ -980,7 +1360,7 @@ async def update_config(server_id: int, data: ConfigUpdateRequest, request: Requ
             if line_lower.startswith(key):
                 protected_values[key] = line
                 break
-    
+
     # Yeni icerikteki korumali satirlari orijinalleriyle degistir
     final_lines = []
     for line in new_lines:
@@ -995,7 +1375,7 @@ async def update_config(server_id: int, data: ConfigUpdateRequest, request: Requ
                 break
         if not replaced:
             final_lines.append(line)
-    
+
     # Eski korumali satirlar yeni icerikte yoksa ekle
     for key, value in protected_values.items():
         found = False
@@ -1005,51 +1385,65 @@ async def update_config(server_id: int, data: ConfigUpdateRequest, request: Requ
                 break
         if not found:
             final_lines.insert(0, value)
-    
-    final_content = '\n'.join(final_lines)
-    
+
+    final_content = "\n".join(final_lines)
+
     try:
         # Yedekle
-        config_path.write_text(final_content, encoding='utf-8')
-        
+        config_path.write_text(final_content, encoding="utf-8")
+
         # Config history kaydet
         history = ConfigHistory(
             server_id=server_id,
             user_id=current_user.id,
             config_type=data.config_type,
             old_content=old_content,
-            new_content=final_content
+            new_content=final_content,
         )
         db.add(history)
-        
+
         client_ip = request.client.host if request.client else None
-        log_audit(db, current_user.id, "config_update", "server", server_id,
-                  new_values={"config_type": data.config_type}, ip_address=client_ip)
-        
+        log_audit(
+            db,
+            current_user.id,
+            "config_update",
+            "server",
+            server_id,
+            new_values={"config_type": data.config_type},
+            ip_address=client_ip,
+        )
+
         db.commit()
-        
+
         return {"success": True, "message": "Config guncellendi"}
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Config yazma hatasi: {e}")
 
 
 # ==================== FILE BROWSER (SADECE GÖRÜNTÜLEME) ====================
 
+
 @router.get("/my-servers/{server_id}/files")
-async def list_files(server_id: int, path: str = "", db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def list_files(
+    server_id: int,
+    path: str = "",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Sunucu dosyalarini listele (indirme yok)"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     server_path = get_server_path(server.id)
     game_dir = get_game_dir(server)
     base_path = server_path / game_dir
-    
+
     # Path traversal engelle - guvenli yontem
     # Null byte ve diger tehlikeli karakterleri de kontrol et
     if ".." in path or "\x00" in path or path.startswith("/"):
@@ -1068,64 +1462,69 @@ async def list_files(server_id: int, path: str = "", db: Session = Depends(get_d
         raise
     except Exception:
         raise HTTPException(status_code=403, detail="Gecersiz yol")
-    
+
     if not target_path.exists():
         raise HTTPException(status_code=404, detail="Dizin bulunamadi")
-    
+
     files = []
     dirs = []
-    
+
     try:
         for item in target_path.iterdir():
             if item.is_dir():
-                dirs.append({
-                    "name": item.name,
-                    "type": "directory"
-                })
+                dirs.append({"name": item.name, "type": "directory"})
             else:
-                files.append({
-                    "name": item.name,
-                    "type": "file",
-                    "size": item.stat().st_size,
-                    "extension": item.suffix.lower()
-                })
-        
+                files.append(
+                    {
+                        "name": item.name,
+                        "type": "file",
+                        "size": item.stat().st_size,
+                        "extension": item.suffix.lower(),
+                    }
+                )
+
         dirs.sort(key=lambda x: x["name"])
         files.sort(key=lambda x: x["name"])
-        
+
     except Exception as e:
         logger.error(f"Dosya listesi hatasi: {e}")
-    
+
     return {
         "path": path,
         "directories": dirs,
         "files": files,
-        "can_download": False  # Indirme yetkisi YOK
+        "can_download": False,  # Indirme yetkisi YOK
     }
 
 
 @router.get("/my-servers/{server_id}/files/view")
-async def view_file(server_id: int, path: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def view_file(
+    server_id: int,
+    path: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Dosya icerigini goruntule (indirme yok, sadece text)"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     # Izin verilen uzantilar
     viewable_extensions = [".cfg", ".txt", ".ini", ".log", ".res", ".gam"]
-    
+
     server_path = get_server_path(server.id)
     game_dir = get_game_dir(server)
     base_path = server_path / game_dir
-    
+
     if ".." in path:
         raise HTTPException(status_code=403, detail="Gecersiz yol")
-    
+
     file_path = base_path / path
-    
+
     try:
         file_path = file_path.resolve()
         if not str(file_path).startswith(str(base_path.resolve())):
@@ -1134,19 +1533,19 @@ async def view_file(server_id: int, path: str, db: Session = Depends(get_db), cu
         raise
     except Exception:
         raise HTTPException(status_code=403, detail="Gecersiz yol")
-    
+
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Dosya bulunamadi")
-    
+
     if file_path.suffix.lower() not in viewable_extensions:
         raise HTTPException(status_code=403, detail="Bu dosya tipi goruntulenemez")
-    
+
     # Boyut limiti (1MB)
     if file_path.stat().st_size > 1024 * 1024:
         raise HTTPException(status_code=400, detail="Dosya cok buyuk")
-    
+
     try:
-        content = file_path.read_text(encoding='utf-8', errors='ignore')
+        content = file_path.read_text(encoding="utf-8", errors="ignore")
         return {"path": path, "content": content, "can_download": False}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Dosya okuma hatasi: {e}")
@@ -1154,66 +1553,81 @@ async def view_file(server_id: int, path: str, db: Session = Depends(get_db), cu
 
 # ==================== PLUGIN MANAGER ====================
 
+
 @router.get("/my-servers/{server_id}/plugins")
-async def list_server_plugins(server_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def list_server_plugins(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Sunucudaki pluginleri listele"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     # DB'deki pluginler
-    server_plugins = db.query(ServerPlugin).filter(
-        ServerPlugin.server_id == server_id
-    ).all()
-    
+    server_plugins = db.query(ServerPlugin).filter(ServerPlugin.server_id == server_id).all()
+
     plugins = []
     for sp in server_plugins:
         plugin_info = {
             "id": sp.id,
             "is_enabled": sp.is_enabled,
             "installed_at": sp.installed_at.isoformat() if sp.installed_at else None,
-            "is_custom": sp.plugin_id is None
+            "is_custom": sp.plugin_id is None,
         }
-        
+
         if sp.plugin_id:
             # Admin eklentisi
             plugin = db.query(Plugin).filter(Plugin.id == sp.plugin_id).first()
             if plugin:
-                plugin_info.update({
-                    "name": plugin.name,
-                    "description": plugin.description,
-                    "version": plugin.version,
-                    "author": plugin.author,
-                    "category": plugin.category
-                })
+                plugin_info.update(
+                    {
+                        "name": plugin.name,
+                        "description": plugin.description,
+                        "version": plugin.version,
+                        "author": plugin.author,
+                        "category": plugin.category,
+                    }
+                )
         else:
             # Kullanici eklentisi
-            plugin_info.update({
-                "name": sp.custom_plugin_name,
-                "description": "Kullanici eklentisi",
-                "version": None,
-                "author": None,
-                "category": "custom"
-            })
-        
+            plugin_info.update(
+                {
+                    "name": sp.custom_plugin_name,
+                    "description": "Kullanici eklentisi",
+                    "version": None,
+                    "author": None,
+                    "category": "custom",
+                }
+            )
+
         plugins.append(plugin_info)
-    
+
     return {"plugins": plugins, "can_download": False}
 
 
 @router.post("/my-servers/{server_id}/plugins/upload")
-async def upload_plugin(server_id: int, request: Request, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def upload_plugin(
+    server_id: int,
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Kullanici kendi pluginini yuklesin"""
     import re
     import secrets as sec
 
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
 
@@ -1225,7 +1639,7 @@ async def upload_plugin(server_id: int, request: Request, file: UploadFile = Fil
         raise HTTPException(status_code=400, detail="Sadece .amxx dosyalari yuklenebilir")
 
     # Dosya adini sanitize et - sadece alfanumerik, tire ve alt cizgi
-    safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', Path(original_filename).stem)
+    safe_name = re.sub(r"[^a-zA-Z0-9_\-]", "_", Path(original_filename).stem)
     safe_name = safe_name[:50]  # Max 50 karakter
     if not safe_name:
         safe_name = "plugin"
@@ -1259,20 +1673,27 @@ async def upload_plugin(server_id: int, request: Request, file: UploadFile = Fil
 
     try:
         file_path.write_bytes(content)
-        
+
         # DB'ye ekle
         server_plugin = ServerPlugin(
             server_id=server_id,
             custom_plugin_name=safe_filename,
             custom_plugin_file=str(file_path),
             is_enabled=True,
-            installed_by=current_user.id
+            installed_by=current_user.id,
         )
         db.add(server_plugin)
 
         client_ip = request.client.host if request.client else None
-        log_audit(db, current_user.id, "plugin_upload", "server", server_id,
-                  new_values={"filename": safe_filename, "original": original_filename}, ip_address=client_ip)
+        log_audit(
+            db,
+            current_user.id,
+            "plugin_upload",
+            "server",
+            server_id,
+            new_values={"filename": safe_filename, "original": original_filename},
+            ip_address=client_ip,
+        )
 
         db.commit()
 
@@ -1284,101 +1705,141 @@ async def upload_plugin(server_id: int, request: Request, file: UploadFile = Fil
 
 
 @router.put("/my-servers/{server_id}/plugins/{plugin_id}/toggle")
-async def toggle_plugin(server_id: int, plugin_id: int, data: PluginToggleRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def toggle_plugin(
+    server_id: int,
+    plugin_id: int,
+    data: PluginToggleRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Plugin ac/kapa"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
-    server_plugin = db.query(ServerPlugin).filter(
-        ServerPlugin.id == plugin_id,
-        ServerPlugin.server_id == server_id
-    ).first()
+
+    server_plugin = (
+        db.query(ServerPlugin)
+        .filter(ServerPlugin.id == plugin_id, ServerPlugin.server_id == server_id)
+        .first()
+    )
     if not server_plugin:
         raise HTTPException(status_code=404, detail="Plugin bulunamadi")
-    
+
     server_plugin.is_enabled = data.enabled
-    
+
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "plugin_toggle", "server", server_id,
-              new_values={"plugin_id": plugin_id, "enabled": data.enabled}, ip_address=client_ip)
-    
+    log_audit(
+        db,
+        current_user.id,
+        "plugin_toggle",
+        "server",
+        server_id,
+        new_values={"plugin_id": plugin_id, "enabled": data.enabled},
+        ip_address=client_ip,
+    )
+
     db.commit()
-    
+
     status = "aktif" if data.enabled else "deaktif"
     return {"success": True, "message": f"Plugin {status} edildi"}
 
 
 @router.delete("/my-servers/{server_id}/plugins/{plugin_id}")
-async def delete_plugin(server_id: int, plugin_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def delete_plugin(
+    server_id: int,
+    plugin_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Kullanici pluginini sil (sadece kendi yukledikleri)"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
-    server_plugin = db.query(ServerPlugin).filter(
-        ServerPlugin.id == plugin_id,
-        ServerPlugin.server_id == server_id
-    ).first()
+
+    server_plugin = (
+        db.query(ServerPlugin)
+        .filter(ServerPlugin.id == plugin_id, ServerPlugin.server_id == server_id)
+        .first()
+    )
     if not server_plugin:
         raise HTTPException(status_code=404, detail="Plugin bulunamadi")
-    
+
     # Sadece custom pluginler silinebilir
     if server_plugin.plugin_id is not None:
         raise HTTPException(status_code=403, detail="Admin eklentileri silinemez")
-    
+
     # Dosyayi sil
     if server_plugin.custom_plugin_file:
         try:
             Path(server_plugin.custom_plugin_file).unlink(missing_ok=True)
         except Exception:
             pass
-    
+
     plugin_name = server_plugin.custom_plugin_name
     db.delete(server_plugin)
-    
+
     client_ip = request.client.host if request.client else None
-    log_audit(db, current_user.id, "plugin_delete", "server", server_id,
-              new_values={"plugin_name": plugin_name}, ip_address=client_ip)
-    
+    log_audit(
+        db,
+        current_user.id,
+        "plugin_delete",
+        "server",
+        server_id,
+        new_values={"plugin_name": plugin_name},
+        ip_address=client_ip,
+    )
+
     db.commit()
-    
+
     return {"success": True, "message": "Plugin silindi"}
 
 
 # ==================== SERVER LOGS ====================
 
+
 @router.get("/my-servers/{server_id}/logs")
-async def get_server_logs(server_id: int, lines: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_required)):
+async def get_server_logs(
+    server_id: int,
+    lines: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
     """Sunucu loglarini oku"""
-    server = db.query(GameServer).filter(
-        GameServer.id == server_id,
-        GameServer.owner_id == current_user.id
-    ).first()
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
-    
+
     server_path = get_server_path(server.id)
     game_dir = get_game_dir(server)
     logs_path = server_path / game_dir / "logs"
-    
+
     logs = []
     try:
         if logs_path.exists():
             # En son log dosyasini bul
-            log_files = sorted(logs_path.glob("*.log"), key=lambda x: x.stat().st_mtime, reverse=True)
+            log_files = sorted(
+                logs_path.glob("*.log"), key=lambda x: x.stat().st_mtime, reverse=True
+            )
             if log_files:
                 latest_log = log_files[0]
-                content = latest_log.read_text(encoding='utf-8', errors='ignore')
-                log_lines = content.split('\n')
+                content = latest_log.read_text(encoding="utf-8", errors="ignore")
+                log_lines = content.split("\n")
                 logs = log_lines[-lines:] if len(log_lines) > lines else log_lines
     except Exception as e:
         logger.error(f"Log okuma hatasi: {e}")
-    
+
     return {"logs": logs, "can_download": False}

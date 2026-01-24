@@ -738,7 +738,7 @@ const checkSystemHealth = async () => {
 
     // Database check is part of health
     systemServices.value[1].status = 'online'
-    systemServices.value[1].statusText = 'Bagli'
+    systemServices.value[1].statusText = 'Bağlı'
     systemServices.value[1].latency = latency
   } catch (error) {
     systemServices.value[0].status = 'offline'

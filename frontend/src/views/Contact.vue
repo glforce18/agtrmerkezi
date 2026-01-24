@@ -55,7 +55,7 @@
                   @change="validateSubject"
                   required
                 >
-                  <option value="">Konu Secin</option>
+                  <option value="">Konu Seçin</option>
                   <option value="general">Genel Soru</option>
                   <option value="support">Teknik Destek</option>
                   <option value="billing">Ödeme/Fatura</option>
@@ -202,7 +202,7 @@ const validateEmail = () => {
 
 const validateSubject = () => {
   if (form.subject === '') {
-    validation.subject = { status: 'error', message: 'Lutfen bir konu secin' }
+    validation.subject = { status: 'error', message: 'Lutfen bir konu seçin' }
   } else {
     validation.subject = { status: 'success', message: '' }
   }

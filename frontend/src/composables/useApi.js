@@ -44,10 +44,10 @@ function getErrorMessage(err, errorType) {
     [ApiErrorType.NETWORK]: 'Ag baglantisi hatasi. Lutfen internet baglantinizi kontrol edin.',
     [ApiErrorType.TIMEOUT]: 'Istek zaman asimina ugradi. Lutfen tekrar deneyin.',
     [ApiErrorType.SERVER]: 'Sunucu hatasi. Lutfen daha sonra tekrar deneyin.',
-    [ApiErrorType.AUTH]: 'Oturum suresi doldu. Lutfen tekrar giris yapin.',
+    [ApiErrorType.AUTH]: 'Oturum suresi doldu. Lutfen tekrar giriş yapin.',
     [ApiErrorType.VALIDATION]: err.response?.data?.detail || 'Girdi hatasi. Lutfen bilgileri kontrol edin.',
     [ApiErrorType.NOT_FOUND]: 'Istenen kaynak bulunamadi.',
-    [ApiErrorType.RATE_LIMIT]: 'Cok fazla istek gonderildi. Lutfen biraz bekleyin.',
+    [ApiErrorType.RATE_LIMIT]: 'Cok fazla istek gönderildi. Lutfen biraz bekleyin.',
     [ApiErrorType.UNKNOWN]: err.response?.data?.detail || err.message || 'Bir hata olustu.'
   }
 

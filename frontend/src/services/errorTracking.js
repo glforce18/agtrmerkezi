@@ -177,8 +177,10 @@ const queueError = (formattedError) => {
 export const trackError = (error, category = ErrorCategory.UNKNOWN, severity = ErrorSeverity.MEDIUM, extra = {}) => {
   const formattedError = formatError(error, category, severity, extra)
 
-  // Always log to console in dev
-  logToConsole(formattedError)
+  // Only log to console in dev mode
+  if (isDev) {
+    logToConsole(formattedError)
+  }
 
   // Queue for backend in production
   if (!isDev) {

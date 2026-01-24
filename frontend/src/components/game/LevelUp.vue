@@ -39,7 +39,7 @@
 
             <!-- Rewards -->
             <div v-if="rewards.length" class="rewards">
-              <div class="rewards-label">Odullerin:</div>
+              <div class="rewards-label">Ödüllerin:</div>
               <div class="rewards-list">
                 <div
                   v-for="(reward, index) in rewards"

@@ -139,7 +139,7 @@
           <div class="preview-container" :style="previewStyle">
             <div class="preview-card">
               <h3>Ornek Kart</h3>
-              <p>Bu bir ornek metin. Tema ayarlarınizin nasıl gorunecegini buradan gorebilirsiniz.</p>
+              <p>Bu bir ornek metin. Tema ayarlarınizin nasıl görunecegini buradan görebilirsiniz.</p>
               <div class="preview-buttons">
                 <button class="preview-btn primary">Ana Buton</button>
                 <button class="preview-btn secondary">İkincil Buton</button>

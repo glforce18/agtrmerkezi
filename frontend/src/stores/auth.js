@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authAPI } from '@/api'
-import { STORAGE_KEYS, ADMIN_ROLES } from '@/constants'
+import { STORAGE_KEYS, ADMIN_ROLES, ADMIN_PANEL_ROLES, MODERATOR_ROLES, USER_ROLES } from '@/constants'
 import { getAccessToken, setAccessToken, removeAccessToken } from '@/utils/http'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -11,7 +11,19 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref(null)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
+
+  // Sadece superadmin admin paneline erişebilir
+  const isSuperAdmin = computed(() => user.value?.role === USER_ROLES.SUPERADMIN)
+
+  // Admin paneli erişimi (sadece superadmin)
+  const canAccessAdminPanel = computed(() => ADMIN_PANEL_ROLES.includes(user.value?.role))
+
+  // Moderasyon yetkileri (moderator, admin, superadmin)
+  const isModerator = computed(() => MODERATOR_ROLES.includes(user.value?.role))
+
+  // Admin rolü kontrolü (eski uyumluluk için)
   const isAdmin = computed(() => ADMIN_ROLES.includes(user.value?.role))
+
   const balanceReal = computed(() => user.value?.balance || 0)
   const balanceCoin = computed(() => user.value?.balance_coin || 0)
 
@@ -172,6 +184,9 @@ export const useAuthStore = defineStore('auth', () => {
     loading,
     error,
     isAuthenticated,
+    isSuperAdmin,
+    canAccessAdminPanel,
+    isModerator,
     isAdmin,
     balanceReal,
     balanceCoin,

@@ -93,7 +93,7 @@
             <option value="display_order">Sıralama</option>
             <option value="price_asc">Fiyat (Artan)</option>
             <option value="price_desc">Fiyat (Azalan)</option>
-            <option value="name">Ada Gore</option>
+            <option value="name">Ada Göre</option>
           </select>
         </div>
       </div>
@@ -258,7 +258,7 @@
                 </div>
                 <div class="spec">
                   <Layers :size="16" />
-                  <span>Sira: {{ pkg.display_order }}</span>
+                  <span>Sıra: {{ pkg.display_order }}</span>
                 </div>
               </div>
 
@@ -450,7 +450,7 @@
                         </div>
                       </div>
                       <div class="form-group">
-                        <label>Görüntüleme Sirasi</label>
+                        <label>Görüntüleme Sırasi</label>
                         <input
                           v-model.number="form.display_order"
                           type="number"

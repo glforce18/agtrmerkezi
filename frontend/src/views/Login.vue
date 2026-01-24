@@ -268,7 +268,7 @@
                 <span class="checkbox-label">Beni Hatırla</span>
               </label>
               <router-link to="/forgot-password" class="forgot-link">
-                Şifremi Unuttum
+                Şifremi Unuttüm
               </router-link>
             </div>
 
@@ -436,7 +436,7 @@ const validateUsername = () => {
     usernameValidation.message = ''
   } else if (value.length < 3) {
     usernameValidation.status = 'error'
-    usernameValidation.message = 'Kullanici adi en az 3 karakter olmalidir'
+    usernameValidation.message = 'Kullanıcı adi en az 3 karakter olmalidir'
   } else if (value.includes('@')) {
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -459,7 +459,7 @@ const validatePassword = () => {
     passwordValidation.message = ''
   } else if (form.password.length < 6) {
     passwordValidation.status = 'error'
-    passwordValidation.message = 'Sifre en az 6 karakter olmalidir'
+    passwordValidation.message = 'Şifre en az 6 karakter olmalidir'
   } else {
     passwordValidation.status = 'success'
     passwordValidation.message = ''

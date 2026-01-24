@@ -45,7 +45,7 @@ const props = defineProps({
   // Accessibility
   ariaLabel: {
     type: String,
-    default: 'Yukleniyor...'
+    default: 'Yükleniyor...'
   }
 })
 

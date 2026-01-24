@@ -1,5 +1,11 @@
 <template>
   <div class="forum-page">
+    <!-- Scroll Progress -->
+    <ScrollProgress />
+
+    <!-- Keyboard Shortcuts -->
+    <KeyboardShortcuts />
+
     <!-- Animated Background -->
     <div class="forum-bg">
       <div class="bg-gradient"></div>
@@ -12,70 +18,42 @@
     </div>
 
     <div class="forum-container">
-      <!-- Epic Hero Section -->
-      <header class="forum-hero">
-        <div class="hero-content">
-          <div class="hero-badge">
-            <span class="badge-dot"></span>
-            <span>{{ stats.onlineUsers }} Oyuncu Cevrimici</span>
-          </div>
-
-          <h1 class="hero-title">
-            <span class="title-line">AGTR</span>
-            <span class="title-line title-line--accent">MERKEZI</span>
-          </h1>
-
-          <p class="hero-subtitle">Turkiye'nin En Buyuk CS 1.6 & Half-Life Toplulugu</p>
-
-          <!-- Animated Stats -->
-          <div class="hero-stats">
-            <div class="stat-card">
-              <div class="stat-icon">
-                <FileTextIcon class="w-6 h-6" />
-              </div>
-              <div class="stat-content">
-                <span class="stat-number">{{ animatedStats.topics }}</span>
-                <span class="stat-label">Konu</span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <MessageSquareIcon class="w-6 h-6" />
-              </div>
-              <div class="stat-content">
-                <span class="stat-number">{{ animatedStats.posts }}</span>
-                <span class="stat-label">Gonderi</span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">
-                <UsersIcon class="w-6 h-6" />
-              </div>
-              <div class="stat-content">
-                <span class="stat-number">{{ animatedStats.members }}</span>
-                <span class="stat-label">Uye</span>
-              </div>
-            </div>
-          </div>
+      <!-- Minimal Stats Bar -->
+      <header class="forum-stats-bar">
+        <div class="stats-bar-left">
+          <span class="stats-bar-title">AGTR Forum</span>
+          <span class="stats-bar-divider">|</span>
+          <span class="stats-bar-online">
+            <span class="online-dot"></span>
+            {{ stats.onlineUsers }} çevrimiçi
+          </span>
         </div>
-
-        <!-- Floating Game Icons -->
-        <div class="hero-floating">
-          <img v-if="gameAssets.cs16?.icon" :src="gameAssets.cs16.icon" class="floating-icon floating-icon--1" alt="" />
-          <img v-if="gameAssets.halflife?.icon" :src="gameAssets.halflife.icon" class="floating-icon floating-icon--2" alt="" />
+        <div class="stats-bar-right">
+          <span class="stats-bar-item">
+            <FileTextIcon class="w-3 h-3" />
+            {{ animatedStats.topics }} konu
+          </span>
+          <span class="stats-bar-item">
+            <MessageSquareIcon class="w-3 h-3" />
+            {{ animatedStats.posts }} gönderi
+          </span>
+          <span class="stats-bar-item">
+            <UsersIcon class="w-3 h-3" />
+            {{ animatedStats.members }} üye
+          </span>
         </div>
       </header>
 
       <!-- Quick Actions -->
       <div class="forum-actions">
-        <button class="btn-primary btn-glow" @click="handleNewTopic" :disabled="!isLoggedIn">
+        <button class="btn-primary btn-glow" @click="handleNewTopic" :disabled="!isLoggedIn || !hasSteam">
           <PlusIcon class="w-5 h-5" />
-          <span>{{ isLoggedIn ? 'Yeni Konu Ac' : 'Giris Yap' }}</span>
+          <span>{{ !isLoggedIn ? 'Giris Yap' : (!hasSteam ? 'Steam Bagla' : 'Yeni Konu Ac') }}</span>
         </button>
 
         <div class="search-box">
           <SearchIcon class="search-icon w-5 h-5" />
-          <input v-model="searchQuery" type="text" placeholder="Konu veya kullanici ara..." @input="performSearch" />
+          <input v-model="searchQuery" type="text" placeholder="Konu veya kullanıcı ara..." @input="performSearch" />
           <kbd class="search-kbd">/</kbd>
         </div>
 
@@ -92,13 +70,16 @@
         </div>
       </div>
 
+      <!-- Quick Filters -->
+      <QuickFilters :activeFilter="activeFilter" @filter="activeFilter = $event" />
+
       <!-- Main Content Grid -->
       <div class="forum-grid">
         <!-- Games Column -->
-        <div class="games-column">
+        <div class="games-column stagger-children">
           <!-- CS 1.6 Section -->
           <section class="game-section">
-            <div class="game-card game-card--cs16">
+            <div class="game-card game-card--cs16 game-card-glow">
               <div class="game-card__bg" :style="{ backgroundImage: gameAssets.cs16?.hero ? `url(${gameAssets.cs16.hero})` : 'none' }"></div>
               <div class="game-card__overlay"></div>
               <div class="game-card__content">
@@ -113,7 +94,7 @@
                     Kategori
                   </div>
                 </div>
-                <p class="game-desc">Sunucu ilanlari, AMX Mod X, plugin paylasimi, turnuvalar</p>
+                <p class="game-desc">Sunucu ilanlari, AMX Mod X, plugin paylaşimi, turnuvalar</p>
               </div>
 
               <!-- Categories -->
@@ -147,7 +128,7 @@
 
           <!-- Half-Life Section -->
           <section class="game-section">
-            <div class="game-card game-card--halflife">
+            <div class="game-card game-card--halflife game-card-glow">
               <div class="game-card__bg" :style="{ backgroundImage: gameAssets.halflife?.hero ? `url(${gameAssets.halflife.hero})` : 'none' }"></div>
               <div class="game-card__overlay game-card__overlay--hl"></div>
               <div class="game-card__content">
@@ -195,7 +176,7 @@
 
           <!-- Community Section -->
           <section class="game-section">
-            <div class="game-card game-card--community">
+            <div class="game-card game-card--community game-card-glow">
               <div class="game-card__content game-card__content--simple">
                 <div class="game-card__header">
                   <div class="game-title game-title--community">
@@ -237,18 +218,21 @@
 
         <!-- Sidebar -->
         <aside class="forum-sidebar">
+          <!-- Pinned Topics -->
+          <PinnedTopicsSection :topics="pinnedTopics" :maxShow="3" />
+
           <!-- Hot Topics -->
           <div class="sidebar-card">
             <div class="sidebar-header">
-              <FlameIcon class="w-5 h-5 text-orange-500" />
-              <h3>Populer Konular</h3>
+              <FlameIcon class="w-4 h-4 text-orange-500" />
+              <h3>Popüler Konular</h3>
             </div>
             <div class="hot-topics">
               <router-link
                 v-for="(topic, index) in hotTopics"
                 :key="topic.id"
                 :to="`/forum/topic/${topic.id}`"
-                class="hot-topic"
+                class="hot-topic topic-hover-enhanced"
               >
                 <span class="hot-rank">#{{ index + 1 }}</span>
                 <div class="hot-info">
@@ -261,17 +245,25 @@
             </div>
           </div>
 
+          <!-- Tags Cloud Widget -->
+          <TagsCloudWidget :activeTag="activeTag" @tag-click="handleTagFilter" />
+
+          <!-- Recent Viewed Widget -->
+          <RecentViewedWidget ref="recentViewedRef" />
+
           <!-- Recent Activity -->
           <div class="sidebar-card">
             <div class="sidebar-header">
-              <ActivityIcon class="w-5 h-5 text-cyan-500" />
+              <ActivityIcon class="w-4 h-4 text-cyan-500" />
               <h3>Son Aktivite</h3>
             </div>
             <div class="activity-feed">
-              <div v-for="n in 5" :key="n" class="activity-item">
-                <div class="activity-avatar"></div>
+              <div v-for="n in 4" :key="n" class="activity-item">
+                <div class="activity-avatar avatar-online-ring">
+                  <div class="online-dot"></div>
+                </div>
                 <div class="activity-content">
-                  <span class="activity-user">Kullanici{{ n }}</span>
+                  <span class="activity-user">Kullanıcı{{ n }}</span>
                   <span class="activity-action">yeni konu acti</span>
                 </div>
                 <span class="activity-time">{{ n }}dk</span>
@@ -279,11 +271,11 @@
             </div>
           </div>
 
-          <!-- Game Showcase -->
+          <!-- Game Showcase (kompakt) -->
           <div class="sidebar-card sidebar-card--showcase">
             <div class="sidebar-header">
-              <SparklesIcon class="w-5 h-5 text-yellow-500" />
-              <h3>Oyun Vitrin</h3>
+              <SparklesIcon class="w-4 h-4 text-yellow-500" />
+              <h3>Oyunlar</h3>
             </div>
             <div class="showcase-grid">
               <div class="showcase-item" v-if="gameAssets.cs16?.grid">
@@ -306,7 +298,7 @@
         <div v-if="showNewTopicModal" class="modal-overlay" @click.self="showNewTopicModal = false">
           <div class="modal-content">
             <div class="modal-header">
-              <h2><PlusIcon class="w-5 h-5" /> Yeni Konu Olustur</h2>
+              <h2><PlusIcon class="w-5 h-5" /> Yeni Konu Oluştur</h2>
               <button @click="showNewTopicModal = false" class="modal-close">
                 <XIcon class="w-6 h-6" />
               </button>
@@ -315,7 +307,7 @@
               <div class="form-group">
                 <label>Kategori</label>
                 <select v-model="newTopic.categoryId">
-                  <option value="">Kategori secin...</option>
+                  <option value="">Kategori seçin...</option>
                   <optgroup label="Counter-Strike 1.6">
                     <option v-for="cat in cs16Categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                   </optgroup>
@@ -328,18 +320,18 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Baslik</label>
+                <label>Başlık</label>
                 <input v-model="newTopic.title" type="text" placeholder="Konu basligi..." maxlength="100" />
               </div>
               <div class="form-group">
-                <label>Icerik</label>
-                <textarea v-model="newTopic.content" placeholder="Konu icerigi..." rows="6"></textarea>
+                <label>İçerik</label>
+                <textarea v-model="newTopic.content" placeholder="Konu içeriği..." rows="6"></textarea>
               </div>
             </div>
             <div class="modal-footer">
-              <button @click="showNewTopicModal = false" class="btn-secondary">Iptal</button>
+              <button @click="showNewTopicModal = false" class="btn-secondary">İptal</button>
               <button @click="createTopic" class="btn-primary" :disabled="!isTopicValid || isSubmitting">
-                {{ isSubmitting ? 'Gonderiliyor...' : 'Olustur' }}
+                {{ isSubmitting ? 'Gönderiliyor...' : 'Oluştur' }}
               </button>
             </div>
           </div>
@@ -368,11 +360,20 @@ import { forumAPI } from '@/api'
 import { useRequireSteam } from '@/composables/useRequireSteam'
 import { useGameAssets } from '@/composables/useGameAssets'
 import { debounce } from '@/composables/useDebounce'
+// New components
+import KeyboardShortcuts from '@/components/forum/KeyboardShortcuts.vue'
+import ScrollProgress from '@/components/forum/ScrollProgress.vue'
+import QuickFilters from '@/components/forum/QuickFilters.vue'
+import TagsCloudWidget from '@/components/forum/TagsCloudWidget.vue'
+import RecentViewedWidget from '@/components/forum/RecentViewedWidget.vue'
+import PinnedTopicsSection from '@/components/forum/PinnedTopicsSection.vue'
+// Styles
+import '@/assets/styles/forum-enhancements.css'
 import {
   SearchIcon, PlusIcon, FileTextIcon, MessageSquareIcon, UsersIcon,
   FlameIcon, FolderIcon, ChevronRightIcon, XIcon, TargetIcon,
   Gamepad2Icon, TrendingUpIcon, ClockIcon, ActivityIcon, SparklesIcon,
-  ChevronUpIcon
+  ChevronUpIcon, HashIcon
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -386,9 +387,12 @@ const isSubmitting = ref(false)
 const searchQuery = ref('')
 const showNewTopicModal = ref(false)
 const activeFilter = ref('all')
+const activeTag = ref(null)
 const categories = ref([])
 const hotTopics = ref([])
+const pinnedTopics = ref([])
 const showBackToTop = ref(false)
+const recentViewedRef = ref(null)
 
 // Scroll handler
 const handleScroll = () => {
@@ -408,7 +412,7 @@ const gameAssets = reactive({
 const newTopic = reactive({ categoryId: '', title: '', content: '' })
 
 const filters = [
-  { id: 'all', label: 'Tumu', icon: FolderIcon },
+  { id: 'all', label: 'Tümu', icon: FolderIcon },
   { id: 'trending', label: 'Trend', icon: TrendingUpIcon },
   { id: 'recent', label: 'Yeni', icon: ClockIcon }
 ]
@@ -504,6 +508,19 @@ const fetchHotTopics = async () => {
   } catch (error) { console.error('Hot topics error:', error) }
 }
 
+const fetchPinnedTopics = async () => {
+  try {
+    const response = await forumAPI.getAllTopics({ pinned: true, limit: 10 })
+    const data = response?.topics || response || []
+    pinnedTopics.value = data.map(t => ({
+      id: t.id,
+      title: t.title,
+      replies: t.reply_count || 0,
+      views: t.view_count || 0
+    }))
+  } catch (error) { console.error('Pinned topics error:', error) }
+}
+
 const fetchStats = async () => {
   try {
     const response = await forumAPI.getStats()
@@ -548,7 +565,7 @@ const createTopic = async () => {
     if (topicId) router.push(`/forum/topic/${topicId}`)
   } catch (error) {
     console.error('Create topic error:', error)
-    alert(error.response?.data?.detail || 'Konu olusturulamadi')
+    alert(error.response?.data?.detail || 'Konu oluşturulamadi')
   } finally { isSubmitting.value = false }
 }
 
@@ -556,35 +573,76 @@ const performSearch = debounce(() => {
   if (searchQuery.value.length >= 2) router.push({ path: '/forum', query: { q: searchQuery.value } })
 }, 500)
 
+// Tag filter
+const handleTagFilter = (tag) => {
+  if (activeTag.value === tag) {
+    activeTag.value = null
+  } else {
+    activeTag.value = tag
+    router.push({ path: '/forum', query: { tag } })
+  }
+}
+
 // Keyboard shortcut
 const handleKeydown = (e) => {
-  if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return
+  const tagName = document.activeElement?.tagName
+  if (tagName === 'INPUT' || tagName === 'TEXTAREA') return
 
-  if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
-    e.preventDefault()
-    document.querySelector('.search-box input')?.focus()
+  switch (e.key) {
+    case '/':
+      if (!e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        document.querySelector('.search-box input')?.focus()
+      }
+      break
+    case 't':
+    case 'T':
+      scrollToTop()
+      break
+    case 'n':
+    case 'N':
+      e.preventDefault()
+      handleNewTopic()
+      break
+    case 'j':
+    case 'J':
+      // Navigate to next topic
+      navigateTopic(1)
+      break
+    case 'k':
+    case 'K':
+      // Navigate to previous topic
+      navigateTopic(-1)
+      break
   }
-  // T tuşu - Yukarı çık
-  if (e.key === 't' || e.key === 'T') {
-    scrollToTop()
-  }
+}
+
+// Topic navigation with J/K keys
+let currentTopicIndex = -1
+const navigateTopic = (direction) => {
+  const topics = document.querySelectorAll('.hot-topic, .category-item')
+  if (topics.length === 0) return
+
+  currentTopicIndex += direction
+  if (currentTopicIndex < 0) currentTopicIndex = topics.length - 1
+  if (currentTopicIndex >= topics.length) currentTopicIndex = 0
+
+  const topic = topics[currentTopicIndex]
+  topic.focus()
+  topic.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('scroll', handleScroll)
   isLoading.value = true
-  await Promise.all([fetchCategories(), fetchHotTopics(), fetchStats(), loadGameAssets()])
+  await Promise.all([fetchCategories(), fetchHotTopics(), fetchPinnedTopics(), fetchStats(), loadGameAssets()])
   isLoading.value = false
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('scroll', handleScroll)
-  // BUGFIX: Clear any pending search debounce timer
-  if (searchDebounceTimer) {
-    clearTimeout(searchDebounceTimer)
-  }
 })
 </script>
 
@@ -685,54 +743,54 @@ onUnmounted(() => {
 .forum-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 12px;
   position: relative;
   z-index: 1;
 }
 
-/* Hero Section */
-.forum-hero {
-  position: relative;
-  padding: 60px 40px;
-  margin-bottom: 32px;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 24px;
-  overflow: hidden;
-}
-
-.forum-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.03;
-  pointer-events: none;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-}
-
-.hero-badge {
-  display: inline-flex;
+/* Minimal Stats Bar */
+.forum-stats-bar {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  border-radius: 50px;
-  color: #22c55e;
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 24px;
+  justify-content: space-between;
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
 }
 
-.badge-dot {
-  width: 8px;
-  height: 8px;
+.stats-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stats-bar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #f97316, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stats-bar-divider {
+  color: rgba(255,255,255,0.2);
+}
+
+.stats-bar-online {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #22c55e;
+}
+
+.online-dot {
+  width: 6px;
+  height: 6px;
   background: #22c55e;
   border-radius: 50%;
   animation: pulse 2s ease-in-out infinite;
@@ -743,136 +801,63 @@ onUnmounted(() => {
   50% { opacity: 0.5; transform: scale(1.2); }
 }
 
-.hero-title {
-  font-size: 64px;
-  font-weight: 900;
-  line-height: 1;
-  margin-bottom: 16px;
-  letter-spacing: -0.03em;
-}
-
-.title-line {
-  display: block;
-  color: #fff;
-}
-
-.title-line--accent {
-  background: linear-gradient(135deg, #f97316, #f59e0b, #22d3ee);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hero-subtitle {
-  font-size: 18px;
-  color: rgba(255,255,255,0.6);
-  margin-bottom: 40px;
-}
-
-/* Stats */
-.hero-stats {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.stat-card {
+.stats-bar-right {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px 28px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
 }
 
-.stat-card:hover {
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(249, 115, 22, 0.3);
-  transform: translateY(-4px);
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
+.stats-bar-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(139, 92, 246, 0.2));
-  border-radius: 12px;
+  gap: 5px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+}
+
+.stats-bar-item svg {
   color: #f97316;
 }
 
-.stat-number {
-  display: block;
-  font-size: 28px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: rgba(255,255,255,0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Floating Icons */
-.hero-floating {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.floating-icon {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  opacity: 0.15;
-  animation: float-icon 6s ease-in-out infinite;
-}
-
-.floating-icon--1 { top: 20%; left: 10%; animation-delay: 0s; }
-.floating-icon--2 { bottom: 20%; right: 10%; animation-delay: 3s; }
-
-@keyframes float-icon {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(10deg); }
+@media (max-width: 600px) {
+  .forum-stats-bar {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  .stats-bar-right {
+    gap: 12px;
+  }
 }
 
 /* Actions - Sticky */
 .forum-actions {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
-  margin-bottom: 32px;
+  margin-bottom: 12px;
   position: sticky;
-  top: 70px;
+  top: 60px;
   z-index: 100;
   background: rgba(11, 15, 20, 0.95);
   backdrop-filter: blur(10px);
-  padding: 16px;
-  margin-left: -16px;
-  margin-right: -16px;
-  padding-left: 16px;
-  padding-right: 16px;
-  border-radius: 12px;
+  padding: 8px 12px;
+  margin-left: -12px;
+  margin-right: -12px;
+  border-radius: 10px;
 }
 
 .btn-primary {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 14px 28px;
+  gap: 6px;
+  padding: 10px 18px;
   background: linear-gradient(135deg, #f97316, #ea580c);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   color: #fff;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -908,12 +893,12 @@ onUnmounted(() => {
 
 .search-box input {
   width: 100%;
-  padding: 14px 16px 14px 48px;
+  padding: 10px 14px 10px 40px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
+  border-radius: 10px;
   color: #fff;
-  font-size: 15px;
+  font-size: 13px;
   transition: all 0.3s;
 }
 
@@ -926,10 +911,12 @@ onUnmounted(() => {
 
 .search-icon {
   position: absolute;
-  left: 16px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   color: rgba(255,255,255,0.4);
+  width: 18px;
+  height: 18px;
 }
 
 .search-kbd {
@@ -952,13 +939,13 @@ onUnmounted(() => {
 .filter-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
+  gap: 4px;
+  padding: 6px 12px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
+  border-radius: 8px;
   color: rgba(255,255,255,0.6);
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -972,25 +959,46 @@ onUnmounted(() => {
 /* Grid Layout */
 .forum-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
+  grid-template-columns: 1fr 260px;
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .forum-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 1024px) {
-  .forum-grid { grid-template-columns: 1fr; }
   .forum-sidebar { display: none; }
 }
 
-/* Game Cards */
+/* Game Cards - 3 Column Layout */
 .games-column {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 1200px) {
+  .games-column {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .games-column {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .games-column {
+    grid-template-columns: 1fr;
+  }
 }
 
 .game-card {
   position: relative;
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.08);
@@ -1032,7 +1040,13 @@ onUnmounted(() => {
 .game-card__content {
   position: relative;
   z-index: 1;
-  padding: 32px;
+  padding: 12px 14px;
+}
+
+.game-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .game-card__content--simple {
@@ -1043,12 +1057,12 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .game-logo {
-  height: 50px;
-  max-width: 180px;
+  height: 32px;
+  max-width: 120px;
   object-fit: contain;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
 }
@@ -1056,10 +1070,15 @@ onUnmounted(() => {
 .game-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   color: #fff;
-  font-size: 24px;
+  font-size: 15px;
   font-weight: 700;
+}
+
+.game-title svg {
+  width: 20px;
+  height: 20px;
 }
 
 .game-title--community {
@@ -1069,41 +1088,45 @@ onUnmounted(() => {
 .game-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 3px;
+  padding: 3px 8px;
   background: rgba(255,255,255,0.2);
   backdrop-filter: blur(10px);
   border-radius: 50px;
   color: #fff;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 500;
 }
 
 .badge-count {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 11px;
 }
 
 .game-desc {
   color: rgba(255,255,255,0.8);
-  font-size: 14px;
+  font-size: 11px;
   margin: 0;
+  line-height: 1.3;
 }
 
 /* Categories */
 .game-categories {
   position: relative;
   z-index: 1;
-  padding: 8px;
+  padding: 6px;
   background: rgba(0,0,0,0.2);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .category-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
   text-decoration: none;
   transition: all 0.2s;
 }
@@ -1113,14 +1136,14 @@ onUnmounted(() => {
 }
 
 .category-icon {
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 8px;
   color: #fff;
-  font-size: 18px;
+  font-size: 14px;
   flex-shrink: 0;
   transition: transform 0.3s;
 }
@@ -1135,16 +1158,19 @@ onUnmounted(() => {
 }
 
 .category-info h4 {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 600;
   color: #fff;
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .category-meta {
   display: flex;
-  gap: 12px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 10px;
   color: rgba(255,255,255,0.5);
 }
 
@@ -1165,53 +1191,59 @@ onUnmounted(() => {
 }
 
 .empty-state {
-  padding: 32px;
+  padding: 20px;
   text-align: center;
   color: rgba(255,255,255,0.4);
+  font-size: 13px;
 }
 
 /* Sidebar */
 .forum-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 .sidebar-card {
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 12px;
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .sidebar-header h3 {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: #fff;
   margin: 0;
+}
+
+.sidebar-header svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Hot Topics */
 .hot-topics {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .hot-topic {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 8px;
+  padding: 8px 10px;
   background: rgba(255,255,255,0.03);
-  border-radius: 10px;
+  border-radius: 8px;
   text-decoration: none;
   transition: all 0.2s;
 }
@@ -1222,15 +1254,15 @@ onUnmounted(() => {
 }
 
 .hot-rank {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #f97316, #ea580c);
-  border-radius: 8px;
+  border-radius: 6px;
   color: #fff;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -1242,45 +1274,50 @@ onUnmounted(() => {
 
 .hot-title {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .hot-meta {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 3px;
+  font-size: 10px;
   color: rgba(255,255,255,0.4);
+}
+
+.hot-meta svg {
+  width: 10px;
+  height: 10px;
 }
 
 /* Activity Feed */
 .activity-feed {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 
 .activity-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .activity-avatar {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   background: linear-gradient(135deg, #f97316, #8b5cf6);
   border-radius: 50%;
 }
 
 .activity-content {
   flex: 1;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .activity-user {
@@ -1290,11 +1327,11 @@ onUnmounted(() => {
 
 .activity-action {
   color: rgba(255,255,255,0.5);
-  margin-left: 4px;
+  margin-left: 3px;
 }
 
 .activity-time {
-  font-size: 11px;
+  font-size: 10px;
   color: rgba(255,255,255,0.3);
 }
 
@@ -1302,13 +1339,13 @@ onUnmounted(() => {
 .showcase-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px;
 }
 
 .showcase-item {
   position: relative;
   aspect-ratio: 2/3;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -1328,10 +1365,10 @@ onUnmounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 8px;
+  padding: 6px;
   background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
   color: #fff;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   text-align: center;
 }
@@ -1451,10 +1488,10 @@ onUnmounted(() => {
 /* Back to Top Button */
 .back-to-top {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 50px;
-  height: 50px;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: linear-gradient(135deg, #f97316, #ea580c);
   border: none;
@@ -1468,6 +1505,11 @@ onUnmounted(() => {
   transition: all 0.3s ease;
 }
 
+.back-to-top svg {
+  width: 20px;
+  height: 20px;
+}
+
 .back-to-top:hover {
   transform: translateY(-4px) scale(1.1);
   box-shadow: 0 8px 30px rgba(249, 115, 22, 0.6);
@@ -1479,15 +1521,15 @@ onUnmounted(() => {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .forum-container { padding: 16px; }
-  .forum-hero { padding: 40px 20px; }
-  .hero-title { font-size: 40px; }
-  .hero-stats { gap: 12px; }
-  .stat-card { padding: 16px 20px; }
-  .forum-actions { flex-direction: column; align-items: stretch; }
+  .forum-container { padding: 8px; }
+  .forum-hero { padding: 12px 14px; }
+  .hero-title { font-size: 24px; }
+  .hero-stats { gap: 6px; }
+  .stat-card { padding: 6px 10px; }
+  .forum-actions { flex-direction: column; align-items: stretch; gap: 6px; }
   .search-box { max-width: none; }
   .action-filters { justify-content: center; }
-  .game-card__content { padding: 24px; }
-  .back-to-top { bottom: 20px; right: 20px; width: 45px; height: 45px; }
+  .game-card__content { padding: 12px; }
+  .back-to-top { bottom: 16px; right: 16px; width: 40px; height: 40px; }
 }
 </style>
