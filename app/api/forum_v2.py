@@ -13,6 +13,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.cache import get_cached_leaderboard, cache_leaderboard
 from app.core.exceptions import (
     InsufficientPermissionsException,
     PollAlreadyExistsException,
@@ -501,10 +502,21 @@ async def get_leaderboard(
     limit: int = Query(10, ge=5, le=50),
     db: Session = Depends(get_db),
 ):
-    """Liderlik tablosunu getir"""
+    """Liderlik tablosunu getir (cached)"""
+    # Try cache first
+    cached_data = await get_cached_leaderboard(timeframe, limit)
+    if cached_data is not None:
+        return {"success": True, "leaderboard": cached_data, "cached": True}
+
+    # Cache miss - query database
     service = get_reputation_service(db)
     leaderboard = service.get_leaderboard(timeframe, limit)
-    return {"success": True, "leaderboard": leaderboard}
+
+    # Cache result (5 minutes for all/weekly, 1 minute for monthly)
+    ttl = 300 if timeframe in ["all", "weekly"] else 60
+    await cache_leaderboard(timeframe, limit, leaderboard, ttl)
+
+    return {"success": True, "leaderboard": leaderboard, "cached": False}
 
 
 # ============ 8. Bookmarks Endpoints ============
