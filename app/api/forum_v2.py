@@ -13,6 +13,13 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.exceptions import (
+    InsufficientPermissionsException,
+    PollAlreadyExistsException,
+    PollExpiredException,
+    PollNotFoundException,
+    TopicNotFoundException,
+)
 from app.core.security import (
     get_current_user_optional,
     get_current_user_required,

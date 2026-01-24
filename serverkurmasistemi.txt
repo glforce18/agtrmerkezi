@@ -1,0 +1,2038 @@
+================================================================================
+                    AGTR MERKEZİ v6.0 - WEB PANEL ÖZELLİKLERİ
+                          150 Özellik - API Destekli
+================================================================================
+
+PROJE BİLGİLERİ:
+- Proje Adı: AGTR Merkezi v6.0
+- Platform: FastAPI + Python 3.13
+- Veritaşı: MySQL (agtrmerkezi)
+- Frontend: Jinja2 Templates + Vanilla JavaScript
+- Sunucu: Debian VDS (185.171.25.138)
+- Sunucu Dizini: /home/gameservers/
+- API Dizini: /var/www/agtrmerkezi/
+- Systemd Service: agtrmerkezi.service
+
+================================================================================
+                        ÖZELLİK LİSTESİ (150 MADDE)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎮 SUNUCU KONTROL ÖZELLİKLERİ (10 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Sunucu Başlatma (Start)
+   - Tek tıkla sunucuyu başlat
+   - Screen session ile arka planda çalıştır
+   - API: POST /api/servers/{id}/start
+
+2. Sunucu Durdurma (Stop)
+   - Tek tıkla sunucuyu durdur
+   - Güvenli kapatma (oyuncular uyarılsın)
+   - API: POST /api/servers/{id}/stop
+
+3. Sunucu Yeniden Başlatma (Restart)
+   - Otomatik restart
+   - Oyunculara countdown göster
+   - API: POST /api/servers/{id}/restart
+
+4. Sunucu Durum Kontrolü (Status)
+   - Anlık online/offline durumu
+   - Yeşil/kırmızı gösterge
+   - Real-time güncelleme (WebSocket)
+   - API: GET /api/servers/{id}/status
+
+5. Otomatik Yeniden Başlatma
+   - Sunucu çökerse otomatik restart
+   - Healthcheck her 60 saniye
+   - API: POST /api/servers/{id}/auto-restart/enable
+
+6. Zamanlı Restart
+   - Belirli saatte otomatik restart
+   - Cron job ile (örn: her gün 05:00)
+   - API: POST /api/servers/{id}/scheduled-restart
+
+7. Sunucu Kopyalama
+   - Mevcut sunucudan yeni sunucu oluştur
+   - Tüm ayarları kopyala
+   - API: POST /api/servers/{id}/clone
+
+8. Sunucu Silme
+   - Sunucuyu tamamen sil
+   - Onaylı silme (2-step confirmation)
+   - API: DELETE /api/servers/{id}
+
+9. Sunucu Dondurma (Freeze)
+   - Geçici olarak dondur
+   - Ücret kesilmesin
+   - API: POST /api/servers/{id}/freeze
+
+10. Sunucu Taşıma
+    - Farklı user'a sunucu devret
+    - Owner değiştirme
+    - API: POST /api/servers/{id}/transfer
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💬 CANLI CHAT & RCON ÖZELLİKLERİ (8 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+11. Canlı Sunucu Chat
+    - Oyun içi chat'i web panelde görüntüle
+    - Real-time WebSocket
+    - API: WS /ws/servers/{id}/chat
+
+12. Chat'e Mesaj Gönderme
+    - Web panelden oyuncularla konuş
+    - Admin mesajı özel renkte görünsün
+    - API: POST /api/servers/{id}/chat/send
+
+13. RCON Komut Konsolu
+    - Tüm RCON komutlarını çalıştır
+    - Komut autocomplete
+    - API: POST /api/servers/{id}/rcon
+
+14. RCON Komut Geçmişi
+    - Son 100 komut kaydedilsin
+    - Tekrar kullanım için hızlı erişim
+    - API: GET /api/servers/{id}/rcon/history
+
+15. RCON Favori Komutlar
+    - Sık kullanılan komutları kaydet
+    - Örn: restart, changelevel crossfire
+    - API: POST /api/servers/{id}/rcon/favorites
+
+16. RCON Komut Şablonları
+    - Hazır komut setleri
+    - "Sunucu Bakım Modu", "Tournament Hazırlık"
+    - API: GET /api/rcon/templates
+
+17. Toplu RCON Komutu
+    - Birden fazla sunucuya aynı anda komut
+    - Multi-server management
+    - API: POST /api/servers/bulk-rcon
+
+18. Zamanlı RCON Komutu
+    - Belirli saatte otomatik komut
+    - Örn: Her saat başı "say Reklam mesajı"
+    - API: POST /api/servers/{id}/rcon/scheduled
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👥 OYUNCU YÖNETİMİ (8 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+19. Canlı Oyuncu Listesi
+    - Sunucudaki oyuncuları real-time görüntüle
+    - İsim, SteamID, Ping, Score
+    - API: GET /api/servers/{id}/players
+
+20. Oyuncu Kickleme
+    - Oyuncuyu sunucudan at
+    - Sebep belirt
+    - API: POST /api/servers/{id}/players/{steamid}/kick
+
+21. Oyuncu Banlama
+    - IP/SteamID ile ban
+    - Süre seçmeli: 1 saat, 1 gün, 1 hafta, kalıcı
+    - API: POST /api/servers/{id}/players/{steamid}/ban
+
+22. Ban Listesi Görüntüleme
+    - Tüm banları listele
+    - Filtreleme: aktif, geçmiş, kalıcı
+    - API: GET /api/servers/{id}/bans
+
+23. Ban Kaldırma (Unban)
+    - Banı kaldır
+    - Sebep ekle
+    - API: DELETE /api/servers/{id}/bans/{ban_id}
+
+24. Oyuncu İstatistikleri
+    - Oynama süresi, kill/death, score
+    - Grafik ile gösterim
+    - API: GET /api/servers/{id}/players/{steamid}/stats
+
+25. Oyuncu Arama
+    - İsim/SteamID ile oyuncu ara
+    - Geçmiş kayıtlar
+    - API: GET /api/players/search?q={query}
+
+26. Oyuncu Notları
+    - Oyuncular hakkında not ekle
+    - "Toxic player", "Good player"
+    - API: POST /api/players/{steamid}/notes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛡️ ADMİNLİK YÖNETİMİ (8 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+27. Admin Ekleme
+    - SteamID ile admin ekle
+    - users.ini dosyasına otomatik yaz
+    - API: POST /api/servers/{id}/admins
+
+28. Admin Çıkarma
+    - Admin yetkilerini kaldır
+    - users.ini'den sil
+    - API: DELETE /api/servers/{id}/admins/{steamid}
+
+29. Admin Seviyeleri
+    - Farklı yetki seviyeleri
+    - Admin (abcdefghijklmnopqrstu)
+    - Moderator (abcd)
+    - VIP (a)
+    - API: POST /api/servers/{id}/admins/{steamid}/level
+
+30. Admin Yetki Düzenleme
+    - Yetkileri özelleştir
+    - Flag bazlı: kick, ban, rcon, immunity
+    - API: PUT /api/servers/{id}/admins/{steamid}/flags
+
+31. Geçici Admin
+    - Belirli süre için admin ver
+    - Otomatik expire (7 gün sonra kaldır)
+    - API: POST /api/servers/{id}/admins/{steamid}/temporary
+
+32. Admin Listesi
+    - Tüm adminleri görüntüle
+    - Aktif/pasif durumu
+    - API: GET /api/servers/{id}/admins
+
+33. Admin Log Kayıtları
+    - Adminlerin yaptığı işlemleri kaydet
+    - Ban, kick, map change logları
+    - API: GET /api/servers/{id}/admin-logs
+
+34. Admin İstatistikleri
+    - Admin aktivitelerini izle
+    - En aktif admin, en çok ban atan
+    - API: GET /api/servers/{id}/admin-stats
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔌 PLUGIN YÖNETİMİ - AMXX (9 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+35. Yüklü Plugin Listesi
+    - Tüm pluginleri görüntüle
+    - Aktif/pasif durumu
+    - API: GET /api/servers/{id}/plugins
+
+36. Plugin Açma/Kapama
+    - Plugin'i aktif/pasif yap
+    - plugins.ini düzenle (yorum satırı ekle/çıkar)
+    - API: PUT /api/servers/{id}/plugins/{name}/toggle
+
+37. Yeni Plugin Yükleme
+    - .amxx dosyası upload et
+    - addons/amxmodx/plugins/ klasörüne kopyala
+    - API: POST /api/servers/{id}/plugins/upload
+
+38. Plugin Silme
+    - Plugin'i sil
+    - plugins.ini'den de kaldır
+    - API: DELETE /api/servers/{id}/plugins/{name}
+
+39. Plugin Ayarları
+    - Plugin config dosyalarını düzenle
+    - .cfg dosyası editörü
+    - API: GET/PUT /api/servers/{id}/plugins/{name}/config
+
+40. Plugin Önizleme
+    - Plugin detaylarını görüntüle
+    - Yazar, versiyon, açıklama
+    - API: GET /api/servers/{id}/plugins/{name}/info
+
+41. Hazır Plugin Marketyeri
+    - Popüler pluginleri direkt yükle
+    - Deathmatch, GunGame, Deathrun, Zombie Plague
+    - API: GET /api/plugin-market
+
+42. Plugin Kategorileri
+    - Pluginleri kategorize et
+    - Mod, Admin, Fun, Stats, Anti-Cheat
+    - API: GET /api/plugin-market/categories
+
+43. Plugin Güncellemeleri
+    - Yeni plugin versiyonlarını bildir
+    - Auto-update özelliği
+    - API: GET /api/servers/{id}/plugins/updates
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 DOSYA YÖNETİMİ - KISITLI (7 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+44. Dosya Görüntüleme
+    - Sunucu dosyalarını listele
+    - ❌ İNDİRME YASAK - Sadece görüntüleme
+    - API: GET /api/servers/{id}/files
+
+45. Log Dosyası Görüntüleme
+    - Log dosyalarını oku
+    - ❌ İNDİRME YASAK
+    - API: GET /api/servers/{id}/logs
+
+46. Config Dosyası Düzenleme (Kısıtlı)
+    - server.cfg düzenle
+    - ⚠️ Rate ayarları kilitli (düzenlenemez)
+    - API: GET/PUT /api/servers/{id}/config
+
+47. Map Listesi Görüntüleme
+    - Yüklü mapleri listele
+    - .bsp dosyaları
+    - API: GET /api/servers/{id}/maps
+
+48. Map Değiştirme
+    - Anlık map değiştir
+    - changelevel komutu
+    - API: POST /api/servers/{id}/changemap
+
+49. Mapcycle Düzenleme
+    - mapcycle.txt dosyasını düzenle
+    - Map rotasyonu
+    - API: GET/PUT /api/servers/{id}/mapcycle
+
+50. MOTD Düzenleme
+    - motd.txt dosyasını düzenle
+    - HTML destekli MOTD
+    - API: GET/PUT /api/servers/{id}/motd
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 İSTATİSTİK & RAPORLAMA (8 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+51. Anlık Oyuncu Sayısı Grafiği
+    - Son 24 saatte oyuncu trafiği
+    - Chart.js ile grafik
+    - API: GET /api/servers/{id}/stats/players-graph
+
+52. Haftalık/Aylık Raporlar
+    - Sunucu kullanım istatistikleri
+    - PDF rapor oluştur
+    - API: GET /api/servers/{id}/reports?period=weekly
+
+53. En Popüler Map
+    - En çok oynanan mapler
+    - Top 10 liste
+    - API: GET /api/servers/{id}/stats/popular-maps
+
+54. En Aktif Saatler
+    - Peak saatler analizi
+    - Heat map gösterimi
+    - API: GET /api/servers/{id}/stats/peak-hours
+
+55. CPU/RAM Kullanımı Grafiği
+    - Sunucu kaynak kullanımı
+    - psutil ile monitoring
+    - API: GET /api/servers/{id}/stats/resources
+
+56. Network Trafiği
+    - Bandwidth kullanımı
+    - Giriş/Çıkış trafiği (MB/s)
+    - API: GET /api/servers/{id}/stats/network
+
+57. Uptime Takibi
+    - Sunucu çalışma süresi (%)
+    - 99.9% uptime hedefi
+    - API: GET /api/servers/{id}/stats/uptime
+
+58. Crash Geçmişi
+    - Sunucu çökme kayıtları
+    - Crash sebepleri analizi
+    - API: GET /api/servers/{id}/stats/crashes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 SERVER.CFG YÖNETİMİ - KISITLI DÜZENLEME (10 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+59. Hostname Değiştirme ✅ İZİN VERİLİR
+    - Sunucu ismini değiştir
+    - hostname "AGTR Server #1"
+    - API: PUT /api/servers/{id}/config/hostname
+
+60. Password Ayarlama ✅ İZİN VERİLİR
+    - Sunucu şifresi
+    - sv_password "12345"
+    - API: PUT /api/servers/{id}/config/password
+
+61. RCON Password Değiştirme ✅ İZİN VERİLİR
+    - RCON şifresi değiştir
+    - rcon_password "xxxxx"
+    - API: PUT /api/servers/{id}/config/rcon-password
+
+62. MaxPlayers Ayarlama ✅ İZİN VERİLİR (PAKET LİMİTİNE GÖRE)
+    - Maksimum oyuncu sayısı
+    - maxplayers 32 (paket: 16 ise max 16 olabilir)
+    - API: PUT /api/servers/{id}/config/maxplayers
+
+63. Gravity Ayarlama ✅ İZİN VERİLİR
+    - Yerçekimi ayarı
+    - sv_gravity 800 (default: 800)
+    - API: PUT /api/servers/{id}/config/gravity
+
+64. Friendly Fire Açma/Kapama ✅ İZİN VERİLİR
+    - Takım ateşi
+    - mp_friendlyfire 0/1
+    - API: PUT /api/servers/{id}/config/friendlyfire
+
+65. Rate Ayarları ❌ KİLİTLİ
+    - sv_maxrate "25000"
+    - sv_minrate "5000"
+    - ⚠️ DÜZENLENEMEZ (sistem ayarı)
+
+66. FPS Max Ayarları ❌ KİLİTLİ
+    - fps_max "101"
+    - sys_ticrate "1000"
+    - ⚠️ DÜZENLENEMEZ (performans koruma)
+
+67. Bandwidth Ayarları ❌ KİLİTLİ
+    - sv_maxupdaterate "101"
+    - sv_minupdaterate "10"
+    - ⚠️ DÜZENLENEMEZ (ağ koruma)
+
+68. Güvenlik Ayarları ❌ KİLİTLİ
+    - sv_lan "0"
+    - allow_spectators "1"
+    - ⚠️ DÜZENLENEMEZ (güvenlik)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🗺️ MAP YÖNETİMİ (6 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+69. Map Yükleme
+    - Yeni map dosyası upload (.bsp)
+    - valve/maps/ klasörüne kopyala
+    - API: POST /api/servers/{id}/maps/upload
+
+70. Map Silme
+    - Map'i sil
+    - .bsp dosyasını kaldır
+    - API: DELETE /api/servers/{id}/maps/{mapname}
+
+71. Map Önizleme
+    - Map screenshot görüntüle
+    - .jpg thumbnail
+    - API: GET /api/servers/{id}/maps/{mapname}/preview
+
+72. Map Kategorileri
+    - Mapleri kategorize et
+    - Aim, Awp, Deathrun, Fun
+    - API: PUT /api/servers/{id}/maps/{mapname}/category
+
+73. Popüler Map İndirme
+    - Hazır map arşivinden indir
+    - GameBanana, 17buddies entegrasyonu
+    - API: GET /api/map-library
+
+74. Custom Map Paketi
+    - Birden fazla map'i toplu yükle
+    - .zip paketi yükle
+    - API: POST /api/servers/{id}/maps/upload-pack
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔔 BİLDİRİM & UYARILAR (6 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+75. Email Bildirimleri
+    - Sunucu offline olduğunda email
+    - SMTP ile gönderim
+    - API: POST /api/users/notifications/email
+
+76. Discord Webhook
+    - Discord'a bildirim gönder
+    - Server status, crash alerts
+    - API: POST /api/users/notifications/discord
+
+77. SMS Uyarıları (Opsiyonel)
+    - Kritik durumlarda SMS
+    - Netgsm API entegrasyonu
+    - API: POST /api/users/notifications/sms
+
+78. Web Push Notifications
+    - Browser bildirimleri
+    - Service Worker ile
+    - API: POST /api/users/notifications/push
+
+79. Telegram Bot
+    - Telegram'dan sunucu kontrol et
+    - /start, /stop, /status komutları
+    - API: WebHook /api/telegram/webhook
+
+80. Custom Alert Kuralları
+    - Kendi uyarı kurallarını oluştur
+    - "CPU > %90 ise bildir"
+    - API: POST /api/users/alert-rules
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💾 YEDEKLEME & GERİ YÜKLEME (7 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+81. Otomatik Yedekleme
+    - Günlük/haftalık otomatik backup
+    - Celery scheduled task
+    - API: POST /api/servers/{id}/backups/auto-enable
+
+82. Manuel Yedekleme
+    - İstediğin zaman backup al
+    - .tar.gz arşiv oluştur
+    - API: POST /api/servers/{id}/backups/create
+
+83. Yedek Listesi
+    - Tüm backupları görüntüle
+    - Tarih, boyut, durum
+    - API: GET /api/servers/{id}/backups
+
+84. Geri Yükleme
+    - Backuptan geri yükle
+    - Sunucuyu durdur → restore → başlat
+    - API: POST /api/servers/{id}/backups/{backup_id}/restore
+
+85. Yedek İndirme ❌ YASAKLI
+    - Güvenlik nedeniyle yasak
+    - Sadece geri yükleme yapılabilir
+
+86. Yedek Silme
+    - Eski yedekleri temizle
+    - 30 gün üzeri otomatik silinsin
+    - API: DELETE /api/servers/{id}/backups/{backup_id}
+
+87. Cloud Yedekleme
+    - Yedekleri cloud'a yükle
+    - Google Drive, Dropbox entegrasyonu
+    - API: POST /api/servers/{id}/backups/{backup_id}/upload-cloud
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 ÖZELLEŞTİRME (5 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+88. Sunucu İkonu
+    - Sunucu için özel ikon yükle
+    - SVG/PNG destekli
+    - API: POST /api/servers/{id}/icon
+
+89. Sunucu Rengi
+    - Panel'de sunucu rengi seç
+    - Hex color picker
+    - API: PUT /api/servers/{id}/color
+
+90. Sunucu Notları
+    - Sunucu hakkında not ekle
+    - Markdown destekli
+    - API: PUT /api/servers/{id}/notes
+
+91. Tag Sistemi
+    - Sunuculara tag ekle
+    - "Aim", "Public", "Event"
+    - API: POST /api/servers/{id}/tags
+
+92. Favorilere Ekleme
+    - Sık kullanılan sunucuları favori yap
+    - Dashboard'da üstte göster
+    - API: POST /api/users/favorites/{server_id}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔒 GÜVENLİK ÖZELLİKLERİ (6 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+93. İki Faktörlü Doğrulama (2FA)
+    - Google Authenticator ile giriş
+    - TOTP desteği
+    - API: POST /api/auth/2fa/enable
+
+94. IP Whitelist
+    - Sadece belirli IP'lerden erişim
+    - IP listesi yönetimi
+    - API: POST /api/users/ip-whitelist
+
+95. Oturum Yönetimi
+    - Aktif oturumları görüntüle
+    - Uzak oturumları sonlandır
+    - API: GET/DELETE /api/users/sessions
+
+96. Şifre Değiştirme
+    - Güvenli şifre değiştirme
+    - Eski şifre doğrulama
+    - API: POST /api/users/change-password
+
+97. Giriş Geçmişi
+    - Son 100 girişi görüntüle
+    - IP, tarih, cihaz bilgisi
+    - API: GET /api/users/login-history
+
+98. Şüpheli Aktivite Uyarısı
+    - Olağandışı işlemler için uyarı
+    - Farklı IP'den giriş
+    - API: WebHook /api/security/alerts
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📱 KULLANICI DENEYİMİ (7 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+99. Mobil Uyumlu Arayüz
+    - Telefon/tablet'ten tam kontrol
+    - Responsive design
+    - PWA desteği
+
+100. Karanlık/Aydınlık Tema
+     - Tema seçimi
+     - localStorage'da kayıt
+     - API: PUT /api/users/preferences/theme
+
+101. Hızlı Eylem Butonları
+     - Sık kullanılan işlemler için kısayollar
+     - Quick actions toolbar
+     - Özelleştirilebilir
+
+102. Arama & Filtreleme
+     - Sunucular arasında hızlı arama
+     - Multi-filter (durum, paket, oyuncu)
+     - API: GET /api/servers?search={query}
+
+103. Sıralama Seçenekleri
+     - Sunucuları sırala
+     - Durum, oyuncu sayısı, isim, tarih
+     - API: GET /api/servers?sort=players&order=desc
+
+104. Toplu İşlemler
+     - Birden fazla sunucuya aynı anda işlem
+     - Checkbox selection
+     - API: POST /api/servers/bulk-action
+
+105. Klavye Kısayolları
+     - Hızlı erişim için hotkey'ler
+     - Ctrl+R = Restart, Ctrl+S = Stop
+     - JavaScript keydown events
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 GELİŞMİŞ ÖZELLİKLER (10 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+106. Sunucu Şablonları
+     - Hazır sunucu konfigürasyonları
+     - Public, Deathmatch, GunGame, Zombie
+     - API: POST /api/servers/create-from-template
+
+107. Otomatik Mod Kurulumu
+     - Tek tıkla mod yükle
+     - CSDM, Deathrun, Zombie Plague
+     - API: POST /api/servers/{id}/install-mod
+
+108. Plugin Conflict Tespiti
+     - Çakışan pluginleri tespit et
+     - Uyarı ver
+     - API: GET /api/servers/{id}/plugins/conflicts
+
+109. Performance Analyzer
+     - Sunucu performans analizi
+     - CPU spikes, lag tespiti
+     - API: GET /api/servers/{id}/performance
+
+110. Hata Logları Analizi
+     - Crash sebeplerini otomatik tespit et
+     - AI ile log parsing
+     - API: POST /api/servers/{id}/analyze-logs
+
+111. SteamID Doğrulama
+     - Admin eklerken SteamID'yi doğrula
+     - Steam API kullan
+     - API: POST /api/steam/validate/{steamid}
+
+112. Whitelist Modu
+     - Sadece listedeki oyuncular girebilir
+     - steamid.txt yönetimi
+     - API: POST /api/servers/{id}/whitelist/enable
+
+113. Reserved Slots
+     - Adminler için ayrılmış slot
+     - +2 slot admin için
+     - API: PUT /api/servers/{id}/reserved-slots
+
+114. Auto-updater
+     - HLDS/AMXX otomatik güncelleme
+     - SteamCMD ile update
+     - API: POST /api/servers/{id}/update
+
+115. FTP Erişimi ❌ YASAKLI
+     - Güvenlik nedeniyle yasak
+     - Sadece web panel üzerinden erişim
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📈 ANALİTİK & İZLEME (5 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+116. Real-time Dashboard
+     - Tüm sunucuları tek ekranda izle
+     - Grid view
+     - WebSocket ile real-time
+
+117. Sunucu Karşılaştırma
+     - İki sunucuyu karşılaştır
+     - Stats comparison
+     - API: GET /api/servers/compare?ids=1,2
+
+118. Trend Analizi
+     - Oyuncu sayısı trendleri
+     - Artış/azalış grafikleri
+     - API: GET /api/servers/{id}/trends
+
+119. Heat Map
+     - En yoğun saatleri göster
+     - 7x24 heat map
+     - API: GET /api/servers/{id}/heatmap
+
+120. Retention Rate
+     - Oyuncu geri dönüş oranı
+     - Sadakat analizi
+     - API: GET /api/servers/{id}/retention
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎁 BONUS ÖZELLİKLER (10 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+121. Event Scheduler
+     - Etkinlik zamanla
+     - "Cuma 21:00 Tournament"
+     - API: POST /api/servers/{id}/events
+
+122. Leaderboard
+     - Sunucu liderleri
+     - Top 10 players
+     - API: GET /api/servers/{id}/leaderboard
+
+123. Achievement System
+     - Oyunculara rozet ver
+     - "First Blood", "100 Kills"
+     - API: GET /api/achievements
+
+124. VIP Sistemi
+     - VIP oyunculara özel yetkiler
+     - VIP flags (abcde)
+     - API: POST /api/servers/{id}/vip
+
+125. Reklam Yönetimi
+     - MOTD'de reklam göster
+     - Rotasyon sistemi
+     - API: POST /api/servers/{id}/ads
+
+126. Donation Tracker
+     - Bağış takibi
+     - PayPal/Patreon entegrasyonu
+     - API: GET /api/donations
+
+127. Ticket System
+     - Kullanıcılar destek talebi açabilir
+     - Ticketing system
+     - API: POST /api/support/tickets
+
+128. FAQ Bölümü
+     - Sık sorulan sorular
+     - Kategorize edilmiş
+     - API: GET /api/support/faq
+
+129. Video Tutorials
+     - Nasıl kullanılır videoları
+     - YouTube embed
+     - API: GET /api/support/tutorials
+
+130. API Access
+     - Geliştiriciler için REST API
+     - API key sistemi
+     - Documentation: /api/docs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 YASAKLI ÖZELLİKLER - GÜVENLİK (5 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+131. Dosya İndirme ❌ YASAKLI
+     - Sunucu dosyalarını indirme yasak
+     - Güvenlik riski
+
+132. FTP/SSH Erişimi ❌ YASAKLI
+     - Direkt sunucu erişimi yok
+     - Sadece web panel
+
+133. System Komutları ❌ YASAKLI
+     - Linux komutları çalıştırılamaz
+     - rm, chmod, chown yasak
+
+134. Database Erişimi ❌ YASAKLI
+     - MySQL erişimi yok
+     - Sadece panel üzerinden
+
+135. Rate Ayarları Değiştirme ❌ YASAKLI
+     - Bandwidth sınırlarını aşamasın
+     - sv_maxrate kilitli
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎮 OYUN MODU ÖZELLİKLERİ (5 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+136. Mod Değiştirici
+     - Farklı modlar arası geçiş
+     - Public → CSDM → GunGame
+     - API: POST /api/servers/{id}/change-mode
+
+137. Mod Ayarları
+     - Her mod için özel ayarlar
+     - Mod-specific configs
+     - API: GET/PUT /api/servers/{id}/modes/{mode}/config
+
+138. Mod Zamanlayıcı
+     - Belirli saatlerde mod değiştir
+     - "21:00-23:00 GunGame"
+     - API: POST /api/servers/{id}/mode-scheduler
+
+139. Multi-Mod Desteği
+     - Aynı sunucuda birden fazla mod
+     - Round-based rotation
+     - API: POST /api/servers/{id}/multi-mode
+
+140. Custom Mod Yükleme
+     - Kendi modunu yükle
+     - ZIP paketi upload
+     - API: POST /api/servers/{id}/upload-custom-mod
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌐 ÇOK DİLLİ DESTEK (3 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+141. Türkçe Arayüz
+     - Tamamen Türkçe
+     - Default dil
+
+142. İngilizce Seçeneği
+     - Dil değiştirme
+     - i18n desteği
+     - API: PUT /api/users/preferences/language
+
+143. Çoklu Dil Admin
+     - Admin mesajları çok dilde
+     - Multi-lang.cfg
+     - API: GET /api/servers/{id}/languages
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 ÖDEME & PAKET YÖNETİMİ (7 MADDE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+144. Paket Yükseltme
+     - Daha fazla slot/kaynak al
+     - Upgrade paketi
+     - API: POST /api/billing/upgrade
+
+145. Ödeme Geçmişi
+     - Fatura geçmişi
+     - İnvoice listesi
+     - API: GET /api/billing/invoices
+
+146. Otomatik Yenileme
+     - Paket otomatik yenilensin
+     - Auto-renewal
+     - API: PUT /api/billing/auto-renew
+
+147. Kupon Kodu Kullanımı
+     - İndirim kuponu uygula
+     - Promo code
+     - API: POST /api/billing/apply-coupon
+
+148. Kredi Kartı Kaydetme
+     - Otomatik ödeme için kart kaydet
+     - Tokenization (güvenli)
+     - API: POST /api/billing/save-card
+
+149. Fatura İndirme
+     - PDF fatura al
+     - Invoice download
+     - API: GET /api/billing/invoices/{id}/pdf
+
+150. Bakiye Görüntüleme
+     - Kalan gün/kredi
+     - Expiry date
+     - API: GET /api/billing/balance
+
+================================================================================
+                            CLAUDE CODE TALİMATLARI
+================================================================================
+
+CLAUDE CODE'A GÖREV:
+Yukarıdaki 150 özelliği AGTR Merkezi v6.0 projesine entegre et.
+
+PROJE YAPISI:
+/var/www/agtrmerkezi/
+├── app/
+│   ├── api/
+│   │   ├── servers.py          ← Sunucu kontrol endpoints
+│   │   ├── rcon.py             ← RCON endpoints
+│   │   ├── players.py          ← Oyuncu yönetimi
+│   │   ├── admins.py           ← Admin yönetimi
+│   │   ├── plugins.py          ← Plugin yönetimi
+│   │   ├── files.py            ← Dosya yönetimi
+│   │   ├── stats.py            ← İstatistikler
+│   │   ├── maps.py             ← Map yönetimi
+│   │   ├── notifications.py    ← Bildirimler
+│   │   └── backups.py          ← Yedekleme
+│   ├── models/
+│   │   ├── server.py
+│   │   ├── player.py
+│   │   ├── admin.py
+│   │   └── plugin.py
+│   ├── services/
+│   │   ├── server_manager.py   ← Screen session yönetimi
+│   │   ├── rcon_service.py     ← RCON client
+│   │   ├── a2s_service.py      ← Server query
+│   │   └── backup_service.py   ← Backup logic
+│   ├── tasks/
+│   │   ├── monitoring.py       ← Healthcheck tasks
+│   │   ├── backup_tasks.py     ← Scheduled backups
+│   │   └── notifications.py    ← Alert tasks
+│   └── main.py
+├── templates/
+│   ├── admin/
+│   │   ├── server_control.html  ← Ana kontrol paneli
+│   │   ├── rcon_console.html    ← RCON konsol
+│   │   ├── player_management.html
+│   │   ├── admin_management.html
+│   │   ├── plugin_manager.html
+│   │   └── stats_dashboard.html
+│   └── user/
+│       └── dashboard.html
+└── static/
+    ├── css/
+    ├── js/
+    └── icons/
+
+TEKNOLOJILER:
+- Backend: FastAPI + Python 3.13
+- Database: MySQL (SQLAlchemy ORM)
+- Background Tasks: Celery + Redis
+- Real-time: WebSocket
+- Server Query: python-a2s
+- Process Monitoring: psutil
+- Rate Limiting: slowapi + Redis
+- Scheduling: APScheduler
+
+KURULUM GEREKSİNİMLERİ:
+pip install python-a2s psutil slowapi redis apscheduler celery flower
+
+ÖNCELİK SIRASI:
+
+🔴 FASE 1 - KRİTİK (1-2 Hafta):
+1-10:   Sunucu kontrol (start/stop/restart/status)
+11-18:  RCON & Canlı Chat
+19-26:  Oyuncu yönetimi (kick/ban)
+27-34:  Admin yönetimi
+35-43:  Plugin yönetimi
+
+🟡 FASE 2 - ÖNEMLİ (1 Hafta):
+44-50:  Dosya yönetimi (kısıtlı)
+51-58:  İstatistikler & raporlama
+59-68:  server.cfg yönetimi
+69-74:  Map yönetimi
+
+🟢 FASE 3 - EK ÖZELLİKLER (1-2 Hafta):
+75-80:  Bildirimler
+81-87:  Yedekleme
+88-92:  Özelleştirme
+93-98:  Güvenlik
+99-105: UX iyileştirmeleri
+
+🎁 FASE 4 - BONUS (Gelecek):
+106-150: Gelişmiş özellikler
+
+KOD STANDARTLARI:
+- Async/await kullan
+- Type hints ekle
+- Docstring yaz
+- Error handling yap
+- Logging ekle
+- Rate limiting uygula
+- Security best practices
+
+ÖRNEKLENDİRME (Özellik #1 - Sunucu Başlatma):
+
+# app/api/servers.py
+from fastapi import APIRouter, HTTPException
+import subprocess
+
+router = APIRouter()
+
+@router.post("/api/servers/{server_id}/start")
+async def start_server(server_id: int):
+    """
+    Sunucuyu başlat
+    """
+    server = await get_server(server_id)
+    
+    if server.status == "online":
+        raise HTTPException(400, "Sunucu zaten çalışıyor")
+    
+    screen_name = f"agtr_server_{server_id}"
+    server_path = f"/home/gameservers/server_{server_id}"
+    
+    cmd = f"""
+    screen -dmS {screen_name} bash -c '
+        cd {server_path}
+        ./hlds_run -game valve +maxplayers {server.max_players} +map crossfire +port {server.port}
+    '
+    """
+    
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    
+    if result.returncode == 0:
+        await update_server_status(server_id, "online")
+        return {"status": "success", "message": "Sunucu başlatıldı"}
+    else:
+        raise HTTPException(500, f"Başlatma hatası: {result.stderr}")
+
+CLAUDE CODE YAPACAKLAR:
+
+1. Her özellik için API endpoint oluştur
+2. Frontend HTML/JS ekle
+3. Database modelleri güncelle
+4. Service layer'ları oluştur
+5. Celery tasks ekle (background jobs)
+6. WebSocket handlers yaz
+7. Rate limiting ekle
+8. Security kontrollerini uygula
+9. Unit testler yaz (pytest)
+10. API documentation güncelle (/docs)
+
+DOSYA GÜVENLİĞİ:
+- ❌ Dosya indirme yasak
+- ❌ FTP/SSH erişimi yasak
+- ✅ Sadece görüntüleme izni
+- ✅ Kısıtlı düzenleme (server.cfg için whitelist)
+
+RATE LİMİTİNG:
+- Start/Stop/Restart: 5/dakika
+- RCON: 20/dakika
+- Query (status): 60/dakika
+- Upload: 10/saat
+
+GÜVENLİK:
+- CSRF koruması
+- XSS prevention
+- SQL injection koruması
+- Input validation
+- Sanitization
+
+API DOKÜMANTASYONU:
+Her endpoint için Swagger/OpenAPI dökümantasyonu ekle:
+- Request/Response örnekleri
+- Error kodları
+- Rate limit bilgisi
+- Authentication gereksinimleri
+
+TEST SENARYOLARI:
+- Unit tests (pytest)
+- Integration tests
+- Load tests (locust)
+- Security tests
+
+DEPLOYMENT:
+- Systemd service
+- Nginx reverse proxy
+- SSL/TLS (Let's Encrypt)
+- Gunicorn/Uvicorn workers
+
+MONİTORİNG:
+- Prometheus metrics
+- Grafana dashboards
+- Sentry error tracking
+- Log aggregation
+
+================================================================================
+                              API ENDPOINT LİSTESİ
+================================================================================
+
+SUNUCU KONTROL:
+POST   /api/servers/{id}/start
+POST   /api/servers/{id}/stop
+POST   /api/servers/{id}/restart
+GET    /api/servers/{id}/status
+POST   /api/servers/{id}/auto-restart/enable
+POST   /api/servers/{id}/scheduled-restart
+POST   /api/servers/{id}/clone
+DELETE /api/servers/{id}
+POST   /api/servers/{id}/freeze
+POST   /api/servers/{id}/transfer
+
+RCON & CHAT:
+WS     /ws/servers/{id}/chat
+POST   /api/servers/{id}/chat/send
+POST   /api/servers/{id}/rcon
+GET    /api/servers/{id}/rcon/history
+POST   /api/servers/{id}/rcon/favorites
+GET    /api/rcon/templates
+POST   /api/servers/bulk-rcon
+POST   /api/servers/{id}/rcon/scheduled
+
+OYUNCU YÖNETİMİ:
+GET    /api/servers/{id}/players
+POST   /api/servers/{id}/players/{steamid}/kick
+POST   /api/servers/{id}/players/{steamid}/ban
+GET    /api/servers/{id}/bans
+DELETE /api/servers/{id}/bans/{ban_id}
+GET    /api/servers/{id}/players/{steamid}/stats
+GET    /api/players/search?q={query}
+POST   /api/players/{steamid}/notes
+
+ADMİN YÖNETİMİ:
+POST   /api/servers/{id}/admins
+DELETE /api/servers/{id}/admins/{steamid}
+POST   /api/servers/{id}/admins/{steamid}/level
+PUT    /api/servers/{id}/admins/{steamid}/flags
+POST   /api/servers/{id}/admins/{steamid}/temporary
+GET    /api/servers/{id}/admins
+GET    /api/servers/{id}/admin-logs
+GET    /api/servers/{id}/admin-stats
+
+PLUGIN YÖNETİMİ:
+GET    /api/servers/{id}/plugins
+PUT    /api/servers/{id}/plugins/{name}/toggle
+POST   /api/servers/{id}/plugins/upload
+DELETE /api/servers/{id}/plugins/{name}
+GET    /api/servers/{id}/plugins/{name}/config
+PUT    /api/servers/{id}/plugins/{name}/config
+GET    /api/servers/{id}/plugins/{name}/info
+GET    /api/plugin-market
+GET    /api/plugin-market/categories
+GET    /api/servers/{id}/plugins/updates
+
+DOSYA YÖNETİMİ:
+GET    /api/servers/{id}/files
+GET    /api/servers/{id}/logs
+GET    /api/servers/{id}/config
+PUT    /api/servers/{id}/config
+GET    /api/servers/{id}/maps
+POST   /api/servers/{id}/changemap
+GET    /api/servers/{id}/mapcycle
+PUT    /api/servers/{id}/mapcycle
+GET    /api/servers/{id}/motd
+PUT    /api/servers/{id}/motd
+
+İSTATİSTİKLER:
+GET    /api/servers/{id}/stats/players-graph
+GET    /api/servers/{id}/reports?period=weekly
+GET    /api/servers/{id}/stats/popular-maps
+GET    /api/servers/{id}/stats/peak-hours
+GET    /api/servers/{id}/stats/resources
+GET    /api/servers/{id}/stats/network
+GET    /api/servers/{id}/stats/uptime
+GET    /api/servers/{id}/stats/crashes
+
+CONFIG YÖNETİMİ:
+PUT    /api/servers/{id}/config/hostname
+PUT    /api/servers/{id}/config/password
+PUT    /api/servers/{id}/config/rcon-password
+PUT    /api/servers/{id}/config/maxplayers
+PUT    /api/servers/{id}/config/gravity
+PUT    /api/servers/{id}/config/friendlyfire
+
+MAP YÖNETİMİ:
+POST   /api/servers/{id}/maps/upload
+DELETE /api/servers/{id}/maps/{mapname}
+GET    /api/servers/{id}/maps/{mapname}/preview
+PUT    /api/servers/{id}/maps/{mapname}/category
+GET    /api/map-library
+POST   /api/servers/{id}/maps/upload-pack
+
+BİLDİRİMLER:
+POST   /api/users/notifications/email
+POST   /api/users/notifications/discord
+POST   /api/users/notifications/sms
+POST   /api/users/notifications/push
+POST   /api/telegram/webhook
+POST   /api/users/alert-rules
+
+YEDEKLEME:
+POST   /api/servers/{id}/backups/auto-enable
+POST   /api/servers/{id}/backups/create
+GET    /api/servers/{id}/backups
+POST   /api/servers/{id}/backups/{backup_id}/restore
+DELETE /api/servers/{id}/backups/{backup_id}
+POST   /api/servers/{id}/backups/{backup_id}/upload-cloud
+
+ÖZELLEŞTİRME:
+POST   /api/servers/{id}/icon
+PUT    /api/servers/{id}/color
+PUT    /api/servers/{id}/notes
+POST   /api/servers/{id}/tags
+POST   /api/users/favorites/{server_id}
+
+GÜVENLİK:
+POST   /api/auth/2fa/enable
+POST   /api/users/ip-whitelist
+GET    /api/users/sessions
+DELETE /api/users/sessions/{session_id}
+POST   /api/users/change-password
+GET    /api/users/login-history
+
+KULLANICI DENEYİMİ:
+PUT    /api/users/preferences/theme
+GET    /api/servers?search={query}
+GET    /api/servers?sort=players&order=desc
+POST   /api/servers/bulk-action
+
+GELİŞMİŞ:
+POST   /api/servers/create-from-template
+POST   /api/servers/{id}/install-mod
+GET    /api/servers/{id}/plugins/conflicts
+GET    /api/servers/{id}/performance
+POST   /api/servers/{id}/analyze-logs
+POST   /api/steam/validate/{steamid}
+POST   /api/servers/{id}/whitelist/enable
+PUT    /api/servers/{id}/reserved-slots
+POST   /api/servers/{id}/update
+
+ANALİTİK:
+GET    /api/servers/compare?ids=1,2
+GET    /api/servers/{id}/trends
+GET    /api/servers/{id}/heatmap
+GET    /api/servers/{id}/retention
+
+BONUS:
+POST   /api/servers/{id}/events
+GET    /api/servers/{id}/leaderboard
+GET    /api/achievements
+POST   /api/servers/{id}/vip
+POST   /api/servers/{id}/ads
+GET    /api/donations
+POST   /api/support/tickets
+GET    /api/support/faq
+GET    /api/support/tutorials
+
+OYUN MODU:
+POST   /api/servers/{id}/change-mode
+GET    /api/servers/{id}/modes/{mode}/config
+PUT    /api/servers/{id}/modes/{mode}/config
+POST   /api/servers/{id}/mode-scheduler
+POST   /api/servers/{id}/multi-mode
+POST   /api/servers/{id}/upload-custom-mod
+
+DİL:
+PUT    /api/users/preferences/language
+GET    /api/servers/{id}/languages
+
+ÖDEME:
+POST   /api/billing/upgrade
+GET    /api/billing/invoices
+PUT    /api/billing/auto-renew
+POST   /api/billing/apply-coupon
+POST   /api/billing/save-card
+GET    /api/billing/invoices/{id}/pdf
+GET    /api/billing/balance
+
+================================================================================
+                                  NOT
+================================================================================
+
+Bu dokümanda toplam 150 özellik listelenmiştir.
+Her özellik için API endpoint, frontend component ve backend logic gereklidir.
+
+Claude Code bu özellikleri sırasıyla implement edecek:
+1. FASE 1 (Kritik) → 1-43 arası özellikler
+2. FASE 2 (Önemli) → 44-74 arası özellikler
+3. FASE 3 (Ek) → 75-105 arası özellikler
+4. FASE 4 (Bonus) → 106-150 arası özellikler
+
+Her özellik için:
+- Backend API endpoint
+- Frontend HTML/JS
+- Database migration (gerekirse)
+- Unit tests
+- API documentation
+
+hazırlanacak.
+
+Güvenlik önceliktir:
+- Rate limiting
+- Input validation
+- CSRF protection
+- XSS prevention
+- SQL injection koruması
+
+Performans önemlidir:
+- Caching (Redis)
+- Background tasks (Celery)
+- WebSocket (real-time)
+- Database optimization
+
+Kullanıcı deneyimi kritiktir:
+- Responsive design
+- Loading states
+- Error messages
+- Success notifications
+
+================================================================================
+                    KULLANICI-SUNUCU YÖNETİMİ SİSTEMİ
+================================================================================
+
+KULLANICI SATIN ALMA & SUNUCU SAHİPLİĞİ:
+
+📌 DATABASE YAPISI:
+
+users tablosu:
+- id (PRIMARY KEY)
+- username
+- email
+- password_hash
+- role (admin, user)
+- balance (kredi)
+- created_at
+- last_login
+
+game_servers tablosu:
+- id (PRIMARY KEY) ← BENZERSIZ SERVER ID
+- user_id (FOREIGN KEY → users.id)
+- package_id (FOREIGN KEY → packages.id)
+- server_name
+- host (185.171.25.138)
+- port (27015, 27016, 27017...)
+- rcon_password
+- status (pending, installing, online, offline, suspended, expired)
+- max_players (pakete göre: 16, 32, 64)
+- installed_at
+- expires_at
+- auto_renew (True/False)
+- created_at
+
+packages tablosu:
+- id (PRIMARY KEY)
+- name ("Bronz 16 Slot", "Gümüş 32 Slot", "Altın 64 Slot")
+- max_players (16, 32, 64)
+- disk_space (5000 MB, 10000 MB, 15000 MB)
+- ram (512 MB, 1024 MB, 2048 MB)
+- price_monthly (50 TL, 100 TL, 150 TL)
+- features (JSON: {"auto_backup": true, "plugin_upload": true})
+
+server_ownership_history tablosu (transfer takibi):
+- id
+- server_id
+- old_user_id
+- new_user_id
+- transferred_at
+- reason
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔐 KULLANICI YETKİ SİSTEMİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+KULLANICI SADECENİN SUNUCULARINI GÖREBİLİR:
+
+# API Endpoint
+@router.get("/api/users/my-servers")
+async def get_my_servers(current_user: User = Depends(get_current_user)):
+    """
+    Kullanıcının satın aldığı sunucuları getir
+    """
+    servers = await db.execute(
+        select(GameServer).where(
+            GameServer.user_id == current_user.id,
+            GameServer.status != 'deleted'
+        )
+    )
+    
+    return {
+        "total": len(servers),
+        "servers": [
+            {
+                "id": s.id,
+                "name": s.server_name,
+                "status": s.status,
+                "players": f"{s.current_players}/{s.max_players}",
+                "expires_at": s.expires_at,
+                "days_left": (s.expires_at - datetime.now()).days
+            }
+            for s in servers
+        ]
+    }
+
+# Sunucu erişim kontrolü
+@router.get("/api/servers/{server_id}")
+async def get_server(
+    server_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Sunucu detaylarını getir
+    ⚠️ Sadece sahibi erişebilir
+    """
+    server = await db.get(GameServer, server_id)
+    
+    if not server:
+        raise HTTPException(404, "Sunucu bulunamadı")
+    
+    # YETKİ KONTROLÜ
+    if server.user_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(403, "Bu sunucuya erişim yetkiniz yok")
+    
+    return server
+
+# Toplu işlemler için kontrol
+@router.post("/api/servers/bulk-action")
+async def bulk_action(
+    server_ids: List[int],
+    action: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Birden fazla sunucuya işlem yap
+    ⚠️ Sadece kendi sunucularına
+    """
+    servers = await db.execute(
+        select(GameServer).where(
+            GameServer.id.in_(server_ids)
+        )
+    )
+    
+    # YETKİ KONTROLÜ
+    for server in servers:
+        if server.user_id != current_user.id and current_user.role != "admin":
+            raise HTTPException(403, f"Server #{server.id} erişim yetkiniz yok")
+    
+    # İşlem yap
+    ...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🆔 SUNUCU ID SİSTEMİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BENZERSIZ ID OLUŞTURMA:
+
+1. AUTO_INCREMENT (MySQL):
+   - id: 1, 2, 3, 4, 5...
+   - Basit ama tahmin edilebilir
+
+2. UUID (Önerilen):
+   - id: "550e8400-e29b-41d4-a716-446655440000"
+   - Tamamen benzersiz
+   - Tahmin edilemez
+
+3. CUSTOM ID (AGTR Formatı):
+   - id: "AGTR-2026-00001"
+   - prefix: AGTR
+   - year: 2026
+   - sequence: 00001
+
+ÖNERİLEN YÖNTEM (Hybrid):
+- database_id (AUTO_INCREMENT): 1, 2, 3... → Internal kullanım
+- server_uuid (UUID): "550e8400-..." → External kullanım
+- server_code (Custom): "AGTR-2026-00001" → Kullanıcı dostu
+
+# Model
+class GameServer(Base):
+    __tablename__ = "game_servers"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
+    server_code = Column(String(20), unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    ...
+
+# ID Oluşturma
+def generate_server_code():
+    """
+    AGTR-2026-00001 formatında ID oluştur
+    """
+    year = datetime.now().year
+    
+    # Son server numarasını al
+    last_server = db.execute(
+        select(GameServer)
+        .where(GameServer.server_code.like(f"AGTR-{year}-%"))
+        .order_by(GameServer.id.desc())
+    ).first()
+    
+    if last_server:
+        last_num = int(last_server.server_code.split("-")[-1])
+        new_num = last_num + 1
+    else:
+        new_num = 1
+    
+    return f"AGTR-{year}-{new_num:05d}"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🐛 BUG KONTROL & HATA YÖNETİMİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+KATMANLI HATA KONTROLÜ:
+
+1. DATABASE SEVİYESİNDE:
+   - UNIQUE constraints (id, uuid, server_code, port)
+   - FOREIGN KEY constraints (user_id → users.id)
+   - CHECK constraints (max_players > 0, port BETWEEN 27000 AND 28000)
+
+CREATE TABLE game_servers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    uuid VARCHAR(36) UNIQUE NOT NULL,
+    server_code VARCHAR(20) UNIQUE NOT NULL,
+    user_id INT NOT NULL,
+    port INT UNIQUE NOT NULL CHECK (port BETWEEN 27000 AND 28000),
+    max_players INT CHECK (max_players > 0),
+    status ENUM('pending', 'installing', 'online', 'offline', 'suspended', 'expired'),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+2. API SEVİYESİNDE:
+   - Input validation (Pydantic models)
+   - Authorization checks
+   - Rate limiting
+   - Error logging
+
+# Pydantic validation
+from pydantic import BaseModel, validator, Field
+
+class ServerCreateRequest(BaseModel):
+    server_name: str = Field(..., min_length=3, max_length=64)
+    package_id: int = Field(..., gt=0)
+    
+    @validator('server_name')
+    def validate_server_name(cls, v):
+        # Sadece alfanumerik ve boşluk
+        if not re.match(r'^[a-zA-Z0-9\s]+$', v):
+            raise ValueError('Sunucu adı sadece harf ve rakam içerebilir')
+        
+        # Küfür filtresi
+        bad_words = ['küfür1', 'küfür2']
+        if any(word in v.lower() for word in bad_words):
+            raise ValueError('Sunucu adı uygunsuz kelime içeriyor')
+        
+        return v
+
+3. SERVİS SEVİYESİNDE:
+   - Business logic validation
+   - Resource availability check
+   - Conflict detection
+
+async def create_server(user_id: int, package_id: int, server_name: str):
+    """
+    Sunucu oluştur (tam kontrol)
+    """
+    # 1. Kullanıcı var mı?
+    user = await db.get(User, user_id)
+    if not user:
+        raise ValueError("Kullanıcı bulunamadı")
+    
+    # 2. Paket var mı?
+    package = await db.get(Package, package_id)
+    if not package:
+        raise ValueError("Paket bulunamadı")
+    
+    # 3. Kullanıcının aktif sunucu limiti?
+    active_servers = await db.execute(
+        select(func.count()).where(
+            GameServer.user_id == user_id,
+            GameServer.status.in_(['online', 'offline', 'installing'])
+        )
+    ).scalar()
+    
+    if active_servers >= user.max_servers:
+        raise ValueError(f"Maksimum {user.max_servers} sunucu limiti aşıldı")
+    
+    # 4. Kullanıcının bakiyesi yeterli mi?
+    if user.balance < package.price_monthly:
+        raise ValueError("Yetersiz bakiye")
+    
+    # 5. Aynı isimde sunucu var mı?
+    existing = await db.execute(
+        select(GameServer).where(
+            GameServer.server_name == server_name,
+            GameServer.user_id == user_id
+        )
+    ).first()
+    
+    if existing:
+        raise ValueError("Bu isimde bir sunucunuz zaten var")
+    
+    # 6. Boş port bul
+    port = await find_available_port()
+    if not port:
+        raise ValueError("Uygun port bulunamadı")
+    
+    # 7. Disk alanı yeterli mi?
+    total_disk = await get_total_disk_usage()
+    if total_disk + package.disk_space > MAX_TOTAL_DISK:
+        raise ValueError("Sunucu disk alanı dolu")
+    
+    # ✅ OLUŞTUR
+    server = GameServer(
+        uuid=str(uuid.uuid4()),
+        server_code=generate_server_code(),
+        user_id=user_id,
+        package_id=package_id,
+        server_name=server_name,
+        port=port,
+        max_players=package.max_players,
+        status='pending'
+    )
+    
+    db.add(server)
+    await db.commit()
+    
+    # Background task başlat
+    install_server_task.delay(server.id)
+    
+    return server
+
+4. TRANSACTION YÖNETİMİ:
+   - Atomik işlemler
+   - Rollback on error
+
+async def purchase_and_create_server(user_id: int, package_id: int):
+    """
+    Satın alma + Sunucu oluşturma (atomik)
+    """
+    async with db.begin():  # Transaction başlat
+        try:
+            # 1. Bakiyeyi düş
+            user = await db.get(User, user_id, with_for_update=True)
+            user.balance -= package.price_monthly
+            
+            # 2. Invoice oluştur
+            invoice = Invoice(
+                user_id=user_id,
+                amount=package.price_monthly,
+                description=f"Server purchase - {package.name}"
+            )
+            db.add(invoice)
+            
+            # 3. Sunucu oluştur
+            server = await create_server(user_id, package_id, server_name)
+            
+            # ✅ Commit (hepsi başarılı)
+            await db.commit()
+            
+            return server
+            
+        except Exception as e:
+            # ❌ Rollback (herhangi biri başarısız)
+            await db.rollback()
+            raise
+
+5. LOG & MONİTORİNG:
+   - Structured logging
+   - Sentry error tracking
+   - Audit trail
+
+import logging
+import structlog
+
+logger = structlog.get_logger()
+
+async def create_server(...):
+    logger.info(
+        "server_creation_started",
+        user_id=user_id,
+        package_id=package_id,
+        server_name=server_name
+    )
+    
+    try:
+        server = ...
+        
+        logger.info(
+            "server_creation_success",
+            server_id=server.id,
+            server_code=server.server_code,
+            port=server.port
+        )
+        
+        return server
+        
+    except Exception as e:
+        logger.error(
+            "server_creation_failed",
+            user_id=user_id,
+            error=str(e),
+            exc_info=True
+        )
+        raise
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 SUNUCU KURULUM SÜRECİ (ARKA PLAN)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ADIM ADIM SERVER KURULUM PLANI:
+
+┌─────────────────────────────────────────────────────────────────┐
+│ KULLANICI SATIN ALMA FORMU DOLDURUR                            │
+│ ↓                                                                │
+│ API: POST /api/billing/purchase-server                          │
+│ - package_id: 1 (Bronz 16 Slot)                                │
+│ - server_name: "AGTR Public #1"                                │
+│ - payment_method: "credit_card"                                 │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ BACKEND İŞLEMLERİ (Senkron)                                     │
+│                                                                  │
+│ 1. ✅ Kullanıcı doğrulama                                        │
+│ 2. ✅ Paket kontrolü                                             │
+│ 3. ✅ Bakiye kontrolü                                            │
+│ 4. ✅ Port bulma (27015, 27016...)                              │
+│ 5. ✅ Sunucu kaydı oluştur (status: "pending")                  │
+│ 6. ✅ Ödeme işlemi                                               │
+│ 7. ✅ Invoice kaydet                                             │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ CELERY TASK BAŞLAT (Asenkron)                                   │
+│                                                                  │
+│ install_server_task.delay(server_id=123)                        │
+│                                                                  │
+│ ⚠️ Kullanıcıya mesaj: "Sunucunuz kuruluyor... (5-10 dakika)"   │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ ARKA PLAN KURULUM SÜRECİ (Celery Worker)                        │
+│                                                                  │
+│ ADIM 1: Dizin Oluşturma (10 saniye)                            │
+│ ─────────────────────────────────────────────────────────────   │
+│ $ mkdir -p /home/gameservers/server_123                         │
+│ $ cd /home/gameservers/server_123                               │
+│ Status → "installing" (0%)                                      │
+│                                                                  │
+│ ADIM 2: SteamCMD ile HLDS İndirme (3-5 dakika)                 │
+│ ─────────────────────────────────────────────────────────────   │
+│ $ /home/steamcmd/steamcmd.sh \                                  │
+│     +force_install_dir /home/gameservers/server_123 \          │
+│     +login anonymous \                                           │
+│     +app_update 90 validate \                                   │
+│     +quit                                                        │
+│ Status → "installing" (30%)                                     │
+│                                                                  │
+│ ADIM 3: AMXX Kurulumu (1 dakika)                                │
+│ ─────────────────────────────────────────────────────────────   │
+│ $ wget https://www.amxmodx.org/amxxdrop/1.10/amxmodx-latest.zip│
+│ $ unzip -o amxmodx-latest.zip -d valve/                        │
+│ Status → "installing" (50%)                                     │
+│                                                                  │
+│ ADIM 4: Config Dosyaları Oluşturma (30 saniye)                 │
+│ ─────────────────────────────────────────────────────────────   │
+│ • server.cfg (hostname, rcon_password, maxplayers)             │
+│ • mapcycle.txt (de_dust2, de_inferno...)                       │
+│ • users.ini (admin listesi - boş)                              │
+│ • plugins.ini (default plugins)                                │
+│ Status → "installing" (70%)                                     │
+│                                                                  │
+│ ADIM 5: Varsayılan Pluginler (30 saniye)                       │
+│ ─────────────────────────────────────────────────────────────   │
+│ $ cp /templates/plugins/*.amxx valve/addons/amxmodx/plugins/   │
+│ Plugins: adminhelp, mapchooser, admincmd, statsme              │
+│ Status → "installing" (85%)                                     │
+│                                                                  │
+│ ADIM 6: İlk Başlatma Testi (1 dakika)                          │
+│ ─────────────────────────────────────────────────────────────   │
+│ $ screen -dmS agtr_server_123 bash -c \                        │
+│     './hlds_run -game valve +maxplayers 16 +map crossfire \    │
+│      +port 27015 -nomaster'                                     │
+│ $ sleep 30  # Başlamasını bekle                                 │
+│ $ rcon status  # Test                                           │
+│ $ screen -S agtr_server_123 -X quit  # Durdur                  │
+│ Status → "installing" (95%)                                     │
+│                                                                  │
+│ ADIM 7: Database Güncelleme (5 saniye)                         │
+│ ─────────────────────────────────────────────────────────────   │
+│ UPDATE game_servers SET                                         │
+│   status = 'offline',                                           │
+│   installed_at = NOW()                                          │
+│ WHERE id = 123;                                                 │
+│ Status → "offline" (100%)                                       │
+│                                                                  │
+│ ✅ KURULUM TAMAMLANDI!                                          │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ BİLDİRİM GÖNDER                                                 │
+│                                                                  │
+│ • Email: "Sunucunuz hazır! AGTR-2026-00123"                    │
+│ • Web Push: "Server kurulumu tamamlandı"                       │
+│ • Database: notifications tablosuna ekle                        │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ KULLANICI PANELİ                                                │
+│                                                                  │
+│ Sunucunuz: AGTR-2026-00123                                      │
+│ Durum: ⚫ OFFLINE                                                │
+│ [▶️ BAŞLAT] butonu aktif                                        │
+└─────────────────────────────────────────────────────────────────┘
+
+CELERY TASK KODU:
+
+# app/tasks/server_installation.py
+from celery import Task
+import subprocess
+import os
+
+@celery_app.task(bind=True, max_retries=3)
+def install_server_task(self, server_id: int):
+    """
+    Sunucu kurulum görevi
+    """
+    try:
+        # Server bilgilerini al
+        server = db.get(GameServer, server_id)
+        server.status = "installing"
+        server.installation_progress = 0
+        db.commit()
+        
+        base_path = f"/home/gameservers/server_{server_id}"
+        
+        # ADIM 1: Dizin oluştur
+        logger.info(f"Creating directory: {base_path}")
+        os.makedirs(base_path, exist_ok=True)
+        server.installation_progress = 10
+        db.commit()
+        
+        # ADIM 2: SteamCMD ile HLDS indir
+        logger.info(f"Downloading HLDS via SteamCMD")
+        result = subprocess.run([
+            "/home/steamcmd/steamcmd.sh",
+            "+force_install_dir", base_path,
+            "+login", "anonymous",
+            "+app_update", "90", "validate",
+            "+quit"
+        ], capture_output=True, text=True, timeout=600)
+        
+        if result.returncode != 0:
+            raise Exception(f"SteamCMD failed: {result.stderr}")
+        
+        server.installation_progress = 40
+        db.commit()
+        
+        # ADIM 3: AMXX kur
+        logger.info(f"Installing AMX Mod X")
+        subprocess.run([
+            "wget", "-O", f"{base_path}/amxx.zip",
+            "https://www.amxmodx.org/amxxdrop/1.10/amxmodx-latest-base-linux.tar.gz"
+        ], check=True)
+        
+        subprocess.run([
+            "tar", "-xzf", f"{base_path}/amxx.zip",
+            "-C", f"{base_path}/valve/"
+        ], check=True)
+        
+        server.installation_progress = 60
+        db.commit()
+        
+        # ADIM 4: Config dosyaları
+        logger.info(f"Creating config files")
+        create_server_cfg(server_id, server.server_name, server.rcon_password, server.max_players, server.port)
+        create_mapcycle_txt(server_id)
+        create_users_ini(server_id)
+        create_plugins_ini(server_id)
+        
+        server.installation_progress = 80
+        db.commit()
+        
+        # ADIM 5: Default plugins
+        logger.info(f"Installing default plugins")
+        copy_default_plugins(server_id)
+        
+        server.installation_progress = 90
+        db.commit()
+        
+        # ADIM 6: Test başlatma
+        logger.info(f"Testing server startup")
+        test_result = test_server_startup(server_id, server.port)
+        
+        if not test_result:
+            raise Exception("Server startup test failed")
+        
+        # ADIM 7: Tamamlandı
+        server.status = "offline"
+        server.installation_progress = 100
+        server.installed_at = datetime.now()
+        db.commit()
+        
+        # Bildirim gönder
+        send_notification(
+            user_id=server.user_id,
+            title="Sunucu Kurulumu Tamamlandı",
+            message=f"Sunucunuz {server.server_code} kullanıma hazır!",
+            type="success"
+        )
+        
+        logger.info(f"Server {server_id} installation completed successfully")
+        
+    except Exception as e:
+        logger.error(f"Server {server_id} installation failed: {str(e)}")
+        
+        # Retry (max 3 kez)
+        if self.request.retries < self.max_retries:
+            raise self.retry(exc=e, countdown=60)  # 60 saniye sonra tekrar dene
+        
+        # Max retry aşıldı, başarısız olarak işaretle
+        server.status = "failed"
+        server.installation_error = str(e)
+        db.commit()
+        
+        # Hata bildirimi
+        send_notification(
+            user_id=server.user_id,
+            title="Sunucu Kurulumu Başarısız",
+            message=f"Sunucunuz {server.server_code} kurulamadı. Destek ekibiyle iletişime geçin.",
+            type="error"
+        )
+
+HELPER FONKSİYONLAR:
+
+def create_server_cfg(server_id, hostname, rcon_password, max_players, port):
+    """server.cfg oluştur"""
+    content = f"""
+// Server Info
+hostname "{hostname}"
+rcon_password "{rcon_password}"
+sv_password ""
+
+// Server Settings
+maxplayers {max_players}
+sv_lan 0
+sv_region 3
+
+// Network Settings (KİLİTLİ - Kullanıcı değiştiremez)
+sv_maxrate 25000
+sv_minrate 5000
+sv_maxupdaterate 101
+sv_minupdaterate 10
+
+// Game Settings
+mp_friendlyfire 0
+mp_autoteambalance 1
+mp_autokick 1
+mp_timelimit 30
+mp_roundtime 5
+
+// AMX Mod X
+amx_show_activity 2
+amx_client_languages 1
+"""
+    
+    path = f"/home/gameservers/server_{server_id}/valve/server.cfg"
+    with open(path, 'w') as f:
+        f.write(content)
+
+def create_mapcycle_txt(server_id):
+    """mapcycle.txt oluştur"""
+    maps = [
+        "crossfire", "boot_camp", "datacore", "stalkyard",
+        "lambda_bunker", "undertow", "bounce", "gasworks"
+    ]
+    
+    path = f"/home/gameservers/server_{server_id}/valve/mapcycle.txt"
+    with open(path, 'w') as f:
+        f.write('\n'.join(maps))
+
+def test_server_startup(server_id, port):
+    """Sunucuyu test başlat"""
+    try:
+        # Başlat
+        screen_name = f"agtr_server_{server_id}"
+        cmd = f"""
+        screen -dmS {screen_name} bash -c '
+            cd /home/gameservers/server_{server_id}
+            ./hlds_run -game valve +maxplayers 16 +map crossfire +port {port} -nomaster
+        '
+        """
+        subprocess.run(cmd, shell=True, check=True)
+        
+        # 30 saniye bekle
+        time.sleep(30)
+        
+        # RCON ile test
+        import a2s
+        info = a2s.info(("127.0.0.1", port), timeout=5.0)
+        
+        # Durdur
+        subprocess.run(f"screen -S {screen_name} -X quit", shell=True)
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Startup test failed: {str(e)}")
+        return False
+
+REAL-TIME İLERLEME TAKIBI (WebSocket):
+
+# Frontend
+const ws = new WebSocket(`ws://agtrmerkezi.com/ws/server-installation/${serverId}`);
+
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    // Progress bar güncelle
+    document.getElementById('progress-bar').style.width = data.progress + '%';
+    document.getElementById('progress-text').textContent = data.message;
+    
+    if (data.progress === 100) {
+        // Tamamlandı
+        showSuccessMessage("Sunucunuz hazır!");
+        setTimeout(() => location.reload(), 2000);
+    }
+};
+
+# Backend WebSocket
+@app.websocket("/ws/server-installation/{server_id}")
+async def installation_progress(websocket: WebSocket, server_id: int):
+    await websocket.accept()
+    
+    while True:
+        server = await db.get(GameServer, server_id)
+        
+        await websocket.send_json({
+            "progress": server.installation_progress,
+            "status": server.status,
+            "message": get_installation_step_message(server.installation_progress)
+        })
+        
+        if server.status in ['offline', 'failed']:
+            break
+        
+        await asyncio.sleep(2)  # Her 2 saniyede bir güncelle
+
+HATA SENARYOLARI & ÇÖZÜMLER:
+
+1. SteamCMD Hatası:
+   → Retry 3 kez
+   → Başarısız olursa admin bilgilendir
+
+2. Disk Dolması:
+   → Kullanıcıya "Sunucu kapasitesi dolu" mesajı
+   → Para iadesi yap
+
+3. Port Çakışması:
+   → Otomatik başka port bul
+   → Database güncelle
+
+4. AMXX İndirilemiyor:
+   → Local backup'tan yükle (/templates/amxx.zip)
+
+5. Server Başlamıyor:
+   → Logları analiz et
+   → Destek ekibine ticket aç
+
+PERFORMANS:
+- Paralel kurulum: Max 3 sunucu aynı anda
+- Celery worker sayısı: 4
+- Her kurulum: ~5-10 dakika
+- Başarı oranı: %99+
+
+
+SON GERİ BİLDİRİM:  Steamcmd den kurma hlds dosyalarını sana hazır dosyalar verdim ben onları düzenlersin 
+sunucu ilk kurulumu yaparken ilk önemli soruları sorarsın ismi ne olsun falan fistan gibi ona göre arkaplanda sen düzeltirsin hazır bi şekilde
+================================================================================
+                            SON GÜNCELLENDİ
+================================================================================
+Tarih: 2026-01-23
+Versiyon: 6.0
+Yazar: Claude (Anthropic)
+Proje: AGTR Merkezi
+İletişim: destek@agtrmerkezi.com
+
+YENİ EKLENENLER:
+✅ Kullanıcı-sunucu sahipliği sistemi
+✅ Benzersiz ID sistemi (UUID + Custom Code)
+✅ Katmanlı bug/hata kontrolü
+✅ Arka plan sunucu kurulum süreci (Celery)
+✅ Real-time kurulum takibi (WebSocket)
+✅ Transaction yönetimi ve rollback
+✅ Hata senaryoları ve çözümleri
+================================================================================

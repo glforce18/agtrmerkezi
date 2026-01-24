@@ -13,6 +13,14 @@ from typing import Dict, List, Optional
 from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import (
+    DraftNotFoundException,
+    DraftSaveException,
+    InvalidPollOptionsException,
+    PollAlreadyExistsException,
+    PollExpiredException,
+    PollNotFoundException,
+)
 from app.core.redis_manager import redis_manager
 
 logger = logging.getLogger(__name__)
@@ -203,14 +211,14 @@ class ForumPollService:
         from app.models.database import ForumPoll, ForumPollOption
 
         if len(options) < 2:
-            raise ValueError("En az 2 secenek gerekli")
+            raise InvalidPollOptionsException("En az 2 secenek gerekli")
         if len(options) > 10:
-            raise ValueError("En fazla 10 secenek olabilir")
+            raise InvalidPollOptionsException("En fazla 10 secenek olabilir")
 
         # Konu basina tek anket
         existing = self.db.query(ForumPoll).filter(ForumPoll.topic_id == topic_id).first()
         if existing:
-            raise ValueError("Bu konuda zaten bir anket var")
+            raise PollAlreadyExistsException(topic_id=topic_id)
 
         poll = ForumPoll(
             topic_id=topic_id,
@@ -239,14 +247,14 @@ class ForumPollService:
 
         poll = self.db.query(ForumPoll).filter(ForumPoll.id == poll_id).first()
         if not poll:
-            raise ValueError("Anket bulunamadi")
+            raise PollNotFoundException(poll_id=poll_id)
 
         if poll.ends_at and poll.ends_at < datetime.utcnow():
-            raise ValueError("Anket sona ermis")
+            raise PollExpiredException()
 
         # Coklu secim kontrolu
         if not poll.allow_multiple and len(option_ids) > 1:
-            raise ValueError("Bu ankette sadece 1 secenek secilebilir")
+            raise InvalidPollOptionsException("Bu ankette sadece 1 secenek secilebilir")
 
         # Mevcut oylari sil - atomic decrement ile
         existing_votes = (

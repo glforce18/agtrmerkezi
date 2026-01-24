@@ -17,6 +17,16 @@ from sqlalchemy import and_, asc, case, desc, func, or_, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.exceptions import (
+    CategoryNotFoundException,
+    ContentValidationException,
+    InsufficientPermissionsException,
+    RateLimitExceededException,
+    ReplyNotFoundException,
+    SpamDetectedException,
+    TopicLockedException,
+    TopicNotFoundException,
+)
 from app.core.redis_manager import redis_manager
 from app.core.sanitizer import sanitize_forum_content, sanitize_title
 from app.core.security import (

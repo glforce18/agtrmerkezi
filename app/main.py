@@ -423,6 +423,11 @@ app = FastAPI(
     redoc_url="/api/redoc" if settings.DEBUG else None,
 )
 
+# Exception Handler Middleware (must be first to catch all exceptions)
+from app.middleware.exception_handler import register_exception_handler
+
+register_exception_handler(app)
+
 # CORS middleware
 cors_origins = (
     [
