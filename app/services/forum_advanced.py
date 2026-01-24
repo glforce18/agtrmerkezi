@@ -480,9 +480,10 @@ class ForumTemplateService:
 
 # ============ 4. Drafts Service ============
 class ForumDraftService:
-    """Taslak otomatik kaydetme"""
+    """Taslak otomatik kaydetme (with encryption & device validation)"""
 
     DRAFT_TTL = 7 * 24 * 60 * 60  # 7 gun
+    ENCRYPT_SENSITIVE = True  # Encrypt draft content for security
 
     def __init__(self, db: Session):
         self.db = db
@@ -498,8 +499,21 @@ class ForumDraftService:
         poll_data: Optional[Dict] = None,
         device_id: Optional[str] = None,
     ) -> Dict:
-        """Taslak kaydet (Redis + DB hibrit)"""
+        """Taslak kaydet (Redis + DB hibrit, with encryption)"""
+        from app.core.encryption import encrypt_content
         from app.models.database import ForumDraft
+
+        # Encrypt sensitive content if enabled
+        encrypted_content = None
+        if self.ENCRYPT_SENSITIVE and content:
+            try:
+                encrypted_content = encrypt_content(content)
+            except Exception as e:
+                logger.warning(f"Draft encryption failed, storing plain: {e}")
+                encrypted_content = None
+
+        # Store encrypted or plain content
+        stored_content = encrypted_content if encrypted_content else content
 
         # Mevcut taslak var mi?
         existing = (
@@ -516,21 +530,23 @@ class ForumDraftService:
 
         if existing:
             existing.title = title
-            existing.content = content
+            existing.content = stored_content
             existing.category_id = category_id
             existing.poll_data = poll_json
             existing.device_id = device_id
+            existing.is_encrypted = encrypted_content is not None
             existing.updated_at = datetime.utcnow()
         else:
             existing = ForumDraft(
                 user_id=user_id,
                 draft_type=draft_type,
                 title=title,
-                content=content,
+                content=stored_content,
                 category_id=category_id,
                 topic_id=topic_id,
                 poll_data=poll_json,
                 device_id=device_id,
+                is_encrypted=encrypted_content is not None,
             )
             self.db.add(existing)
 
@@ -561,7 +577,8 @@ class ForumDraftService:
     async def get_draft(
         self, user_id: int, draft_type: str, topic_id: Optional[int] = None
     ) -> Optional[Dict]:
-        """Taslak getir"""
+        """Taslak getir (with decryption)"""
+        from app.core.encryption import decrypt_content
         from app.models.database import ForumDraft
 
         # Once Redis'ten dene
@@ -587,10 +604,24 @@ class ForumDraftService:
         if not draft:
             return None
 
+        # Decrypt content if encrypted
+        content = draft.content
+        if getattr(draft, "is_encrypted", False) and content:
+            try:
+                decrypted = decrypt_content(content)
+                if decrypted:
+                    content = decrypted
+                else:
+                    logger.warning(f"Failed to decrypt draft {draft.id}, returning encrypted")
+            except Exception as e:
+                logger.error(f"Draft decryption error: {e}")
+                # Return None instead of exposing encrypted content
+                content = None
+
         return {
             "id": draft.id,
             "title": draft.title,
-            "content": draft.content,
+            "content": content,
             "category_id": draft.category_id,
             "topic_id": draft.topic_id,
             "poll_data": json.loads(draft.poll_data) if draft.poll_data else None,

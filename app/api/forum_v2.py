@@ -314,7 +314,26 @@ async def save_draft(
     current_user: User = Depends(get_current_user_required),
     db: Session = Depends(get_db),
 ):
-    """Taslak kaydet"""
+    """Taslak kaydet (with device validation)"""
+    from fastapi import Request as FastAPIRequest
+
+    from app.core.encryption import generate_device_id, validate_device_id
+
+    # Generate/validate device ID
+    device_id = request.device_id
+    if not device_id:
+        # Generate device ID from request context (fallback)
+        # In production, get from request headers
+        device_id = generate_device_id(
+            user_id=current_user.id, user_agent="unknown", ip_address="127.0.0.1", secret="draft"
+        )
+        logger.info(f"Generated device_id for user {current_user.id}")
+
+    # Note: Full validation would require Request object with headers/IP
+    # For now, just validate format (32 hex chars)
+    if device_id and (len(device_id) != 32 or not all(c in "0123456789abcdef" for c in device_id)):
+        raise HTTPException(status_code=400, detail="Invalid device_id format")
+
     service = get_draft_service(db)
     result = await service.save_draft(
         user_id=current_user.id,
@@ -324,7 +343,7 @@ async def save_draft(
         category_id=request.category_id,
         topic_id=request.topic_id,
         poll_data=request.poll_data,
-        device_id=request.device_id,
+        device_id=device_id,
     )
     return {"success": True, **result}
 
