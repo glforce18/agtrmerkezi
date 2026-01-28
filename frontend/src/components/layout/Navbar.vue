@@ -41,8 +41,8 @@
             <button @click="handleLogout" class="btn btn-ghost">Çıkış</button>
           </template>
           <template v-else>
-            <router-link to="/auth/login" class="btn btn-ghost">Giriş</router-link>
-            <router-link to="/auth/register" class="btn btn-primary">Kayıt Ol</router-link>
+            <router-link to="/login" class="btn btn-ghost">Giriş</router-link>
+            <router-link to="/register" class="btn btn-primary">Kayıt Ol</router-link>
           </template>
 
           <!-- Mobile Menu Button -->

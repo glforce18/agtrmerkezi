@@ -125,7 +125,7 @@
         <div class="mt-6 text-center">
           <p class="text-text-secondary text-sm">
             Zaten hesabınız var mı?
-            <router-link to="/auth/login" class="text-primary hover:text-primary-light font-medium">
+            <router-link to="/login" class="text-primary hover:text-primary-light font-medium">
               Giriş Yapın
             </router-link>
           </p>
@@ -211,7 +211,7 @@ const handleRegister = async () => {
       } else {
         // Registration successful but login failed, redirect to login page
         router.push({
-          path: '/auth/login',
+          path: '/login',
           query: { message: 'Kayıt başarılı! Giriş yapabilirsiniz.' }
         })
       }

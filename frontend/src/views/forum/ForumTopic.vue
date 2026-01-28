@@ -236,7 +236,7 @@
 
       <!-- Login Required -->
       <div v-else class="alert alert-info">
-        Yanıt yazmak için <router-link to="/auth/login" class="font-semibold underline">giriş yapın</router-link>.
+        Yanıt yazmak için <router-link to="/login" class="font-semibold underline">giriş yapın</router-link>.
       </div>
     </div>
 

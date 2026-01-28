@@ -42,7 +42,7 @@
         </router-link>
         <router-link
           v-else
-          to="/auth/login"
+          to="/login"
           class="btn btn-secondary w-full text-sm"
         >
           Giriş Yap

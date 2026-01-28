@@ -25,7 +25,7 @@
             <router-link to="/servers/rent" class="btn btn-primary text-lg px-8 py-4 w-full sm:w-auto">
               🚀 Sunucu Kirala
             </router-link>
-            <router-link to="/servers/list" class="btn btn-secondary text-lg px-8 py-4 w-full sm:w-auto">
+            <router-link to="/servers" class="btn btn-secondary text-lg px-8 py-4 w-full sm:w-auto">
               🎮 Sunucu Listesi
             </router-link>
           </div>
@@ -162,7 +162,7 @@
             <router-link to="/forum" class="btn btn-primary text-lg px-8 py-4">
               Foruma Git
             </router-link>
-            <router-link to="/auth/register" class="btn btn-secondary text-lg px-8 py-4">
+            <router-link to="/register" class="btn btn-secondary text-lg px-8 py-4">
               Üye Ol
             </router-link>
           </div>
@@ -205,7 +205,7 @@
         </div>
 
         <div class="text-center mt-12">
-          <router-link to="/servers/list" class="btn btn-secondary px-8 py-3">
+          <router-link to="/servers" class="btn btn-secondary px-8 py-3">
             Tüm Sunucular
           </router-link>
         </div>

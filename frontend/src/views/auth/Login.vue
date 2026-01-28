@@ -54,7 +54,7 @@
         <div class="mt-6 text-center">
           <p class="text-text-secondary text-sm">
             Hesabınız yok mu?
-            <router-link to="/auth/register" class="text-primary hover:text-primary-light font-medium">
+            <router-link to="/register" class="text-primary hover:text-primary-light font-medium">
               Kayıt Olun
             </router-link>
           </p>
