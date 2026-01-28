@@ -19,6 +19,7 @@ from app.core.logging_config import get_logger, setup_logging
 setup_logging(json_format=not settings.DEBUG, log_level="DEBUG" if settings.DEBUG else "INFO")
 logger = get_logger(__name__)
 
+from app.api import forum  # New modular forum API
 from app.api import servers_unified  # New unified server API
 from app.api import (
     activities,
@@ -33,10 +34,6 @@ from app.api import (
     crash_stats,
     discord_bot,
     filemanager,
-)
-from app.api import forum  # New modular forum API
-from app.api import forum as forum_modular
-from app.api import (
     forum_v2,
     game_assets,
     game_integration,
@@ -562,7 +559,7 @@ app.include_router(roles.router, prefix="/api/roles", tags=["Roles"])
 
 # ==================== NEW UNIFIED APIs (v3) ====================
 # Modular Forum API - Replaces massive forum.py
-app.include_router(forum_modular.router, tags=["Forum v3 - Modular"])
+app.include_router(forum.router, tags=["Forum v3 - Modular"])
 
 # Unified Server API - Merges servers.py + server_v2.py
 app.include_router(servers_unified.router, tags=["Servers v3 - Unified"])
