@@ -64,8 +64,8 @@ class TopicResponse(BaseModel):
     author_id: int
     view_count: int = 0
     reply_count: int = 0
-    is_pinned: bool = False
-    is_locked: bool = False
+    is_pinned: Optional[bool] = False
+    is_locked: Optional[bool] = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -189,21 +189,37 @@ async def get_topic(
         topic.view_count += 1
         db.commit()
 
-        # Format response with relationships
-        response_data = TopicResponse.from_orm(topic)
-        response_data.author = (
-            {"id": topic.author.id, "username": topic.author.username, "role": topic.author.role}
-            if topic.author
-            else None
-        )
+        # Format response with relationships serialized before Pydantic validation
+        topic_dict = {
+            "id": topic.id,
+            "title": topic.title,
+            "slug": topic.slug,
+            "content": topic.content,
+            "category_id": topic.category_id,
+            "author_id": topic.author_id,
+            "view_count": topic.view_count,
+            "reply_count": topic.reply_count,
+            "is_pinned": topic.is_pinned,
+            "is_locked": topic.is_locked,
+            "created_at": topic.created_at,
+            "updated_at": topic.updated_at,
+            "author": (
+                {
+                    "id": topic.author.id,
+                    "username": topic.author.username,
+                    "role": topic.author.role,
+                }
+                if topic.author
+                else None
+            ),
+            "category": (
+                {"id": topic.category.id, "name": topic.category.name, "slug": topic.category.slug}
+                if topic.category
+                else None
+            ),
+        }
 
-        response_data.category = (
-            {"id": topic.category.id, "name": topic.category.name, "slug": topic.category.slug}
-            if topic.category
-            else None
-        )
-
-        return response_data
+        return TopicResponse(**topic_dict)
 
     except NotFoundError:
         raise

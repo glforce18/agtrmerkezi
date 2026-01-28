@@ -280,18 +280,27 @@ onMounted(async () => {
 const fetchTopic = async () => {
   try {
     const topicId = route.params.id
-    const response = await forumAPI.getTopic(topicId)
 
-    if (response.data.topic) {
-      topic.value = response.data.topic
-      replies.value = response.data.replies || []
-    } else {
-      topic.value = response.data
-      replies.value = []
+    // Fetch topic
+    const topicResponse = await forumAPI.getTopic(topicId)
+    topic.value = topicResponse.data || null
+
+    // Fetch replies for the topic
+    if (topic.value?.id) {
+      try {
+        const repliesResponse = await forumAPI.getReplies(topic.value.id)
+        // API returns: { success: true, data: [...], pagination: {...} }
+        const replyData = repliesResponse.data.data || repliesResponse.data
+        replies.value = Array.isArray(replyData) ? replyData : []
+      } catch (replyError) {
+        console.error('Failed to fetch replies:', replyError)
+        replies.value = []
+      }
     }
   } catch (error) {
     console.error('Failed to fetch topic:', error)
     topic.value = null
+    replies.value = []
   } finally {
     loading.value = false
   }
