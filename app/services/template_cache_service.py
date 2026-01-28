@@ -173,8 +173,14 @@ class TemplateCacheService:
             logger.info(f"Extracting template: {cache_file} -> {destination}")
 
             with tarfile.open(cache_file, "r:gz") as tar:
-                # Extract to parent, then rename
-                tar.extractall(path=destination.parent)
+                # Extract to parent, then rename (with safety check)
+                # Validate members to prevent path traversal attacks
+                def is_safe_path(member, target_dir):
+                    target_path = (target_dir / member.name).resolve()
+                    return target_path.is_relative_to(target_dir.resolve())
+
+                safe_members = [m for m in tar.getmembers() if is_safe_path(m, destination.parent)]
+                tar.extractall(path=destination.parent, members=safe_members)
 
             # Find extracted directory and rename if needed
             template_def = self.TEMPLATE_DEFINITIONS.get(mod_type)

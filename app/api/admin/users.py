@@ -69,8 +69,8 @@ async def get_users(
     status: Optional[str] = None,
     online_only: bool = False,
     steam_only: bool = False,
-    sort_by: str = Query("created_at", regex="^(created_at|last_login|username|balance)$"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    sort_by: str = Query("created_at", pattern="^(created_at|last_login|username|balance)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):

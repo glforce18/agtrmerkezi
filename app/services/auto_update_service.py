@@ -42,7 +42,6 @@ class AutoUpdateService:
 
             # Get game directory for info
 
-
             return {
                 "has_update": current_build != latest_build,
                 "current_version": current_build,

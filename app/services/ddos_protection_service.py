@@ -59,19 +59,29 @@ class DDoSProtectionService:
     async def _get_iptables_stats(self, ip: str, port: int) -> Dict:
         """Get traffic stats from iptables"""
         try:
-            # Use iptables to get packet/byte counters
-            result = subprocess.run(
-                ["sudo", "iptables", "-L", "INPUT", "-v", "-n", "-x", "|", "grep", f"dpt:{port}"],
-                capture_output=True,
+            # Use iptables to get packet/byte counters (without shell=True)
+            iptables_proc = subprocess.Popen(
+                ["sudo", "iptables", "-L", "INPUT", "-v", "-n", "-x"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                shell=True,
-                timeout=5,
             )
+
+            grep_proc = subprocess.Popen(
+                ["grep", f"dpt:{port}"],
+                stdin=iptables_proc.stdout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            iptables_proc.stdout.close()
+            output, _ = grep_proc.communicate(timeout=5)
 
             # Parse output
             # Format: pkts bytes target prot opt in out source destination
-            if result.stdout:
-                parts = result.stdout.strip().split()
+            if output:
+                parts = output.strip().split()
                 if len(parts) >= 2:
                     return {
                         "packets": int(parts[0]),
@@ -88,15 +98,28 @@ class DDoSProtectionService:
     async def _get_connection_count(self, port: int) -> int:
         """Get active connection count for a port"""
         try:
-            result = subprocess.run(
-                ["netstat", "-an", "|", "grep", f":{port}", "|", "wc", "-l"],
-                capture_output=True,
+            # Chain commands without shell=True using Popen
+            netstat_proc = subprocess.Popen(
+                ["netstat", "-an"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                shell=True,
-                timeout=5,
             )
 
-            return int(result.stdout.strip()) if result.stdout.strip().isdigit() else 0
+            grep_proc = subprocess.Popen(
+                ["grep", f":{port}"],
+                stdin=netstat_proc.stdout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            netstat_proc.stdout.close()
+            grep_output, _ = grep_proc.communicate(timeout=5)
+
+            # Count lines
+            line_count = len(grep_output.strip().split('\n')) if grep_output.strip() else 0
+            return line_count
         except:
             return 0
 

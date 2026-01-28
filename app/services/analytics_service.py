@@ -9,11 +9,7 @@ from typing import Dict, List
 
 from sqlalchemy.orm import Session
 
-from app.models.database import (
-    PlayerSession,
-    ServerMetrics,
-    ServerStatsHourly,
-)
+from app.models.database import PlayerSession, ServerMetrics, ServerStatsHourly
 
 logger = logging.getLogger(__name__)
 

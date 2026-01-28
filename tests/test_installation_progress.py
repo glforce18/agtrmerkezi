@@ -8,9 +8,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from fastapi import WebSocket
 
-from app.services.installation_progress import (
-    InstallationProgressManager,
-)
+from app.services.installation_progress import InstallationProgressManager
 
 
 class TestInstallationProgressManager:

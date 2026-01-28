@@ -29,6 +29,7 @@ from app.api.servers import (
     create_physical_server,
     delete_physical_server,
     start_physical_server,
+    stop_physical_server,
 )
 from app.core.config import settings
 from app.core.security import get_current_admin

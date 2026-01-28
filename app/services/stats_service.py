@@ -10,7 +10,6 @@ from datetime import date, datetime, timedelta
 from io import StringIO
 from typing import Dict, List
 
-
 from app.models.connection import SessionLocal
 from app.models.database import (
     PlayerSession,

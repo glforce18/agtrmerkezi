@@ -252,21 +252,34 @@ class RCONService:
             # Wait a bit for command to execute
             await asyncio.sleep(0.5)
 
-            # Capture output from screen
-            output_file = f"/tmp/server_{server.id}_output.txt"
-            subprocess.run(
-                ["screen", "-S", screen_name, "-X", "hardcopy", output_file], timeout=5, check=False
-            )
+            # Capture output from screen (use temp file securely)
+            with tempfile.NamedTemporaryFile(
+                mode="w+", prefix=f"server_{server.id}_output_", suffix=".txt", delete=False
+            ) as tmp_file:
+                output_file = tmp_file.name
 
-            # Read output
-            response = ""
             try:
-                with open(output_file, "r", errors="ignore") as f:
-                    lines = f.readlines()
-                    # Get last 50 lines
-                    response = "".join(lines[-50:])
-            except:
+                subprocess.run(
+                    ["screen", "-S", screen_name, "-X", "hardcopy", output_file],
+                    timeout=5,
+                    check=False,
+                )
+
+                # Read output
                 response = ""
+                try:
+                    with open(output_file, "r", errors="ignore") as f:
+                        lines = f.readlines()
+                        # Get last 50 lines
+                        response = "".join(lines[-50:])
+                except:
+                    response = ""
+            finally:
+                # Clean up temp file
+                try:
+                    os.unlink(output_file)
+                except:
+                    pass
 
             end_time = datetime.utcnow()
             execution_time = int((end_time - start_time).total_seconds() * 1000)
@@ -384,19 +397,32 @@ class RCONService:
             )
             await asyncio.sleep(1)
 
-            # Capture output
-            output_file = f"/tmp/server_{server.id}_status.txt"
-            subprocess.run(
-                ["screen", "-S", screen_name, "-X", "hardcopy", output_file], timeout=5, check=False
-            )
+            # Capture output (use temp file securely)
+            with tempfile.NamedTemporaryFile(
+                mode="w+", prefix=f"server_{server.id}_status_", suffix=".txt", delete=False
+            ) as tmp_file:
+                output_file = tmp_file.name
 
-            # Read and parse
-            response = ""
             try:
-                with open(output_file, "r", errors="ignore") as f:
-                    response = f.read()
-            except:
-                return []
+                subprocess.run(
+                    ["screen", "-S", screen_name, "-X", "hardcopy", output_file],
+                    timeout=5,
+                    check=False,
+                )
+
+                # Read and parse
+                response = ""
+                try:
+                    with open(output_file, "r", errors="ignore") as f:
+                        response = f.read()
+                except:
+                    return []
+            finally:
+                # Clean up temp file
+                try:
+                    os.unlink(output_file)
+                except:
+                    pass
 
             players = []
             seen_steamids = set()  # Track unique players

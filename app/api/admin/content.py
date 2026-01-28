@@ -11,11 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from app.api.common import (
-    NotFoundError,
-    log_api_call,
-    success_response,
-)
+from app.api.common import NotFoundError, log_api_call, success_response
 from app.core.security import get_current_admin
 from app.models.connection import get_db
 from app.models.database import Announcement, SiteSettings, User

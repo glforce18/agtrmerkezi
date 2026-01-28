@@ -38,8 +38,8 @@ async def get_servers(
     status_filter: Optional[str] = None,
     owner_id: Optional[int] = None,
     game_type: Optional[str] = None,
-    sort_by: str = Query("created_at", regex="^(created_at|name|status)$"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    sort_by: str = Query("created_at", pattern="^(created_at|name|status)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):

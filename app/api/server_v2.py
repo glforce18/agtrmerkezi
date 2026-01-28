@@ -20,6 +20,7 @@ from app.models.database import (
     ServerQuickCommand,
     ServerStatus,
     User,
+    UserRole,
 )
 from app.services import (
     AMXXAdminService,
