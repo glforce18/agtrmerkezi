@@ -9,9 +9,9 @@
 CREATE INDEX IF NOT EXISTS idx_forum_drafts_user_updated
 ON forum_drafts(user_id, updated_at DESC);
 
--- Device sync icin
-CREATE INDEX IF NOT EXISTS idx_forum_drafts_device
-ON forum_drafts(user_id, device_id);
+-- Device sync icin (device_id not stored in DB, validation happens in-memory)
+-- CREATE INDEX IF NOT EXISTS idx_forum_drafts_device
+-- ON forum_drafts(user_id, device_id);
 
 -- forum_reactions tablosu indexleri
 -- Sorting by newest reactions

@@ -44,7 +44,7 @@ class ServerControlService:
 
     def get_screen_name(self, server_id: int) -> str:
         """Screen session adini al"""
-        return f"agtr_{server_id}"
+        return f"server_{server_id}"
 
     async def start_server(self, server_id: int) -> Dict:
         """

@@ -12,7 +12,15 @@ from typing import List, Optional
 
 import a2s
 import psutil
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -39,6 +47,9 @@ from app.models.database import (
     User,
     WalletType,
 )
+from app.services.port_pool_manager import PortPoolManager
+from app.services.rcon_service import RCONService
+from app.services.server_installation import ServerInstallationService
 from app.services.wallet import get_wallet_service
 
 logger = logging.getLogger(__name__)
@@ -119,6 +130,10 @@ class ScheduledTaskRequest(BaseModel):
     is_enabled: bool = True
 
 
+class ServerPasswordRequest(BaseModel):
+    password: str
+
+
 # ==================== HELPER FUNCTIONS ====================
 
 
@@ -185,17 +200,19 @@ def calculate_custom_price(slots: int, features: List[str], months: int):
 
 
 def find_available_slot(db: Session):
-    used_slots = (
-        db.query(GameServer.ip_address, GameServer.port)
-        .filter(GameServer.status.notin_([ServerStatus.DELETED, ServerStatus.EXPIRED]))
-        .all()
-    )
-    used_set = {(s.ip_address, s.port) for s in used_slots}
-    for ip in settings.GAME_SERVER_IPS:
-        for port in range(settings.GAME_PORT_START, settings.GAME_PORT_END + 1):
-            if (ip, port) not in used_set:
-                return (ip, port)
-    return (None, None)
+    """
+    Find available (IP, port) slot using PortPoolManager.
+
+    Uses MySQL named lock for atomic allocation with load balancing.
+    Returns (ip, port) or (None, None) if all slots full.
+    """
+    pool_manager = PortPoolManager(db)
+    slot = pool_manager.acquire_slot()
+
+    if slot:
+        return slot  # (ip, port)
+    else:
+        return (None, None)
 
 
 @router.get("")
@@ -651,6 +668,7 @@ async def order_package(
 async def order_package_with_wallet(
     data: WalletPackageOrderRequest,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required),
 ):
@@ -729,6 +747,8 @@ async def order_package_with_wallet(
     # Sunucu olustur
     from datetime import timedelta
 
+    rcon_pass = generate_rcon_password()
+
     server = GameServer(
         owner_id=current_user.id,
         owner_steam_id=current_user.steam_id,  # Steam ID ile hızlı arama için
@@ -737,11 +757,11 @@ async def order_package_with_wallet(
         ip_address=ip,
         port=port,
         slots=package.slots,
-        rcon_password=generate_rcon_password(),
+        rcon_password=rcon_pass,
         package_id=package.id,
         is_custom_package=False,
         features=package.features,
-        status=ServerStatus.RUNNING,  # Direkt aktif
+        status=ServerStatus.PENDING,  # Konfigürasyon bekleniyor
         monthly_price=package.price_monthly,
         auto_renew=data.auto_renew,
         expires_at=datetime.utcnow() + timedelta(days=30 * data.months),
@@ -762,9 +782,15 @@ async def order_package_with_wallet(
     db.add(payment)
     db.commit()
 
+    # Unique code oluştur
+    installation_service = ServerInstallationService(db)
+    unique_code = installation_service.generate_unique_code()
+    server.unique_code = unique_code
+    db.commit()
+
     return {
         "success": True,
-        "message": f"Sunucu basariyla satin alindi! {amount_to_deduct} {currency_name} odendi.",
+        "message": f"Sunucu basariyla satin alindi! {amount_to_deduct} {currency_name} odendi. Lütfen sunucu ayarlarını yapılandırın.",
         "order": {
             "server_id": server.id,
             "payment_id": payment.id,
@@ -775,6 +801,8 @@ async def order_package_with_wallet(
                 "name": server.name,
                 "ip": f"{ip}:{port}",
                 "slots": server.slots,
+                "unique_code": unique_code,
+                "status": "pending_configuration",
                 "expires_at": server.expires_at.isoformat() if server.expires_at else None,
             },
         },
@@ -797,6 +825,7 @@ async def my_servers(
             {
                 "id": s.id,
                 "name": s.name,
+                "unique_code": s.unique_code,
                 "game_type": s.game_type.value,
                 "ip_address": s.ip_address,
                 "port": s.port,
@@ -806,6 +835,7 @@ async def my_servers(
                 "monthly_price": s.monthly_price,
                 "expires_at": s.expires_at.isoformat() if s.expires_at else None,
                 "created_at": s.created_at.isoformat(),
+                "auto_renew": s.auto_renew,
             }
             for s in servers
         ],
@@ -1170,6 +1200,104 @@ async def get_rcon_history(
             for log in logs
         ]
     }
+
+
+@router.post("/my-servers/{server_id}/password")
+async def set_server_password(
+    server_id: int,
+    data: ServerPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """
+    Server password ayarla (sv_password)
+    Password 0-32 karakter arası olmalı, alphanumeric + _ + -
+    Boş string = şifresiz sunucu
+    """
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
+    if not server:
+        raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
+
+    if server.status != ServerStatus.RUNNING:
+        raise HTTPException(status_code=400, detail="Sunucu calismiyordu")
+
+    # Password validation
+    password = data.password.strip()
+
+    # Max 32 chars
+    if len(password) > 32:
+        raise HTTPException(status_code=400, detail="Sifre maksimum 32 karakter olabilir")
+
+    # If not empty, validate alphanumeric + _ + -
+    if password:
+        import re
+
+        if not re.match(r"^[a-zA-Z0-9_-]+$", password):
+            raise HTTPException(
+                status_code=400,
+                detail="Sifre sadece harf, rakam, tire (-) ve alt cizgi (_) icerebilir",
+            )
+
+    # Rate limiting check (max 5 changes per hour)
+    # Count recent password changes in audit log
+    from datetime import timedelta
+
+    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    recent_changes = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.user_id == current_user.id,
+            AuditLog.action == "server_password_change",
+            AuditLog.entity_type == "server",
+            AuditLog.entity_id == server_id,
+            AuditLog.created_at >= one_hour_ago,
+        )
+        .count()
+    )
+
+    if recent_changes >= 5:
+        raise HTTPException(
+            status_code=429,
+            detail="Saatte maksimum 5 kez sifre degistirebilirsiniz. Lutfen bekleyin.",
+        )
+
+    client_ip = request.client.host if request.client else None
+
+    # Use rcon_service to set password
+    rcon_service = RCONService()
+    try:
+        result = await rcon_service.set_server_password(
+            server=server, password=password, user_id=current_user.id, db=db, ip_address=client_ip
+        )
+
+        if result["success"]:
+            # Audit log
+            log_audit(
+                db,
+                current_user.id,
+                "server_password_change",
+                "server",
+                server_id,
+                new_values={"password_set": bool(password)},
+                ip_address=client_ip,
+            )
+
+            logger.info(f"Server password changed: server_{server_id} by user_{current_user.id}")
+
+            return {"success": True, "message": result["message"]}
+        else:
+            raise HTTPException(status_code=500, detail=result["message"])
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Server password error: {e}")
+        raise HTTPException(status_code=500, detail=f"Sifre degistirme hatasi: {str(e)}")
 
 
 # ==================== MAP CHANGER ====================
@@ -1843,3 +1971,135 @@ async def get_server_logs(
         logger.error(f"Log okuma hatasi: {e}")
 
     return {"logs": logs, "can_download": False}
+
+
+# ==================== SERVER CONFIGURATION ====================
+
+
+class ServerConfigRequest(BaseModel):
+    """Sunucu yapılandırma isteği"""
+
+    hostname: str
+    rcon_password: Optional[str] = None
+    sv_password: Optional[str] = None
+    start_map: Optional[str] = "crossfire"
+    maxplayers: Optional[int] = None
+    admins: Optional[List[dict]] = []
+
+
+@router.post("/my-servers/{server_id}/configure")
+async def configure_and_install_server(
+    server_id: int,
+    config: ServerConfigRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """
+    Sunucu yapılandırmasını tamamla ve kurulumu başlat
+
+    PENDING durumundaki sunucular için çağrılır.
+    Kullanıcı hostname, RCON, sv_password vs. girdikten sonra
+    otomatik kurulum başlar.
+    """
+    # Sunucuyu kontrol et
+    server = (
+        db.query(GameServer)
+        .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
+        .first()
+    )
+    if not server:
+        raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
+
+    if server.status != ServerStatus.PENDING:
+        raise HTTPException(
+            status_code=400, detail=f"Bu sunucu zaten yapılandırılmış (Status: {server.status})"
+        )
+
+    # RCON password (kullanıcı değiştirmemişse mevcut kullan)
+    if config.rcon_password:
+        server.rcon_password = config.rcon_password
+
+    # Server name güncelle
+    server.name = config.hostname
+
+    # Status'u CREATING yap
+    server.status = ServerStatus.CREATING
+    db.commit()
+
+    # Game type'tan mod_type belirle
+    mod_type_map = {
+        "ag": "ag",
+        "hldm": "hldm",
+        "cs16": "cs16",
+    }
+    if hasattr(server.game_type, "value"):
+        game_val = str(server.game_type.value).lower()
+    else:
+        game_val = str(server.game_type).lower()
+
+    mod_type = "hldm"  # Default
+    for key in mod_type_map:
+        if key in game_val:
+            mod_type = mod_type_map[key]
+            break
+
+    # Installation config hazırla
+    install_config = {
+        "hostname": config.hostname,
+        "rcon_password": server.rcon_password,
+        "sv_password": config.sv_password or "",
+        "port": server.port,
+        "maxplayers": config.maxplayers or server.slots,
+        "start_map": config.start_map or "crossfire",
+        "admins": config.admins or [],
+    }
+
+    # Background task ile kurulum başlat
+    async def run_installation_task():
+        try:
+            from app.models.connection import SessionLocal
+
+            task_db = SessionLocal()
+
+            # Installation service
+            install_service = ServerInstallationService(task_db)
+
+            # Installation kaydı oluştur
+            installation = await install_service.create_installation(
+                server_id=server.id,
+                user_id=current_user.id,
+                mod_type=mod_type,
+                config=install_config,
+            )
+
+            logger.info(
+                f"Installation başlatıldı: {installation.unique_code} (ID: {installation.id})"
+            )
+
+            # Kurulumu çalıştır
+            success, msg = await install_service.run_installation(installation.id, install_config)
+
+            if success:
+                logger.info(f"✅ Server {server.id} kurulumu tamamlandı: {msg}")
+            else:
+                logger.error(f"❌ Server {server.id} kurulum hatası: {msg}")
+
+            task_db.close()
+
+        except Exception as e:
+            logger.error(f"Background installation error: {e}", exc_info=True)
+
+    background_tasks.add_task(run_installation_task)
+
+    return {
+        "success": True,
+        "message": "Sunucu yapılandırması kaydedildi. Kurulum başlatıldı!",
+        "server": {
+            "id": server.id,
+            "name": server.name,
+            "unique_code": server.unique_code,
+            "status": "installing",
+            "ip": f"{server.ip_address}:{server.port}",
+        },
+    }

@@ -28,6 +28,9 @@ from app.services import (
     ServerControlService,
     ServerInstallationService,
 )
+from app.services.auto_update_service import auto_update_service
+from app.services.ddos_protection_service import ddos_protection_service
+from app.services.port_pool_manager import PortPoolManager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v2/servers", tags=["Server Management v2"])
@@ -47,6 +50,7 @@ class ServerCreateRequest(BaseModel):
     maxplayers: int = Field(default=32, ge=2, le=32)
     rcon_password: Optional[str] = None
     sv_password: Optional[str] = None
+    panel_password: Optional[str] = Field(None, description="Panel access password (REQUIRED)")
     admins: Optional[List[dict]] = None
 
 
@@ -67,6 +71,7 @@ class ServerResponse(BaseModel):
     owner_steam_id: Optional[str] = None
     expires_at: Optional[str] = None
     created_at: Optional[str]
+    panel_password: Optional[str] = None  # Will contain actual password for verification
 
 
 class InstallationResponse(BaseModel):
@@ -181,7 +186,19 @@ class SayRequest(BaseModel):
 
 
 async def verify_server_ownership(server_id: int, user: User, db: Session) -> GameServer:
-    """Sunucu sahipligini dogrula"""
+    """
+    Sunucu sahipligini dogrula
+
+    Admin/Superadmin kullanıcılar tüm sunuculara erişebilir
+    """
+    # Admin bypass - admin kullanıcılar tüm sunuculara erişebilir
+    if user.role in [UserRole.ADMIN, UserRole.SUPERADMIN]:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise HTTPException(status_code=404, detail="Sunucu bulunamadi")
+        return server
+
+    # Normal kullanıcı - sadece kendi sunucusu
     server = (
         db.query(GameServer)
         .filter(GameServer.id == server_id, GameServer.owner_id == user.id)
@@ -230,6 +247,17 @@ async def create_server(
     # Unique code olustur
     unique_code = installation_service.generate_unique_code()
 
+    # Musait IP:PORT slot bul (load balancing ile)
+    pool_manager = PortPoolManager(db)
+    slot = pool_manager.acquire_slot()
+
+    if not slot:
+        raise HTTPException(
+            status_code=507, detail="Tum sunucu slotlari dolu. Lutfen daha sonra tekrar deneyin."
+        )
+
+    allocated_ip, allocated_port = slot
+
     # GameServer olustur
     from app.core.security import generate_rcon_password
 
@@ -242,8 +270,8 @@ async def create_server(
             if request_data.mod_type in ["hldm", "valve_new"]
             else ("AG" if "ag" in request_data.mod_type else "CS16")
         ),
-        ip_address="0.0.0.0",  # Guncellenecek
-        port=request_data.port,
+        ip_address=allocated_ip,  # PortPoolManager'dan alindi
+        port=allocated_port,  # PortPoolManager'dan alindi
         slots=request_data.maxplayers,
         rcon_password=request_data.rcon_password or generate_rcon_password(),
         sv_password=request_data.sv_password,
@@ -264,7 +292,8 @@ async def create_server(
         mod_type=request_data.mod_type,
         config={
             "hostname": request_data.name,
-            "port": request_data.port,
+            "ip": allocated_ip,
+            "port": allocated_port,
             "maxplayers": request_data.maxplayers,
             "rcon_password": server.rcon_password,
             "sv_password": request_data.sv_password,
@@ -276,7 +305,8 @@ async def create_server(
     async def run_installation():
         config = {
             "hostname": request_data.name,
-            "port": request_data.port,
+            "ip": allocated_ip,
+            "port": allocated_port,
             "maxplayers": request_data.maxplayers,
             "rcon_password": server.rcon_password,
             "sv_password": request_data.sv_password,
@@ -321,9 +351,31 @@ async def get_my_servers(
             max_players=s.slots,
             current_map=s.current_map,
             created_at=s.created_at.isoformat() if s.created_at else None,
+            panel_password=s.panel_password,  # Include for frontend check
         )
         for s in servers
     ]
+
+
+@router.post("/{server_id}/verify-panel-password")
+async def verify_panel_password(
+    server_id: int,
+    password_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Panel şifresini doğrula"""
+    server = await verify_server_ownership(server_id, current_user, db)
+
+    # If no password set, always allow
+    if not server.panel_password:
+        return {"success": True}
+
+    # Check password
+    if password_data.get("password") == server.panel_password:
+        return {"success": True}
+    else:
+        raise HTTPException(401, "Yanlış şifre")
 
 
 @router.get("/search/steam/{steam_id}")
@@ -643,12 +695,18 @@ async def get_rcon_history(
     current_user: User = Depends(get_current_user_required),
 ):
     """RCON komut gecmisini al"""
-    await verify_server_ownership(server_id, current_user, db)
+    try:
+        await verify_server_ownership(server_id, current_user, db)
 
-    rcon_service = RCONService(db)
-    history = rcon_service.get_command_history(server_id, limit, offset)
+        rcon_service = RCONService(db)
+        history = rcon_service.get_command_history(server_id, limit, offset)
 
-    return {"history": history}
+        return {"history": history}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"RCON history error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================
@@ -663,12 +721,18 @@ async def get_players(
     current_user: User = Depends(get_current_user_required),
 ):
     """Oyuncu listesini al"""
-    server = await verify_server_ownership(server_id, current_user, db)
+    try:
+        server = await verify_server_ownership(server_id, current_user, db)
 
-    rcon_service = RCONService(db)
-    players = await rcon_service.get_players(server)
+        rcon_service = RCONService(db)
+        players = await rcon_service.get_players(server)
 
-    return {"players": players}
+        return {"players": players}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get players error: {e}", exc_info=True)
+        return {"players": [], "error": str(e)}
 
 
 @router.post("/{server_id}/players/{slot}/kick")
@@ -915,6 +979,21 @@ async def sync_admins(
     return {"success": success, "message": message}
 
 
+@router.post("/{server_id}/admins/sync-owner")
+async def sync_owner_as_admin(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Sunucu sahibini manuel olarak admin olarak ekle/senkronize et"""
+    await verify_server_ownership(server_id, current_user, db)
+
+    admin_service = AMXXAdminService(db)
+    success, message = admin_service.add_owner_as_admin(server_id, current_user.id)
+
+    return {"success": success, "message": message}
+
+
 # ============================================
 # Config Management Endpoints
 # ============================================
@@ -953,6 +1032,45 @@ async def update_config(
     config_service = ServerConfigService(db)
     success, message = config_service.write_config(
         server, filename, request_data.content, current_user.id
+    )
+
+    if not success:
+        raise HTTPException(400, message)
+
+    return {"success": True, "message": message}
+
+
+@router.get("/{server_id}/config/server.cfg")
+async def get_server_cfg(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """server.cfg oku"""
+    server = await verify_server_ownership(server_id, current_user, db)
+
+    config_service = ServerConfigService(db)
+    content, message = config_service.read_config(server, "server.cfg")
+
+    if content is None:
+        raise HTTPException(404, message)
+
+    return {"content": content}
+
+
+@router.post("/{server_id}/config/server.cfg")
+async def update_server_cfg(
+    server_id: int,
+    request_data: ConfigUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """server.cfg guncelle"""
+    server = await verify_server_ownership(server_id, current_user, db)
+
+    config_service = ServerConfigService(db)
+    success, message = config_service.write_config(
+        server, "server.cfg", request_data.content, current_user.id
     )
 
     if not success:
@@ -1175,7 +1293,24 @@ async def get_server_stats(
         .first()
     )
 
+    # Calculate uptime
+    uptime_str = "0s"
+    if server.last_started:
+        uptime_delta = datetime.utcnow() - server.last_started
+        hours = int(uptime_delta.total_seconds() // 3600)
+        minutes = int((uptime_delta.total_seconds() % 3600) // 60)
+        if hours > 0:
+            uptime_str = f"{hours}h {minutes}m"
+        else:
+            uptime_str = f"{minutes}m"
+
     return {
+        "uptime": uptime_str,
+        "avg_players": float(stats_24h.avg_players or 0),
+        "max_players": stats_24h.max_players or 0,
+        "total_unique": stats_24h.total_unique or 0,
+        "crash_count": server.crash_count or 0,
+        "last_crash": server.last_crash.isoformat() if server.last_crash else None,
         "last_24h": {
             "avg_players": float(stats_24h.avg_players or 0),
             "max_players": stats_24h.max_players or 0,
@@ -1185,8 +1320,6 @@ async def get_server_stats(
             "avg_players": float(stats_7d.avg_players or 0),
             "max_players": stats_7d.max_players or 0,
         },
-        "crash_count": server.crash_count or 0,
-        "last_crash": server.last_crash.isoformat() if server.last_crash else None,
     }
 
 
@@ -1297,3 +1430,263 @@ async def execute_quick_command(
     )
 
     return result
+
+
+# ============================================
+# Visual Config Endpoints
+# ============================================
+
+
+class VisualConfigUpdate(BaseModel):
+    """Visual config güncelleme (Minimal)"""
+
+    # Sunucu Bilgileri
+    hostname: Optional[str] = None
+    sv_contact: Optional[str] = None
+    # Güvenlik
+    rcon_password: Optional[str] = None
+    sv_password: Optional[str] = None
+    # Sunucu
+    sv_allowdownload: Optional[int] = None
+    # AG Mod - Temel
+    sv_ag_gamemode: Optional[str] = None
+    sv_ag_start_health: Optional[int] = None
+    sv_ag_start_armour: Optional[int] = None
+    sv_ag_start_longjump: Optional[int] = None
+    sv_ag_start_minplayers: Optional[int] = None
+    # AG Mod - Oylama
+    sv_ag_allow_vote: Optional[int] = None
+    sv_ag_vote_gamemode: Optional[int] = None
+    sv_ag_vote_map: Optional[int] = None
+
+
+@router.get("/{server_id}/config/visual")
+async def get_visual_config(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """server.cfg'den görsel düzenleyici ayarlarını al"""
+    server = await verify_server_ownership(server_id, current_user, db)
+
+    config_service = ServerConfigService(db)
+    values = config_service.parse_visual_config(server)
+
+    return values
+
+
+@router.put("/{server_id}/config/visual")
+async def update_visual_config(
+    server_id: int,
+    config: VisualConfigUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Görsel düzenleyici ayarlarını güncelle"""
+    server = await verify_server_ownership(server_id, current_user, db)
+
+    # Sadece dolu alanları al
+    values = {k: v for k, v in config.dict().items() if v is not None}
+
+    if not values:
+        raise HTTPException(400, "Güncellenecek değer bulunamadı")
+
+    config_service = ServerConfigService(db)
+    success, message = config_service.update_visual_config(server, values, current_user.id)
+
+    if not success:
+        raise HTTPException(500, message)
+
+    return {"success": True, "message": message}
+
+
+# ==================== AUTO-UPDATE SYSTEM ====================
+
+
+class UpdateCheckResponse(BaseModel):
+    """Auto-update check response"""
+
+    cs16: dict
+    amxmodx: dict
+    last_update: Optional[str]
+    auto_update_enabled: bool
+    next_scheduled_update: Optional[str]
+
+
+class UpdateActionRequest(BaseModel):
+    """Update action request"""
+
+    component: str = Field(..., description="cs16 or amxmodx")
+    auto_restart: bool = Field(default=False, description="Auto-restart after update")
+
+
+@router.get("/{server_id}/updates/status", response_model=UpdateCheckResponse)
+async def get_update_status(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Get update status for all components"""
+    server = await verify_server_ownership(server_id, current_user, db)
+
+    status = await auto_update_service.get_update_status(server_id, server, db)
+
+    return status
+
+
+@router.post("/{server_id}/updates/install")
+async def install_update(
+    server_id: int,
+    request: UpdateActionRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Install component update"""
+    server = await verify_server_ownership(server_id, current_user, db)
+
+    if request.component == "cs16":
+        result = await auto_update_service.update_cs16(server_id, current_user.id, db)
+    elif request.component == "amxmodx":
+        result = await auto_update_service.update_amxmodx(server_id, current_user.id, server, db)
+    else:
+        raise HTTPException(400, "Invalid component. Use 'cs16' or 'amxmodx'")
+
+    # Auto-restart if requested and update successful
+    if result.get("success") and request.auto_restart:
+        control_service = ServerControlService(db)
+        background_tasks.add_task(control_service.restart_server, server.id, current_user.id)
+
+    return result
+
+
+@router.get("/{server_id}/updates/history")
+async def get_update_history(
+    server_id: int,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Get update history"""
+    await verify_server_ownership(server_id, current_user, db)
+
+    history = await auto_update_service.get_update_history(db, server_id, limit)
+
+    return {"history": history, "count": len(history)}
+
+
+# ==================== DDOS PROTECTION SYSTEM ====================
+
+
+class DDoSStatusResponse(BaseModel):
+    """DDoS protection status response"""
+
+    enabled: bool
+    current_traffic: dict
+    blocked_ips_count: int
+    total_attacks_24h: int
+    last_attack: Optional[dict]
+    protection_level: str
+    auto_mitigation: bool
+
+
+class BlockIPRequest(BaseModel):
+    """Block IP request"""
+
+    ip: str = Field(..., min_length=7, max_length=45, description="IP address to block")
+    reason: str = Field(..., min_length=1, max_length=200, description="Reason for blocking")
+    duration: int = Field(
+        default=3600, ge=0, description="Block duration in seconds (0 = permanent)"
+    )
+
+
+@router.get("/{server_id}/ddos/status", response_model=DDoSStatusResponse)
+async def get_ddos_status(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Get DDoS protection status"""
+    server = await verify_server_ownership(server_id, current_user, db)
+
+    status = await ddos_protection_service.get_protection_status(server_id, server, db)
+
+    return status
+
+
+@router.get("/{server_id}/ddos/traffic")
+async def get_traffic_stats(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Get real-time traffic statistics"""
+    server = await verify_server_ownership(server_id, current_user, db)
+
+    stats = await ddos_protection_service.get_traffic_stats(server_id, server)
+
+    return stats
+
+
+@router.post("/{server_id}/ddos/block-ip")
+async def block_ip(
+    server_id: int,
+    request: BlockIPRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Block an IP address"""
+    await verify_server_ownership(server_id, current_user, db)
+
+    result = await ddos_protection_service.block_ip(
+        request.ip, request.reason, request.duration, current_user.id, db
+    )
+
+    return result
+
+
+@router.post("/{server_id}/ddos/unblock-ip")
+async def unblock_ip(
+    server_id: int,
+    ip: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Unblock an IP address"""
+    await verify_server_ownership(server_id, current_user, db)
+
+    result = await ddos_protection_service.unblock_ip(ip, db)
+
+    return result
+
+
+@router.get("/{server_id}/ddos/blocked-ips")
+async def get_blocked_ips(
+    server_id: int,
+    active_only: bool = True,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Get list of blocked IPs"""
+    await verify_server_ownership(server_id, current_user, db)
+
+    blocked_ips = await ddos_protection_service.get_blocked_ips(db, active_only)
+
+    return {"blocked_ips": blocked_ips, "count": len(blocked_ips)}
+
+
+@router.get("/{server_id}/ddos/attack-history")
+async def get_attack_history(
+    server_id: int,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+):
+    """Get DDoS attack history"""
+    await verify_server_ownership(server_id, current_user, db)
+
+    history = await ddos_protection_service.get_attack_history(db, server_id, limit)
+
+    return {"attacks": history, "count": len(history)}
+
+    return {"success": True, "message": message}

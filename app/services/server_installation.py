@@ -172,10 +172,10 @@ class ServerInstallationService:
 
         return installation
 
-    def update_installation_progress(
+    async def update_installation_progress(
         self, installation_id: int, step: int, progress: int, error: Optional[str] = None
     ):
-        """Kurulum ilerlemesini guncelle"""
+        """Kurulum ilerlemesini guncelle ve WebSocket ile broadcast et"""
         installation = (
             self.db.query(ServerInstallation)
             .filter(ServerInstallation.id == installation_id)
@@ -186,8 +186,10 @@ class ServerInstallationService:
             return
 
         installation.progress_percent = progress
-        if step < len(self.INSTALLATION_STEPS):
-            installation.current_step = self.INSTALLATION_STEPS[step]
+        current_step_name = (
+            self.INSTALLATION_STEPS[step] if step < len(self.INSTALLATION_STEPS) else "Tamamlaniyor"
+        )
+        installation.current_step = current_step_name
 
         if error:
             installation.status = InstallationStatus.FAILED
@@ -195,11 +197,25 @@ class ServerInstallationService:
 
         self.db.commit()
 
+        # Broadcast progress via WebSocket
+        try:
+            from app.services.installation_progress import installation_progress_manager
+
+            await installation_progress_manager.broadcast_progress(
+                server_id=installation.server_id,
+                stage=current_step_name,
+                progress=progress,
+                message=f"{current_step_name} ({progress}%)",
+                error=error,
+            )
+        except Exception as e:
+            logger.debug(f"Failed to broadcast installation progress: {e}")
+
     async def copy_template(
         self, server_id: int, mod_type: str, installation_id: int
     ) -> Tuple[bool, str]:
         """
-        Template'i sunucu dizinine kopyala (rsync ile)
+        Template'i sunucu dizinine kopyala (cache'ten extract veya rsync fallback)
 
         Args:
             server_id: Sunucu ID
@@ -209,9 +225,7 @@ class ServerInstallationService:
         Returns:
             (basari, mesaj)
         """
-        template_path = self.get_template_path(mod_type)
-        if not template_path:
-            return False, f"Template bulunamadi: {mod_type}"
+        from app.services.template_cache_service import TemplateCacheService
 
         server_path = self.get_server_path(server_id)
 
@@ -225,6 +239,27 @@ class ServerInstallationService:
 
         # Parent dizini olustur
         server_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Try cache first (3x faster)
+        cache_service = TemplateCacheService(self.db)
+
+        if cache_service.is_cache_available(mod_type):
+            logger.info(f"Using template cache for {mod_type} (fast extraction)")
+
+            success, message = await cache_service.extract_template_archive(mod_type, server_path)
+
+            if success:
+                logger.info(f"Template extracted from cache: {server_path}")
+                return True, "Template extracted from cache (fast)"
+            else:
+                logger.warning(f"Cache extraction failed: {message}, falling back to rsync")
+
+        # Fallback to rsync if cache not available or extraction failed
+        template_path = self.get_template_path(mod_type)
+        if not template_path:
+            return False, f"Template bulunamadi: {mod_type}"
+
+        logger.info(f"Using rsync fallback for {mod_type}")
 
         # rsync ile kopyala
         try:
@@ -241,8 +276,8 @@ class ServerInstallationService:
                 logger.error(f"rsync hatasi: {error_msg}")
                 return False, f"Kopyalama hatasi: {error_msg}"
 
-            logger.info(f"Template kopyalandi: {template_path} -> {server_path}")
-            return True, "Basarili"
+            logger.info(f"Template kopyalandi (rsync): {template_path} -> {server_path}")
+            return True, "Basarili (rsync fallback)"
 
         except Exception as e:
             logger.error(f"Template kopyalama hatasi: {e}")
@@ -612,6 +647,19 @@ echo "Server stopped: $SCREEN_NAME"
                 self.update_installation_progress(installation_id, 4, 65, msg)
                 return False, msg
             self.update_installation_progress(installation_id, 4, 70)
+
+            # Auto-admin: Sahip otomatik admin olarak ekle
+            try:
+                from app.services.amxx_admin import AMXXAdminService
+
+                amxx_service = AMXXAdminService(self.db)
+                success, msg = amxx_service.add_owner_as_admin(server_id, server.owner_id)
+                if success:
+                    logger.info(f"Auto-admin: {msg}")
+                else:
+                    logger.warning(f"Auto-admin hatasi: {msg}")
+            except Exception as e:
+                logger.error(f"Auto-admin exception: {e}")
 
             # Adim 6: Startup script (80%)
             self.update_installation_progress(installation_id, 5, 75)

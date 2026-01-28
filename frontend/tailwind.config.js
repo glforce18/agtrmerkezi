@@ -4,41 +4,45 @@ export default {
     "./index.html",
     "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // Brand colors for accent usage
-        brand: {
-          50: '#fff7ed',
-          100: '#ffedd5',
-          200: '#fed7aa',
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#f97316', // Primary orange
-          600: '#ea580c',
-          700: '#c2410c',
-          800: '#9a3412',
-          900: '#7c2d12',
+        // Modern Dark Mode Color Palette
+        primary: {
+          DEFAULT: '#FF6B35',
+          dark: '#E85D2C',
+          light: '#FF8A5C',
+        },
+        dark: {
+          bg: '#0F1419',        // Main background
+          card: '#1A1F29',      // Card background
+          elevated: '#242933',  // Elevated elements
+          border: '#2F3640',    // Borders
+          hover: '#2A3038',     // Hover states
+        },
+        text: {
+          primary: '#E8EAED',   // Main text
+          secondary: '#9AA0A6', // Secondary text
+          muted: '#5F6368',     // Muted text
+        },
+        status: {
+          success: '#10B981',
+          warning: '#F59E0B',
+          error: '#EF4444',
+          info: '#3B82F6',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['Fira Code', 'monospace'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Consolas', 'Monaco', 'monospace'],
       },
-      animation: {
-        'fade-in': 'fadeIn 0.3s ease-in-out',
-        'slide-up': 'slideUp 0.3s ease-out',
+      boxShadow: {
+        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.3)',
+        'card-hover': '0 4px 12px 0 rgba(0, 0, 0, 0.4)',
+        'elevated': '0 2px 8px 0 rgba(0, 0, 0, 0.35)',
       },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
+      borderRadius: {
+        'card': '12px',
       },
     },
   },

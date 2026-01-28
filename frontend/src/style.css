@@ -1,2129 +1,368 @@
-/* Google Fonts with Turkish character support (latin-ext includes ğ, ı, ş, ü, ö, ç) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap&subset=latin-ext');
-
-/* Orbitron doesn't support Turkish chars well, use Rajdhani as alternative for gaming titles */
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap&subset=latin-ext');
-
-/* Forum-specific design system */
-@import './assets/styles/forum.css';
-
-/* Tailwind CSS Directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Base Styles */
 @layer base {
-  :root {
-    /* Brand Colors */
-    --brand-orange: #f97316;
-    --brand-orange-light: #fb923c;
-    --brand-orange-dark: #ea580c;
-    --brand-purple: #8b5cf6;
-    --brand-cyan: #06b6d4;
-
-    /* Semantic Color Roles */
-    --color-primary: #f97316;      /* Orange - Primary emphasis, CTAs, Armor */
-    --color-success: #22c55e;      /* Green - TL, wins, positive */
-    --color-info: #3b82f6;         /* Blue - Stats, info */
-    --color-warning: #eab308;      /* Yellow - Warnings */
-    --color-error: #ef4444;        /* Red - Errors, danger */
-    --color-neutral: #71717a;      /* Gray - Neutral content */
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-    --gradient-success: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    --gradient-gaming: linear-gradient(135deg, #f97316 0%, #8b5cf6 50%, #06b6d4 100%);
-    --gradient-glow: linear-gradient(135deg, rgba(249, 115, 22, 0.3) 0%, rgba(139, 92, 246, 0.3) 100%);
-
-    /* Shadows - Subtle & Clean (eye-friendly) */
-    --shadow-gaming: 0 0 12px rgba(249, 115, 22, 0.1);
-    --shadow-glow: 0 4px 12px rgba(249, 115, 22, 0.08);
-    --shadow-glow-strong: 0 0 18px rgba(249, 115, 22, 0.18);
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
-    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.1);
-
-    /* New shadow levels */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.15);
-
-    /* Typography Scale (Master Document) */
-    --font-size-h1: clamp(40px, 5vw, 56px);
-    --font-size-h2: clamp(22px, 3vw, 28px);
-    --font-size-h3: clamp(16px, 2vw, 18px);
-    --font-size-body: 15px;
-    --font-size-meta: 13px;
-    --font-size-small: 12px;
-
-    --line-height-heading: 1.25;
-    --line-height-body: 1.7;
-
-    /* Spacing Scale (Master Document) - Optimized */
-    --spacing-page: clamp(16px, 4vw, 48px);
-    --spacing-section: clamp(32px, 5vw, 64px);
-    --spacing-card-gap: 20px;
-    --spacing-card-padding: clamp(16px, 2.5vw, 24px);
-
-    /* Card System */
-    --card-radius: 14px;
-    --card-radius-lg: 20px;
-    --card-radius-sm: 10px;
-  }
-
-  /* Dark Mode Variables - Softer & Eye-friendly */
-  html.dark {
-    --bg-primary: #0d1117;
-    --bg-secondary: #151b23;
-    --bg-tertiary: #1c232d;
-    --bg-card: rgba(255, 255, 255, 0.02);
-    --bg-hover: rgba(255, 255, 255, 0.04);
-
-    --text-primary: #e2e8f0;
-    --text-secondary: #a0aec0;
-    --text-tertiary: #718096;
-    --text-muted: #4a5568;
-
-    --border-color: rgba(255, 255, 255, 0.06);
-    --border-light: rgba(255, 255, 255, 0.04);
-
-    --glass-bg: rgba(255, 255, 255, 0.02);
-    --glass-border: rgba(255, 255, 255, 0.05);
-
-    --card-bg: rgba(21, 27, 35, 0.95);
-    --input-bg: rgba(255, 255, 255, 0.03);
-
-    --overlay-bg: rgba(0, 0, 0, 0.75);
-  }
-
-  /* Light Mode Variables */
-  html:not(.dark) {
-    --bg-primary: #ffffff;
-    --bg-secondary: #f9fafb;
-    --bg-tertiary: #f3f4f6;
-    --bg-card: rgba(0, 0, 0, 0.02);
-    --bg-hover: rgba(0, 0, 0, 0.04);
-
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --text-tertiary: #6b7280;
-    --text-muted: #9ca3af;
-
-    --border-color: rgba(0, 0, 0, 0.1);
-    --border-light: rgba(0, 0, 0, 0.06);
-
-    --glass-bg: rgba(255, 255, 255, 0.8);
-    --glass-border: rgba(0, 0, 0, 0.08);
-
-    --card-bg: rgba(255, 255, 255, 0.9);
-    --input-bg: rgba(0, 0, 0, 0.03);
-
-    --overlay-bg: rgba(0, 0, 0, 0.4);
-  }
-
-  * {
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden !important;
-    width: 100%;
-    max-width: 100vw;
-  }
-
   body {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden !important;
-    width: 100%;
-    max-width: 100vw;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    position: relative;
+    @apply bg-dark-bg text-text-primary font-sans;
   }
 
-  /* Prevent horizontal scroll globally */
-  #app {
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 12px;
   }
 
-  /* Dark mode default - Softer gradient */
-  html.dark body {
-    background: linear-gradient(180deg, #1a1b21 0%, #121318 100%);
-    color: #e8e8ec;
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-bg;
   }
 
-  html:not(.dark) body {
-    background-color: #ffffff;
-    color: #1a1a1a;
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-border rounded-lg;
   }
 
-  /* Scrollbar - Dark Mode */
-  html.dark ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary;
   }
 
-  html.dark ::-webkit-scrollbar-track {
-    background: #1a1a1f;
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-text-primary;
   }
 
-  html.dark ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
-    border-radius: 5px;
-  }
-
-  html.dark ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #fb923c 0%, #f97316 100%);
-  }
-
-  /* Scrollbar - Light Mode */
-  html:not(.dark) ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  html:not(.dark) ::-webkit-scrollbar-track {
-    background: #f4f4f5;
-  }
-
-  html:not(.dark) ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
-    border-radius: 5px;
-  }
-
-  /* Focus visible */
-  :focus-visible {
-    outline: 2px solid var(--brand-orange);
-    outline-offset: 2px;
-  }
-
-  /* Links */
   a {
-    color: inherit;
-    text-decoration: none;
-    transition: color 0.2s ease;
-  }
-
-  /* Images */
-  img {
-    max-width: 100%;
-    height: auto;
-  }
-
-  /* Selection */
-  ::selection {
-    background: rgba(249, 115, 22, 0.3);
-    color: #fff;
+    @apply text-primary hover:text-primary-light transition-colors;
   }
 }
 
-/* Component utilities */
 @layer components {
-  /* Container - Master Document Spacing */
-  .container-main,
-  .container-custom {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-page);
-    box-sizing: border-box;
+  /* Modern Card */
+  .card {
+    @apply bg-dark-card border border-dark-border rounded-card shadow-card;
+    @apply transition-all duration-200;
   }
 
-  /* Page wrapper - Premium spacing */
-  .page-wrapper {
-    min-height: calc(100vh - 64px);
-    overflow-x: hidden;
-    width: 100%;
-    padding: var(--spacing-section) 0;
+  .card:hover {
+    @apply shadow-card-hover border-dark-elevated;
   }
 
-  /* Page Section with proper spacing */
-  .page-section {
-    padding: var(--spacing-section) 0;
+  .card-elevated {
+    @apply bg-dark-elevated shadow-elevated;
   }
 
-  /* Typography Classes (Master Document Scale) */
-  .heading-1 {
-    font-family: 'Poppins', 'Inter', sans-serif;
-    font-size: var(--font-size-h1);
-    font-weight: 700;
-    line-height: var(--line-height-heading);
-    letter-spacing: -0.02em;
+  /* Button Styles */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50;
   }
 
-  .heading-2 {
-    font-family: 'Poppins', 'Inter', sans-serif;
-    font-size: var(--font-size-h2);
-    font-weight: 600;
-    line-height: var(--line-height-heading);
-    letter-spacing: -0.01em;
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
   }
 
-  .heading-3 {
-    font-family: 'Inter', sans-serif;
-    font-size: var(--font-size-h3);
-    font-weight: 600;
-    line-height: 1.4;
+  .btn-secondary {
+    @apply bg-dark-elevated text-text-primary hover:bg-dark-hover border border-dark-border;
   }
 
-  .body-text {
-    font-size: var(--font-size-body);
-    line-height: var(--line-height-body);
+  .btn-ghost {
+    @apply text-text-secondary hover:text-text-primary hover:bg-dark-hover;
   }
 
-  .meta-text {
-    font-size: var(--font-size-meta);
-    line-height: 1.5;
-    color: var(--text-secondary);
+  /* Input Styles */
+  .input {
+    @apply w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5;
+    @apply text-text-primary placeholder-text-muted;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20;
   }
 
-  .small-text {
-    font-size: var(--font-size-small);
-    line-height: 1.4;
+  .input:hover {
+    @apply border-dark-elevated;
   }
 
-  /* Card Grid with proper gap */
-  .card-grid {
-    display: grid;
-    gap: var(--spacing-card-gap);
+  /* Textarea */
+  .textarea {
+    @apply input resize-none min-h-[120px];
   }
 
-  .card-grid-2 {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium;
   }
 
-  .card-grid-3 {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  .badge-success {
+    @apply bg-status-success/10 text-status-success border border-status-success/20;
   }
 
-  .card-grid-4 {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  .badge-warning {
+    @apply bg-status-warning/10 text-status-warning border border-status-warning/20;
   }
 
-  /* Card base - Enhanced with Master Document specs */
-  .card-base {
-    border-radius: var(--card-radius);
-    padding: var(--spacing-card-padding);
-    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  .badge-error {
+    @apply bg-status-error/10 text-status-error border border-status-error/20;
   }
 
-  .card-base:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-card-hover);
+  .badge-info {
+    @apply bg-status-info/10 text-status-info border border-status-info/20;
   }
 
-  /* Modern Card - Soft shadows & subtle interactions */
-  .card-modern {
-    background: var(--card-bg);
-    border: 1px solid var(--border-light);
-    border-radius: var(--card-radius);
-    padding: var(--spacing-card-padding);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  .badge-neutral {
+    @apply bg-dark-elevated text-text-secondary border border-dark-border;
   }
 
-  .card-modern:hover {
-    transform: translateY(-2px);
-    border-color: var(--border-color);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  }
-
-  html.dark .card-modern:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  }
-
-  /* Interactive Card - For clickable items */
-  .card-interactive {
-    background: var(--card-bg);
-    border: 1px solid var(--border-light);
-    border-radius: var(--card-radius);
-    padding: var(--spacing-card-padding);
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .card-interactive::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(249, 115, 22, 0.03) 100%);
-    opacity: 0;
-    transition: opacity 0.25s ease;
-  }
-
-  .card-interactive:hover {
-    transform: translateY(-3px);
-    border-color: rgba(249, 115, 22, 0.25);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-  }
-
-  .card-interactive:hover::before {
-    opacity: 1;
-  }
-
-  .card-interactive:active {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Highlighted Card - For featured items */
-  .card-highlight {
-    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(249, 115, 22, 0.03) 100%);
-    border: 1px solid rgba(249, 115, 22, 0.15);
-    border-radius: var(--card-radius);
-    padding: var(--spacing-card-padding);
-    transition: all 0.3s ease;
-  }
-
-  .card-highlight:hover {
-    border-color: rgba(249, 115, 22, 0.35);
-    box-shadow: 0 8px 32px rgba(249, 115, 22, 0.08);
-  }
-
-  /* Glass card effect - Theme Aware */
-  .glass-card {
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border) !important;
-    transition: all 0.3s ease;
-    color: var(--text-primary);
-  }
-
-  .glass-card:hover {
-    border-color: rgba(249, 115, 22, 0.25) !important;
-    box-shadow: 0 8px 32px rgba(249, 115, 22, 0.08);
-  }
-
-  /* Soft Glow Card - Subtle ambient effect */
-  .card-soft-glow {
-    background: var(--card-bg);
-    border: 1px solid var(--border-light);
-    border-radius: var(--card-radius);
-    padding: var(--spacing-card-padding);
-    transition: all 0.3s ease;
-    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
-  }
-
-  .card-soft-glow:hover {
-    border-color: rgba(249, 115, 22, 0.2);
-    box-shadow: 0 0 24px rgba(249, 115, 22, 0.06);
-  }
-
-  /* Theme-aware text utilities */
-  .text-theme-primary {
-    color: var(--text-primary) !important;
-  }
-
-  .text-theme-secondary {
-    color: var(--text-secondary) !important;
-  }
-
-  .text-theme-tertiary {
-    color: var(--text-tertiary) !important;
-  }
-
-  .bg-theme-primary {
-    background-color: var(--bg-primary) !important;
-  }
-
-  .bg-theme-secondary {
-    background-color: var(--bg-secondary) !important;
-  }
-
-  .bg-theme-card {
-    background-color: var(--card-bg) !important;
-  }
-
-  .border-theme {
-    border-color: var(--border-color) !important;
-  }
-
-  /* Glass panel with proper light mode support */
-  .glass-panel {
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    color: var(--text-primary);
-  }
-
-  /* ========================================
-     PRIMARY CTA BUTTON - Clean & Focused
-     ======================================== */
-  .btn-primary-cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 14px 32px;
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    color: #fff;
-    background: var(--gradient-primary);
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
-    transition: all 0.2s ease;
-  }
-
-  .btn-primary-cta:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.3);
-  }
-
-  .btn-primary-cta:active {
-    transform: translateY(0);
-  }
-
-  /* Secondary CTA - Outline style */
-  .btn-secondary-cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 14px 32px;
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--brand-orange);
-    background: transparent;
-    border: 2px solid rgba(249, 115, 22, 0.4);
-    border-radius: var(--card-radius);
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .btn-secondary-cta:hover {
-    background: rgba(249, 115, 22, 0.1);
-    border-color: var(--brand-orange);
-    transform: translateY(-2px);
-  }
-
-  /* Gaming button styles */
-  .btn-gaming {
-    position: relative;
-    background: var(--gradient-primary) !important;
-    border: none !important;
-    font-weight: 700 !important;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    overflow: hidden;
-    transition: all 0.3s ease !important;
-  }
-
-  .btn-gaming::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s ease;
-  }
-
-  .btn-gaming:hover::before {
-    left: 100%;
-  }
-
-  .btn-gaming:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-glow);
-  }
-
-  /* Glow effects */
-  .glow-orange {
-    box-shadow: 0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(249, 115, 22, 0.2);
-  }
-
-  .glow-purple {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
-  }
-
-  .glow-cyan {
-    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(6, 182, 212, 0.2);
-  }
-
-  /* Animated border */
-  .animated-border {
-    position: relative;
-  }
-
-  .animated-border::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    background: var(--gradient-gaming);
-    border-radius: inherit;
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .animated-border:hover::before {
-    opacity: 1;
-    animation: borderGlow 2s ease-in-out infinite;
-  }
-
-  /* Stat card */
+  /* Stats Card */
   .stat-card {
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-  }
-
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: var(--gradient-primary);
-    transform: scaleY(0);
-    transition: transform 0.3s ease;
-  }
-
-  .stat-card:hover::before {
-    transform: scaleY(1);
+    @apply card p-6 text-center;
   }
 
   .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    @apply border-primary/30;
   }
 
-  /* Floating animation */
-  .float {
-    animation: float 3s ease-in-out infinite;
+  /* Forum Category Card */
+  .category-card {
+    @apply card p-4 cursor-pointer block;
   }
 
-  /* Pulse glow */
-  .pulse-glow {
-    animation: pulseGlow 2s ease-in-out infinite;
+  .category-card:hover {
+    @apply border-primary/50 bg-dark-elevated;
   }
 
-  /* Shine effect */
-  .shine {
-    position: relative;
-    overflow: hidden;
+  /* Forum Topic Card */
+  .topic-card {
+    @apply card p-4 cursor-pointer block;
   }
 
-  .shine::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      rgba(255, 255, 255, 0.1) 50%,
-      transparent 100%
-    );
-    transform: rotate(30deg);
-    animation: shine 3s ease-in-out infinite;
+  .topic-card:hover {
+    @apply border-primary/50 bg-dark-elevated;
   }
 
-  /* Status indicators */
-  .status-online {
-    background-color: #22c55e;
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
-    animation: statusPulse 2s ease-in-out infinite;
+  /* Navigation */
+  .nav-link {
+    @apply text-text-secondary hover:text-text-primary transition-colors;
+    @apply px-4 py-2 rounded-lg;
   }
 
-  .status-offline {
-    background-color: #ef4444;
+  .nav-link:hover {
+    @apply bg-dark-hover;
   }
 
-  /* Gaming headings - Rajdhani supports Turkish chars */
-  .heading-gaming {
-    font-family: 'Rajdhani', 'Poppins', sans-serif;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+  .nav-link.active {
+    @apply text-primary bg-dark-elevated;
+  }
+
+  /* Divider */
+  .divider {
+    @apply h-px bg-dark-border;
+  }
+
+  /* Loading Spinner */
+  .spinner {
+    border: 3px solid rgba(255, 107, 53, 0.1);
+    border-top: 3px solid #FF6B35;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Skeleton Loader */
+  .skeleton {
+    @apply bg-dark-elevated animate-pulse rounded;
+  }
+
+  /* Avatar */
+  .avatar {
+    @apply rounded-full flex items-center justify-center font-semibold;
+    @apply bg-primary text-white;
+  }
+
+  .avatar-sm {
+    @apply w-8 h-8 text-sm;
+  }
+
+  .avatar-md {
+    @apply w-10 h-10 text-base;
+  }
+
+  .avatar-lg {
+    @apply w-16 h-16 text-xl;
+  }
+
+  /* Status Indicator */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-dot.online {
+    @apply bg-status-success;
+  }
+
+  .status-dot.offline {
+    @apply bg-text-muted;
+  }
+
+  .status-dot.pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .5;
+    }
+  }
+
+  /* Pagination */
+  .pagination-btn {
+    @apply px-3 py-1.5 rounded-lg text-sm font-medium;
+    @apply bg-dark-card border border-dark-border text-text-secondary;
+    @apply hover:bg-dark-elevated hover:text-text-primary transition-all;
+  }
+
+  .pagination-btn.active {
+    @apply bg-primary text-white border-primary;
+  }
+
+  .pagination-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    @apply flex items-center space-x-2 text-sm text-text-secondary;
+  }
+
+  .breadcrumb a:hover {
+    @apply text-primary;
+  }
+
+  /* Alert */
+  .alert {
+    @apply p-4 rounded-lg border;
+  }
+
+  .alert-info {
+    @apply bg-status-info/10 border-status-info/30 text-status-info;
+  }
+
+  .alert-success {
+    @apply bg-status-success/10 border-status-success/30 text-status-success;
+  }
+
+  .alert-warning {
+    @apply bg-status-warning/10 border-status-warning/30 text-status-warning;
+  }
+
+  .alert-error {
+    @apply bg-status-error/10 border-status-error/30 text-status-error;
+  }
+
+  /* Terminal/Console */
+  .terminal {
+    @apply bg-black/90 border border-dark-border rounded-lg;
+    @apply font-mono text-sm;
+  }
+
+  .terminal-text {
+    @apply text-green-400;
+  }
+
+  /* Empty State */
+  .empty-state {
+    @apply text-center py-12 px-4;
+  }
+
+  .empty-state-icon {
+    @apply text-6xl text-text-muted mb-4;
+  }
+
+  .empty-state-title {
+    @apply text-text-secondary font-medium mb-2;
+  }
+
+  .empty-state-description {
+    @apply text-text-muted text-sm;
+  }
+
+  /* Code Block */
+  .code-block {
+    @apply bg-dark-elevated border border-dark-border rounded-lg p-4;
+    @apply font-mono text-sm overflow-x-auto;
+  }
+
+  /* Table */
+  .table {
+    @apply w-full border-collapse;
+  }
+
+  .table thead {
+    @apply bg-dark-elevated border-b border-dark-border;
+  }
+
+  .table th {
+    @apply text-left px-4 py-3 text-sm font-semibold text-text-secondary;
+  }
+
+  .table td {
+    @apply px-4 py-3 border-b border-dark-border;
+  }
+
+  .table tbody tr:hover {
+    @apply bg-dark-hover;
+  }
+
+  /* Modal Overlay */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50;
+  }
+
+  .modal-content {
+    @apply bg-dark-card border border-dark-border rounded-card;
+    @apply max-w-2xl w-full max-h-[90vh] overflow-y-auto;
+  }
+
+  /* Dropdown */
+  .dropdown {
+    @apply bg-dark-card border border-dark-border rounded-lg shadow-elevated;
+    @apply py-2 min-w-[200px];
+  }
+
+  .dropdown-item {
+    @apply px-4 py-2 text-text-primary hover:bg-dark-hover cursor-pointer;
+    @apply transition-colors;
+  }
+
+  .dropdown-divider {
+    @apply h-px bg-dark-border my-2;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    @apply bg-dark-elevated border border-dark-border rounded-lg px-3 py-2;
+    @apply text-sm text-text-primary shadow-elevated;
   }
 }
 
-/* Utility layer */
 @layer utilities {
-  /* Text gradients */
-  .text-gradient,
-  .text-gradient-orange {
-    background: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #f97316 100%);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: textShine 3s linear infinite;
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
   }
 
-  .text-gradient-gaming {
-    background: linear-gradient(135deg, #f97316 0%, #8b5cf6 50%, #06b6d4 100%);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: textShine 4s linear infinite;
+  /* Transition utilities */
+  .transition-base {
+    @apply transition-all duration-200 ease-in-out;
   }
 
-  .text-gradient-purple {
-    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 50%, #8b5cf6 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* Truncate multi-line */
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  /* Animation utilities */
-  .animate-fade-in {
-    animation: fadeIn 0.5s ease-out;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.5s ease-out;
-  }
-
-  .animate-slide-down {
-    animation: slideDown 0.5s ease-out;
-  }
-
-  .animate-scale-in {
-    animation: scaleIn 0.3s ease-out;
-  }
-
-  .animate-bounce-in {
-    animation: bounceIn 0.6s ease-out;
-  }
-
-  /* Hover effects - Refined */
-  .hover-lift {
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-  }
-
-  html.dark .hover-lift:hover {
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
-  }
-
-  .hover-glow:hover {
-    box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
-  }
-
-  .hover-scale {
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .hover-scale:hover {
-    transform: scale(1.03);
-  }
-
-  /* Smooth press effect for buttons */
-  .press-effect {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .press-effect:active {
-    transform: translateY(1px) scale(0.98);
-  }
-
-  /* Subtle bounce on hover */
-  .hover-bounce {
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .hover-bounce:hover {
-    transform: translateY(-2px);
-  }
-
-  /* Link hover underline animation */
-  .link-animated {
-    position: relative;
-    transition: color 0.2s ease;
-  }
-
-  .link-animated::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--color-primary);
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .link-animated:hover::after {
-    transform: scaleX(1);
-    transform-origin: left;
-  }
-
-  .link-animated:hover {
-    color: var(--color-primary);
-  }
-
-  /* Stagger animations for lists */
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
-}
-
-/* Keyframe Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes bounceIn {
-  0% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(249, 115, 22, 0.6), 0 0 60px rgba(249, 115, 22, 0.3);
-  }
-}
-
-@keyframes statusPulse {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.8), 0 0 30px rgba(34, 197, 94, 0.4);
-  }
-}
-
-@keyframes borderGlow {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes textShine {
-  0% {
-    background-position: 0% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-}
-
-@keyframes shine {
-  0% {
-    transform: translateX(-100%) rotate(30deg);
-  }
-  100% {
-    transform: translateX(100%) rotate(30deg);
-  }
-}
-
-@keyframes ripple {
-  0% {
-    transform: scale(0);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(4);
-    opacity: 0;
-  }
-}
-
-/* ========================================
-   OYUN TEMALİ ANİMASYONLAR
-   Half-Life & CS 1.6 Temalı
-   ======================================== */
-
-/* Muzzle Flash - Buton hover efekti */
-@keyframes muzzleFlash {
-  0% {
-    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
-    transform: scale(1);
-  }
-  20% {
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.8), 0 0 40px rgba(249, 115, 22, 0.6);
-    transform: scale(1.02);
-  }
-  40% {
-    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
-    transform: scale(1);
-  }
-  60% {
-    box-shadow: 0 0 25px rgba(251, 191, 36, 0.9), 0 0 50px rgba(249, 115, 22, 0.7);
-    transform: scale(1.03);
-  }
-  100% {
-    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
-    transform: scale(1);
-  }
-}
-
-/* Recoil - Geri tepme efekti */
-@keyframes recoil {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  25% {
-    transform: translateY(-4px) rotate(-1deg);
-  }
-  50% {
-    transform: translateY(-2px) rotate(0.5deg);
-  }
-  75% {
-    transform: translateY(-1px) rotate(-0.25deg);
-  }
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-}
-
-/* Headshot Pop - Headshot göstergesi */
-@keyframes headshotPop {
-  0% {
-    transform: scale(0) rotate(-15deg);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.3) rotate(5deg);
-    opacity: 1;
-  }
-  70% {
-    transform: scale(0.9) rotate(-2deg);
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
-  }
-}
-
-/* Kill Streak Slide - Kill streak bildirimi */
-@keyframes killStreakSlide {
-  0% {
-    transform: translateX(100%) scale(0.8);
-    opacity: 0;
-  }
-  20% {
-    transform: translateX(-10%) scale(1.05);
-    opacity: 1;
-  }
-  30% {
-    transform: translateX(0) scale(1);
-  }
-  80% {
-    transform: translateX(0) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(-100%) scale(0.8);
-    opacity: 0;
-  }
-}
-
-/* Level Up Burst - Seviye atlama patlaması */
-@keyframes levelUpBurst {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-    filter: blur(10px);
-  }
-  30% {
-    transform: scale(1.2);
-    opacity: 1;
-    filter: blur(0);
-  }
-  50% {
-    transform: scale(1);
-  }
-  70% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* Level Up Ring - Seviye atlama halka efekti */
-@keyframes levelUpRing {
-  0% {
-    transform: scale(0.5);
-    opacity: 1;
-    border-width: 4px;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
-    border-width: 1px;
-  }
-}
-
-/* XP Float - XP kazanma yazısı */
-@keyframes xpFloat {
-  0% {
-    transform: translateY(0) scale(0.5);
-    opacity: 0;
-  }
-  20% {
-    transform: translateY(-10px) scale(1.2);
-    opacity: 1;
-  }
-  40% {
-    transform: translateY(-25px) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-60px) scale(0.8);
-    opacity: 0;
-  }
-}
-
-/* Achievement Slide - Başarım popup */
-@keyframes achievementSlide {
-  0% {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-  15% {
-    transform: translateX(-5%);
-    opacity: 1;
-  }
-  25% {
-    transform: translateX(0);
-  }
-  85% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-}
-
-/* Achievement Icon Bounce */
-@keyframes achievementIconBounce {
-  0%, 100% {
-    transform: scale(1) rotate(0deg);
-  }
-  25% {
-    transform: scale(1.2) rotate(-10deg);
-  }
-  50% {
-    transform: scale(1.1) rotate(5deg);
-  }
-  75% {
-    transform: scale(1.15) rotate(-3deg);
-  }
-}
-
-/* Server Pulse - Sunucu durumu */
-@keyframes serverPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
-  }
-}
-
-/* Server Pulse Offline */
-@keyframes serverPulseOffline {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
-  }
-}
-
-/* Bomb Pulse - Bomba efekti */
-@keyframes bombPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
-    background-color: rgba(239, 68, 68, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0.4);
-    background-color: rgba(239, 68, 68, 0.6);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
-    background-color: rgba(239, 68, 68, 0.3);
-  }
-}
-
-/* Bomb Timer Tick */
-@keyframes bombTick {
-  0%, 90% {
-    transform: scale(1);
-  }
-  95% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* Kill Feed In */
-@keyframes killFeedIn {
-  0% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* Kill Feed Out */
-@keyframes killFeedOut {
-  0% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-}
-
-/* Floating Weapon Icons */
-@keyframes weaponFloat {
-  0%, 100% {
-    transform: translateY(0) rotate(-5deg);
-  }
-  25% {
-    transform: translateY(-15px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-10px) rotate(5deg);
-  }
-  75% {
-    transform: translateY(-20px) rotate(2deg);
-  }
-}
-
-/* Counter Increment */
-@keyframes counterIncrement {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.15);
-    color: var(--brand-orange);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* Crown Float - #1 için */
-@keyframes crownFloat {
-  0%, 100% {
-    transform: translateY(0) rotate(-3deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(3deg);
-  }
-}
-
-/* Rank Badge Glow */
-@keyframes rankBadgeGlow {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 25px rgba(251, 191, 36, 0.9), 0 0 40px rgba(249, 115, 22, 0.5);
-  }
-}
-
-/* Card 3D Tilt - Shop kartları için */
-@keyframes cardTilt3D {
-  0% {
-    transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
-  }
-  25% {
-    transform: perspective(1000px) rotateY(2deg) rotateX(-2deg);
-  }
-  50% {
-    transform: perspective(1000px) rotateY(-1deg) rotateX(1deg);
-  }
-  75% {
-    transform: perspective(1000px) rotateY(1deg) rotateX(-1deg);
-  }
-  100% {
-    transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
-  }
-}
-
-/* Popular Badge Pulse */
-@keyframes popularBadgePulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
-  }
-  50% {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(249, 115, 22, 0.8), 0 0 30px rgba(251, 191, 36, 0.4);
-  }
-}
-
-/* Purchase Confetti */
-@keyframes confettiFall {
-  0% {
-    transform: translateY(-100%) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100vh) rotate(720deg);
-    opacity: 0;
-  }
-}
-
-/* XP Bar Glow */
-@keyframes xpBarGlow {
-  0%, 100% {
-    box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 15px rgba(139, 92, 246, 0.8), 0 0 25px rgba(139, 92, 246, 0.4);
-  }
-}
-
-/* Level Badge Float */
-@keyframes levelBadgeFloat {
-  0%, 100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-5px) scale(1.05);
-  }
-}
-
-/* Achievement Unlock Shine */
-@keyframes achievementUnlockShine {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-}
-
-/* Podium Entry - Stagger slide up */
-@keyframes podiumEntry {
-  0% {
-    transform: translateY(100%) scale(0.8);
-    opacity: 0;
-  }
-  60% {
-    transform: translateY(-10%) scale(1.02);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-}
-
-/* Winner Celebration */
-@keyframes winnerCelebration {
-  0% {
-    transform: scale(0.5) rotate(-10deg);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1) rotate(5deg);
-  }
-  70% {
-    transform: scale(0.95) rotate(-2deg);
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
-  }
-}
-
-/* Bullet Confetti */
-@keyframes bulletConfetti {
-  0% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(calc(100vh + 50px)) rotate(1080deg);
-    opacity: 0;
-  }
-}
-
-/* ========================================
-   OYUN EFEKT UTILITY CLASS'LARI
-   ======================================== */
-
-/* Muzzle Flash Hover */
-.muzzle-flash-hover:hover {
-  animation: muzzleFlash 0.4s ease-out;
-}
-
-/* Recoil Click */
-.recoil-click:active {
-  animation: recoil 0.15s ease-out;
-}
-
-/* Server Online Pulse */
-.server-online-pulse {
-  animation: serverPulse 2s ease-in-out infinite;
-}
-
-/* Server Offline Pulse */
-.server-offline-pulse {
-  animation: serverPulseOffline 1.5s ease-in-out infinite;
-}
-
-/* Bomb Countdown */
-.bomb-countdown {
-  animation: bombPulse 0.5s ease-in-out infinite;
-}
-
-/* Floating Weapon */
-.floating-weapon {
-  animation: weaponFloat 4s ease-in-out infinite;
-}
-
-/* Crown Float */
-.crown-float {
-  animation: crownFloat 3s ease-in-out infinite;
-}
-
-/* Rank Glow */
-.rank-glow {
-  animation: rankBadgeGlow 2s ease-in-out infinite;
-}
-
-/* Popular Badge */
-.popular-badge-pulse {
-  animation: popularBadgePulse 2s ease-in-out infinite;
-}
-
-/* XP Bar Animated */
-.xp-bar-animated {
-  animation: xpBarGlow 2s ease-in-out infinite;
-}
-
-/* Level Badge Float */
-.level-badge-float {
-  animation: levelBadgeFloat 3s ease-in-out infinite;
-}
-
-/* Card 3D Tilt Hover */
-.card-3d-tilt {
-  transition: transform 0.3s ease;
-}
-
-.card-3d-tilt:hover {
-  animation: cardTilt3D 0.5s ease-in-out;
-}
-
-/* Kill Feed Item */
-.kill-feed-item {
-  animation: killFeedIn 0.3s ease-out forwards;
-}
-
-.kill-feed-item.leaving {
-  animation: killFeedOut 0.3s ease-in forwards;
-}
-
-/* Achievement Popup */
-.achievement-popup {
-  animation: achievementSlide 4s ease-in-out forwards;
-}
-
-.achievement-popup .icon {
-  animation: achievementIconBounce 0.6s ease-in-out 0.3s;
-}
-
-/* XP Gain Float */
-.xp-gain-float {
-  animation: xpFloat 1.5s ease-out forwards;
-}
-
-/* Level Up Animation */
-.level-up-burst {
-  animation: levelUpBurst 0.8s ease-out forwards;
-}
-
-.level-up-ring {
-  animation: levelUpRing 1s ease-out forwards;
-}
-
-/* Podium Entry Animation */
-.podium-entry {
-  animation: podiumEntry 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.podium-entry-1 { animation-delay: 0.2s; }
-.podium-entry-2 { animation-delay: 0.1s; }
-.podium-entry-3 { animation-delay: 0.3s; }
-
-/* Counter Animation */
-.counter-animate {
-  animation: counterIncrement 0.3s ease-out;
-}
-
-/* Headshot Indicator */
-.headshot-pop {
-  animation: headshotPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* Winner Celebration */
-.winner-celebrate {
-  animation: winnerCelebration 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* Dark mode color scheme */
-html.dark {
-  color-scheme: dark;
-}
-
-/* Naive UI Button Overrides - More Prominent */
-.n-button--primary-type {
-  background: var(--gradient-primary) !important;
-  border: none !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3) !important;
-  transition: all 0.3s ease !important;
-}
-
-.n-button--primary-type:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4) !important;
-}
-
-.n-button--primary-type:active {
-  transform: translateY(0) !important;
-}
-
-/* Secondary/Default buttons */
-.n-button--default-type {
-  border: 2px solid rgba(249, 115, 22, 0.3) !important;
-  font-weight: 500 !important;
-  transition: all 0.3s ease !important;
-}
-
-.n-button--default-type:hover {
-  border-color: #f97316 !important;
-  background: rgba(249, 115, 22, 0.1) !important;
-  transform: translateY(-2px) !important;
-}
-
-/* Success buttons */
-.n-button--success-type {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-  border: none !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
-}
-
-.n-button--success-type:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
-}
-
-/* Error buttons */
-.n-button--error-type {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-  border: none !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
-}
-
-.n-button--error-type:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
-}
-
-/* Warning buttons */
-.n-button--warning-type {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-  border: none !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3) !important;
-}
-
-/* Info buttons */
-.n-button--info-type {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-  border: none !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3) !important;
-}
-
-/* Large buttons */
-.n-button--large-type {
-  padding: 12px 28px !important;
-  font-size: 16px !important;
-  border-radius: 12px !important;
-}
-
-/* Quaternary buttons with hover effect */
-.n-button--quaternary-type:hover {
-  background: rgba(249, 115, 22, 0.1) !important;
-  color: #f97316 !important;
-}
-
-/* Card hover animations */
-.n-card {
-  transition: all 0.3s ease !important;
-}
-
-.n-card:hover {
-  border-color: rgba(249, 115, 22, 0.2) !important;
-}
-
-/* Tag styling */
-.n-tag--primary-type {
-  background: rgba(249, 115, 22, 0.15) !important;
-  border: 1px solid rgba(249, 115, 22, 0.3) !important;
-}
-
-/* Input focus effects */
-.n-input:focus-within {
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
-}
-
-/* Tab animations */
-.n-tabs-tab {
-  transition: all 0.3s ease !important;
-}
-
-.n-tabs-tab--active {
-  font-weight: 600 !important;
-}
-
-/* Modal backdrop */
-.n-modal-mask {
-  backdrop-filter: blur(8px) !important;
-}
-
-/* Progress bar glow */
-.n-progress-graph-line-fill {
-  box-shadow: 0 0 10px currentColor !important;
-}
-
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* ========================================
-   EMPTY STATES (Master Document Section 16)
-   - Intentional design, not a bug
-   ======================================== */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 24px;
-  text-align: center;
-}
-
-.empty-state-icon {
-  width: 80px;
-  height: 80px;
-  margin-bottom: 24px;
-  padding: 20px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 50%;
-  color: var(--text-tertiary);
-  opacity: 0.6;
-}
-
-.empty-state-title {
-  font-family: 'Poppins', 'Inter', sans-serif;
-  font-size: var(--font-size-h3);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-}
-
-.empty-state-description {
-  font-size: var(--font-size-body);
-  color: var(--text-secondary);
-  max-width: 400px;
-  margin-bottom: 24px;
-}
-
-.empty-state-action {
-  margin-top: 8px;
-}
-
-/* ========================================
-   JACKPOT EPIC WIN EXPERIENCE (Section 13)
-   - Dramatic, memorable win moment
-   ======================================== */
-
-/* Jackpot Spinner Container */
-.jackpot-spinner-container {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--card-radius-lg);
-  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%);
-}
-
-/* Win Overlay - Screen dim effect */
-.jackpot-win-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: winOverlayIn 0.5s ease-out;
-}
-
-@keyframes winOverlayIn {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
-}
-
-/* Winner Card - Centered, emphasized */
-.jackpot-winner-card {
-  position: relative;
-  padding: 48px 64px;
-  background: linear-gradient(135deg, rgba(24, 24, 28, 0.95) 0%, rgba(15, 15, 18, 0.98) 100%);
-  border: 2px solid rgba(249, 115, 22, 0.5);
-  border-radius: var(--card-radius-lg);
-  text-align: center;
-  animation: winnerCardIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow:
-    0 0 60px rgba(249, 115, 22, 0.4),
-    0 0 120px rgba(249, 115, 22, 0.2),
-    0 25px 50px rgba(0, 0, 0, 0.5);
-}
-
-@keyframes winnerCardIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* Winner Avatar with glow */
-.jackpot-winner-avatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  border: 4px solid var(--brand-orange);
-  margin: 0 auto 24px;
-  box-shadow:
-    0 0 30px rgba(249, 115, 22, 0.6),
-    0 0 60px rgba(249, 115, 22, 0.3);
-  animation: avatarPulse 2s ease-in-out infinite;
-}
-
-@keyframes avatarPulse {
-  0%, 100% {
-    box-shadow:
-      0 0 30px rgba(249, 115, 22, 0.6),
-      0 0 60px rgba(249, 115, 22, 0.3);
-  }
-  50% {
-    box-shadow:
-      0 0 50px rgba(249, 115, 22, 0.8),
-      0 0 100px rgba(249, 115, 22, 0.5);
-  }
-}
-
-/* Winner Name - Supports Turkish chars */
-.jackpot-winner-name {
-  font-family: 'Rajdhani', 'Poppins', sans-serif;
-  font-size: 32px;
-  font-weight: 700;
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 16px;
-  text-shadow: 0 0 20px rgba(249, 115, 22, 0.5);
-}
-
-/* Prize Amount - Armor emphasized */
-.jackpot-prize-amount {
-  font-family: 'Orbitron', 'Poppins', sans-serif;
-  font-size: 56px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #f97316 0%, #fbbf24 50%, #f97316 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: prizeShine 2s linear infinite;
-  margin-bottom: 8px;
-}
-
-@keyframes prizeShine {
-  0% { background-position: 0% center; }
-  100% { background-position: 200% center; }
-}
-
-.jackpot-prize-label {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--brand-orange);
-  text-transform: uppercase;
-  letter-spacing: 3px;
-}
-
-/* Burst/Confetti Animation Container */
-.jackpot-burst {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.jackpot-burst-particle {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  animation: burstParticle 1.5s ease-out forwards;
-}
-
-@keyframes burstParticle {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--tx, 100px), var(--ty, -100px)) scale(1);
-    opacity: 0;
-  }
-}
-
-/* Spinning state background effect */
-.jackpot-spinning {
-  position: relative;
-}
-
-.jackpot-spinning::before {
-  content: '';
-  position: absolute;
-  inset: -50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(249, 115, 22, 0.3) 60deg,
-    transparent 120deg
-  );
-  animation: spinningGlow 2s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes spinningGlow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Winner line indicator */
-.jackpot-winner-line {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--gradient-primary);
-  transform: translateX(-50%);
-  box-shadow: 0 0 20px rgba(249, 115, 22, 0.8);
-  z-index: 10;
-}
-
-.jackpot-winner-line::before,
-.jackpot-winner-line::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 10px solid transparent;
-}
-
-.jackpot-winner-line::before {
-  top: 0;
-  border-top-color: var(--brand-orange);
-}
-
-.jackpot-winner-line::after {
-  bottom: 0;
-  border-bottom-color: var(--brand-orange);
-}
-
-/* ========================================
-   COLOR ROLE UTILITIES (Section 11)
-   ======================================== */
-.text-primary-color { color: var(--color-primary); }
-.text-success-color { color: var(--color-success); }
-.text-info-color { color: var(--color-info); }
-.text-warning-color { color: var(--color-warning); }
-.text-error-color { color: var(--color-error); }
-
-.bg-primary-color { background-color: var(--color-primary); }
-.bg-success-color { background-color: var(--color-success); }
-.bg-info-color { background-color: var(--color-info); }
-.bg-warning-color { background-color: var(--color-warning); }
-.bg-error-color { background-color: var(--color-error); }
-
-/* Armor badge - Orange emphasis */
-.badge-armor {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(234, 88, 12, 0.2) 100%);
-  border: 1px solid rgba(249, 115, 22, 0.4);
-  border-radius: 8px;
-  color: var(--brand-orange);
-  font-weight: 600;
-}
-
-/* TL badge - Green success */
-.badge-tl {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.2) 100%);
-  border: 1px solid rgba(34, 197, 94, 0.4);
-  border-radius: 8px;
-  color: var(--color-success);
-  font-weight: 600;
-}
-
-/* HOT badge with pulse */
-.badge-hot {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  background: var(--gradient-primary);
-  border-radius: 6px;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  animation: hotPulse 2s ease-in-out infinite;
-}
-
-@keyframes hotPulse {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(249, 115, 22, 0.8), 0 0 30px rgba(249, 115, 22, 0.4);
-  }
-}
-
-/* ========================================
-   LOADING STATES (Section 15)
-   - Skeleton loaders preferred
-   ======================================== */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--bg-tertiary) 25%,
-    var(--bg-hover) 50%,
-    var(--bg-tertiary) 75%
-  );
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.5s ease-in-out infinite;
-  border-radius: 8px;
-}
-
-@keyframes skeletonShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.skeleton-text {
-  height: 16px;
-  margin-bottom: 8px;
-}
-
-.skeleton-title {
-  height: 24px;
-  width: 60%;
-  margin-bottom: 12px;
-}
-
-.skeleton-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-}
-
-.skeleton-card {
-  height: 200px;
-  border-radius: var(--card-radius);
-}
-
-/* ========================================
-   ACCESSIBILITY (A11y)
-   ======================================== */
-
-/* Focus visible styles - keyboard navigation */
-:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Remove focus outline for mouse users */
-:focus:not(:focus-visible) {
-  outline: none;
-}
-
-/* Skip to content link for screen readers */
-.skip-link {
-  position: absolute;
-  top: -100%;
-  left: 0;
-  padding: 1rem;
-  background: var(--color-primary);
-  color: #fff;
-  z-index: 9999;
-  transition: top 0.3s;
-}
-
-.skip-link:focus {
-  top: 0;
-}
-
-/* Screen reader only content */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  :root {
-    --border-color: rgba(255, 255, 255, 0.3);
-    --text-secondary: #d1d5db;
-  }
-}
-
-/* Touch target sizes for mobile (44px min) */
-@media (pointer: coarse) {
-  button,
-  a,
-  input[type="checkbox"],
-  input[type="radio"],
-  .clickable {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* ========================================
-   PERFORMANCE OPTIMIZATIONS
-   ======================================== */
-
-/* GPU acceleration for animations */
-.gpu-accelerated {
-  transform: translateZ(0);
-  will-change: transform;
-  backface-visibility: hidden;
-}
-
-/* Contain layout for better performance */
-.contain-layout {
-  contain: layout;
-}
-
-.contain-paint {
-  contain: paint;
-}
-
-.contain-strict {
-  contain: strict;
-}
-
-/* Optimize images */
-img {
-  max-width: 100%;
-  height: auto;
-  content-visibility: auto;
-}
-
-/* Lazy loading hint */
-[loading="lazy"] {
-  content-visibility: auto;
-}
-
-/* ========================================
-   PRINT STYLES
-   ======================================== */
-@media print {
-  *,
-  *::before,
-  *::after {
-    background: transparent !important;
-    color: #000 !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  a,
-  a:visited {
-    text-decoration: underline;
-  }
-
-  a[href]::after {
-    content: " (" attr(href) ")";
-  }
-
-  .no-print,
-  nav,
-  aside,
-  .sidebar {
-    display: none !important;
+  /* Focus utilities */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50;
   }
 }

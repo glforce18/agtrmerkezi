@@ -1,202 +1,79 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authAPI } from '@/api'
-import { STORAGE_KEYS, ADMIN_ROLES, ADMIN_PANEL_ROLES, MODERATOR_ROLES, USER_ROLES } from '@/constants'
-import { getAccessToken, setAccessToken, removeAccessToken } from '@/utils/http'
+import authAPI from '@/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
-  const token = ref(getAccessToken())
-  const loading = ref(false)
-  const error = ref(null)
+  const token = ref(localStorage.getItem('auth_token'))
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const isAdmin = computed(() => user.value?.role === 'admin')
 
-  // Sadece superadmin admin paneline erişebilir
-  const isSuperAdmin = computed(() => user.value?.role === USER_ROLES.SUPERADMIN)
-
-  // Admin paneli erişimi (sadece superadmin)
-  const canAccessAdminPanel = computed(() => ADMIN_PANEL_ROLES.includes(user.value?.role))
-
-  // Moderasyon yetkileri (moderator, admin, superadmin)
-  const isModerator = computed(() => MODERATOR_ROLES.includes(user.value?.role))
-
-  // Admin rolü kontrolü (eski uyumluluk için)
-  const isAdmin = computed(() => ADMIN_ROLES.includes(user.value?.role))
-
-  const balanceReal = computed(() => user.value?.balance || 0)
-  const balanceCoin = computed(() => user.value?.balance_coin || 0)
-
-  async function login(credentials) {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await authAPI.login(credentials)
-
-      // Check if 2FA is required
-      if (response.requires_2fa) {
-        return response // Return to handle 2FA modal
-      }
-
-      // Use 'token' field from backend (not 'access_token')
-      const accessToken = response.token || response.access_token
-      if (!accessToken) {
-        throw new Error('No token received from server')
-      }
-
-      token.value = accessToken
-      user.value = response.user
-      setAccessToken(accessToken)
-      return response
-    } catch (err) {
-      error.value = err.response?.data?.detail || err.message || 'Login failed'
-      throw err
-    } finally {
-      loading.value = false
-    }
+  function setAuth(newToken, newUser) {
+    token.value = newToken
+    user.value = newUser
+    localStorage.setItem('auth_token', newToken)
+    localStorage.setItem('user', JSON.stringify(newUser))
   }
 
-  async function register(userData) {
-    loading.value = true
-    error.value = null
+  function clearAuth() {
+    token.value = null
+    user.value = null
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+  }
 
+  async function login(credentials) {
     try {
-      const response = await authAPI.register(userData)
-
-      // Use 'token' field from backend (not 'access_token')
-      const accessToken = response.token || response.access_token
-      if (!accessToken) {
-        throw new Error('No token received from server')
-      }
-
-      token.value = accessToken
-      user.value = response.user
-      setAccessToken(accessToken)
-      return response
-    } catch (err) {
-      error.value = err.response?.data?.detail || err.message || 'Registration failed'
-      throw err
-    } finally {
-      loading.value = false
+      const response = await authAPI.login(credentials)
+      setAuth(response.data.access_token, response.data.user)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.response?.data?.detail || 'Login failed' }
     }
   }
 
   async function logout() {
     try {
       await authAPI.logout()
-    } catch (err) {
-      // Logout error - continue with local cleanup
+    } catch (error) {
+      console.error('Logout error:', error)
     } finally {
-      token.value = null
-      user.value = null
-      removeAccessToken()
+      clearAuth()
     }
   }
 
   async function fetchUser() {
-    if (!token.value) return false
-
-    loading.value = true
     try {
-      const response = await authAPI.me()
-      // /auth/me returns direct user object with all fields including balance_coin
-      if (response.id && response.username) {
-        user.value = response
-        return true
-      }
-      // Fallback for /auth/check format (legacy)
-      if (response.authenticated && response.user) {
-        user.value = response.user
-        return true
-      }
-      throw new Error('Invalid response')
-    } catch (err) {
-      // Token invalid, clear auth
-      token.value = null
-      user.value = null
-      removeAccessToken()
-      return false
-    } finally {
-      loading.value = false
+      const response = await authAPI.getMe()
+      user.value = response.data
+      localStorage.setItem('user', JSON.stringify(response.data))
+    } catch (error) {
+      clearAuth()
     }
   }
 
-  async function refreshToken() {
-    try {
-      const response = await authAPI.refresh()
-      const accessToken = response.token || response.access_token
-      if (!accessToken) {
-        return false
+  function init() {
+    const savedUser = localStorage.getItem('user')
+    if (savedUser && token.value) {
+      try {
+        user.value = JSON.parse(savedUser)
+      } catch (error) {
+        clearAuth()
       }
-      token.value = accessToken
-      setAccessToken(accessToken)
-      return true
-    } catch (err) {
-      // Token refresh failed
-      return false
-    }
-  }
-
-  async function verify2FA({ user_id, code }) {
-    loading.value = true
-    error.value = null
-
-    try {
-      // Use the 2FA login endpoint
-      const response = await authAPI.login2FA({ user_id, totp_code: code })
-
-      const accessToken = response.token || response.access_token
-      if (!accessToken) {
-        throw new Error('No token received from server')
-      }
-
-      token.value = accessToken
-      user.value = response.user
-      setAccessToken(accessToken)
-      return response
-    } catch (err) {
-      error.value = err.response?.data?.detail || err.message || '2FA verification failed'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Update user balance locally (for real-time updates)
-  function updateBalance(newBalance, newBalanceCoin) {
-    if (user.value) {
-      if (newBalance !== undefined) user.value.balance = newBalance
-      if (newBalanceCoin !== undefined) user.value.balance_coin = newBalanceCoin
-    }
-  }
-
-  // Update user data
-  function updateUser(userData) {
-    if (user.value && userData) {
-      user.value = { ...user.value, ...userData }
     }
   }
 
   return {
     user,
     token,
-    loading,
-    error,
     isAuthenticated,
-    isSuperAdmin,
-    canAccessAdminPanel,
-    isModerator,
     isAdmin,
-    balanceReal,
-    balanceCoin,
+    setAuth,
+    clearAuth,
     login,
-    register,
     logout,
     fetchUser,
-    refreshToken,
-    verify2FA,
-    updateBalance,
-    updateUser
+    init
   }
 })

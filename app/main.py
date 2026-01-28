@@ -19,15 +19,24 @@ from app.core.logging_config import get_logger, setup_logging
 setup_logging(json_format=not settings.DEBUG, log_level="DEBUG" if settings.DEBUG else "INFO")
 logger = get_logger(__name__)
 
+from app.api import servers_unified  # New unified server API
 from app.api import (
     activities,
     admin,
     analytics,
+    analytics_enhanced,
+    anticheat,
     assets,
     auth,
     banners,
+    command_quotas,
+    crash_stats,
     discord_bot,
-    forum,
+    filemanager,
+)
+from app.api import forum  # New modular forum API
+from app.api import forum as forum_modular
+from app.api import (
     forum_v2,
     game_assets,
     game_integration,
@@ -35,11 +44,17 @@ from app.api import (
     leaderboard,
     maintenance,
     media,
+    metrics,
     notifications,
     payment_gateway,
     payments,
+    player_management,
     plugin_market,
+    plugins,
+    plugins_enhanced,
     profile_customization,
+    rcon_limits,
+    scheduler,
     scraper,
     security,
     server_management,
@@ -47,12 +62,16 @@ from app.api import (
     servers,
     smart_media,
     social,
+    stats,
     system,
+    templates,
     tournament,
     user,
     user_favorites,
+    user_preferences,
     wallet,
     websocket,
+    websocket_progress,
 )
 from app.api.admin import forum_categories as admin_forum_categories
 from app.api.admin import forum_topics as admin_forum_topics
@@ -96,6 +115,15 @@ async def lifespan(app: FastAPI):
     create_default_data()
     logger.info("Varsayılan veriler yüklendi")
 
+    # Halflife (Anti-Cheat) veritabanı bağlantısı
+    try:
+        from app.models.connection import init_halflife_db
+
+        init_halflife_db()
+        logger.info("Halflife (Anti-Cheat) veritabanı bağlantısı kuruldu")
+    except Exception as e:
+        logger.error(f"Halflife veritabanı bağlantısı kurulamadı: {e}", exc_info=True)
+
     # Redis başlat
     try:
         from app.core.redis_manager import redis_manager
@@ -113,6 +141,15 @@ async def lifespan(app: FastAPI):
         logger.info("Scheduler başlatıldı")
     except Exception as e:
         logger.error(f"Scheduler başlatılamadı: {e}", exc_info=True)
+
+    # Server Scheduler başlat (zamanlanmış görevler)
+    try:
+        from app.services.server_scheduler import scheduler_service
+
+        scheduler_service.start()
+        logger.info("Server scheduler başlatıldı")
+    except Exception as e:
+        logger.error(f"Server scheduler başlatılamadı: {e}", exc_info=True)
 
     # WebSocket heartbeat cleanup task
     try:
@@ -488,7 +525,8 @@ app.add_middleware(CacheControlMiddleware)
 # Rate Limit
 from app.middleware.rate_limit import RateLimitMiddleware
 
-app.add_middleware(RateLimitMiddleware)
+# Rate limit - test için yüksek limitler
+app.add_middleware(RateLimitMiddleware, requests_per_minute=1000, requests_per_second=100)
 
 # CSRF Protection
 from app.middleware.csrf import CSRFMiddleware
@@ -511,6 +549,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(user.router, prefix="/api/user", tags=["User"])
 app.include_router(user_favorites.router, prefix="/api", tags=["User Favorites"])
+app.include_router(user_preferences.router, tags=["User Preferences"])
 app.include_router(wallet.router, prefix="/api/wallet", tags=["Wallet"])
 app.include_router(games.router, prefix="/api/games", tags=["Games"])
 app.include_router(leaderboard.router, prefix="/api", tags=["Leaderboard & ELO"])
@@ -520,9 +559,27 @@ app.include_router(game_integration.router, prefix="/api", tags=["Game Integrati
 from app.api import roles
 
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles"])
-app.include_router(servers.router, prefix="/api/servers", tags=["Game Servers"])
-app.include_router(forum.router, prefix="/api/forum", tags=["Forum"])
-app.include_router(forum_v2.router, prefix="/api", tags=["Forum v2 - Advanced Features"])
+
+# ==================== NEW UNIFIED APIs (v3) ====================
+# Modular Forum API - Replaces massive forum.py
+app.include_router(forum_modular.router, tags=["Forum v3 - Modular"])
+
+# Unified Server API - Merges servers.py + server_v2.py
+app.include_router(servers_unified.router, tags=["Servers v3 - Unified"])
+
+# ==================== LEGACY APIs (Deprecated) ====================
+# TODO: Remove after frontend migration complete
+app.include_router(servers.router, prefix="/api/servers", tags=["Game Servers - LEGACY"])
+app.include_router(metrics.router, tags=["Server Metrics"])
+app.include_router(crash_stats.router, tags=["Crash Detection"])
+app.include_router(command_quotas.router, tags=["Command Quotas"])
+app.include_router(templates.router, tags=["Template Cache"])
+app.include_router(plugins_enhanced.router, tags=["Plugin Management"])
+app.include_router(analytics_enhanced.router, tags=["Advanced Analytics"])
+
+# Legacy Forum APIs - TODO: Remove after migration
+app.include_router(forum.router, prefix="/api/forum", tags=["Forum - LEGACY"])
+app.include_router(forum_v2.router, prefix="/api", tags=["Forum v2 - Advanced Features - LEGACY"])
 from app.api import forum_gamification
 
 app.include_router(forum_gamification.router, prefix="/api", tags=["Forum Gamification"])
@@ -536,6 +593,7 @@ app.include_router(admin_pages.router, tags=["Admin Pages"])
 
 # Feature APIs
 app.include_router(websocket.router, tags=["WebSocket"])
+app.include_router(websocket_progress.router, tags=["Installation Progress"])
 app.include_router(system.router, prefix="/api", tags=["System"])
 app.include_router(assets.router, prefix="/api/assets", tags=["Assets"])
 app.include_router(security.router, prefix="/api/security", tags=["Security"])
@@ -566,8 +624,17 @@ app.include_router(scraper.router, prefix="/api/community", tags=["Community Ser
 # Game Assets & Scrapers
 app.include_router(game_assets.router, prefix="/api", tags=["Game Assets"])
 
-# Server Management v2 (Sunucu Kurulum & Kontrol)
-app.include_router(server_v2.router, tags=["Server Management v2"])
+# Legacy Server Management v2 - TODO: Remove after migration
+app.include_router(server_v2.router, tags=["Server Management v2 - LEGACY"])
+app.include_router(scheduler.router, tags=["Scheduler"])
+app.include_router(stats.router, tags=["Stats"])
+app.include_router(filemanager.router, tags=["FileManager"])
+app.include_router(plugins.router, tags=["Plugin Manager"])
+app.include_router(rcon_limits.router, tags=["RCON Rate Limits"])
+app.include_router(player_management.router, tags=["Player Management"])
+
+# Anti-Cheat API (AGTR Anti-Cheat Integration)
+app.include_router(anticheat.router, tags=["Anti-Cheat"])
 
 
 # ==================== HEALTH & STATUS ====================

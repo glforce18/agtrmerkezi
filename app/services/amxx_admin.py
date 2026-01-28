@@ -265,6 +265,60 @@ class AMXXAdminService:
         logger.info(f"Admin eklendi: {steam_id} -> Server {server_id}")
         return admin, "Admin basariyla eklendi"
 
+    def add_owner_as_admin(self, server_id: int, owner_id: int) -> Tuple[bool, str]:
+        """
+        Sunucu sahibini otomatik olarak admin olarak ekle
+
+        Args:
+            server_id: Sunucu ID
+            owner_id: Sahip kullanici ID
+
+        Returns:
+            (basari, mesaj)
+        """
+        from app.models.database import User
+
+        server = self.db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            return False, "Sunucu bulunamadi"
+
+        user = self.db.query(User).filter(User.id == owner_id).first()
+        if not user or not user.steam_id:
+            return False, "Kullanici veya Steam ID bulunamadi"
+
+        # Zaten admin mi kontrol et
+        existing = (
+            self.db.query(ServerAdminEntry)
+            .filter(
+                ServerAdminEntry.server_id == server_id, ServerAdminEntry.steam_id == user.steam_id
+            )
+            .first()
+        )
+
+        if existing:
+            return True, "Sahip zaten admin yetkisine sahip"
+
+        # Tam yetki ile admin ekle
+        admin_entry = ServerAdminEntry(
+            server_id=server_id,
+            steam_id=user.steam_id,
+            name=user.username if hasattr(user, "username") else None,
+            flags=self.DEFAULT_FLAGS,  # Tam yetki
+            auth_type=AdminAuthType.STEAM,
+            added_by=owner_id,
+            is_active=True,
+            notes="Otomatik sahip admin",
+            created_at=datetime.utcnow(),
+        )
+        self.db.add(admin_entry)
+        self.db.commit()
+
+        # users.ini guncelle
+        self._sync_admins_to_file(server)
+
+        logger.info(f"Sahip admin olarak eklendi: {user.steam_id} -> Server {server_id}")
+        return True, "Sahip otomatik olarak admin eklendi"
+
     def update_admin(
         self,
         admin_id: int,

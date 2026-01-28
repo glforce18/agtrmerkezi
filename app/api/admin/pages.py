@@ -13,10 +13,11 @@ from app.core.security import get_current_admin
 from app.models.connection import get_db
 from app.models.database import PageContent, User
 
-router = APIRouter(prefix="/api/admin/pages", tags=["admin-pages"])
+router = APIRouter(prefix="/pages", tags=["admin-pages"])
 
 
 # ============ Pydantic Schemas ============
+
 
 class PageCreate(BaseModel):
     page_slug: str
@@ -50,11 +51,12 @@ class PageUpdate(BaseModel):
 
 # ============ API Endpoints ============
 
+
 @router.get("")
 async def get_pages(
     page_slug: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin)
+    current_user: User = Depends(get_current_admin),
 ):
     """Tüm sayfa içeriklerini getir"""
     query = db.query(PageContent)
@@ -83,7 +85,7 @@ async def get_pages(
                 "icon": "file-text",
                 "icon_class": "default",
                 "created_at": p.created_at.isoformat() if p.created_at else None,
-                "updated_at": p.updated_at.isoformat() if p.updated_at else None
+                "updated_at": p.updated_at.isoformat() if p.updated_at else None,
             }
             for p in pages
         ]
@@ -92,9 +94,7 @@ async def get_pages(
 
 @router.get("/{page_id}")
 async def get_page(
-    page_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin)
+    page_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)
 ):
     """Tek sayfa içeriği getir"""
     page = db.query(PageContent).filter(PageContent.id == page_id).first()
@@ -114,28 +114,26 @@ async def get_page(
         "cta_link": page.cta_link,
         "settings": page.settings,
         "display_order": page.display_order,
-        "is_active": page.is_active
+        "is_active": page.is_active,
     }
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_page(
-    data: PageCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin)
+    data: PageCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)
 ):
     """Yeni sayfa içeriği oluştur"""
     # Aynı slug kombinasyonu var mı kontrol
-    existing = db.query(PageContent).filter(
-        PageContent.page_slug == data.page_slug,
-        PageContent.section_slug == data.section_slug
-    ).first()
+    existing = (
+        db.query(PageContent)
+        .filter(
+            PageContent.page_slug == data.page_slug, PageContent.section_slug == data.section_slug
+        )
+        .first()
+    )
 
     if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="Bu sayfa ve bölüm kombinasyonu zaten mevcut"
-        )
+        raise HTTPException(status_code=400, detail="Bu sayfa ve bölüm kombinasyonu zaten mevcut")
 
     page = PageContent(
         page_slug=data.page_slug,
@@ -150,7 +148,7 @@ async def create_page(
         settings=data.settings or {},
         display_order=data.display_order or 0,
         is_active=data.is_active if data.is_active is not None else True,
-        updated_by=current_user.id
+        updated_by=current_user.id,
     )
 
     db.add(page)
@@ -165,7 +163,7 @@ async def update_page(
     page_id: int,
     data: PageUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin)
+    current_user: User = Depends(get_current_admin),
 ):
     """Sayfa içeriği güncelle"""
     page = db.query(PageContent).filter(PageContent.id == page_id).first()
@@ -177,16 +175,19 @@ async def update_page(
         new_page_slug = data.page_slug or page.page_slug
         new_section_slug = data.section_slug or page.section_slug
 
-        existing = db.query(PageContent).filter(
-            PageContent.page_slug == new_page_slug,
-            PageContent.section_slug == new_section_slug,
-            PageContent.id != page_id
-        ).first()
+        existing = (
+            db.query(PageContent)
+            .filter(
+                PageContent.page_slug == new_page_slug,
+                PageContent.section_slug == new_section_slug,
+                PageContent.id != page_id,
+            )
+            .first()
+        )
 
         if existing:
             raise HTTPException(
-                status_code=400,
-                detail="Bu sayfa ve bölüm kombinasyonu zaten mevcut"
+                status_code=400, detail="Bu sayfa ve bölüm kombinasyonu zaten mevcut"
             )
 
     # Güncelleme
@@ -224,9 +225,7 @@ async def update_page(
 
 @router.delete("/{page_id}")
 async def delete_page(
-    page_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin)
+    page_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)
 ):
     """Sayfa içeriği sil"""
     page = db.query(PageContent).filter(PageContent.id == page_id).first()

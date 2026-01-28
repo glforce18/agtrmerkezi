@@ -247,7 +247,7 @@ class ServerConfigService:
             return maps, "OK"
 
         except Exception as e:
-            logger.error(f"Mapcycle okuma hatasi: {e}")
+            logger.error(f"mapcycle okuma hatasi: {e}")
             return None, str(e)
 
     def write_mapcycle(self, server: GameServer, maps: List[str], user_id: int) -> Tuple[bool, str]:
@@ -265,16 +265,6 @@ class ServerConfigService:
         config_path = self.get_config_path(server, "mapcycle.txt")
 
         try:
-            # Harita adlarini dogrula
-            valid_maps = []
-            for map_name in maps:
-                map_name = map_name.strip()
-                if map_name and re.match(r"^[a-zA-Z0-9_-]+$", map_name):
-                    valid_maps.append(map_name)
-
-            if not valid_maps:
-                return False, "Gecerli harita bulunamadi"
-
             # Yedek al
             if config_path.exists():
                 backup_path = config_path.with_suffix(
@@ -283,84 +273,20 @@ class ServerConfigService:
                 config_path.rename(backup_path)
 
             # Yaz
-            content = "\n".join(valid_maps)
+            content = "\n".join(maps) + "\n"
             with open(config_path, "w", encoding="utf-8") as f:
                 f.write(content)
 
-            logger.info(f"Mapcycle yazildi: {config_path} (user: {user_id})")
+            logger.info(f"mapcycle yazildi: {config_path} (user: {user_id})")
             return True, "Basarili"
 
         except Exception as e:
-            logger.error(f"Mapcycle yazma hatasi: {e}")
-            return False, str(e)
-
-    def read_motd(self, server: GameServer) -> Tuple[Optional[str], str]:
-        """
-        motd.txt oku
-
-        Returns:
-            (icerik, mesaj)
-        """
-        config_path = self.get_config_path(server, "motd.txt")
-
-        if not config_path.exists():
-            return None, "motd.txt bulunamadi"
-
-        try:
-            with open(config_path, "r", encoding="utf-8", errors="ignore") as f:
-                content = f.read()
-
-            return content, "OK"
-
-        except Exception as e:
-            logger.error(f"MOTD okuma hatasi: {e}")
-            return None, str(e)
-
-    def write_motd(self, server: GameServer, content: str, user_id: int) -> Tuple[bool, str]:
-        """
-        motd.txt yaz
-
-        Args:
-            server: GameServer instance
-            content: MOTD icerigi (HTML)
-            user_id: Islemi yapan kullanici
-
-        Returns:
-            (basari, mesaj)
-        """
-        config_path = self.get_config_path(server, "motd.txt")
-
-        try:
-            # Basit HTML sanitize (script taglarini kaldir)
-            content = re.sub(
-                r"<script[^>]*>.*?</script>", "", content, flags=re.DOTALL | re.IGNORECASE
-            )
-            content = re.sub(
-                r"<iframe[^>]*>.*?</iframe>", "", content, flags=re.DOTALL | re.IGNORECASE
-            )
-            content = re.sub(r"on\w+\s*=", "", content, flags=re.IGNORECASE)
-
-            # Yedek al
-            if config_path.exists():
-                backup_path = config_path.with_suffix(
-                    f'.backup.{datetime.now().strftime("%Y%m%d%H%M%S")}'
-                )
-                config_path.rename(backup_path)
-
-            # Yaz
-            with open(config_path, "w", encoding="utf-8") as f:
-                f.write(content)
-
-            logger.info(f"MOTD yazildi: {config_path} (user: {user_id})")
-            return True, "Basarili"
-
-        except Exception as e:
-            logger.error(f"MOTD yazma hatasi: {e}")
+            logger.error(f"mapcycle yazma hatasi: {e}")
             return False, str(e)
 
     def get_available_maps(self, server: GameServer) -> List[str]:
         """
-        Mevcut haritalari listele
+        Mevcut harita listesini al
 
         Returns:
             Harita listesi
@@ -373,83 +299,71 @@ class ServerConfigService:
             return []
 
         maps = []
-        for file in maps_path.glob("*.bsp"):
-            maps.append(file.stem)
+        for bsp in maps_path.glob("*.bsp"):
+            maps.append(bsp.stem)
 
         return sorted(maps)
 
-    def get_cvar(self, server: GameServer, cvar_name: str) -> Tuple[Optional[str], str]:
+    def validate_config(self, content: str) -> Tuple[bool, str]:
         """
-        Belirli bir cvar degerini oku
+        Config icerigini dogrula
+
+        Returns:
+            (gecerli, mesaj)
+        """
+        # Tehlikeli komutlari kontrol et
+        dangerous = ["exec", "alias", "bind", "unbind", "changelevel"]
+        lines = content.split("\n")
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("//"):
+                continue
+
+            for cmd in dangerous:
+                if stripped.lower().startswith(cmd.lower()):
+                    return False, f"Tehlikeli komut tespit edildi: {cmd}"
+
+        return True, "Gecerli"
+
+    def create_backup(self, server: GameServer, filename: str) -> Tuple[Optional[str], str]:
+        """
+        Config dosyasinin yedeğini al
 
         Args:
             server: GameServer instance
-            cvar_name: Cvar adi
+            filename: Dosya adi
 
         Returns:
-            (deger, mesaj)
+            (backup_name, mesaj)
         """
-        content, msg = self.read_config(server, "server.cfg")
-        if content is None:
-            return None, msg
+        config_path = self.get_config_path(server, filename)
 
-        # Cvar'i bul
-        match = re.search(rf'{cvar_name}\s+"([^"]*)"', content, re.IGNORECASE)
-        if not match:
-            match = re.search(rf"{cvar_name}\s+(\S+)", content, re.IGNORECASE)
+        if not config_path.exists():
+            return None, "Dosya bulunamadi"
 
-        if match:
-            return match.group(1), "OK"
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            backup_name = f"{filename}.backup.{timestamp}"
+            backup_path = config_path.parent / backup_name
 
-        return None, "Cvar bulunamadi"
+            # Kopyala
+            with open(config_path, "rb") as src:
+                with open(backup_path, "wb") as dst:
+                    dst.write(src.read())
 
-    def set_cvar(
-        self, server: GameServer, cvar_name: str, value: str, user_id: int
-    ) -> Tuple[bool, str]:
-        """
-        Belirli bir cvar degerini ayarla
+            logger.info(f"Yedek olusturuldu: {backup_path}")
+            return backup_name, "Basarili"
 
-        Args:
-            server: GameServer instance
-            cvar_name: Cvar adi
-            value: Yeni deger
-            user_id: Islemi yapan kullanici
-
-        Returns:
-            (basari, mesaj)
-        """
-        # Kilitli cvar kontrolu
-        if cvar_name.lower() in [k.lower() for k in self.LOCKED_CVARS.keys()]:
-            return False, f"Bu cvar kilitli ve degistirilemez: {cvar_name}"
-
-        config_path = self.get_config_path(server, "server.cfg")
-        content = self._read_raw_config(config_path)
-
-        # Cvar guncelle veya ekle
-        pattern = rf"^(\s*{cvar_name}\s+).*$"
-        replacement = f'{cvar_name} "{value}"'
-
-        if re.search(pattern, content, re.MULTILINE | re.IGNORECASE):
-            content = re.sub(pattern, replacement, content, flags=re.MULTILINE | re.IGNORECASE)
-        else:
-            content += f"\n{replacement}"
-
-        # Yaz
-        return self.write_config(server, "server.cfg", content, user_id)
-
-    def get_locked_cvars(self) -> Dict[str, str]:
-        """Kilitli cvar'lari dondur"""
-        return self.LOCKED_CVARS.copy()
-
-    def get_editable_files(self) -> List[str]:
-        """Duzenlenebilir dosya listesini dondur"""
-        return self.EDITABLE_CONFIGS.copy()
+        except Exception as e:
+            logger.error(f"Yedek olusturma hatasi: {e}")
+            return None, str(e)
 
     def restore_backup(
         self, server: GameServer, filename: str, backup_name: str
     ) -> Tuple[bool, str]:
         """
-        Yedekten geri yukle
+        Yedegi geri yukle
 
         Args:
             server: GameServer instance
@@ -505,3 +419,184 @@ class ServerConfigService:
             )
 
         return sorted(backups, key=lambda x: x["created"], reverse=True)
+
+    def parse_visual_config(self, server: GameServer) -> Dict:
+        """
+        server.cfg'den görsel düzenleyici için güvenli ayarları parse et
+
+        Returns:
+            Düzenlenebilir ayarlar dict'i
+        """
+        config_path = self.get_config_path(server, "server.cfg")
+
+        # Varsayılan değerler (Minimal)
+        defaults = {
+            # Sunucu Bilgileri
+            "hostname": "",
+            "sv_contact": "",
+            # Güvenlik
+            "rcon_password": "********",
+            "sv_password": "",
+            # Sunucu
+            "sv_allowdownload": 1,
+            # AG Mod - Temel
+            "sv_ag_gamemode": "tdm",
+            "sv_ag_start_health": 100,
+            "sv_ag_start_armour": 0,
+            "sv_ag_start_longjump": 0,
+            "sv_ag_start_minplayers": 2,
+            # AG Mod - Oylama
+            "sv_ag_allow_vote": 1,
+            "sv_ag_vote_gamemode": 1,
+            "sv_ag_vote_map": 1,
+        }
+
+        if not config_path.exists():
+            return defaults
+
+        try:
+            content = self._read_raw_config(config_path)
+            parsed = {}
+
+            for line in content.split("\n"):
+                line = line.strip()
+
+                # Yorum veya boş satır
+                if not line or line.startswith("//") or line.startswith("#"):
+                    continue
+
+                # Cvar parse et
+                match = re.match(r'^(\w+)\s+"?([^"\n]*)"?', line)
+                if match:
+                    cvar = match.group(1).lower()
+                    value = match.group(2).strip('"')
+
+                    # Sadece safe cvarlara bak
+                    if cvar in defaults:
+                        # Sayısal değerler
+                        if cvar in [
+                            "sv_ag_start_health",
+                            "sv_ag_start_armour",
+                            "sv_ag_start_minplayers",
+                        ]:
+                            try:
+                                parsed[cvar] = int(value)
+                            except:
+                                parsed[cvar] = defaults[cvar]
+                        # Boolean değerler (0/1)
+                        elif cvar in [
+                            "sv_allowdownload",
+                            "sv_ag_start_longjump",
+                            "sv_ag_allow_vote",
+                            "sv_ag_vote_gamemode",
+                            "sv_ag_vote_map",
+                        ]:
+                            parsed[cvar] = 1 if value in ["1", "true", "yes"] else 0
+                        # String değerler (hostname, sv_contact, sv_password, sv_ag_gamemode)
+                        else:
+                            parsed[cvar] = value
+
+            # Varsayılanlarla birleştir
+            result = defaults.copy()
+            result.update(parsed)
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Visual config parse hatası: {e}")
+            return defaults
+
+    def update_visual_config(
+        self, server: GameServer, values: Dict, user_id: int
+    ) -> Tuple[bool, str]:
+        """
+        Görsel düzenleyiciden gelen değerleri server.cfg'ye yaz
+
+        Args:
+            server: GameServer instance
+            values: Yeni değerler dict'i
+            user_id: İşlemi yapan kullanıcı
+
+        Returns:
+            (başarı, mesaj)
+        """
+        config_path = self.get_config_path(server, "server.cfg")
+
+        if not config_path.exists():
+            return False, "server.cfg bulunamadı"
+
+        try:
+            # Mevcut içeriği oku
+            existing_content = self._read_raw_config(config_path)
+            lines = existing_content.split("\n")
+
+            # Güncellenmiş satırlar
+            result_lines = []
+            updated_cvars = set()
+
+            for line in lines:
+                stripped = line.strip()
+
+                # Yorum veya boş satır - koru
+                if not stripped or stripped.startswith("//") or stripped.startswith("#"):
+                    result_lines.append(line)
+                    continue
+
+                # Cvar satırı parse et
+                match = re.match(r"^(\w+)\s+", stripped)
+                if match:
+                    cvar = match.group(1).lower()
+
+                    # Güncellenecek cvar mı?
+                    if cvar in values:
+                        value = values[cvar]
+
+                        # Değer formatla
+                        if isinstance(value, bool):
+                            value = "1" if value else "0"
+                        elif isinstance(value, (int, float)):
+                            value = str(value)
+
+                        result_lines.append(f'{cvar} "{value}"')
+                        updated_cvars.add(cvar)
+                    else:
+                        # Değiştirilmeyecek - koru
+                        result_lines.append(line)
+                else:
+                    result_lines.append(line)
+
+            # Eksik cvarlari ekle
+            for cvar, value in values.items():
+                if cvar not in updated_cvars:
+                    if isinstance(value, bool):
+                        value = "1" if value else "0"
+                    elif isinstance(value, (int, float)):
+                        value = str(value)
+
+                    result_lines.append(f'{cvar} "{value}"')
+
+            # Yeni içerik
+            new_content = "\n".join(result_lines)
+
+            # Kilitli değerleri koru
+            new_content = self._protect_locked_values(new_content)
+
+            # Hassas değerleri koru
+            new_content = self._preserve_sensitive_values(existing_content, new_content)
+
+            # Yedek al
+            backup_path = config_path.with_suffix(
+                f'.backup.{datetime.now().strftime("%Y%m%d%H%M%S")}'
+            )
+            config_path.rename(backup_path)
+
+            # Yaz
+            with open(config_path, "w", encoding="utf-8") as f:
+                f.write(new_content)
+
+            logger.info(f"Visual config güncellendi: {config_path} (user: {user_id})")
+            return True, "Ayarlar kaydedildi"
+
+        except Exception as e:
+            logger.error(f"Visual config güncelleme hatası: {e}")
+            return False, str(e)

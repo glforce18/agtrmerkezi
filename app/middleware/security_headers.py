@@ -48,9 +48,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "font-src 'self' https://fonts.gstatic.com data:",
                 "img-src 'self' data: https: http:",
                 "connect-src 'self' wss: ws:",
-                "frame-ancestors 'none'",
                 "base-uri 'self'",
-                "form-action 'self'"
+                "form-action 'self'",
             ]
         else:
             # Development CSP - daha gevşek
@@ -59,7 +58,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com",
                 "style-src 'self' 'unsafe-inline'",
                 "img-src 'self' data: https: http:",
-                "connect-src 'self' wss: ws: http://localhost:* http://127.0.0.1:*"
+                "connect-src 'self' wss: ws: http://localhost:* http://127.0.0.1:*",
             ]
 
         response.headers["Content-Security-Policy"] = "; ".join(csp_directives)

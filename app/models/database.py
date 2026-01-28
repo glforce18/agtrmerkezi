@@ -5,12 +5,14 @@ Tum SQLAlchemy modelleri + Otomatik Denetleyici Sistem
 
 import enum
 import logging
+from datetime import date as Date
 from datetime import datetime
 
 from sqlalchemy import (
     JSON,
     Boolean,
     Column,
+    Date,
     DateTime,
     Enum,
     Float,
@@ -654,6 +656,7 @@ class GameServer(Base):
     slots = Column(Integer, nullable=False)
     rcon_password = Column(String(50))
     sv_password = Column(String(50))
+    panel_password = Column(String(128))  # Server panel access password
     package_id = Column(Integer, ForeignKey("server_packages.id"))
     is_custom_package = Column(Boolean, default=False)
     features = Column(JSON)
@@ -666,6 +669,7 @@ class GameServer(Base):
     auto_restart = Column(Boolean, default=True)
     crash_count = Column(Integer, default=0)
     last_crash = Column(DateTime)
+    restart_backoff_until = Column(DateTime)  # Exponential backoff timer
     monthly_price = Column(Float, nullable=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -709,46 +713,72 @@ class ServerAction(Base):
 
 
 class InstallationStatus(enum.Enum):
-    PENDING = "pending"
-    INSTALLING = "installing"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
+    PENDING = "PENDING"
+    INSTALLING = "INSTALLING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class AdminAuthType(enum.Enum):
-    STEAM = "steam"
-    IP = "ip"
-    NAME = "name"
+    STEAM = "STEAM"
+    IP = "IP"
+    NAME = "NAME"
 
 
 class BanType(enum.Enum):
-    STEAM = "steam"
-    IP = "ip"
-    BOTH = "both"
+    STEAM = "STEAM"
+    IP = "IP"
+    BOTH = "BOTH"
 
 
 class CommandType(enum.Enum):
-    RCON = "rcon"
-    CONSOLE = "console"
-    SCHEDULED = "scheduled"
-    SYSTEM = "system"
+    RCON = "RCON"
+    CONSOLE = "CONSOLE"
+    SCHEDULED = "SCHEDULED"
+    SYSTEM = "SYSTEM"
 
 
 class RotationType(enum.Enum):
-    SEQUENTIAL = "sequential"
-    RANDOM = "random"
-    VOTE = "vote"
+    SEQUENTIAL = "SEQUENTIAL"
+    RANDOM = "RANDOM"
+    VOTE = "VOTE"
 
 
 class OwnershipAction(enum.Enum):
-    CREATED = "created"
-    TRANSFERRED = "transferred"
-    EXPIRED = "expired"
-    DELETED = "deleted"
-    RENEWED = "renewed"
-    SUSPENDED = "suspended"
-    UNSUSPENDED = "unsuspended"
+    CREATED = "CREATED"
+    TRANSFERRED = "TRANSFERRED"
+    EXPIRED = "EXPIRED"
+    DELETED = "DELETED"
+    RENEWED = "RENEWED"
+    SUSPENDED = "SUSPENDED"
+    UNSUSPENDED = "UNSUSPENDED"
+
+
+class TaskType(enum.Enum):
+    """Zamanlanmis gorev tipi"""
+
+    RESTART = "restart"
+    MAP_CHANGE = "map_change"
+    BACKUP = "backup"
+    ANNOUNCEMENT = "announcement"
+    RCON_COMMAND = "rcon_command"
+
+
+class ScheduleType(enum.Enum):
+    """Zamanlama tipi"""
+
+    CRON = "cron"
+    INTERVAL = "interval"
+    ONE_TIME = "one_time"
+
+
+class IntervalUnit(enum.Enum):
+    """Aralik birimi"""
+
+    MINUTES = "minutes"
+    HOURS = "hours"
+    DAYS = "days"
 
 
 class ServerInstallation(Base):
@@ -793,6 +823,94 @@ class ServerOwnershipHistory(Base):
     # Relationships
     server = relationship("GameServer", backref="ownership_history")
     user = relationship("User", backref="server_ownership_history")
+
+
+class ServerMetrics(Base):
+    """Sunucu kaynak kullanimi metrikleri (CPU, RAM, Network)"""
+
+    __tablename__ = "server_metrics"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    # Resource metrics
+    cpu_percent = Column(Float, comment="Process CPU usage (0-100 per core)")
+    memory_mb = Column(Float, comment="Process RSS memory in MB")
+    network_in_mbps = Column(Float, nullable=True, comment="Network input in Mbps")
+    network_out_mbps = Column(Float, nullable=True, comment="Network output in Mbps")
+
+    # Process health
+    process_status = Column(String(20), comment="running, zombie, sleeping, etc.")
+    player_count = Column(Integer, default=0, comment="Current player count from A2S query")
+
+    # Timestamp
+    timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
+
+    # Composite index for time-series queries
+    __table_args__ = (
+        Index("idx_metrics_server_time", "server_id", "timestamp"),
+        {"comment": "Server resource metrics for monitoring and alerting"},
+    )
+
+    # Relationships
+    server = relationship("GameServer", backref="metrics")
+
+
+class CommandQuota(Base):
+    """Daily command usage quotas per user"""
+
+    __tablename__ = "command_quotas"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    command_type = Column(String(50), nullable=False, comment="ban, kick, restart, etc.")
+    usage_count = Column(Integer, nullable=False, default=0, comment="Commands used today")
+    quota_date = Column(Date, nullable=False, comment="Date of quota (UTC)")
+
+    # Timestamps
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Constraints and indexes
+    __table_args__ = (
+        UniqueConstraint("user_id", "command_type", "quota_date", name="uq_user_command_date"),
+        Index("idx_quota_date", "quota_date"),
+        Index("idx_user_command", "user_id", "command_type"),
+        {"comment": "Daily command usage quotas per user"},
+    )
+
+    # Relationships
+    user = relationship("User", backref="command_quotas")
+
+
+class SystemAlert(Base):
+    """System alerts and notifications"""
+
+    __tablename__ = "system_alerts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    level = Column(String(20), nullable=False, comment="info, warning, error, critical")
+    title = Column(String(255), nullable=False, comment="Alert title")
+    message = Column(Text, nullable=False, comment="Alert message")
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    is_resolved = Column(Boolean, default=False, nullable=False, comment="Alert resolved")
+    resolved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_alert_level_created", "level", "created_at"),
+        Index("idx_alert_server", "server_id"),
+        Index("idx_alert_resolved", "is_resolved", "created_at"),
+        {"comment": "System alerts and notifications"},
+    )
+
+    # Relationships
+    server = relationship("GameServer", backref="alerts")
+    user = relationship("User", backref="alerts")
 
 
 class ServerAdminEntry(Base):
@@ -896,6 +1014,94 @@ class ServerStatsHourly(Base):
     server = relationship("GameServer", backref="hourly_stats")
 
 
+class ServerStatsDaily(Base):
+    """Gunluk sunucu istatistikleri"""
+
+    __tablename__ = "server_stats_daily"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    date = Column(DateTime, nullable=False, index=True)
+
+    total_players = Column(Integer, default=0)
+    unique_players = Column(Integer, default=0)
+    avg_players = Column(Float, default=0.0)
+    max_players = Column(Integer, default=0)
+    peak_hour = Column(Integer)  # 0-23
+
+    total_playtime_minutes = Column(Integer, default=0)
+    avg_session_minutes = Column(Float, default=0.0)
+
+    most_played_map = Column(String(64))
+    map_playtime_json = Column(JSON)  # {"de_dust2": 120, "de_inferno": 80}
+
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (Index("idx_server_date", "server_id", "date", unique=True),)
+
+    # Relationships
+    server = relationship("GameServer", backref="daily_stats")
+
+
+class ServerStatsWeekly(Base):
+    """Haftalik sunucu istatistikleri"""
+
+    __tablename__ = "server_stats_weekly"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    week_start = Column(DateTime, nullable=False, index=True)  # Pazartesi
+
+    total_players = Column(Integer, default=0)
+    unique_players = Column(Integer, default=0)
+    avg_players = Column(Float, default=0.0)
+    max_players = Column(Integer, default=0)
+
+    total_playtime_hours = Column(Float, default=0.0)
+    avg_session_minutes = Column(Float, default=0.0)
+
+    retention_rate = Column(Float)  # % geri donen oyuncular
+    new_players = Column(Integer, default=0)
+    returning_players = Column(Integer, default=0)
+
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (Index("idx_server_week", "server_id", "week_start", unique=True),)
+
+    # Relationships
+    server = relationship("GameServer", backref="weekly_stats")
+
+
+class PlayerSession(Base):
+    """Oyuncu oturum kayitlari"""
+
+    __tablename__ = "player_sessions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    player_name = Column(String(100))
+    steam_id = Column(String(50), index=True)
+
+    join_time = Column(DateTime, nullable=False)
+    leave_time = Column(DateTime)
+    duration_minutes = Column(Integer)
+
+    map_name = Column(String(64))
+
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (Index("idx_session_time", "server_id", "join_time"),)
+
+    # Relationships
+    server = relationship("GameServer", backref="player_sessions")
+
+
 class ServerQuickCommand(Base):
     """Hizli RCON komutlari"""
 
@@ -935,6 +1141,67 @@ class ServerMapPool(Base):
     # Relationships
     server = relationship("GameServer", backref="map_pools")
     creator = relationship("User", backref="created_map_pools")
+
+
+class ServerScheduledTask(Base):
+    """Zamanlanmis sunucu gorevleri"""
+
+    __tablename__ = "server_scheduled_tasks"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    task_name = Column(String(100), nullable=False)
+    task_type = Column(Enum(TaskType), nullable=False)
+    schedule_type = Column(Enum(ScheduleType), nullable=False)
+
+    # Cron zamanlama
+    cron_minute = Column(String(20))  # "*/30", "0", "15"
+    cron_hour = Column(String(20))  # "*/6", "3", "12"
+    cron_day = Column(String(20))  # "*", "1", "15"
+    cron_month = Column(String(20))  # "*", "1-6"
+    cron_day_of_week = Column(String(20))  # "0-6", "1,3,5"
+
+    # Aralik zamanlama
+    interval_value = Column(Integer)
+    interval_unit = Column(Enum(IntervalUnit))
+
+    # Tek sefer zamanlama
+    scheduled_time = Column(DateTime)
+
+    # Gorev yapilandirmasi (JSON)
+    task_config = Column(JSON)  # {"map": "de_dust2"}, {"message": "Sunucu 5dk icinde restart"}
+
+    is_enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.now())
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    last_run = Column(DateTime)
+    next_run = Column(DateTime)
+
+    # APScheduler job ID
+    apscheduler_job_id = Column(String(100), unique=True)
+
+    # Relationships
+    server = relationship("GameServer", backref="scheduled_tasks")
+    creator = relationship("User", backref="created_scheduled_tasks")
+    executions = relationship(
+        "ScheduledTaskExecution", back_populates="task", cascade="all, delete-orphan"
+    )
+
+
+class ScheduledTaskExecution(Base):
+    """Zamanlanmis gorev calisma gecmisi"""
+
+    __tablename__ = "scheduled_task_executions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    task_id = Column(Integer, ForeignKey("server_scheduled_tasks.id", ondelete="CASCADE"))
+    executed_at = Column(DateTime, default=func.now())
+    status = Column(String(20))  # success, failed, skipped
+    result_message = Column(Text)
+    execution_time_ms = Column(Integer)
+
+    # Relationships
+    task = relationship("ServerScheduledTask", back_populates="executions")
 
 
 # ==================== PAYMENT MODELS ====================
@@ -1503,6 +1770,12 @@ class ServerPlugin(Base):
     installed_at = Column(DateTime, default=func.now())
     installed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
 
+    # Plugin status tracking columns
+    status = Column(String(20), default="active")  # active, inactive, error, loading
+    last_error = Column(Text, nullable=True)
+    last_checked = Column(DateTime, nullable=True)
+    error_count = Column(Integer, default=0)
+
     __table_args__ = (UniqueConstraint("server_id", "plugin_id", name="uq_server_plugin"),)
 
 
@@ -1675,20 +1948,44 @@ class UserFavoriteServer(Base):
 
 
 class UserPreference(Base):
-    """Kullanici tercihleri - tema, dil vs."""
+    """Kullanici tercihleri - tema, dil, panel layout vs."""
 
     __tablename__ = "user_preferences"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
     )
+
+    # Theme & Language
     theme = Column(String(20), default="dark")
     language = Column(String(10), default="tr")
+    theme_schedule = Column(JSON, comment="Auto theme switching schedule")
+    timezone = Column(String(50), default="Europe/Istanbul")
+
+    # Layout preferences (NEW)
+    panel_layout = Column(JSON, comment="Custom panel layout")
+    tab_order = Column(JSON, comment="Preferred tab order")
+    hidden_tabs = Column(JSON, comment="Hidden tabs")
+
+    # Dashboard widgets
+    dashboard_widgets = Column(JSON)
+    quick_actions = Column(JSON, comment="FAB quick actions")
+
+    # Notifications
     notifications_email = Column(Boolean, default=True)
     notifications_panel = Column(Boolean, default=True)
-    dashboard_widgets = Column(JSON)
+    notification_settings = Column(JSON, comment="Detailed notification preferences")
+
+    # Tour guide
+    tour_completed = Column(Boolean, default=False, comment="Tour guide completed")
+
+    # Timestamps
+    created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", backref=backref("preferences", uselist=False))
 
 
 # ==================== COUPON ====================
@@ -2720,6 +3017,33 @@ class ForumTopicLike(Base):
     __table_args__ = (UniqueConstraint("topic_id", "user_id", name="uq_topic_like"),)
 
 
+class TemplateCache(Base):
+    """Cached game server templates for fast installation"""
+
+    __tablename__ = "template_cache"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    mod_type = Column(String(50), nullable=False, unique=True, comment="ag, cs16, hldm, etc.")
+    template_name = Column(String(100), nullable=False, comment="Display name")
+    version = Column(String(50), nullable=True, comment="Template version")
+    file_path = Column(String(500), nullable=False, comment="Path to cached tar.gz")
+    file_size_mb = Column(Float, nullable=True, comment="Archive size in MB")
+    checksum = Column(String(64), nullable=True, comment="SHA256 checksum")
+    is_active = Column(Boolean, default=True, nullable=False, comment="Template is ready to use")
+    last_validated = Column(DateTime, nullable=True, comment="Last validation check")
+    last_updated = Column(DateTime, nullable=True, comment="Last cache update")
+    download_url = Column(String(500), nullable=True, comment="Optional: external download URL")
+    extra_data = Column(JSON, nullable=True, comment="Extra template info")
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_template_active", "is_active", "mod_type"),
+        {"comment": "Cached game server templates for fast installation"},
+    )
+
+
 class ForumReplyLike(Base):
     """Yanıt beğenileri"""
 
@@ -2731,6 +3055,261 @@ class ForumReplyLike(Base):
     created_at = Column(DateTime, default=func.now())
 
     __table_args__ = (UniqueConstraint("reply_id", "user_id", name="uq_reply_like"),)
+
+
+# ==================== AUTO-UPDATE SYSTEM ====================
+
+
+class ServerUpdateLog(Base):
+    """Server update history and status tracking"""
+
+    __tablename__ = "server_update_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    component = Column(String(50), nullable=False, comment="CS 1.6, AMXModX, Metamod, Plugin")
+    status = Column(String(20), nullable=False, comment="started, completed, failed, error")
+    message = Column(Text, comment="Update message or error details")
+    version_before = Column(String(50), comment="Version before update")
+    version_after = Column(String(50), comment="Version after update")
+    updated_at = Column(DateTime, default=func.now(), nullable=False)
+
+    # Relationships
+    server = relationship("GameServer", backref="update_logs")
+    user = relationship("User", backref="update_logs")
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_update_server_status", "server_id", "status"),
+        Index("idx_update_component", "component"),
+    )
+
+
+# ==================== DDOS PROTECTION SYSTEM ====================
+
+
+class DDoSAttackLog(Base):
+    """DDoS attack detection and mitigation logs"""
+
+    __tablename__ = "ddos_attack_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    attack_type = Column(String(50), nullable=False, comment="SYN flood, UDP flood, etc.")
+    peak_packets_per_second = Column(Integer, comment="Peak PPS during attack")
+    peak_gbps = Column(Float, comment="Peak bandwidth in Gbps")
+    duration_seconds = Column(Integer, comment="Attack duration")
+    blocked_ips_count = Column(Integer, default=0, comment="Number of IPs blocked")
+    detected_at = Column(DateTime, default=func.now(), nullable=False)
+    mitigated = Column(Boolean, default=False, comment="Was attack successfully mitigated")
+    mitigation_method = Column(String(100), comment="IP block, rate limit, etc.")
+
+    # Relationships
+    server = relationship("GameServer", backref="ddos_attacks")
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_ddos_server_detected", "server_id", "detected_at"),
+        Index("idx_ddos_mitigated", "mitigated"),
+    )
+
+
+class IPBlockList(Base):
+    """Blocked IP addresses for DDoS protection"""
+
+    __tablename__ = "ip_block_list"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ip_address = Column(String(45), nullable=False, index=True, comment="IPv4 or IPv6 address")
+    reason = Column(String(200), nullable=False, comment="Reason for blocking")
+    blocked_by = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), comment="Admin who blocked"
+    )
+    blocked_at = Column(DateTime, default=func.now(), nullable=False)
+    expires_at = Column(DateTime, comment="NULL = permanent block")
+    is_active = Column(Boolean, default=True, nullable=False, index=True)
+    unblocked_at = Column(DateTime, comment="When IP was unblocked")
+    server_id = Column(
+        Integer,
+        ForeignKey("game_servers.id", ondelete="CASCADE"),
+        index=True,
+        comment="Specific server or NULL for global",
+    )
+    auto_blocked = Column(Boolean, default=False, comment="Automatically blocked by DDoS detection")
+
+    # Relationships
+    blocked_by_user = relationship("User", backref="blocked_ips")
+    server = relationship("GameServer", backref="blocked_ips")
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_ip_active", "ip_address", "is_active"),
+        Index("idx_ip_expires", "expires_at"),
+    )
+
+
+# ==================== PLAYER MANAGEMENT SYSTEM ====================
+
+
+class PlayerHistory(Base):
+    """Player connection and activity history"""
+
+    __tablename__ = "player_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    steam_id = Column(String(32), nullable=False, index=True, comment="Steam ID")
+    name = Column(String(100), nullable=False, comment="Player name at connection")
+    ip_address = Column(String(45), comment="IP address")
+    connected_at = Column(DateTime, default=func.now(), nullable=False)
+    disconnected_at = Column(DateTime, comment="NULL if still connected")
+    duration_seconds = Column(Integer, comment="Session duration")
+    map_played = Column(String(64), comment="Map during session")
+    kills = Column(Integer, default=0)
+    deaths = Column(Integer, default=0)
+    score = Column(Integer, default=0)
+
+    # Relationships
+    server = relationship("GameServer", backref="player_history")
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_player_steam", "steam_id", "server_id"),
+        Index("idx_player_date", "connected_at"),
+    )
+
+
+class PlayerNote(Base):
+    """Admin notes for players"""
+
+    __tablename__ = "player_notes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    steam_id = Column(String(32), nullable=False, index=True)
+    admin_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    note = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="player_notes")
+    admin = relationship("User", backref="player_notes")
+
+    # Indexes
+    __table_args__ = (Index("idx_note_player", "steam_id", "server_id"),)
+
+
+class PlayerTag(Base):
+    """Tags/labels for players"""
+
+    __tablename__ = "player_tags"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    steam_id = Column(String(32), nullable=False, index=True)
+    tag = Column(String(50), nullable=False, comment="VIP, Skilled, Toxic, etc.")
+    color = Column(String(7), default="#3b82f6", comment="Hex color")
+    added_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    # Relationships
+    server = relationship("GameServer", backref="player_tags")
+    admin = relationship("User", backref="player_tags")
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_tag_player", "steam_id", "server_id"),
+        UniqueConstraint("server_id", "steam_id", "tag", name="uq_player_tag"),
+    )
+
+
+# ==================== SERVER TEMPLATE SYSTEM ====================
+
+
+class ServerTemplate(Base):
+    """Server configuration templates"""
+
+    __tablename__ = "server_templates"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False, comment="Template name")
+    description = Column(Text, comment="Template description")
+    game_type = Column(Enum(GameType), nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    is_public = Column(Boolean, default=False, comment="Available to all users")
+    is_official = Column(Boolean, default=False, comment="Official AGTR template")
+
+    # Template data (JSON)
+    config_data = Column(JSON, comment="server.cfg content")
+    plugins = Column(JSON, comment="List of plugins to install")
+    maps = Column(JSON, comment="Map list")
+    cvars = Column(JSON, comment="Console variables")
+    addons = Column(JSON, comment="Additional addons/mods")
+
+    # Metadata
+    use_count = Column(Integer, default=0, comment="Times used")
+    rating = Column(Float, default=0.0, comment="Average rating")
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    owner = relationship("User", backref="server_templates")
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_template_game", "game_type", "is_public"),
+        Index("idx_template_official", "is_official"),
+    )
+
+
+# ==================== ADMIN ACTIVITY TRACKING ====================
+
+
+class AdminActivity(Base):
+    """Real-time admin activity for collaborative mode"""
+
+    __tablename__ = "admin_activities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    # Activity details
+    action_type = Column(
+        String(50), nullable=False, comment="viewing_console, editing_config, etc."
+    )
+    current_tab = Column(String(50), comment="Active tab")
+    details = Column(JSON, comment="Additional activity details")
+
+    # Timestamps
+    started_at = Column(DateTime, default=func.now(), nullable=False)
+    last_active = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    user = relationship("User", backref="admin_activities")
+    server = relationship("GameServer", backref="admin_activities")
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_activity_server", "server_id", "last_active"),
+        Index("idx_activity_user", "user_id", "server_id"),
+    )
 
 
 # ==================== ENUM VALIDATION EVENT LISTENERS ====================

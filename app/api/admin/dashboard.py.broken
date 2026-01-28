@@ -1,0 +1,511 @@
+"""
+AGTR Merkezi - Admin Dashboard API
+Dashboard ozet istatistikleri ve real-time veriler
+"""
+
+import logging
+from datetime import datetime, timedelta
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, and_, or_
+from sqlalchemy.orm import Session
+
+from app.core.security import get_current_admin
+from app.models.connection import get_db
+from app.models.database import (
+    User,
+    UserStatus,
+    GameServer,
+    ServerStatus,
+    ServerMetrics,
+    Payment,
+    PaymentStatus,
+    ForumTopic,
+    ForumPost,
+    ForumReply,
+    ModerationLog,
+)
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/dashboard", tags=["Admin Dashboard"])
+
+
+@router.get("/stats")
+async def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """
+    Dashboard ana istatistikleri
+    Real-time data for admin panel cards
+    """
+
+    # ==================== USER STATS ====================
+    total_users = db.query(func.count(User.id)).scalar() or 0
+
+    # Users registered today
+    today = datetime.utcnow().date()
+    new_users_today = db.query(func.count(User.id)).filter(
+    func.date(User.created_at) == today
+    ).scalar() or 0
+
+    # Online users (last 5 minutes)
+    five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
+    online_users = db.query(func.count(User.id)).filter(
+    User.last_login >= five_minutes_ago
+    ).scalar() or 0
+
+    # Active users (not banned/deleted)
+    active_users = db.query(func.count(User.id)).filter(
+    User.status == UserStatus.ACTIVE
+    ).scalar() or 0
+
+    # ==================== SERVER STATS ====================
+    total_servers = db.query(func.count(GameServer.id)).filter(
+    GameServer.status != ServerStatus.DELETED
+    ).scalar() or 0
+
+    running_servers = db.query(func.count(GameServer.id)).filter(
+    GameServer.status == ServerStatus.RUNNING
+    ).scalar() or 0
+
+    # Total players online
+    latest_metrics = db.query(
+    ServerMetrics.server_id,
+    ServerMetrics.player_count
+    ).filter(
+    ServerMetrics.server_id.in_(
+            db.query(GameServer.id).filter(GameServer.status == ServerStatus.RUNNING)
+    )
+    ).order_by(ServerMetrics.timestamp.desc()).all()
+
+    # Get unique latest metrics per server
+    server_player_counts = {}
+    for metric in latest_metrics:
+    if metric.server_id not in server_player_counts:
+            server_player_counts[metric.server_id] = metric.player_count
+
+    total_players_online = sum(server_player_counts.values())
+
+    # ==================== REVENUE STATS ====================
+    # Revenue this month
+    month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    revenue_this_month = db.query(func.sum(Payment.amount)).filter(
+    Payment.status == PaymentStatus.COMPLETED,
+    Payment.completed_at >= month_start
+    ).scalar() or 0
+
+    # Revenue today
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    revenue_today = db.query(func.sum(Payment.amount)).filter(
+    Payment.status == PaymentStatus.COMPLETED,
+    Payment.completed_at >= today_start
+    ).scalar() or 0
+
+    # Payments this month
+    payments_this_month = db.query(func.count(Payment.id)).filter(
+    Payment.status == PaymentStatus.COMPLETED,
+    Payment.completed_at >= month_start
+    ).scalar() or 0
+
+    # ==================== FORUM STATS ====================
+    total_topics = db.query(func.count(ForumTopic.id)).scalar() or 0
+    total_posts = db.query(func.count(ForumPost.id)).scalar() or 0
+    total_replies = db.query(func.count(ForumReply.id)).scalar() or 0
+
+    # Topics today
+    topics_today = db.query(func.count(ForumTopic.id)).filter(
+    func.date(ForumTopic.created_at) == today
+    ).scalar() or 0
+
+    # ==================== SYSTEM HEALTH ====================
+    # Calculate system health score (0-100)
+    health_score = 100
+
+    # Deduct points for errors
+    error_servers = db.query(func.count(GameServer.id)).filter(
+    GameServer.status == ServerStatus.ERROR
+    ).scalar() or 0
+
+    if error_servers > 0:
+    health_score -= min(20, error_servers * 5)
+
+    # Deduct for low server uptime
+    if total_servers > 0:
+    uptime_percentage = (running_servers / total_servers) * 100
+    if uptime_percentage < 80:
+            health_score -= (80 - uptime_percentage) / 2
+
+    health_score = max(0, min(100, health_score))
+
+    # ==================== RETURN ====================
+    return {
+            "users": {
+                "total": total_users,
+                "new_today": new_users_today,
+                "online": online_users,
+                "active": active_users
+            },
+            "servers": {
+                "total": total_servers,
+                "running": running_servers,
+                "stopped": total_servers - running_servers,
+                "uptime_percentage": round((running_servers / total_servers * 100), 1) if total_servers > 0 else 0
+            },
+            "players": {
+                "online": total_players_online
+            },
+            "revenue": {
+                "month": float(revenue_this_month),
+                "today": float(revenue_today),
+                "payments_month": payments_this_month
+            },
+            "forum": {
+                "total_topics": total_topics,
+                "total_posts": total_posts + total_replies,
+                "topics_today": topics_today
+            },
+            "system": {
+                "health_score": round(health_score, 1),
+                "status": "operational" if health_score >= 90 else "degraded" if health_score >= 70 else "critical"
+            }
+    }
+
+
+@router.get("/activity")
+async def get_recent_activity(
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """
+    Son kullanici aktiviteleri
+    Recent user registrations, logins, payments, server creations
+    """
+    activities = []
+
+    # Recent user registrations (last 24h)
+    day_ago = datetime.utcnow() - timedelta(days=1)
+    recent_users = db.query(User).filter(
+        User.created_at >= day_ago
+    ).order_by(User.created_at.desc()).limit(5).all()
+
+    for user in recent_users:
+        activities.append({
+            "type": "user_registered",
+            "message": f"Yeni kullanici kaydi: {user.username}",
+            "username": user.username,
+            "time": user.created_at.isoformat() if user.created_at else None,
+            "color": "primary"
+        })
+
+    # Recent servers created
+    recent_servers = db.query(GameServer).filter(
+        GameServer.created_at >= day_ago
+    ).order_by(GameServer.created_at.desc()).limit(5).all()
+
+    # Get owner names
+    if recent_servers:
+        owner_ids = [s.owner_id for s in recent_servers if s.owner_id]
+        owners_map = {}
+        if owner_ids:
+            owners = db.query(User).filter(User.id.in_(owner_ids)).all()
+            owners_map = {u.id: u.username for u in owners}
+
+        for server in recent_servers:
+            owner_name = owners_map.get(server.owner_id, "Unknown")
+            activities.append({
+                "type": "server_created",
+                "message": f"Yeni sunucu olusturuldu: {server.name} (Owner: {owner_name})",
+                "time": server.created_at.isoformat() if server.created_at else None,
+                "color": "success"
+            })
+
+    # Recent payments
+    recent_payments = db.query(Payment).filter(
+        Payment.status == PaymentStatus.COMPLETED,
+        Payment.completed_at >= day_ago
+    ).order_by(Payment.completed_at.desc()).limit(5).all()
+
+    if recent_payments:
+        user_ids = [p.user_id for p in recent_payments]
+        payment_users_map = {}
+        if user_ids:
+            users = db.query(User).filter(User.id.in_(user_ids)).all()
+            payment_users_map = {u.id: u.username for u in users}
+
+        for payment in recent_payments:
+            username = payment_users_map.get(payment.user_id, "Unknown")
+            activities.append({
+                "type": "payment",
+                "message": f"Odeme alindi: {payment.amount} TL (User: {username})",
+                "time": payment.completed_at.isoformat() if payment.completed_at else None,
+                "color": "accent"
+            })
+
+    # Recent moderation actions
+    recent_mod_logs = db.query(ModerationLog).order_by(
+        ModerationLog.created_at.desc()
+    ).limit(5).all()
+
+    if recent_mod_logs:
+        mod_user_ids = set()
+        for log in recent_mod_logs:
+            if log.moderator_id:
+                mod_user_ids.add(log.moderator_id)
+            if log.target_user_id:
+                mod_user_ids.add(log.target_user_id)
+
+        mod_users_map = {}
+        if mod_user_ids:
+            mod_users = db.query(User).filter(User.id.in_(mod_user_ids)).all()
+            mod_users_map = {u.id: u.username for u in mod_users}
+
+        for log in recent_mod_logs:
+            moderator_name = mod_users_map.get(log.moderator_id, "System")
+            target_name = mod_users_map.get(log.target_user_id, "N/A")
+            activities.append({
+                "type": "moderation",
+                "message": f"Moderasyon: {log.action} - {moderator_name} -> {target_name}",
+                "time": log.created_at.isoformat() if log.created_at else None,
+                "color": "warning"
+            })
+
+    # Sort all activities by time
+    activities.sort(key=lambda x: x["time"] or "", reverse=True)
+
+    return {
+        "activities": activities[:limit]
+    }
+
+
+@router.get("/top-users")
+async def get_top_users(
+    limit: int = Query(10, ge=1, le=50),
+    metric: str = Query("servers", regex="^(servers|revenue|reputation|posts)$"),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """
+    En aktif kullanicilar
+    By: servers, revenue, reputation, forum posts
+    """
+    try:
+        logger.info(f"Top users requested by admin: {admin.username}, metric: {metric}")
+
+        if metric == "servers":
+        # Top users by server count
+        top_users = db.query(
+            User.id,
+            User.username,
+            User.avatar_url,
+            func.count(GameServer.id).label("count")
+        ).join(
+            GameServer, GameServer.owner_id == User.id
+        ).filter(
+            GameServer.status != ServerStatus.DELETED
+        ).group_by(
+            User.id, User.username, User.avatar_url
+        ).order_by(
+            func.count(GameServer.id).desc()
+        ).limit(limit).all()
+
+        return {
+            "metric": "servers",
+            "users": [{
+                "id": uid,
+                "username": username,
+                "avatar": avatar or f"https://api.dicebear.com/7.x/avataaars/svg?seed={uid}",
+                "value": count,
+                "label": f"{count} sunucu"
+            } for uid, username, avatar, count in top_users]
+        }
+
+    elif metric == "revenue":
+        # Top users by total spent
+        top_users = db.query(
+            User.id,
+            User.username,
+            User.avatar_url,
+            func.sum(Payment.amount).label("total")
+        ).join(
+            Payment, Payment.user_id == User.id
+        ).filter(
+            Payment.status == PaymentStatus.COMPLETED
+        ).group_by(
+            User.id, User.username, User.avatar_url
+        ).order_by(
+            func.sum(Payment.amount).desc()
+        ).limit(limit).all()
+
+        return {
+            "metric": "revenue",
+            "users": [{
+                "id": uid,
+                "username": username,
+                "avatar": avatar or f"https://api.dicebear.com/7.x/avataaars/svg?seed={uid}",
+                "value": float(total or 0),
+                "label": f"{float(total or 0):.2f} TL"
+            } for uid, username, avatar, total in top_users]
+        }
+
+    elif metric == "reputation":
+        # Top users by reputation
+        top_users = db.query(
+            User.id,
+            User.username,
+            User.avatar_url,
+            User.reputation
+        ).filter(
+            User.reputation.isnot(None)
+        ).order_by(
+            User.reputation.desc()
+        ).limit(limit).all()
+
+        return {
+            "metric": "reputation",
+            "users": [{
+                "id": uid,
+                "username": username,
+                "avatar": avatar or f"https://api.dicebear.com/7.x/avataaars/svg?seed={uid}",
+                "value": reputation or 0,
+                "label": f"{reputation or 0} reputation"
+            } for uid, username, avatar, reputation in top_users]
+        }
+
+    elif metric == "posts":
+        # Top users by forum activity
+        top_users = db.query(
+            User.id,
+            User.username,
+            User.avatar_url,
+            (func.count(ForumTopic.id) + func.count(ForumPost.id)).label("activity")
+        ).outerjoin(
+            ForumTopic, ForumTopic.author_id == User.id
+        ).outerjoin(
+            ForumPost, ForumPost.author_id == User.id
+        ).group_by(
+            User.id, User.username, User.avatar_url
+        ).order_by(
+            (func.count(ForumTopic.id) + func.count(ForumPost.id)).desc()
+        ).limit(limit).all()
+
+        return {
+            "metric": "posts",
+            "users": [{
+                "id": uid,
+                "username": username,
+                "avatar": avatar or f"https://api.dicebear.com/7.x/avataaars/svg?seed={uid}",
+                "value": activity,
+                "label": f"{activity} post"
+            } for uid, username, avatar, activity in top_users]
+        }
+    except Exception as e:
+        logger.error(f"Top users error: {type(e).__name__}: {str(e)}")
+        logger.error(f"Traceback: ", exc_info=True)
+        raise
+
+
+@router.get("/chart/user-growth")
+async def get_user_growth_chart(
+    days: int = Query(30, ge=7, le=90),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """
+    Kullanici buyume grafigi (son X gun)
+    """
+    data_points = []
+
+    for i in range(days):
+        day = (datetime.utcnow() - timedelta(days=days-1-i)).date()
+
+        count = db.query(func.count(User.id)).filter(
+            func.date(User.created_at) == day
+        ).scalar() or 0
+
+        data_points.append({
+            "date": str(day),
+            "count": count
+        })
+
+    return {
+        "labels": [d["date"] for d in data_points],
+        "data": [d["count"] for d in data_points],
+        "period_days": days
+    }
+
+
+@router.get("/chart/revenue")
+async def get_revenue_chart(
+    period: str = Query("month", regex="^(week|month|year)$"),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """
+    Gelir grafigi
+    """
+    if period == "week":
+        days = 7
+    elif period == "month":
+        days = 30
+    else:  # year
+        days = 365
+
+    data_points = []
+
+    for i in range(days):
+        day = (datetime.utcnow() - timedelta(days=days-1-i)).date()
+
+        revenue = db.query(func.sum(Payment.amount)).filter(
+            Payment.status == PaymentStatus.COMPLETED,
+            func.date(Payment.completed_at) == day
+        ).scalar() or 0
+
+        data_points.append({
+            "date": str(day),
+            "revenue": float(revenue)
+        })
+
+    return {
+        "labels": [d["date"] for d in data_points],
+        "data": [d["revenue"] for d in data_points],
+        "period": period
+    }
+
+
+@router.get("/chart/server-activity")
+async def get_server_activity_chart(
+    hours: int = Query(24, ge=6, le=168),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """
+    Sunucu aktivite grafigi (player count over time)
+    """
+    start_time = datetime.utcnow() - timedelta(hours=hours)
+
+    # Get metrics in hourly buckets
+    data_points = []
+
+    for i in range(hours):
+        hour_start = datetime.utcnow() - timedelta(hours=hours-i)
+        hour_end = hour_start + timedelta(hours=1)
+
+        # Average player count in this hour
+        avg_players = db.query(func.avg(ServerMetrics.player_count)).filter(
+            ServerMetrics.timestamp >= hour_start,
+            ServerMetrics.timestamp < hour_end
+        ).scalar() or 0
+
+        data_points.append({
+            "hour": hour_start.strftime("%H:%M"),
+            "players": round(float(avg_players), 1)
+        })
+
+    return {
+        "labels": [d["hour"] for d in data_points],
+        "data": [d["players"] for d in data_points],
+        "hours": hours
+    }

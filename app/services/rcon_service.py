@@ -23,6 +23,11 @@ from app.models.database import (
 logger = logging.getLogger(__name__)
 
 
+def strip_color_codes(text: str) -> str:
+    """Remove Half-Life color codes from text (^0-^9)"""
+    return re.sub(r"\^\d", "", text)
+
+
 class RCONClient:
     """
     Half-Life RCON Client
@@ -234,12 +239,34 @@ class RCONService:
             )
             return {"success": False, "response": None, "error": message, "execution_time_ms": 0}
 
-        # RCON client olustur
-        client = RCONClient(server.ip_address, server.port, server.rcon_password)
-
-        # Komutu calistir
+        # Screen-based command execution (RCON UDP timeout issues)
         try:
-            response = await client.execute(command)
+            import subprocess
+
+            screen_name = f"server_{server.id}"
+
+            # Send command to screen
+            cmd = ["screen", "-S", screen_name, "-X", "stuff", f"{command}\n"]
+            subprocess.run(cmd, timeout=5, check=False)
+
+            # Wait a bit for command to execute
+            await asyncio.sleep(0.5)
+
+            # Capture output from screen
+            output_file = f"/tmp/server_{server.id}_output.txt"
+            subprocess.run(
+                ["screen", "-S", screen_name, "-X", "hardcopy", output_file], timeout=5, check=False
+            )
+
+            # Read output
+            response = ""
+            try:
+                with open(output_file, "r", errors="ignore") as f:
+                    lines = f.readlines()
+                    # Get last 50 lines
+                    response = "".join(lines[-50:])
+            except:
+                response = ""
 
             end_time = datetime.utcnow()
             execution_time = int((end_time - start_time).total_seconds() * 1000)
@@ -341,36 +368,86 @@ class RCONService:
 
     async def get_players(self, server: GameServer) -> List[Dict]:
         """
-        Oyuncu listesini al
+        Oyuncu listesini al (Enhanced with frags and loss)
 
         Returns:
-            [{"slot": int, "name": str, "steam_id": str, "time": str, "ping": int, "ip": str}]
+            [{"slot": int, "name": str, "steam_id": str, "frags": int, "time": str, "ping": int, "loss": int, "ip": str}]
         """
-        result = await self.execute(server, "status", 0, CommandType.SYSTEM)
+        import subprocess
 
-        if not result["success"]:
-            return []
+        try:
+            screen_name = f"server_{server.id}"
 
-        players = []
-        response = result["response"] or ""
+            # Send status command
+            subprocess.run(
+                ["screen", "-S", screen_name, "-X", "stuff", "status\n"], timeout=5, check=False
+            )
+            await asyncio.sleep(1)
 
-        # Parse player lines
-        # Format: #slot "name" steamid time ping loss adr
-        player_pattern = r'#\s*(\d+)\s+"([^"]+)"\s+(\S+)\s+(\S+)\s+(\d+)\s+\d+\s+([\d\.]+:\d+)'
-
-        for match in re.finditer(player_pattern, response):
-            players.append(
-                {
-                    "slot": int(match.group(1)),
-                    "name": match.group(2),
-                    "steam_id": match.group(3),
-                    "time": match.group(4),
-                    "ping": int(match.group(5)),
-                    "ip": match.group(6).split(":")[0],
-                }
+            # Capture output
+            output_file = f"/tmp/server_{server.id}_status.txt"
+            subprocess.run(
+                ["screen", "-S", screen_name, "-X", "hardcopy", output_file], timeout=5, check=False
             )
 
-        return players
+            # Read and parse
+            response = ""
+            try:
+                with open(output_file, "r", errors="ignore") as f:
+                    response = f.read()
+            except:
+                return []
+
+            players = []
+            seen_steamids = set()  # Track unique players
+
+            # Parse player lines (multiline format - IP can be on next line)
+            lines = response.split("\n")
+
+            for i, line in enumerate(lines):
+                if line.startswith("# ") and '"' in line:
+                    # Pattern: # slot "name" userid steamid frags time ping loss [ip:port or next line]
+                    # Group 5 = frags, Group 8 = loss (we were ignoring it with \d+)
+                    pattern = r'#\s*(\d+)\s+"([^"]+)"\s+(\d+)\s+(\S+)\s+(-?\d+)\s+(\S+)\s+(\d+)\s+(\d+)(?:\s+([\d\.]+:\d+))?'
+                    match = re.search(pattern, line)
+
+                    if match:
+                        steam_id = match.group(4)
+
+                        # Skip if already seen (duplicate in console output)
+                        if steam_id in seen_steamids:
+                            continue
+                        seen_steamids.add(steam_id)
+
+                        # Clean player name from color codes
+                        player_name = strip_color_codes(match.group(2))
+
+                        ip_port = match.group(9)  # IP might be on same line (shifted by 1)
+
+                        # If not on same line, check next line
+                        if not ip_port and i + 1 < len(lines):
+                            next_line = lines[i + 1]
+                            ip_match = re.search(r"([\d\.]+):(\d+)", next_line)
+                            if ip_match:
+                                ip_port = ip_match.group(0)
+
+                        players.append(
+                            {
+                                "slot": int(match.group(1)),
+                                "name": player_name,
+                                "steam_id": steam_id,
+                                "frags": int(match.group(5)),  # NEW: Frags/kills
+                                "time": match.group(6),
+                                "ping": int(match.group(7)),
+                                "loss": int(match.group(8)),  # NEW: Packet loss percentage
+                                "ip": ip_port.split(":")[0] if ip_port else "unknown",
+                            }
+                        )
+
+            return players
+        except Exception as e:
+            logger.error(f"Get players error: {e}")
+            return []
 
     async def kick_player(
         self,
@@ -610,3 +687,117 @@ class RCONService:
             }
             for h in history
         ]
+
+    # ==================== PLAYER MONITORING ENHANCEMENTS ====================
+
+    # In-memory cache for player status
+    _player_cache = {}
+    _cache_timestamps = {}
+
+    async def get_player_status_cached(
+        self, server: GameServer, cache_seconds: int = 5
+    ) -> List[Dict]:
+        """
+        Get player list with caching to prevent RCON spam
+
+        Args:
+            server: GameServer instance
+            cache_seconds: Cache time in seconds (default 5)
+
+        Returns:
+            List of players with cached data
+        """
+        cache_key = f"players_{server.id}"
+        now = datetime.now()
+
+        # Check if cache is valid
+        if cache_key in self._player_cache:
+            cache_time = self._cache_timestamps.get(cache_key)
+            if cache_time and (now - cache_time).total_seconds() < cache_seconds:
+                return self._player_cache[cache_key]
+
+        # Cache miss or expired - fetch new data
+        players = await self.get_players(server)
+
+        # Update cache
+        self._player_cache[cache_key] = players
+        self._cache_timestamps[cache_key] = now
+
+        return players
+
+    async def set_server_password(
+        self, server: GameServer, password: str, user_id: int, db: Session, ip_address: str = None
+    ) -> Dict:
+        """
+        Set server password via RCON (sv_password cvar)
+
+        Args:
+            server: GameServer instance
+            password: New password (empty string = remove password)
+            user_id: User ID performing the action
+            db: Database session for audit log
+            ip_address: User IP for audit log
+
+        Returns:
+            {"success": bool, "message": str}
+        """
+        import subprocess
+
+        # Validate password
+        if password:
+            # Alphanumeric only, max 32 chars
+            if not re.match(r"^[a-zA-Z0-9_-]+$", password):
+                return {
+                    "success": False,
+                    "message": "Şifre sadece harf, rakam, tire ve alt çizgi içerebilir",
+                }
+            if len(password) > 32:
+                return {"success": False, "message": "Şifre maksimum 32 karakter olabilir"}
+
+        try:
+            screen_name = f"server_{server.id}"
+
+            # Build sv_password command
+            if password:
+                command = f'sv_password "{password}"'
+            else:
+                command = 'sv_password ""'  # Remove password
+
+            # Send command via screen
+            subprocess.run(
+                ["screen", "-S", screen_name, "-X", "stuff", f"{command}\n"], timeout=5, check=False
+            )
+
+            await asyncio.sleep(0.5)
+
+            # Log to console history
+            try:
+                history = ServerConsoleHistory(
+                    server_id=server.id,
+                    user_id=user_id,
+                    command=command,
+                    response="Server password updated",
+                    command_type=CommandType.SERVER_CONFIG,
+                    is_success=True,
+                    ip_address=ip_address,
+                )
+                db.add(history)
+                db.commit()
+            except Exception as e:
+                logger.error(f"Failed to log password change: {e}")
+
+            logger.info(
+                f"Server {server.id} password {'set' if password else 'removed'} "
+                f"by user {user_id}"
+            )
+
+            return {
+                "success": True,
+                "message": (
+                    "Sunucu şifresi güncellendi" if password else "Sunucu şifresi kaldırıldı"
+                ),
+            }
+
+        except Exception as e:
+            logger.error(f"Set password error for server {server.id}: {e}")
+            return {"success": False, "message": f"Şifre değiştirme hatası: {str(e)}"}

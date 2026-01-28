@@ -1,0 +1,395 @@
+<template>
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-lambda font-bold text-white mb-4">Sunucu Kirala</h1>
+      <p class="text-gray-400 text-lg">Counter-Strike 1.6 sunucunuzu hemen başlatın</p>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-12">
+      <div class="text-primary text-4xl mb-4">⏳</div>
+      <p class="text-gray-400">Paketler yükleniyor...</p>
+    </div>
+
+    <div v-else>
+      <!-- Features Section -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+        <div class="feature-card">
+          <div class="text-3xl mb-2">⚡</div>
+          <div class="font-bold text-white mb-1">Hızlı Kurulum</div>
+          <div class="text-gray-400 text-sm">5 dakikada aktif</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="text-3xl mb-2">🔧</div>
+          <div class="font-bold text-white mb-1">RCON Kontrolü</div>
+          <div class="text-gray-400 text-sm">Tam yönetim</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="text-3xl mb-2">🌐</div>
+          <div class="font-bold text-white mb-1">DDoS Koruması</div>
+          <div class="text-gray-400 text-sm">Güvenli altyapı</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="text-3xl mb-2">📞</div>
+          <div class="font-bold text-white mb-1">7/24 Destek</div>
+          <div class="text-gray-400 text-sm">Her zaman yanınızda</div>
+        </div>
+      </div>
+
+      <!-- Package Selection -->
+      <div class="mb-8">
+        <h2 class="text-2xl font-lambda font-bold text-white mb-6 text-center">Paketlerimiz</h2>
+
+        <div v-if="!packages.length" class="text-center py-12 bg-dark-card border border-primary/30 rounded-lg">
+          <div class="text-6xl mb-4">📦</div>
+          <p class="text-gray-400">Henüz paket bulunmuyor</p>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div
+            v-for="pkg in packages"
+            :key="pkg.id"
+            class="package-card"
+            :class="{ 'popular': pkg.is_popular, 'selected': selectedPackage?.id === pkg.id }"
+            @click="selectPackage(pkg)"
+          >
+            <!-- Popular Badge -->
+            <div v-if="pkg.is_popular" class="popular-badge">
+              ⭐ En Popüler
+            </div>
+
+            <!-- Package Info -->
+            <div class="text-center mb-4">
+              <h3 class="text-2xl font-lambda font-bold text-white mb-2">{{ pkg.name }}</h3>
+              <div class="text-gray-400 text-sm mb-4">{{ pkg.description }}</div>
+
+              <div class="mb-4">
+                <div class="text-4xl font-bold text-primary">₺{{ pkg.price }}</div>
+                <div class="text-gray-400 text-sm">/ {{ getDurationText(pkg.duration) }}</div>
+              </div>
+            </div>
+
+            <!-- Features -->
+            <div class="space-y-2 mb-6">
+              <div class="flex items-center space-x-2 text-sm">
+                <span class="text-green-400">✓</span>
+                <span class="text-white">{{ pkg.max_slots }} Slot</span>
+              </div>
+
+              <div class="flex items-center space-x-2 text-sm">
+                <span class="text-green-400">✓</span>
+                <span class="text-white">{{ pkg.ram_mb }} MB RAM</span>
+              </div>
+
+              <div class="flex items-center space-x-2 text-sm">
+                <span class="text-green-400">✓</span>
+                <span class="text-white">{{ pkg.disk_gb }} GB Disk</span>
+              </div>
+
+              <div class="flex items-center space-x-2 text-sm">
+                <span class="text-green-400">✓</span>
+                <span class="text-white">DDoS Koruması</span>
+              </div>
+
+              <div class="flex items-center space-x-2 text-sm">
+                <span class="text-green-400">✓</span>
+                <span class="text-white">RCON Erişimi</span>
+              </div>
+
+              <div class="flex items-center space-x-2 text-sm">
+                <span class="text-green-400">✓</span>
+                <span class="text-white">FastDL Desteği</span>
+              </div>
+            </div>
+
+            <!-- Select Button -->
+            <button
+              @click.stop="selectPackage(pkg)"
+              class="w-full btn-select"
+              :class="{ 'selected': selectedPackage?.id === pkg.id }"
+            >
+              {{ selectedPackage?.id === pkg.id ? '✓ Seçildi' : 'Seç' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Form -->
+      <div v-if="selectedPackage" class="max-w-2xl mx-auto">
+        <div class="bg-dark-card border border-primary rounded-lg p-6">
+          <h2 class="text-2xl font-lambda font-bold text-white mb-6">Sipariş Detayları</h2>
+
+          <form @submit.prevent="handleOrder" class="space-y-4">
+            <!-- Server Name -->
+            <div>
+              <label class="block text-gray-400 text-sm mb-2">Sunucu Adı</label>
+              <input
+                v-model="orderForm.server_name"
+                type="text"
+                class="form-input"
+                placeholder="Benim CS 1.6 Sunucum"
+                required
+                maxlength="50"
+              />
+              <p class="text-gray-500 text-xs mt-1">Sunucunuzun görünen adı</p>
+            </div>
+
+            <!-- Server Location -->
+            <div>
+              <label class="block text-gray-400 text-sm mb-2">Sunucu Lokasyonu</label>
+              <select v-model="orderForm.location" class="form-input" required>
+                <option value="">Seçiniz</option>
+                <option value="istanbul">İstanbul, TR</option>
+                <option value="ankara">Ankara, TR</option>
+                <option value="izmir">İzmir, TR</option>
+              </select>
+            </div>
+
+            <!-- Duration -->
+            <div>
+              <label class="block text-gray-400 text-sm mb-2">Süre</label>
+              <select v-model="orderForm.duration" class="form-input" required>
+                <option value="1">1 Ay</option>
+                <option value="3">3 Ay (%10 İndirim)</option>
+                <option value="6">6 Ay (%15 İndirim)</option>
+                <option value="12">12 Ay (%20 İndirim)</option>
+              </select>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="bg-dark-bg border border-primary/30 rounded-lg p-4">
+              <h3 class="text-lg font-bold text-white mb-3">Sipariş Özeti</h3>
+
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Paket:</span>
+                  <span class="text-white">{{ selectedPackage.name }}</span>
+                </div>
+
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Süre:</span>
+                  <span class="text-white">{{ orderForm.duration }} Ay</span>
+                </div>
+
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Lokasyon:</span>
+                  <span class="text-white">{{ getLocationText(orderForm.location) }}</span>
+                </div>
+
+                <div v-if="discount > 0" class="flex justify-between text-green-400">
+                  <span>İndirim:</span>
+                  <span>-₺{{ calculateDiscount() }}</span>
+                </div>
+
+                <div class="border-t border-gray-700 pt-2 mt-2">
+                  <div class="flex justify-between text-lg font-bold">
+                    <span class="text-white">Toplam:</span>
+                    <span class="text-primary">₺{{ calculateTotal() }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Terms -->
+            <div class="flex items-start space-x-2">
+              <input
+                v-model="orderForm.accept_terms"
+                type="checkbox"
+                id="order-terms"
+                class="mt-1"
+                required
+              />
+              <label for="order-terms" class="text-gray-400 text-sm">
+                <router-link to="/terms" class="text-primary hover:underline">Kullanım Şartlarını</router-link>
+                ve
+                <router-link to="/refund" class="text-primary hover:underline">İptal ve İade Koşullarını</router-link>
+                kabul ediyorum
+              </label>
+            </div>
+
+            <!-- Error Message -->
+            <div v-if="error" class="p-3 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-sm">
+              {{ error }}
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              :disabled="ordering || !orderForm.accept_terms"
+              class="w-full btn-primary-large"
+              :class="{ 'opacity-50 cursor-not-allowed': ordering || !orderForm.accept_terms }"
+            >
+              {{ ordering ? 'Sipariş Oluşturuluyor...' : `Siparişi Tamamla (₺${calculateTotal()})` }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import serversAPI from '@/api/servers'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const loading = ref(true)
+const packages = ref([])
+const selectedPackage = ref(null)
+const ordering = ref(false)
+const error = ref(null)
+
+const orderForm = ref({
+  server_name: '',
+  location: '',
+  duration: '1',
+  accept_terms: false
+})
+
+const discount = computed(() => {
+  const duration = parseInt(orderForm.value.duration)
+  if (duration >= 12) return 20
+  if (duration >= 6) return 15
+  if (duration >= 3) return 10
+  return 0
+})
+
+onMounted(async () => {
+  // Check if user is authenticated
+  if (!authStore.isAuthenticated) {
+    router.push({ name: 'login', query: { redirect: '/servers/rent' } })
+    return
+  }
+
+  await fetchPackages()
+})
+
+const fetchPackages = async () => {
+  try {
+    const response = await serversAPI.getPackages()
+    packages.value = response.data
+  } catch (err) {
+    console.error('Failed to fetch packages:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+const selectPackage = (pkg) => {
+  selectedPackage.value = pkg
+
+  // Scroll to order form
+  setTimeout(() => {
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: 'smooth'
+    })
+  }, 100)
+}
+
+const calculateDiscount = () => {
+  if (!selectedPackage.value) return 0
+  const basePrice = selectedPackage.value.price * parseInt(orderForm.value.duration)
+  return Math.floor(basePrice * (discount.value / 100))
+}
+
+const calculateTotal = () => {
+  if (!selectedPackage.value) return 0
+  const basePrice = selectedPackage.value.price * parseInt(orderForm.value.duration)
+  const discountAmount = calculateDiscount()
+  return basePrice - discountAmount
+}
+
+const handleOrder = async () => {
+  if (!authStore.isAuthenticated) {
+    router.push({ name: 'login', query: { redirect: '/servers/rent' } })
+    return
+  }
+
+  error.value = null
+  ordering.value = true
+
+  try {
+    const response = await serversAPI.orderServer({
+      package_id: selectedPackage.value.id,
+      server_name: orderForm.value.server_name,
+      location: orderForm.value.location,
+      duration: parseInt(orderForm.value.duration)
+    })
+
+    // Redirect to payment page or server details
+    if (response.data.payment_url) {
+      window.location.href = response.data.payment_url
+    } else if (response.data.server_id) {
+      router.push(`/servers/${response.data.server_id}`)
+    }
+  } catch (err) {
+    error.value = err.response?.data?.detail || 'Sipariş oluşturulamadı'
+  } finally {
+    ordering.value = false
+  }
+}
+
+const getDurationText = (duration) => {
+  return duration === 'monthly' ? 'Ay' : 'Yıl'
+}
+
+const getLocationText = (location) => {
+  const locations = {
+    'istanbul': 'İstanbul, TR',
+    'ankara': 'Ankara, TR',
+    'izmir': 'İzmir, TR'
+  }
+  return locations[location] || 'Seçiniz'
+}
+</script>
+
+<style scoped>
+.feature-card {
+  @apply text-center bg-dark-card border border-primary/30 rounded-lg p-4;
+}
+
+.package-card {
+  @apply bg-dark-card border-2 border-primary/30 rounded-lg p-6 cursor-pointer transition-all duration-200 relative;
+}
+
+.package-card:hover {
+  @apply border-primary transform -translate-y-1;
+}
+
+.package-card.popular {
+  @apply border-primary bg-primary/5;
+}
+
+.package-card.selected {
+  @apply border-primary bg-primary/10;
+}
+
+.popular-badge {
+  @apply absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 bg-primary text-white text-sm font-bold rounded-full;
+}
+
+.btn-select {
+  @apply px-6 py-3 bg-dark-bg border-2 border-primary/50 text-white rounded-lg hover:bg-primary hover:border-primary transition-all duration-200 font-semibold;
+}
+
+.btn-select.selected {
+  @apply bg-primary border-primary;
+}
+
+.form-input {
+  @apply w-full bg-dark-bg border border-primary/30 text-white rounded px-4 py-2 focus:border-primary outline-none transition-colors duration-200;
+}
+
+.btn-primary-large {
+  @apply px-6 py-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors duration-200 font-bold text-lg;
+}
+</style>

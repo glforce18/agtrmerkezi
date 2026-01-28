@@ -199,12 +199,20 @@ class ForumTaskManager:
                 db.delete(topic)
 
             # 3. Orphan replies (konusu silinmis yanitlar)
-            orphan_replies = (
-                db.query(ForumReply)
+            orphan_reply_ids = (
+                db.query(ForumReply.id)
                 .outerjoin(ForumTopic, ForumReply.topic_id == ForumTopic.id)
                 .filter(ForumTopic.id == None)
-                .delete(synchronize_session=False)
+                .all()
             )
+            orphan_replies = 0
+            if orphan_reply_ids:
+                orphan_reply_ids = [r.id for r in orphan_reply_ids]
+                orphan_replies = (
+                    db.query(ForumReply)
+                    .filter(ForumReply.id.in_(orphan_reply_ids))
+                    .delete(synchronize_session=False)
+                )
 
             db.commit()
 

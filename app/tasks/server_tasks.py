@@ -33,6 +33,9 @@ class ServerTaskManager:
     AUTO_RESTART_INTERVAL = 60
     CLEANUP_INTERVAL = 86400  # 24 saat
     ADMIN_CHECK_INTERVAL = 3600  # 1 saat
+    METRICS_COLLECTION_INTERVAL = 300  # 5 dakika
+    METRICS_ARCHIVAL_INTERVAL = 86400  # 24 saat (runs at 3 AM)
+    TEMPLATE_CACHE_UPDATE_INTERVAL = 86400  # 24 saat (runs at 3 AM)
 
     def __init__(self):
         self.is_running = False
@@ -108,13 +111,15 @@ class ServerTaskManager:
 
     async def auto_restart_crashed_task(self):
         """
-        Coken sunuculari otomatik yeniden baslat
+        Coken sunuculari otomatik yeniden baslat (respawn storm detection ile)
 
         Her 60 saniyede bir calisir
         """
         db = self.get_db()
         try:
-            # Auto-restart aktif ve RUNNING olmasi gereken sunucular
+            from app.services.respawn_monitor import RespawnMonitor
+
+            # Auto-restart aktif ve STOPPED sunucular
             servers = (
                 db.query(GameServer)
                 .filter(GameServer.auto_restart == True, GameServer.status == ServerStatus.STOPPED)
@@ -122,15 +127,24 @@ class ServerTaskManager:
             )
 
             control_service = ServerControlService(db)
+            respawn_monitor = RespawnMonitor(db)
             restarted = 0
+            blocked = 0
 
             for server in servers:
                 try:
-                    # Son 5 dakikada crash varsa bekle (spam engelle)
-                    if server.last_crash:
-                        time_since_crash = datetime.utcnow() - server.last_crash
-                        if time_since_crash < timedelta(minutes=5):
-                            continue
+                    # Check if in backoff period
+                    if respawn_monitor.is_in_backoff_period(server):
+                        blocked += 1
+                        continue
+
+                    # Check if storm detected (auto-restart disabled)
+                    if respawn_monitor.is_storm_detected(server):
+                        blocked += 1
+                        logger.warning(
+                            f"Crash storm detected for server {server.id}, auto-restart disabled"
+                        )
+                        continue
 
                     # Screen kontrolu
                     if not await control_service.is_running(server.id):
@@ -138,13 +152,17 @@ class ServerTaskManager:
 
                         if result.get("restarted"):
                             restarted += 1
+                            # Reset crash tracking on successful restart
+                            respawn_monitor.reset_crash_tracking(server)
                             logger.info(f"Auto-restart: {server.id} ({server.unique_code})")
 
                 except Exception as e:
                     logger.error(f"Auto-restart hatasi ({server.id}): {e}")
 
-            if restarted > 0:
-                logger.info(f"Auto-restart: {restarted} sunucu yeniden baslatildi")
+            if restarted > 0 or blocked > 0:
+                logger.info(
+                    f"Auto-restart: {restarted} sunucu baslatildi, {blocked} sunucu backoff/storm blocked"
+                )
 
         except Exception as e:
             logger.error(f"Auto-restart task hatasi: {e}")
@@ -285,11 +303,18 @@ class ServerTaskManager:
 
             db.commit()
 
+            # 5. 30 gunluk eski command quota kayitlarini temizle
+            from app.services.command_quota_service import CommandQuotaService
+
+            quota_service = CommandQuotaService(db)
+            deleted_quotas = quota_service.cleanup_old_quotas(days_to_keep=30)
+
             logger.info(
                 f"Cleanup: {len(expired_servers)} expired server, "
                 f"{expired_admins} expired admin, "
                 f"{len(expired_bans)} expired ban, "
-                f"{deleted_stats} old stats"
+                f"{deleted_stats} old stats, "
+                f"{deleted_quotas} old quotas"
             )
 
         except Exception as e:
@@ -337,6 +362,93 @@ class ServerTaskManager:
         finally:
             db.close()
 
+    async def collect_metrics_task(self):
+        """
+        Tum calisir sunucularin kaynak metriklerini topla
+
+        Her 5 dakikada calisir
+        CPU, RAM, network, player count tracking
+        """
+        db = self.get_db()
+        try:
+            from app.services.monitor import server_monitor
+
+            # Running ve Creating sunuculari al
+            running_servers = (
+                db.query(GameServer)
+                .filter(GameServer.status.in_([ServerStatus.RUNNING, ServerStatus.CREATING]))
+                .all()
+            )
+
+            collected = 0
+
+            for server in running_servers:
+                try:
+                    # Metrics topla
+                    await server_monitor.collect_server_metrics(server, db)
+                    collected += 1
+                except Exception as e:
+                    logger.error(f"Metrics collection failed for server {server.id}: {e}")
+
+            logger.debug(f"Metrics: {collected}/{len(running_servers)} sunucu icin metrik toplandı")
+
+        except Exception as e:
+            logger.error(f"Metrics collection task hatasi: {e}")
+        finally:
+            db.close()
+
+    async def archive_metrics_task(self):
+        """
+        Eski metrikleri arsivle ve temizle
+
+        Gunluk calisir (3 AM):
+        - Onceki gunun verilerini saatlik agrega et
+        - 7 gunluk eski ham verileri sil
+        """
+        db = self.get_db()
+        try:
+            from app.services.metrics_archiver import run_daily_archival
+
+            result = await run_daily_archival(db)
+
+            logger.info(
+                f"Metrics archival: aggregated {result['aggregated_date']}, "
+                f"deleted {result['deleted_rows']} rows, "
+                f"table: {result['table_stats']['total_rows']} rows"
+            )
+
+        except Exception as e:
+            logger.error(f"Metrics archival task hatasi: {e}")
+        finally:
+            db.close()
+
+    async def update_template_caches_task(self):
+        """
+        Template cache'lerini guncelle
+
+        Gunluk calisir (3 AM):
+        - Tum template'leri yeniden cache'le
+        - Cache validation yap
+        """
+        db = self.get_db()
+        try:
+            from app.services.template_cache_service import update_template_caches
+
+            result = await update_template_caches(db)
+
+            success_count = sum(1 for s in result["cache_results"].values() if s)
+            total = len(result["cache_results"])
+
+            logger.info(
+                f"Template cache update: {success_count}/{total} cached, "
+                f"Total size: {result['stats']['total_size_mb']} MB"
+            )
+
+        except Exception as e:
+            logger.error(f"Template cache update task hatasi: {e}")
+        finally:
+            db.close()
+
     async def start(self):
         """Tum gorevleri baslat"""
         if self.is_running:
@@ -367,6 +479,27 @@ class ServerTaskManager:
             ),
             asyncio.create_task(
                 self._run_periodic(self.check_installation_status_task, 30, "installation_check")
+            ),
+            asyncio.create_task(
+                self._run_periodic(
+                    self.collect_metrics_task,
+                    self.METRICS_COLLECTION_INTERVAL,
+                    "collect_metrics",
+                )
+            ),
+            asyncio.create_task(
+                self._run_periodic(
+                    self.archive_metrics_task,
+                    self.METRICS_ARCHIVAL_INTERVAL,
+                    "archive_metrics",
+                )
+            ),
+            asyncio.create_task(
+                self._run_periodic(
+                    self.update_template_caches_task,
+                    self.TEMPLATE_CACHE_UPDATE_INTERVAL,
+                    "template_cache_update",
+                )
             ),
         ]
 

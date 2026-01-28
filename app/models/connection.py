@@ -33,7 +33,7 @@ engine = create_engine(
         "connect_timeout": 10,  # MySQL baglanti timeout (saniye)
         "read_timeout": 30,  # MySQL okuma timeout
         "write_timeout": 30,  # MySQL yazma timeout
-    }
+    },
 )
 
 # Session factory
@@ -45,7 +45,7 @@ def init_db():
     # Yeni tablolari olustur
     Base.metadata.create_all(bind=engine)
     logger.info("Veritabani tablolari olusturuldu")
-    
+
     # Eksik kolonlari ekle (mevcut tablolara)
     try:
         result = add_missing_columns()
@@ -112,7 +112,7 @@ def get_redis_pool():
             socket_timeout=5.0,  # 5 saniye okuma/yazma timeout
             socket_connect_timeout=3.0,  # 3 saniye baglanti timeout
             retry_on_timeout=True,  # Timeout durumunda yeniden dene
-            health_check_interval=30  # 30 saniyede bir baglanti kontrolu
+            health_check_interval=30,  # 30 saniyede bir baglanti kontrolu
         )
         logger.info("Redis connection pool olusturuldu (timeout: 5s, connect_timeout: 3s)")
     return _redis_pool
@@ -190,3 +190,76 @@ def redis_incr(key: str, expire: int = None) -> int:
     except Exception as e:
         logger.error(f"Redis incr hatasi: {e}")
         return 0
+
+
+# ==================== HALFLIFE DATABASE (Anti-Cheat) ====================
+
+# Halflife (Anti-Cheat) database engine
+halflife_engine = None
+HalflifeSessionLocal = None
+
+
+def init_halflife_db():
+    """Initialize halflife database connection for anti-cheat data."""
+    global halflife_engine, HalflifeSessionLocal
+
+    if halflife_engine is None:
+        # Build halflife database URL
+        # Format: mysql+pymysql://user:password@host:port/database
+        halflife_url = f"mysql+pymysql://root:sedatim@localhost:3306/halflife?charset=utf8mb4"
+
+        halflife_engine = create_engine(
+            halflife_url,
+            pool_size=10,
+            max_overflow=20,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+            pool_timeout=30,
+            echo=False,
+            connect_args={
+                "connect_timeout": 10,
+                "read_timeout": 30,
+                "write_timeout": 30,
+            },
+        )
+
+        HalflifeSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=halflife_engine)
+        logger.info("Halflife database connection initialized")
+
+
+def get_halflife_db() -> Generator[Session, None, None]:
+    """
+    Dependency injection for halflife database session.
+    Used in FastAPI routes for anti-cheat data.
+    """
+    if HalflifeSessionLocal is None:
+        init_halflife_db()
+
+    db = HalflifeSessionLocal()
+    try:
+        yield db
+    except Exception as e:
+        logger.error(f"Halflife DB session error: {e}")
+        raise
+    finally:
+        db.close()
+
+
+@contextmanager
+def halflife_db_session() -> Generator[Session, None, None]:
+    """
+    Context manager for halflife database session.
+    Used in background tasks.
+    """
+    if HalflifeSessionLocal is None:
+        init_halflife_db()
+
+    db = HalflifeSessionLocal()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()

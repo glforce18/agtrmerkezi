@@ -1163,7 +1163,7 @@ async def oauth_login(provider: str, request: Request, db: Session = Depends(get
         from app.core.redis_manager import redis_manager
 
         await redis_manager.set(
-            f"oauth_state:{state}", provider, ex=settings.OAUTH_STATE_EXPIRE_MINUTES * 60
+            f"oauth_state:{state}", provider, expire=settings.OAUTH_STATE_EXPIRE_MINUTES * 60
         )
     except Exception as e:
         logger.warning(f"Redis state kayit hatasi: {e}")
