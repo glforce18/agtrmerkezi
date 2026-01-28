@@ -349,7 +349,7 @@ async def get_packages(db: Session = Depends(get_db)):
         packages = (
             db.query(ServerPackage)
             .filter(ServerPackage.is_active == True)
-            .order_by(ServerPackage.price)
+            .order_by(ServerPackage.price_monthly)
             .all()
         )
 
@@ -358,11 +358,11 @@ async def get_packages(db: Session = Depends(get_db)):
                 "id": pkg.id,
                 "name": pkg.name,
                 "description": pkg.description,
-                "price": pkg.price,
-                "max_slots": pkg.max_slots,
-                "ram_mb": pkg.ram_mb,
-                "disk_gb": pkg.disk_gb,
-                "duration": pkg.duration,
+                "price": pkg.price_monthly,
+                "max_slots": pkg.slots,
+                "ram_mb": 0,  # Not in model
+                "disk_gb": 0,  # Not in model
+                "duration": 30,  # Default monthly
                 "is_popular": pkg.is_popular,
             }
             for pkg in packages

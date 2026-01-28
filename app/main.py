@@ -56,7 +56,6 @@ from app.api import (
     security,
     server_management,
     server_v2,
-    servers,
     smart_media,
     social,
     stats,
