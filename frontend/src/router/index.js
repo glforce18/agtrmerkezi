@@ -49,6 +49,23 @@ const router = createRouter({
       component: () => import('@/views/server/ServerRent.vue')
     },
     {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: () => import('@/views/user/Dashboard.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/wallet',
+      name: 'wallet',
+      component: () => import('@/views/user/Wallet.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/shop',
+      name: 'shop',
+      component: () => import('@/views/shop/Shop.vue')
+    },
+    {
       path: '/forum',
       name: 'forum',
       component: () => import('@/views/forum/ForumHome.vue')
