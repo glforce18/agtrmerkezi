@@ -566,7 +566,8 @@ app.include_router(servers_unified.router, tags=["Servers v3 - Unified"])
 
 # ==================== LEGACY APIs (Deprecated) ====================
 # TODO: Remove after frontend migration complete
-app.include_router(servers.router, prefix="/api/servers", tags=["Game Servers - LEGACY"])
+# DISABLED: Conflicts with servers_unified.router - causes packages endpoint to require auth
+# app.include_router(servers.router, prefix="/api/servers", tags=["Game Servers - LEGACY"])
 app.include_router(metrics.router, tags=["Server Metrics"])
 app.include_router(crash_stats.router, tags=["Crash Detection"])
 app.include_router(command_quotas.router, tags=["Command Quotas"])
