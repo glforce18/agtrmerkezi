@@ -144,13 +144,14 @@ const currentFilterLabel = computed(() => {
 })
 
 const filteredTopics = computed(() => {
-  let result = topics.value
+  // Ensure topics.value is always an array
+  let result = Array.isArray(topics.value) ? topics.value : []
 
   // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(topic =>
-      topic.title.toLowerCase().includes(query) ||
+      topic.title?.toLowerCase().includes(query) ||
       (topic.content && topic.content.toLowerCase().includes(query))
     )
   }
@@ -158,10 +159,10 @@ const filteredTopics = computed(() => {
   // Sort filter
   switch (currentFilter.value) {
     case 'popular':
-      result = [...result].sort((a, b) => (b.post_count || 0) - (a.post_count || 0))
+      result = [...result].sort((a, b) => (b.post_count || b.reply_count || 0) - (a.post_count || a.reply_count || 0))
       break
     case 'unanswered':
-      result = result.filter(t => (t.post_count || 0) === 0)
+      result = result.filter(t => (t.post_count || t.reply_count || 0) === 0)
       break
     case 'solved':
       result = result.filter(t => t.is_solved)
@@ -184,9 +185,11 @@ onMounted(async () => {
 const fetchCategories = async () => {
   try {
     const response = await forumAPI.getCategories()
-    categories.value = response.data
+    // Ensure categories is always an array
+    categories.value = Array.isArray(response.data) ? response.data : []
   } catch (error) {
     console.error('Failed to fetch categories:', error)
+    categories.value = [] // Ensure it's always an array
   }
 }
 
@@ -194,10 +197,13 @@ const fetchTopics = async () => {
   try {
     loading.value = true
     const response = await forumAPI.getTopics({ limit: 20, sort: currentFilter.value })
-    topics.value = response.data.topics || response.data
-    hasMore.value = (response.data.topics || response.data).length >= 20
+    // API format: { success: true, data: [...], pagination: {...} }
+    const data = response.data.data || response.data
+    topics.value = Array.isArray(data) ? data : []
+    hasMore.value = response.data.pagination?.total_pages > response.data.pagination?.page || false
   } catch (error) {
     console.error('Failed to fetch topics:', error)
+    topics.value = [] // Ensure it's always an array
   } finally {
     loading.value = false
   }
