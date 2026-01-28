@@ -57,6 +57,54 @@ export default {
     return apiClient.delete(`/forum/replies/${id}`)  // NEW endpoint
   },
 
+  // Like System
+  likeTopic(topicId) {
+    return apiClient.post(`/forum/topics/${topicId}/like`)
+  },
+
+  unlikeTopic(topicId) {
+    return apiClient.delete(`/forum/topics/${topicId}/like`)
+  },
+
+  likeReply(replyId) {
+    return apiClient.post(`/forum/replies/${replyId}/like`)
+  },
+
+  unlikeReply(replyId) {
+    return apiClient.delete(`/forum/replies/${replyId}/like`)
+  },
+
+  // Bookmark System
+  bookmarkTopic(topicId) {
+    return apiClient.post(`/forum/topics/${topicId}/bookmark`)
+  },
+
+  unbookmarkTopic(topicId) {
+    return apiClient.delete(`/forum/topics/${topicId}/bookmark`)
+  },
+
+  getBookmarks(params = {}) {
+    return apiClient.get('/forum/bookmarks', { params })
+  },
+
+  // Best Answer
+  markBestAnswer(replyId) {
+    return apiClient.post(`/forum/replies/${replyId}/best`)
+  },
+
+  unmarkBestAnswer(replyId) {
+    return apiClient.delete(`/forum/replies/${replyId}/best`)
+  },
+
+  // Stats
+  getForumStats() {
+    return apiClient.get('/forum/stats')
+  },
+
+  getTrendingTopics(params = {}) {
+    return apiClient.get('/forum/trending', { params })
+  },
+
   // Moderation (NEW)
   reportContent(data) {
     return apiClient.post('/forum/moderation/reports', data)

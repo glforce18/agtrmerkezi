@@ -23,7 +23,13 @@ from app.api.common import (
 )
 from app.core.security import get_current_user_optional, get_current_user_required
 from app.models.connection import get_db
-from app.models.database import ForumCategory, ForumTopic, User
+from app.models.database import (
+    ForumBookmark,
+    ForumCategory,
+    ForumTopic,
+    ForumTopicLike,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -110,18 +116,15 @@ async def get_topics(
                 (ForumTopic.title.ilike(search_term)) | (ForumTopic.content.ilike(search_term))
             )
 
-        # Sorting
+        # Sorting - Pinned topics first, then by selected sort
         if sort == "popular":
-            query = query.order_by(desc(ForumTopic.view_count))
+            query = query.order_by(desc(ForumTopic.is_pinned), desc(ForumTopic.view_count))
         elif sort == "replies":
-            query = query.order_by(desc(ForumTopic.reply_count))
+            query = query.order_by(desc(ForumTopic.is_pinned), desc(ForumTopic.reply_count))
         elif sort == "views":
-            query = query.order_by(desc(ForumTopic.view_count))
+            query = query.order_by(desc(ForumTopic.is_pinned), desc(ForumTopic.view_count))
         else:  # recent
-            query = query.order_by(desc(ForumTopic.created_at))
-
-        # Pinned topics first
-        query = query.order_by(desc(ForumTopic.is_pinned))
+            query = query.order_by(desc(ForumTopic.is_pinned), desc(ForumTopic.created_at))
 
         # Get total count
         total = query.count()
@@ -139,13 +142,22 @@ async def get_topics(
                 "id": topic.id,
                 "title": topic.title,
                 "slug": topic.slug,
-                "view_count": topic.view_count,
-                "reply_count": topic.reply_count,
-                "is_pinned": topic.is_pinned,
-                "is_locked": topic.is_locked,
-                "created_at": topic.created_at.isoformat(),
+                "content": topic.content,
+                "view_count": topic.view_count or 0,
+                "reply_count": topic.reply_count or 0,
+                "likes": topic.likes or 0,
+                "is_pinned": topic.is_pinned or False,
+                "is_locked": topic.is_locked or False,
+                "is_solved": topic.is_solved or False,
+                "created_at": topic.created_at.isoformat() if topic.created_at else None,
                 "author": (
-                    {"id": topic.author.id, "username": topic.author.username}
+                    {
+                        "id": topic.author.id,
+                        "username": topic.author.username,
+                        "role": topic.author.role,
+                        "avatar": topic.author.steam_avatar,
+                        "steam_id": topic.author.steam_id,
+                    }
                     if topic.author
                     else None
                 ),
@@ -185,9 +197,33 @@ async def get_topic(
         if not topic:
             raise NotFoundError("Konu bulunamadı")
 
-        # Increment view count
-        topic.view_count += 1
+        # Increment view count (handle None case)
+        if topic.view_count is None:
+            topic.view_count = 1
+        else:
+            topic.view_count += 1
         db.commit()
+
+        # Check if user liked this topic
+        is_liked = False
+        is_bookmarked = False
+        if current_user:
+            is_liked = (
+                db.query(ForumTopicLike)
+                .filter(
+                    ForumTopicLike.topic_id == topic.id, ForumTopicLike.user_id == current_user.id
+                )
+                .first()
+                is not None
+            )
+            is_bookmarked = (
+                db.query(ForumBookmark)
+                .filter(
+                    ForumBookmark.topic_id == topic.id, ForumBookmark.user_id == current_user.id
+                )
+                .first()
+                is not None
+            )
 
         # Format response with relationships serialized before Pydantic validation
         topic_dict = {
@@ -197,10 +233,14 @@ async def get_topic(
             "content": topic.content,
             "category_id": topic.category_id,
             "author_id": topic.author_id,
-            "view_count": topic.view_count,
-            "reply_count": topic.reply_count,
-            "is_pinned": topic.is_pinned,
-            "is_locked": topic.is_locked,
+            "view_count": topic.view_count or 0,
+            "reply_count": topic.reply_count or 0,
+            "likes": topic.likes or 0,
+            "is_liked": is_liked,
+            "is_bookmarked": is_bookmarked,
+            "is_pinned": topic.is_pinned or False,
+            "is_locked": topic.is_locked or False,
+            "is_solved": topic.is_solved or False,
             "created_at": topic.created_at,
             "updated_at": topic.updated_at,
             "author": (
@@ -208,6 +248,8 @@ async def get_topic(
                     "id": topic.author.id,
                     "username": topic.author.username,
                     "role": topic.author.role,
+                    "avatar": topic.author.steam_avatar,
+                    "steam_id": topic.author.steam_id,
                 }
                 if topic.author
                 else None
@@ -353,5 +395,175 @@ async def delete_topic(
         raise
     except Exception as e:
         logger.error(f"Error deleting topic: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{topic_id}/like")
+async def like_topic(
+    topic_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Like a topic"""
+    try:
+        log_api_call("like_topic", current_user.id)
+
+        # Get topic
+        topic = db.query(ForumTopic).filter(ForumTopic.id == topic_id).first()
+        if not topic:
+            raise NotFoundError("Konu bulunamadı")
+
+        # Check if already liked
+        existing_like = (
+            db.query(ForumTopicLike)
+            .filter(ForumTopicLike.topic_id == topic_id, ForumTopicLike.user_id == current_user.id)
+            .first()
+        )
+
+        if existing_like:
+            return success_response(
+                message="Zaten beğenilmiş", data={"likes": topic.likes or 0, "is_liked": True}
+            )
+
+        # Add like
+        new_like = ForumTopicLike(topic_id=topic_id, user_id=current_user.id)
+        db.add(new_like)
+
+        # Update count
+        topic.likes = (topic.likes or 0) + 1
+        db.commit()
+
+        return success_response(message="Beğenildi", data={"likes": topic.likes, "is_liked": True})
+
+    except NotFoundError:
+        raise
+    except Exception as e:
+        logger.error(f"Error liking topic: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{topic_id}/like")
+async def unlike_topic(
+    topic_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Unlike a topic"""
+    try:
+        log_api_call("unlike_topic", current_user.id)
+
+        # Get topic
+        topic = db.query(ForumTopic).filter(ForumTopic.id == topic_id).first()
+        if not topic:
+            raise NotFoundError("Konu bulunamadı")
+
+        # Check if liked
+        existing_like = (
+            db.query(ForumTopicLike)
+            .filter(ForumTopicLike.topic_id == topic_id, ForumTopicLike.user_id == current_user.id)
+            .first()
+        )
+
+        if not existing_like:
+            return success_response(
+                message="Zaten beğenilmemiş", data={"likes": topic.likes or 0, "is_liked": False}
+            )
+
+        # Remove like
+        db.delete(existing_like)
+
+        # Update count
+        topic.likes = max(0, (topic.likes or 0) - 1)
+        db.commit()
+
+        return success_response(
+            message="Beğeni kaldırıldı", data={"likes": topic.likes, "is_liked": False}
+        )
+
+    except NotFoundError:
+        raise
+    except Exception as e:
+        logger.error(f"Error unliking topic: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{topic_id}/bookmark")
+async def bookmark_topic(
+    topic_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Bookmark a topic"""
+    try:
+        log_api_call("bookmark_topic", current_user.id)
+
+        # Get topic
+        topic = db.query(ForumTopic).filter(ForumTopic.id == topic_id).first()
+        if not topic:
+            raise NotFoundError("Konu bulunamadı")
+
+        # Check if already bookmarked
+        existing_bookmark = (
+            db.query(ForumBookmark)
+            .filter(ForumBookmark.topic_id == topic_id, ForumBookmark.user_id == current_user.id)
+            .first()
+        )
+
+        if existing_bookmark:
+            return success_response(message="Zaten kaydedilmiş", data={"is_bookmarked": True})
+
+        # Add bookmark
+        new_bookmark = ForumBookmark(topic_id=topic_id, user_id=current_user.id)
+        db.add(new_bookmark)
+        db.commit()
+
+        return success_response(message="Kaydedildi", data={"is_bookmarked": True})
+
+    except NotFoundError:
+        raise
+    except Exception as e:
+        logger.error(f"Error bookmarking topic: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{topic_id}/bookmark")
+async def unbookmark_topic(
+    topic_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Remove bookmark from a topic"""
+    try:
+        log_api_call("unbookmark_topic", current_user.id)
+
+        # Get topic
+        topic = db.query(ForumTopic).filter(ForumTopic.id == topic_id).first()
+        if not topic:
+            raise NotFoundError("Konu bulunamadı")
+
+        # Check if bookmarked
+        existing_bookmark = (
+            db.query(ForumBookmark)
+            .filter(ForumBookmark.topic_id == topic_id, ForumBookmark.user_id == current_user.id)
+            .first()
+        )
+
+        if not existing_bookmark:
+            return success_response(message="Zaten kaydedilmemiş", data={"is_bookmarked": False})
+
+        # Remove bookmark
+        db.delete(existing_bookmark)
+        db.commit()
+
+        return success_response(message="Kayıt kaldırıldı", data={"is_bookmarked": False})
+
+    except NotFoundError:
+        raise
+    except Exception as e:
+        logger.error(f"Error unbookmarking topic: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

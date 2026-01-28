@@ -5,7 +5,6 @@ Tum SQLAlchemy modelleri + Otomatik Denetleyici Sistem
 
 import enum
 import logging
-from datetime import date as Date
 from datetime import datetime
 
 from sqlalchemy import (
@@ -23,6 +22,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     create_engine,
+    event,
     inspect,
     text,
 )
@@ -238,7 +238,10 @@ def add_missing_columns() -> dict:
                         else:
                             nullable = ""  # NULL'a izin ver
 
-                    alter_sql = f"ALTER TABLE `{table_name}` ADD COLUMN `{col_name}` {col_type}{nullable}{default}"
+                    alter_sql = (
+                        f"ALTER TABLE `{table_name}` "
+                        f"ADD COLUMN `{col_name}` {col_type}{nullable}{default}"
+                    )
 
                     with engine.connect() as conn:
                         conn.execute(text(alter_sql))
@@ -517,11 +520,17 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
-    email = Column(String(100), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
+    email = Column(String(100), unique=True, nullable=True, index=True)  # Steam login için nullable
+    password_hash = Column(String(255), nullable=True)  # Steam login için nullable
     display_name = Column(String(100))
     avatar = Column(String(255))
+
+    # Steam OAuth bilgileri
     steam_id = Column(String(50), unique=True, index=True)
+    steam_avatar = Column(String(500))  # Steam avatar URL
+    steam_personaname = Column(String(100))  # Steam'deki isim
+    steam_profileurl = Column(String(500))  # Steam profil URL
+    steam_realname = Column(String(100))  # Steam gerçek isim (opsiyonel)
     role = Column(Enum(UserRole), default=UserRole.USER)
     status = Column(Enum(UserStatus), default=UserStatus.ACTIVE)
     balance = Column(Float, default=0.0)  # TL bakiye (gerçek para)
@@ -1419,6 +1428,11 @@ class ForumReply(Base):
     topic = relationship("ForumTopic", backref="replies")
     author = relationship("User", back_populates="forum_replies")
     parent_reply = relationship("ForumReply", remote_side=[id], backref="child_replies")
+
+    # Property alias for backward compatibility (code uses author_id but column is user_id)
+    @property
+    def author_id(self):
+        return self.user_id
 
     # Alias for backward compatibility (some code uses reply.user instead of reply.author)
     @property
@@ -3315,8 +3329,6 @@ class AdminActivity(Base):
 
 # ==================== ENUM VALIDATION EVENT LISTENERS ====================
 # Register validators for critical enum columns to ensure data integrity
-
-from sqlalchemy import event
 
 # User model enum validators
 event.listen(User.role, "set", create_enum_validator(UserRole, "User.role"), propagate=True)

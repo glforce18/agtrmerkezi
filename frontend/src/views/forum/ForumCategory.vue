@@ -129,7 +129,7 @@
                   <div class="text-gray-400 text-xs">Görüntüleme</div>
                 </div>
                 <div class="text-center">
-                  <div class="text-primary font-bold">{{ topic.post_count || 0 }}</div>
+                  <div class="text-primary font-bold">{{ topic.reply_count || 0 }}</div>
                   <div class="text-gray-400 text-xs">Yanıt</div>
                 </div>
               </div>
@@ -259,14 +259,16 @@ const fetchTopics = async () => {
       per_page: perPage
     })
 
-    topics.value = response.data.topics || response.data
+    // New modular API format: { success: true, data: [...], pagination: {...} }
+    topics.value = response.data.data || []
 
     // Update pagination if provided
-    if (response.data.total) {
-      totalPages.value = Math.ceil(response.data.total / perPage)
+    if (response.data.pagination) {
+      totalPages.value = response.data.pagination.total_pages
     }
   } catch (error) {
     console.error('Failed to fetch topics:', error)
+    topics.value = []
   } finally {
     loading.value = false
   }

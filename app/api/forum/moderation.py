@@ -312,7 +312,7 @@ async def force_delete_reply(
         topic = db.query(ForumTopic).filter(ForumTopic.id == reply.topic_id).first()
 
         if topic:
-            topic.reply_count = max(0, topic.reply_count - 1)
+            topic.reply_count = max(0, (topic.reply_count or 0) - 1)
 
         db.delete(reply)
         db.commit()
@@ -362,7 +362,7 @@ async def bulk_delete(
                     # Update topic reply count
                     topic = db.query(ForumTopic).filter(ForumTopic.id == reply.topic_id).first()
                     if topic:
-                        topic.reply_count = max(0, topic.reply_count - 1)
+                        topic.reply_count = max(0, (topic.reply_count or 0) - 1)
 
                     db.delete(reply)
                     deleted_count += 1

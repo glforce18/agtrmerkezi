@@ -1,5 +1,12 @@
 <template>
-  <div class="container mx-auto px-4 py-8 max-w-[1400px]">
+  <div class="relative min-h-screen">
+    <!-- Background -->
+    <div class="fixed inset-0 z-0">
+      <img :src="getBackgroundImage('scifi')" alt="" class="absolute inset-0 w-full h-full object-cover opacity-55" />
+      <div class="absolute inset-0 bg-gradient-to-b from-dark-bg/50 via-dark-bg/60 to-dark-bg/70"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-[1400px] relative z-10">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- Left Sidebar - Categories -->
       <div class="lg:col-span-3 hidden lg:block">
@@ -13,10 +20,22 @@
 
       <!-- Main Content -->
       <div class="lg:col-span-6">
-        <!-- Header -->
-        <div class="mb-6">
-          <h1 class="text-3xl font-bold text-text-primary mb-2">Forum</h1>
-          <p class="text-text-secondary">Topluluğumuzla bağlantıda kalın, sorularınızı sorun</p>
+        <!-- Enhanced Header -->
+        <div class="relative mb-8 p-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 backdrop-blur-sm overflow-hidden">
+          <div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+          <div class="relative">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="p-2 bg-primary/10 rounded-xl">
+                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/>
+                </svg>
+              </div>
+              <div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-text-primary via-primary to-orange-500 bg-clip-text text-transparent">Forum</h1>
+                <p class="text-text-secondary text-sm mt-1">Topluluğumuzla bağlantıda kalın, sorularınızı sorun ve deneyimlerinizi paylaşın</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Mobile Category Filter -->
@@ -44,23 +63,31 @@
           </div>
         </div>
 
-        <!-- Search & New Topic -->
-        <div class="flex gap-3 mb-6">
-          <div class="flex-1">
+        <!-- Enhanced Search & New Topic -->
+        <div class="flex gap-3 mb-8">
+          <div class="flex-1 relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Konu ara..."
-              class="input"
+              placeholder="Konularda ara..."
+              class="w-full pl-11 pr-4 py-3 bg-dark-elevated/80 border border-dark-border/50 rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
               @input="handleSearch"
             />
           </div>
           <router-link
             v-if="authStore.isAuthenticated"
             to="/forum/topic/new"
-            class="btn btn-primary whitespace-nowrap"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-orange-600 hover:from-primary/90 hover:to-orange-500 text-white font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 hover:scale-105 whitespace-nowrap"
           >
-            + Yeni Konu
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Yeni Konu
           </router-link>
         </div>
 
@@ -70,7 +97,7 @@
         </div>
 
         <!-- Topics List -->
-        <div v-else-if="filteredTopics.length" class="space-y-3">
+        <div v-else-if="filteredTopics.length" class="space-y-6">
           <TopicCard
             v-for="topic in filteredTopics"
             :key="topic.id"
@@ -106,6 +133,7 @@
           :online-users="onlineUsers"
         />
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -159,10 +187,10 @@ const filteredTopics = computed(() => {
   // Sort filter
   switch (currentFilter.value) {
     case 'popular':
-      result = [...result].sort((a, b) => (b.post_count || b.reply_count || 0) - (a.post_count || a.reply_count || 0))
+      result = [...result].sort((a, b) => (b.reply_count || 0) - (a.reply_count || 0))
       break
     case 'unanswered':
-      result = result.filter(t => (t.post_count || t.reply_count || 0) === 0)
+      result = result.filter(t => (t.reply_count || 0) === 0)
       break
     case 'solved':
       result = result.filter(t => t.is_solved)
@@ -190,6 +218,10 @@ const fetchCategories = async () => {
   } catch (error) {
     console.error('Failed to fetch categories:', error)
     categories.value = [] // Ensure it's always an array
+    // Show error to user
+    if (window.showToast) {
+      window.showToast('Kategoriler yüklenemedi', 'error')
+    }
   }
 }
 
@@ -200,7 +232,9 @@ const fetchTopics = async () => {
     // API format: { success: true, data: [...], pagination: {...} }
     const data = response.data.data || response.data
     topics.value = Array.isArray(data) ? data : []
-    hasMore.value = response.data.pagination?.total_pages > response.data.pagination?.page || false
+    // Safe pagination access
+    const pagination = response.data.pagination
+    hasMore.value = pagination ? (pagination.total_pages > pagination.page) : false
   } catch (error) {
     console.error('Failed to fetch topics:', error)
     topics.value = [] // Ensure it's always an array
@@ -211,21 +245,35 @@ const fetchTopics = async () => {
 
 const fetchStats = async () => {
   try {
-    // Mock stats - in production, add actual API call
-    stats.value = {
-      total_topics: 1234,
-      total_replies: 5678,
-      total_users: 890,
-      online_users: 42
+    // Fetch real stats from API
+    const statsResponse = await forumAPI.getForumStats()
+    stats.value = statsResponse.data || {
+      total_topics: 0,
+      total_replies: 0,
+      total_users: 0,
+      online_users: 0
     }
 
-    // Mock trending topics
-    trendingTopics.value = topics.value.slice(0, 5)
+    // Fetch trending topics from API
+    try {
+      const trendingResponse = await forumAPI.getTrendingTopics({ limit: 5 })
+      const trendingData = trendingResponse.data.data || trendingResponse.data
+      trendingTopics.value = Array.isArray(trendingData) ? trendingData : []
+    } catch (error) {
+      console.error('Failed to fetch trending topics:', error)
+      trendingTopics.value = []
+    }
 
-    // Mock online users
+    // Online users can be empty for now (feature not implemented yet)
     onlineUsers.value = []
   } catch (error) {
     console.error('Failed to fetch stats:', error)
+    stats.value = {
+      total_topics: 0,
+      total_replies: 0,
+      total_users: 0,
+      online_users: 0
+    }
   }
 }
 
@@ -242,5 +290,11 @@ const handleSearch = () => {
 const loadMore = () => {
   // Implement pagination
   console.log('Load more topics')
+}
+
+// Background image helper
+const getBackgroundImage = (name) => {
+  const baseUrl = window.location.origin
+  return `${baseUrl}/static/images/backgrounds/${name}.jpg`
 }
 </script>
