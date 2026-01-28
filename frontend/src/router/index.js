@@ -16,10 +16,18 @@ const router = createRouter({
       meta: { guest: true }
     },
     {
+      path: '/auth/login',
+      redirect: '/login'
+    },
+    {
       path: '/register',
       name: 'register',
       component: () => import('@/views/auth/Register.vue'),
       meta: { guest: true }
+    },
+    {
+      path: '/auth/register',
+      redirect: '/register'
     },
     {
       path: '/oauth-callback',
@@ -74,6 +82,12 @@ const router = createRouter({
       path: '/forum/category/:id',
       name: 'forum-category',
       component: () => import('@/views/forum/ForumCategory.vue')
+    },
+    {
+      path: '/forum/topic/new',
+      name: 'forum-topic-new',
+      component: () => import('@/views/forum/ForumTopicNew.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/forum/topic/:id',
