@@ -183,28 +183,41 @@ const handleRegister = async () => {
   loading.value = true
 
   try {
-    await authAPI.register({
+    // Register API returns AuthResponse with token and user
+    const response = await authAPI.register({
       username: form.value.username,
       email: form.value.email,
-      password: form.value.password
+      password: form.value.password,
+      password_confirm: form.value.password_confirm
     })
 
-    // Auto-login after successful registration
-    const result = await authStore.login({
-      username: form.value.username,
-      password: form.value.password
-    })
+    // Backend returns token and user in response.data
+    const token = response.data.token || response.data.access_token
+    const user = response.data.user
 
-    if (result.success) {
+    if (token && user) {
+      // Set auth directly from registration response
+      authStore.setAuth(token, user)
       router.push('/servers/my')
     } else {
-      // Registration successful but login failed, redirect to login page
-      router.push({
-        path: '/auth/login',
-        query: { message: 'Kayıt başarılı! Giriş yapabilirsiniz.' }
+      // Registration successful but no token, try auto-login
+      const result = await authStore.login({
+        username: form.value.username,
+        password: form.value.password
       })
+
+      if (result.success) {
+        router.push('/servers/my')
+      } else {
+        // Registration successful but login failed, redirect to login page
+        router.push({
+          path: '/auth/login',
+          query: { message: 'Kayıt başarılı! Giriş yapabilirsiniz.' }
+        })
+      }
     }
   } catch (err) {
+    console.error('Register error:', err.response?.data)
     error.value = err.response?.data?.detail || 'Kayıt sırasında bir hata oluştu'
   } finally {
     loading.value = false

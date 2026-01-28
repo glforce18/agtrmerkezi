@@ -26,9 +26,19 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(credentials) {
     try {
       const response = await authAPI.login(credentials)
-      setAuth(response.data.access_token, response.data.user)
+      // Backend returns 'token' field, not 'access_token'
+      const token = response.data.token || response.data.access_token
+      const user = response.data.user
+
+      if (!token || !user) {
+        console.error('Invalid auth response:', response.data)
+        return { success: false, error: 'Invalid server response' }
+      }
+
+      setAuth(token, user)
       return { success: true }
     } catch (error) {
+      console.error('Login error:', error.response?.data)
       return { success: false, error: error.response?.data?.detail || 'Login failed' }
     }
   }
@@ -46,9 +56,18 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser() {
     try {
       const response = await authAPI.getMe()
-      user.value = response.data
-      localStorage.setItem('user', JSON.stringify(response.data))
+      // API returns user data directly in response.data
+      const userData = response.data
+
+      if (userData && userData.id) {
+        user.value = userData
+        localStorage.setItem('user', JSON.stringify(userData))
+      } else {
+        console.error('Invalid user data:', userData)
+        clearAuth()
+      }
     } catch (error) {
+      console.error('Fetch user error:', error)
       clearAuth()
     }
   }
