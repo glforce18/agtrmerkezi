@@ -43,7 +43,7 @@
             {{ topic.title }}
           </div>
           <div class="text-xs text-text-muted">
-            {{ topic.reply_count || 0 }} yanıt
+            {{ topic.post_count || 0 }} yanıt
           </div>
         </router-link>
       </div>

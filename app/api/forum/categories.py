@@ -33,8 +33,10 @@ class CategoryResponse(BaseModel):
     icon: Optional[str] = None
     color: Optional[str] = None
     topic_count: int = 0
-    reply_count: int = 0
-    position: int = 0
+    post_count: int = 0
+    display_order: Optional[int] = 0
+    is_visible: Optional[bool] = True
+    is_locked: Optional[bool] = False
 
     class Config:
         from_attributes = True
@@ -57,7 +59,8 @@ async def get_categories(
         categories = (
             db.query(ForumCategory)
             .filter(ForumCategory.is_active == True)
-            .order_by(ForumCategory.position)
+            .filter(ForumCategory.is_visible == True)
+            .order_by(ForumCategory.display_order)
             .all()
         )
 

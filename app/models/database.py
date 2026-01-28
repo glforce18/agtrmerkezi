@@ -1266,6 +1266,7 @@ class ForumCategory(Base):
     description = Column(Text)
     icon = Column(String(50))
     color = Column(String(20))
+    is_active = Column(Boolean, default=True, index=True)
     parent_id = Column(Integer, ForeignKey("forum_categories.id"))
     game_slug = Column(String(50), nullable=True, index=True)  # cs16, halflife vb.
     display_order = Column(Integer, default=0)

@@ -158,10 +158,10 @@ const filteredTopics = computed(() => {
   // Sort filter
   switch (currentFilter.value) {
     case 'popular':
-      result = [...result].sort((a, b) => (b.reply_count || 0) - (a.reply_count || 0))
+      result = [...result].sort((a, b) => (b.post_count || 0) - (a.post_count || 0))
       break
     case 'unanswered':
-      result = result.filter(t => (t.reply_count || 0) === 0)
+      result = result.filter(t => (t.post_count || 0) === 0)
       break
     case 'solved':
       result = result.filter(t => t.is_solved)

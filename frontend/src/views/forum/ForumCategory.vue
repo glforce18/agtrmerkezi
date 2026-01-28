@@ -42,7 +42,7 @@
         </div>
         <div class="stat-card">
           <div class="text-gray-400 text-sm mb-1">Toplam Mesaj</div>
-          <div class="text-2xl font-bold text-white">{{ category.reply_count || 0 }}</div>
+          <div class="text-2xl font-bold text-white">{{ category.post_count || 0 }}</div>
         </div>
         <div class="stat-card">
           <div class="text-gray-400 text-sm mb-1">Son Aktivite</div>
@@ -129,7 +129,7 @@
                   <div class="text-gray-400 text-xs">Görüntüleme</div>
                 </div>
                 <div class="text-center">
-                  <div class="text-primary font-bold">{{ topic.reply_count || 0 }}</div>
+                  <div class="text-primary font-bold">{{ topic.post_count || 0 }}</div>
                   <div class="text-gray-400 text-xs">Yanıt</div>
                 </div>
               </div>
@@ -173,7 +173,7 @@
                 <div class="text-gray-400 text-xs">Görüntüleme</div>
               </div>
               <div class="text-center">
-                <div class="text-primary font-bold">{{ topic.reply_count || 0 }}</div>
+                <div class="text-primary font-bold">{{ topic.post_count || 0 }}</div>
                 <div class="text-gray-400 text-xs">Yanıt</div>
               </div>
             </div>

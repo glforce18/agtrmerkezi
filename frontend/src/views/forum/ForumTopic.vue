@@ -57,7 +57,7 @@
           <span>•</span>
           <span>{{ topic.view_count || 0 }} görüntüleme</span>
           <span>•</span>
-          <span class="text-primary">{{ topic.reply_count || 0 }} yanıt</span>
+          <span class="text-primary">{{ topic.post_count || 0 }} yanıt</span>
         </div>
       </div>
 
