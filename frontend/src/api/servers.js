@@ -44,10 +44,16 @@ export default {
 
   // Packages
   getPackages() {
-    return apiClient.get('/servers/packages')  // Already correct
+    return apiClient.get('/servers/packages')
   },
 
+  // Order server
+  orderServer(data) {
+    return apiClient.post('/servers/order', data)
+  },
+
+  // Legacy wallet order
   orderPackageWallet(data) {
-    return apiClient.post('/servers/order/package-wallet', data)  // Keep legacy for now
+    return apiClient.post('/servers/order/package-wallet', data)
   }
 }

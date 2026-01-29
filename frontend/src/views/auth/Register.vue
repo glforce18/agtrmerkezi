@@ -1,127 +1,61 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4 py-12">
-    <div class="w-full max-w-md">
-      <!-- Logo -->
-      <div class="text-center mb-8">
-        <div class="inline-block w-16 h-16 bg-primary rounded-xl flex items-center justify-center mb-4">
-          <span class="text-3xl font-bold text-white">λ</span>
+  <div class="relative min-h-screen flex items-center justify-center px-4 py-12 overflow-hidden">
+    <!-- Background -->
+    <div class="fixed inset-0 z-0">
+      <img :src="getBackgroundImage()" alt="" class="absolute inset-0 w-full h-full object-cover opacity-60" />
+      <div class="absolute inset-0 bg-gradient-to-b from-dark-bg/40 via-dark-bg/60 to-dark-bg/80"></div>
+    </div>
+
+    <div class="w-full max-w-md relative z-10">
+      <!-- Logo & Title -->
+      <div class="text-center mb-8 fade-in-up">
+        <div class="inline-block w-20 h-20 bg-gradient-to-br from-primary to-orange-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg glow">
+          <span class="text-4xl font-bold text-white">λ</span>
         </div>
-        <h1 class="text-3xl font-bold text-text-primary mb-2">Hesap Oluştur</h1>
-        <p class="text-text-secondary">AGTR Merkezi'ne katılın</p>
+        <h1 class="text-4xl font-bold mb-3">
+          <span class="text-gradient-animated">Hesap Oluştur</span>
+        </h1>
+        <p class="text-text-secondary text-lg">Steam ile hızlıca kayıt olun</p>
       </div>
 
-      <!-- Register Card -->
-      <div class="card p-8">
-        <form @submit.prevent="handleRegister" class="space-y-5">
-          <!-- Username -->
-          <div>
-            <label class="block text-text-primary font-medium mb-2">Kullanıcı Adı</label>
-            <input
-              v-model="form.username"
-              type="text"
-              class="input"
-              placeholder="kullaniciadi"
-              required
-              minlength="3"
-              maxlength="20"
-              :disabled="loading"
-            />
-            <p class="text-text-muted text-xs mt-1">3-20 karakter, sadece harf, rakam ve alt çizgi</p>
+      <!-- Steam Register Card -->
+      <div class="glass-card p-10 neon-border fade-in-up delay-100">
+        <!-- Steam Info -->
+        <div class="text-center mb-8">
+          <div class="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg">
+            <svg class="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10c-4.6 0-8.45-3.08-9.64-7.27l3.83 1.58a2.84 2.84 0 0 0 2.78 2.27c1.56 0 2.83-1.27 2.83-2.83v-.13l3.4-2.43h.08c2.08 0 3.77-1.69 3.77-3.77s-1.69-3.77-3.77-3.77-3.78 1.69-3.78 3.77v.05l-2.37 3.46-.16-.01c-.59 0-1.14.18-1.59.49L2 11.2C2.43 6.05 6.73 2 12 2M8.28 17.17c.8.33 1.72-.04 2.05-.84.33-.8-.05-1.71-.83-2.04l-1.28-.53c.49-.18 1.04-.19 1.56.03.53.21.94.62 1.15 1.15.22.52.22 1.10 0 1.62-.43 1.08-1.7 1.6-2.78 1.15s-1.6-1.7-1.15-2.78l1.28.53v.71zm9.52-7.75c0 1.39-1.13 2.52-2.52 2.52a2.52 2.52 0 0 1-2.51-2.52 2.5 2.5 0 0 1 2.51-2.51c1.39 0 2.52 1.12 2.52 2.51zm-4.4 0c0 1.04.84 1.89 1.89 1.89 1.04 0 1.88-.85 1.88-1.89s-.84-1.89-1.88-1.89c-1.05 0-1.89.85-1.89 1.89z"/>
+            </svg>
           </div>
-
-          <!-- Email -->
-          <div>
-            <label class="block text-text-primary font-medium mb-2">E-posta</label>
-            <input
-              v-model="form.email"
-              type="email"
-              class="input"
-              placeholder="ornek@email.com"
-              required
-              :disabled="loading"
-            />
-          </div>
-
-          <!-- Password -->
-          <div>
-            <label class="block text-text-primary font-medium mb-2">Şifre</label>
-            <input
-              v-model="form.password"
-              type="password"
-              class="input"
-              placeholder="••••••••"
-              required
-              minlength="8"
-              :disabled="loading"
-            />
-            <p class="text-text-muted text-xs mt-1">En az 8 karakter</p>
-          </div>
-
-          <!-- Password Confirm -->
-          <div>
-            <label class="block text-text-primary font-medium mb-2">Şifre Tekrar</label>
-            <input
-              v-model="form.password_confirm"
-              type="password"
-              class="input"
-              placeholder="••••••••"
-              required
-              minlength="8"
-              :disabled="loading"
-            />
-          </div>
-
-          <!-- Terms -->
-          <div class="flex items-start gap-3">
-            <input
-              v-model="form.accept_terms"
-              type="checkbox"
-              id="terms"
-              class="mt-1 w-4 h-4 text-primary bg-dark-elevated border-dark-border rounded focus:ring-primary"
-              required
-              :disabled="loading"
-            />
-            <label for="terms" class="text-text-secondary text-sm">
-              <router-link to="/terms" class="text-primary hover:text-primary-light">Kullanım Şartlarını</router-link>
-              ve
-              <router-link to="/privacy" class="text-primary hover:text-primary-light">Gizlilik Politikasını</router-link>
-              kabul ediyorum
-            </label>
-          </div>
-
-          <!-- Error Message -->
-          <div v-if="error" class="alert alert-error">
-            {{ error }}
-          </div>
-
-          <!-- Submit Button -->
-          <button
-            type="submit"
-            :disabled="loading || !form.accept_terms"
-            class="btn btn-primary w-full"
-          >
-            <span v-if="loading">Kayıt Yapılıyor...</span>
-            <span v-else">Kayıt Ol</span>
-          </button>
-        </form>
-
-        <!-- Divider -->
-        <div class="divider my-6"></div>
-
-        <!-- OAuth Buttons -->
-        <div class="space-y-3">
-          <p class="text-text-muted text-sm text-center mb-4">Veya şununla kayıt olun</p>
-          <div class="grid grid-cols-2 gap-3">
-            <a :href="steamLoginUrl" class="btn btn-secondary text-sm">
-              🎮 Steam
-            </a>
-            <a :href="discordLoginUrl" class="btn btn-secondary text-sm">
-              💬 Discord
-            </a>
-          </div>
+          <h2 class="text-2xl font-bold text-white mb-2">Steam ile Kayıt Ol</h2>
+          <p class="text-text-secondary">
+            Steam hesabınızla anında kayıt olun.<br/>
+            Kullanıcı adı, şifre gerekmez.
+          </p>
         </div>
 
-        <!-- Login Link -->
+        <!-- Steam Register Button -->
+        <a
+          :href="steamLoginUrl"
+          class="btn-steam group"
+        >
+          <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10c-4.6 0-8.45-3.08-9.64-7.27l3.83 1.58a2.84 2.84 0 0 0 2.78 2.27c1.56 0 2.83-1.27 2.83-2.83v-.13l3.4-2.43h.08c2.08 0 3.77-1.69 3.77-3.77s-1.69-3.77-3.77-3.77-3.78 1.69-3.78 3.77v.05l-2.37 3.46-.16-.01c-.59 0-1.14.18-1.59.49L2 11.2C2.43 6.05 6.73 2 12 2M8.28 17.17c.8.33 1.72-.04 2.05-.84.33-.8-.05-1.71-.83-2.04l-1.28-.53c.49-.18 1.04-.19 1.56.03.53.21.94.62 1.15 1.15.22.52.22 1.10 0 1.62-.43 1.08-1.7 1.6-2.78 1.15s-1.6-1.7-1.15-2.78l1.28.53v.71zm9.52-7.75c0 1.39-1.13 2.52-2.52 2.52a2.52 2.52 0 0 1-2.51-2.52 2.5 2.5 0 0 1 2.51-2.51c1.39 0 2.52 1.12 2.52 2.51zm-4.4 0c0 1.04.84 1.89 1.89 1.89 1.04 0 1.88-.85 1.88-1.89s-.84-1.89-1.88-1.89c-1.05 0-1.89.85-1.89 1.89z"/>
+          </svg>
+          <span class="text-lg font-bold">Steam ile Kayıt Ol</span>
+          <span class="text-sm opacity-80">→</span>
+        </a>
+
+        <!-- Info -->
+        <div class="mt-6 p-4 bg-primary/10 border border-primary/30 rounded-lg">
+          <p class="text-sm text-text-secondary text-center">
+            <span class="text-primary font-semibold">✅ Hızlı</span> ·
+            Tek tıkla kayıt ·
+            Profil otomatik oluşturulur
+          </p>
+        </div>
+
+        <!-- Already have account -->
         <div class="mt-6 text-center">
           <p class="text-text-secondary text-sm">
             Zaten hesabınız var mı?
@@ -133,9 +67,9 @@
       </div>
 
       <!-- Back to Home -->
-      <div class="text-center mt-6">
-        <router-link to="/" class="text-text-muted hover:text-text-primary text-sm">
-          ← Ana Sayfaya Dön
+      <div class="text-center mt-6 fade-in-up delay-200">
+        <router-link to="/" class="text-text-primary hover:text-primary text-sm inline-flex items-center gap-2 transition-colors">
+          <span>←</span> Ana Sayfaya Dön
         </router-link>
       </div>
     </div>
@@ -143,84 +77,38 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import authAPI from '@/api/auth'
+import { computed } from 'vue'
 
-const router = useRouter()
-const authStore = useAuthStore()
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
-const loading = ref(false)
-const error = ref(null)
-
-const form = ref({
-  username: '',
-  email: '',
-  password: '',
-  password_confirm: '',
-  accept_terms: false
+const steamLoginUrl = computed(() => {
+  return `${API_URL}/api/auth/steam/login`
 })
 
-const steamLoginUrl = computed(() => '/api/auth/steam/login')
-const discordLoginUrl = computed(() => '/api/auth/discord/login')
-
-const handleRegister = async () => {
-  error.value = null
-
-  // Validate passwords match
-  if (form.value.password !== form.value.password_confirm) {
-    error.value = 'Şifreler eşleşmiyor'
-    return
-  }
-
-  // Validate username format
-  if (!/^[a-zA-Z0-9_]+$/.test(form.value.username)) {
-    error.value = 'Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir'
-    return
-  }
-
-  loading.value = true
-
-  try {
-    // Register API returns AuthResponse with token and user
-    const response = await authAPI.register({
-      username: form.value.username,
-      email: form.value.email,
-      password: form.value.password,
-      password_confirm: form.value.password_confirm
-    })
-
-    // Backend returns token and user in response.data
-    const token = response.data.token || response.data.access_token
-    const user = response.data.user
-
-    if (token && user) {
-      // Set auth directly from registration response
-      authStore.setAuth(token, user)
-      router.push('/servers/my')
-    } else {
-      // Registration successful but no token, try auto-login
-      const result = await authStore.login({
-        username: form.value.username,
-        password: form.value.password
-      })
-
-      if (result.success) {
-        router.push('/servers/my')
-      } else {
-        // Registration successful but login failed, redirect to login page
-        router.push({
-          path: '/login',
-          query: { message: 'Kayıt başarılı! Giriş yapabilirsiniz.' }
-        })
-      }
-    }
-  } catch (err) {
-    console.error('Register error:', err.response?.data)
-    error.value = err.response?.data?.detail || 'Kayıt sırasında bir hata oluştu'
-  } finally {
-    loading.value = false
-  }
+const getBackgroundImage = () => {
+  const baseUrl = window.location.origin
+  return `${baseUrl}/static/images/backgrounds/energy.jpg`
 }
 </script>
+
+<style scoped>
+.btn-steam {
+  @apply w-full py-4 px-6 rounded-xl font-bold text-white;
+  @apply flex items-center justify-center gap-3;
+  @apply transition-all duration-300;
+  background: linear-gradient(135deg, #1b2838 0%, #2a475e 100%);
+  border: 2px solid rgba(102, 192, 244, 0.3);
+  box-shadow: 0 8px 24px rgba(27, 40, 56, 0.4);
+}
+
+.btn-steam:hover {
+  background: linear-gradient(135deg, #2a475e 0%, #1b2838 100%);
+  border-color: rgba(102, 192, 244, 0.6);
+  box-shadow: 0 12px 32px rgba(27, 40, 56, 0.6);
+  transform: translateY(-2px);
+}
+
+.btn-steam:active {
+  transform: translateY(0);
+}
+</style>

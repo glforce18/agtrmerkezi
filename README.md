@@ -1,159 +1,170 @@
-# AGTR v5.5 Pro - Yeni Özellikler Kurulum Rehberi
+# AGTR Merkezi
 
-## 📦 İçerik
+Counter-Strike 1.6 Game Server Management Panel with Vue.js SPA frontend and FastAPI backend.
 
-Bu paket 5 yeni API modülü içeriyor:
+## 🎮 Features
 
-### 1. 🔐 Security API (`app/api/security.py`)
-- IP Whitelist/Blacklist
-- Brute Force Koruması
-- Audit Log (Admin işlem kaydı)
-- Session Yönetimi
-- Şifre Politikası
+### Forum System
+- ✅ Create topics and replies
+- ✅ Like system for topics and replies
+- ✅ Bookmark topics
+- ✅ Best answer marking
+- ✅ Nested replies (threaded discussions)
+- ✅ Category-based organization
+- ✅ Real-time statistics
+- ✅ Trending topics
+- ✅ XSS protection with DOMPurify
+- ✅ Modern responsive UI
 
-### 2. 💰 Payment Gateway API (`app/api/payment_gateway.py`)
-- PayTR Entegrasyonu
-- iyzico Entegrasyonu
-- Bakiye Sistemi (Cüzdan)
-- Kupon Sistemi
-- Havale/EFT Onay
-- Otomatik Fatura
+### Server Management
+- Game server rental
+- Server control panel
+- Auto-update system
+- Template management
+- Resource monitoring
 
-### 3. 🎮 Social API (`app/api/social.py`)
-- Discord OAuth
-- Steam OAuth
-- Klan/Takım Sistemi
-- Başarım Sistemi
-- Arkadaş Listesi
+### User System
+- Steam OpenID authentication
+- Role-based access control
+- User profiles with statistics
+- Wallet system
+- Activity tracking
 
-### 4. 🖥️ Server Management API (`app/api/server_management.py`)
-- Backup Sistemi
-- Resource Monitor
-- Zamanlanmış Görevler
-- Uptime Raporu
+## 🛠️ Tech Stack
 
-### 5. 📊 Analytics API (`app/api/analytics.py`)
-- Dashboard Grafikleri
-- Oyuncu İstatistikleri
-- Gelir Raporları
-- Export (CSV/JSON)
+**Frontend:**
+- Vue.js 3 (Composition API)
+- Vite
+- Tailwind CSS
+- DOMPurify (XSS protection)
+- Pinia (state management)
+
+**Backend:**
+- Python 3.13
+- FastAPI
+- SQLAlchemy ORM
+- MySQL
+- Redis (caching)
+- Uvicorn (ASGI server)
+
+## 📊 Recent Updates (Latest Commit)
+
+### Bug Fixes & Improvements (22 issues resolved)
+
+**Critical Fixes:**
+- Fixed NULL pointer errors in reply count operations
+- Added NOT NULL database constraints
+
+**High Priority:**
+- Fixed author_id vs user_id inconsistency
+- Improved best answer sorting
+- Added authentication checks to interactive buttons
+- Standardized field naming (reply_count)
+
+**UX Improvements:**
+- ESC key support for all modals
+- Custom styled confirmation dialogs
+- Safe pagination access
+- Error notifications with toast system
+
+**Security:**
+- Integrated DOMPurify for XSS protection
+- Enhanced HTML content sanitization
+
+## 🚀 Installation
+
+### Requirements
+- Python 3.13+
+- Node.js 18+
+- MySQL 8.0+
+- Redis 6.0+
+
+### Backend Setup
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your settings
+
+# Run migrations
+python -m app.models.database
+
+# Start server
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Development
+npm run dev
+
+# Production build
+npm run build
+```
+
+## 📝 Database Schema
+
+### Forum Tables
+- `forum_categories` - Forum categories
+- `forum_topics` - Discussion topics
+- `forum_replies` - Topic replies (with threading support)
+- `forum_topic_likes` - Topic likes
+- `forum_reply_likes` - Reply likes
+- `forum_bookmarks` - User bookmarks
+
+### Constraints
+- All count columns: NOT NULL DEFAULT 0
+- Foreign keys with CASCADE delete
+- Unique constraints on like/bookmark combinations
+
+## 🔒 Security
+
+- Steam OpenID authentication
+- JWT token-based sessions
+- Rate limiting (Redis-backed)
+- XSS protection (DOMPurify)
+- SQL injection prevention (SQLAlchemy ORM)
+- CORS configuration
+- Input validation (Pydantic)
+
+## 📈 Performance
+
+- Redis caching for frequently accessed data
+- Database query optimization with indexes
+- Lazy loading for relationships
+- Frontend code splitting
+- Asset compression (gzip)
+- Pagination for large datasets
+
+## 🤝 Contributing
+
+This is a private project. Contact the maintainer for collaboration opportunities.
+
+## 📄 License
+
+Proprietary - All rights reserved
+
+## 👥 Authors
+
+- **glforce** - Project Lead & Development
+
+## 🙏 Acknowledgments
+
+- FastAPI framework
+- Vue.js ecosystem
+- Tailwind CSS
+- DOMPurify security library
 
 ---
 
-## 🚀 Kurulum
-
-### 1. ZIP'i aç
-```bash
-cd /var/www/agtrmerkezi
-unzip -o agtr_v55_features.zip
-```
-
-### 2. main.py'a router'ları ekle
-
-`app/main.py` dosyasında:
-
-**Import satırlarına ekle:**
-```python
-from app.api import security, payment_gateway, social, server_management, analytics
-```
-
-**Router satırlarına ekle:**
-```python
-app.include_router(security.router, prefix="/api/security", tags=["Security"])
-app.include_router(payment_gateway.router, prefix="/api/payment", tags=["Payment"])
-app.include_router(social.router, prefix="/api/social", tags=["Social"])
-app.include_router(server_management.router, prefix="/api/management", tags=["Management"])
-app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
-```
-
-### 3. Environment Variables (.env)
-
-```bash
-# PayTR
-PAYTR_MERCHANT_ID=your_merchant_id
-PAYTR_MERCHANT_KEY=your_merchant_key
-PAYTR_MERCHANT_SALT=your_merchant_salt
-
-# iyzico
-IYZICO_API_KEY=your_api_key
-IYZICO_SECRET_KEY=your_secret_key
-IYZICO_BASE_URL=https://sandbox-api.iyzipay.com
-
-# Discord
-DISCORD_CLIENT_ID=your_client_id
-DISCORD_CLIENT_SECRET=your_client_secret
-DISCORD_REDIRECT_URI=https://agtrmerkezi.com/api/social/discord/callback
-
-# Steam
-STEAM_API_KEY=your_steam_api_key
-STEAM_REALM=https://agtrmerkezi.com
-```
-
-### 4. Servisi yeniden başlat
-```bash
-systemctl restart agtrmerkezi
-```
-
----
-
-## 📡 Yeni API Endpoints
-
-### Security
-- `GET /api/security/ip-rules` - IP kuralları
-- `POST /api/security/ip-rules` - IP kuralı ekle
-- `GET /api/security/login-attempts` - Giriş denemeleri
-- `GET /api/security/audit-logs` - Audit logları
-- `GET /api/security/sessions` - Aktif oturumlar
-- `GET /api/security/stats` - Güvenlik istatistikleri
-
-### Payment
-- `GET /api/payment/balance` - Bakiye
-- `GET /api/payment/balance/history` - Bakiye geçmişi
-- `POST /api/payment/paytr/create` - PayTR ödeme başlat
-- `POST /api/payment/iyzico/create` - iyzico ödeme başlat
-- `GET /api/payment/coupons` - Kuponlar
-- `POST /api/payment/coupons/validate` - Kupon doğrula
-- `GET /api/payment/bank-transfers` - Havale bildirimleri
-- `GET /api/payment/invoices` - Faturalar
-
-### Social
-- `GET /api/social/discord/login` - Discord ile giriş
-- `GET /api/social/steam/login` - Steam ile giriş
-- `GET /api/social/connections` - Bağlı hesaplar
-- `GET /api/social/clans` - Klan listesi
-- `POST /api/social/clans` - Klan oluştur
-- `GET /api/social/achievements` - Başarımlar
-- `GET /api/social/friends` - Arkadaşlar
-
-### Management
-- `GET /api/management/backups` - Backup listesi
-- `POST /api/management/backups/create` - Backup oluştur
-- `GET /api/management/resources/{server_id}` - Kaynak kullanımı
-- `GET /api/management/tasks` - Zamanlanmış görevler
-- `GET /api/management/uptime/{server_id}` - Uptime raporu
-
-### Analytics
-- `GET /api/analytics/dashboard` - Dashboard verileri
-- `GET /api/analytics/dashboard/charts` - Grafikler
-- `GET /api/analytics/players` - Oyuncu istatistikleri
-- `GET /api/analytics/revenue` - Gelir raporu
-- `GET /api/analytics/export/users` - Kullanıcı export
-- `GET /api/analytics/export/revenue` - Gelir export
-
----
-
-## ✅ Test
-
-```bash
-# Security
-curl http://localhost:8000/api/security/stats
-
-# Payment
-curl http://localhost:8000/api/payment/coupons
-
-# Social
-curl http://localhost:8000/api/social/clans
-
-# Analytics
-curl http://localhost:8000/api/analytics/dashboard
-```
+**Live Site:** https://agtrmerkezi.com
+**Repository:** https://github.com/glforce18/agtrmerkezi

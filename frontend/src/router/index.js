@@ -35,6 +35,11 @@ const router = createRouter({
       component: () => import('@/views/auth/OAuthCallback.vue')
     },
     {
+      path: '/auth/callback',
+      name: 'steam-callback',
+      component: () => import('@/views/auth/SteamCallback.vue')
+    },
+    {
       path: '/servers',
       name: 'servers',
       component: () => import('@/views/server/ServerList.vue')
@@ -123,6 +128,15 @@ router.beforeEach(async (to, from, next) => {
   // Initialize auth if not done
   if (!authStore.user && authStore.token) {
     authStore.init()
+
+    // If still no user after init, fetch from API
+    if (!authStore.user) {
+      try {
+        await authStore.fetchUser()
+      } catch (error) {
+        console.error('Failed to fetch user in router guard:', error)
+      }
+    }
   }
 
   // Check if route requires authentication

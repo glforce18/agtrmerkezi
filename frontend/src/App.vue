@@ -16,7 +16,16 @@ import { onMounted } from 'vue'
 
 const authStore = useAuthStore()
 
-onMounted(() => {
+onMounted(async () => {
   authStore.init()
+
+  // If we have a token but no user data, fetch it
+  if (authStore.token && !authStore.user) {
+    try {
+      await authStore.fetchUser()
+    } catch (error) {
+      console.error('Failed to fetch user on app init:', error)
+    }
+  }
 })
 </script>

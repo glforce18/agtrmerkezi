@@ -4,7 +4,7 @@ Combines legacy servers.py and server_v2.py into clean, maintainable API
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -20,10 +20,23 @@ from app.api.common import (
     success_response,
     validate_server_ownership,
 )
-from app.core.security import get_current_user_required
+from app.core.config import settings
+from app.core.security import (
+    generate_rcon_password,
+    generate_reference_code,
+    get_current_user_required,
+)
 from app.models.connection import get_db
-from app.models.database import GameServer, ServerPackage, ServerStatus, User
+from app.models.database import (
+    GameServer,
+    Payment,
+    PaymentStatus,
+    ServerPackage,
+    ServerStatus,
+    User,
+)
 from app.services import RCONService, ServerControlService
+from app.services.port_pool_manager import PortPoolManager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/servers", tags=["Server Management"])
@@ -86,6 +99,16 @@ class PlayerInfo(BaseModel):
     score: Optional[int] = None
 
 
+class OrderRequest(BaseModel):
+    """Server order request"""
+
+    package_id: int
+    server_name: str = Field(..., min_length=3, max_length=50)
+    location: Optional[str] = None  # Future: server location selection
+    duration: int = Field(default=1, ge=1, le=12)  # months
+    auto_renew: bool = False
+
+
 # ============================================
 # Server Lifecycle Endpoints
 # ============================================
@@ -110,6 +133,42 @@ async def get_my_servers(
 
     except Exception as e:
         log_api_error("get_my_servers", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/packages", response_model=List[dict])
+async def get_packages(db: Session = Depends(get_db)):
+    """Get available server packages"""
+    logger.info("=== get_packages called from servers_unified ===")
+    try:
+        logger.info("Querying ServerPackage from database")
+        packages = (
+            db.query(ServerPackage)
+            .filter(ServerPackage.is_active.is_(True))
+            .order_by(ServerPackage.price_monthly)
+            .all()
+        )
+
+        logger.info(f"Found {len(packages)} packages")
+
+        return [
+            {
+                "id": pkg.id,
+                "name": pkg.name,
+                "description": pkg.description,
+                "price": pkg.price_monthly,
+                "max_slots": pkg.slots,
+                "ram_mb": 0,  # Not in model
+                "disk_gb": 0,  # Not in model
+                "duration": 30,  # Default monthly
+                "is_popular": pkg.is_popular,
+            }
+            for pkg in packages
+        ]
+
+    except Exception as e:
+        logger.error(f"Error in get_packages: {e}", exc_info=True)
+        log_api_error("get_packages", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -324,7 +383,7 @@ async def kick_player(
             raise BadRequestError("Sunucu çalışmıyor")
 
         rcon_service = RCONService()
-        result = await rcon_service.execute_command(
+        await rcon_service.execute_command(
             server.ip, server.port, server.rcon_password, f"kick #{slot}"
         )
 
@@ -340,34 +399,106 @@ async def kick_player(
 # ============================================
 # Package & Ordering Endpoints
 # ============================================
+# NOTE: /packages endpoint moved above /{server_id} to avoid route conflict
 
 
-@router.get("/packages", response_model=List[dict])
-async def get_packages(db: Session = Depends(get_db)):
-    """Get available server packages"""
+@router.post("/order")
+async def order_server(
+    data: OrderRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Order a new game server"""
     try:
-        packages = (
+        log_api_call("order_server", current_user.id, {"package_id": data.package_id})
+
+        # Validate package
+        package = (
             db.query(ServerPackage)
-            .filter(ServerPackage.is_active == True)
-            .order_by(ServerPackage.price_monthly)
-            .all()
+            .filter(ServerPackage.id == data.package_id, ServerPackage.is_active.is_(True))
+            .first()
+        )
+        if not package:
+            raise NotFoundError("Paket bulunamadı")
+
+        # Find available server slot
+        pool_manager = PortPoolManager(db)
+        slot = pool_manager.acquire_slot()
+
+        if not slot:
+            raise BadRequestError(
+                "Şu anda müsait sunucu slotu yok. Lütfen daha sonra tekrar deneyin."
+            )
+
+        ip, port = slot
+
+        # Calculate price with discount
+        discount = 0.0
+        if data.duration >= 12:
+            discount = getattr(settings, "DISCOUNT_12_MONTH", 0.20)
+        elif data.duration >= 6:
+            discount = getattr(settings, "DISCOUNT_6_MONTH", 0.15)
+        elif data.duration >= 3:
+            discount = getattr(settings, "DISCOUNT_3_MONTH", 0.10)
+
+        total_price = package.price_monthly * data.duration * (1 - discount)
+
+        # Create server
+        server = GameServer(
+            owner_id=current_user.id,
+            owner_steam_id=current_user.steam_id if hasattr(current_user, "steam_id") else None,
+            name=data.server_name,
+            game_type=package.game_type,
+            ip_address=ip,
+            port=port,
+            slots=package.slots,
+            rcon_password=generate_rcon_password(),
+            package_id=package.id,
+            is_custom_package=False,
+            features=package.features,
+            status=ServerStatus.PENDING,
+            monthly_price=package.price_monthly,
+            auto_renew=data.auto_renew,
+            unique_code=generate_reference_code("SRV"),
+            expires_at=datetime.utcnow() + timedelta(days=data.duration * 30),
+        )
+        db.add(server)
+        db.flush()
+
+        # Create payment record
+        payment = Payment(
+            user_id=current_user.id,
+            amount=total_price,
+            status=PaymentStatus.PENDING,
+            reference_code=generate_reference_code("PAY"),
+            description=f"{package.name} - {data.duration} Aylık Sunucu",
+            server_id=server.id,
+            months=data.duration,
+        )
+        db.add(payment)
+        db.commit()
+
+        logger.info(
+            f"Server order created: server_id={server.id}, "
+            f"payment_id={payment.id}, user_id={current_user.id}"
         )
 
-        return [
-            {
-                "id": pkg.id,
-                "name": pkg.name,
-                "description": pkg.description,
-                "price": pkg.price_monthly,
-                "max_slots": pkg.slots,
-                "ram_mb": 0,  # Not in model
-                "disk_gb": 0,  # Not in model
-                "duration": 30,  # Default monthly
-                "is_popular": pkg.is_popular,
-            }
-            for pkg in packages
-        ]
+        return {
+            "success": True,
+            "server_id": server.id,
+            "payment_id": payment.id,
+            "reference_code": payment.reference_code,
+            "amount": total_price,
+            "server_info": {
+                "name": server.name,
+                "ip": f"{ip}:{port}",
+                "slots": server.slots,
+                "unique_code": server.unique_code,
+            },
+        }
 
+    except APIError:
+        raise
     except Exception as e:
-        log_api_error("get_packages", e)
+        log_api_error("order_server", e, current_user.id)
         raise HTTPException(status_code=500, detail=str(e))

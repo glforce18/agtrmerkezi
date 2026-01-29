@@ -1,5 +1,12 @@
 <template>
-  <div class="container mx-auto px-4 py-8 max-w-7xl">
+  <div class="relative min-h-screen">
+    <!-- Background -->
+    <div class="fixed inset-0 z-0">
+      <img :src="getBackgroundImage('tunnel')" alt="" class="absolute inset-0 w-full h-full object-cover opacity-60" />
+      <div class="absolute inset-0 bg-gradient-to-b from-dark-bg/40 via-dark-bg/55 to-dark-bg/70"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-7xl relative z-10">
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div>
@@ -13,7 +20,7 @@
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div class="stat-card">
+      <div class="glass-card p-4 fade-in-up delay-100">
         <div class="flex items-center justify-between">
           <div>
             <div class="text-3xl font-bold text-primary">{{ serversStore.servers.length }}</div>
@@ -23,7 +30,7 @@
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="glass-card p-4 fade-in-up delay-200">
         <div class="flex items-center justify-between">
           <div>
             <div class="text-3xl font-bold text-status-success">{{ runningCount }}</div>
@@ -33,7 +40,7 @@
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="glass-card p-4 fade-in-up delay-300">
         <div class="flex items-center justify-between">
           <div>
             <div class="text-3xl font-bold text-status-info">{{ totalPlayers }}</div>
@@ -43,10 +50,10 @@
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="glass-card p-4 fade-in-up delay-400">
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-3xl font-bold text-primary">{{ totalSlots }}</div>
+            <div class="text-3xl font-bold text-gradient">{{ totalSlots }}</div>
             <div class="text-sm text-text-muted">Toplam Slot</div>
           </div>
           <div class="text-4xl opacity-20">📊</div>
@@ -61,7 +68,7 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="!serversStore.servers.length" class="empty-state card">
+    <div v-else-if="!serversStore.servers.length" class="empty-state glass-card p-12 fade-in-up">
       <div class="empty-state-icon">🚀</div>
       <p class="empty-state-title">Henüz Sunucunuz Yok</p>
       <p class="empty-state-description mb-6">
@@ -75,9 +82,10 @@
     <!-- Servers Grid -->
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
-        v-for="server in serversStore.servers"
+        v-for="(server, index) in serversStore.servers"
         :key="server.id"
-        class="card p-6"
+        class="glass-card p-6 fade-in-up"
+        :class="`delay-${((index % 3) + 1)}00`"
       >
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
@@ -150,6 +158,7 @@
           </router-link>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -237,5 +246,11 @@ const handleRestart = async (id) => {
   if (!result.success) {
     alert('Sunucu yeniden başlatılamadı: ' + result.error)
   }
+}
+
+// Background image helper
+const getBackgroundImage = (name) => {
+  const baseUrl = window.location.origin
+  return `${baseUrl}/static/images/backgrounds/${name}.jpg`
 }
 </script>

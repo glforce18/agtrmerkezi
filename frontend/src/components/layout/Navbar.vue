@@ -1,7 +1,17 @@
 <template>
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-dark-card/95 backdrop-blur-lg border-b border-dark-border">
+  <nav
+    class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b"
+    :class="[
+      scrolled
+        ? 'bg-dark-card/98 backdrop-blur-xl border-dark-border shadow-2xl shadow-primary/10'
+        : 'bg-dark-card/95 backdrop-blur-lg border-dark-border/50'
+    ]"
+  >
     <div class="container mx-auto px-4">
-      <div class="flex items-center justify-between h-16">
+      <div
+        class="flex items-center justify-between transition-all duration-300"
+        :class="scrolled ? 'h-14' : 'h-16'"
+      >
         <!-- Logo -->
         <router-link to="/" class="flex items-center gap-3 group">
           <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -32,17 +42,17 @@
             <router-link to="/servers/my" class="hidden lg:inline-flex nav-link">
               Sunucularım
             </router-link>
-            <router-link to="/profile" class="hidden lg:inline-flex nav-link">
-              Profil
-            </router-link>
             <router-link v-if="authStore.isAdmin" to="/admin" class="hidden lg:inline-flex">
               <span class="badge badge-success">Admin</span>
+            </router-link>
+            <router-link to="/profile" class="flex items-center gap-2 nav-link">
+              <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" :alt="authStore.user.username" class="w-8 h-8 rounded-full" />
+              <span class="hidden lg:inline">{{ authStore.user?.username }}</span>
             </router-link>
             <button @click="handleLogout" class="btn btn-ghost">Çıkış</button>
           </template>
           <template v-else>
-            <router-link to="/login" class="btn btn-ghost">Giriş</router-link>
-            <router-link to="/register" class="btn btn-primary">Kayıt Ol</router-link>
+            <router-link to="/login" class="btn btn-primary">Steam ile Giriş</router-link>
           </template>
 
           <!-- Mobile Menu Button -->
@@ -94,13 +104,26 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const router = useRouter()
 const mobileMenuOpen = ref(false)
+const scrolled = ref(false)
+
+const handleScroll = () => {
+  scrolled.value = window.scrollY > 20
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 
 const handleLogout = async () => {
   await authStore.logout()
@@ -111,11 +134,32 @@ const handleLogout = async () => {
 
 <style scoped>
 .nav-link {
-  @apply px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-dark-hover rounded-lg transition-colors;
+  @apply px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-dark-hover rounded-lg transition-all duration-300;
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  transform: translateX(-50%);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 80%;
 }
 
 .nav-link.router-link-active {
   @apply text-primary bg-dark-elevated;
+}
+
+.nav-link.router-link-active::after {
+  width: 80%;
 }
 
 .nav-link-mobile {

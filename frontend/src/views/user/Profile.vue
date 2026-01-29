@@ -11,8 +11,9 @@
       <div class="card mb-6">
         <div class="flex items-center space-x-6">
           <!-- Avatar -->
-          <div class="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
-            <span class="text-white text-4xl font-bold">{{ getInitials(user.username) }}</span>
+          <div class="w-24 h-24 bg-primary rounded-full flex items-center justify-center overflow-hidden">
+            <img v-if="user.avatar" :src="user.avatar" :alt="user.username" class="w-full h-full object-cover" />
+            <span v-else class="text-white text-4xl font-bold">{{ getInitials(user.username) }}</span>
           </div>
 
           <!-- User Info -->
@@ -83,9 +84,9 @@
               <div class="text-white">{{ user.username }}</div>
             </div>
 
-            <div>
-              <label class="block text-gray-400 text-sm mb-1">E-posta</label>
-              <div class="text-white">{{ user.email }}</div>
+            <div v-if="user.steam_id">
+              <label class="block text-gray-400 text-sm mb-1">Steam ID</label>
+              <div class="text-white">{{ user.steam_id }}</div>
             </div>
 
             <div>
@@ -138,59 +139,22 @@
           <h2 class="text-xl font-bold text-white mb-4">Güvenlik</h2>
 
           <div class="space-y-6">
-            <!-- Change Password -->
+            <!-- Steam Account -->
             <div>
-              <h3 class="text-lg text-white mb-3">Şifre Değiştir</h3>
-              <form @submit.prevent="handleChangePassword" class="space-y-3">
-                <div>
-                  <label class="block text-gray-400 text-sm mb-1">Mevcut Şifre</label>
-                  <input
-                    v-model="passwordForm.current"
-                    type="password"
-                    class="input"
-                    required
-                  />
+              <h3 class="text-lg text-white mb-3">Steam Hesabı</h3>
+              <div v-if="user.steam_id" class="bg-dark-elevated border border-dark-border rounded p-4">
+                <div class="flex items-center space-x-4">
+                  <img v-if="user.avatar" :src="user.avatar" :alt="user.username" class="w-16 h-16 rounded-full" />
+                  <div>
+                    <div class="text-white font-semibold">{{ user.username }}</div>
+                    <div class="text-gray-400 text-sm">Steam ID: {{ user.steam_id }}</div>
+                    <div class="text-green-500 text-sm mt-1">✓ Bağlı</div>
+                  </div>
                 </div>
-
-                <div>
-                  <label class="block text-gray-400 text-sm mb-1">Yeni Şifre</label>
-                  <input
-                    v-model="passwordForm.new"
-                    type="password"
-                    class="input"
-                    minlength="8"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-gray-400 text-sm mb-1">Yeni Şifre Tekrar</label>
-                  <input
-                    v-model="passwordForm.confirm"
-                    type="password"
-                    class="input"
-                    minlength="8"
-                    required
-                  />
-                </div>
-
-                <div v-if="passwordError" class="alert alert-danger">
-                  {{ passwordError }}
-                </div>
-
-                <div v-if="passwordSuccess" class="alert alert-success">
-                  Şifre başarıyla değiştirildi
-                </div>
-
-                <button
-                  type="submit"
-                  :disabled="passwordLoading"
-                  class="btn btn-primary"
-                  :class="{ 'opacity-50 cursor-not-allowed': passwordLoading }"
-                >
-                  {{ passwordLoading ? 'Değiştiriliyor...' : 'Şifreyi Değiştir' }}
-                </button>
-              </form>
+              </div>
+              <div v-else class="bg-dark-elevated border border-dark-border rounded p-4 text-gray-400">
+                Steam hesabı bağlı değil
+              </div>
             </div>
 
             <!-- Two Factor Authentication -->

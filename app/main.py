@@ -19,9 +19,9 @@ from app.core.logging_config import get_logger, setup_logging
 setup_logging(json_format=not settings.DEBUG, log_level="DEBUG" if settings.DEBUG else "INFO")
 logger = get_logger(__name__)
 
-from app.api import forum  # New modular forum API
-from app.api import servers_unified  # New unified server API
-from app.api import (
+from app.api import forum  # noqa: E402 # New modular forum API
+from app.api import servers_unified  # noqa: E402 # New unified server API
+from app.api import (  # noqa: E402
     activities,
     admin,
     analytics,
@@ -69,12 +69,12 @@ from app.api import (
     websocket,
     websocket_progress,
 )
-from app.api.admin import forum_categories as admin_forum_categories
-from app.api.admin import forum_topics as admin_forum_topics
-from app.api.admin import pages as admin_pages
-from app.core.security import hash_password
-from app.models.connection import get_db, init_db
-from app.models.database import (
+from app.api.admin import forum_categories as admin_forum_categories  # noqa: E402
+from app.api.admin import forum_topics as admin_forum_topics  # noqa: E402
+from app.api.admin import pages as admin_pages  # noqa: E402
+from app.core.security import hash_password  # noqa: E402
+from app.models.connection import get_db, init_db  # noqa: E402
+from app.models.database import (  # noqa: E402
     Announcement,
     ForumCategory,
     ForumPost,
@@ -475,7 +475,7 @@ app = FastAPI(
 )
 
 # Exception Handler Middleware (must be first to catch all exceptions)
-from app.middleware.exception_handler import register_exception_handler
+from app.middleware.exception_handler import register_exception_handler  # noqa: E402
 
 register_exception_handler(app)
 
@@ -504,33 +504,33 @@ app.add_middleware(
 )
 
 # GZip Compression
-from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
 
 app.add_middleware(GZipMiddleware, minimum_size=500, compresslevel=6)
 
 # Security Headers
-from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
 
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Cache Control
-from app.middleware.cache_control import CacheControlMiddleware
+from app.middleware.cache_control import CacheControlMiddleware  # noqa: E402
 
 app.add_middleware(CacheControlMiddleware)
 
 # Rate Limit
-from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.rate_limit import RateLimitMiddleware  # noqa: E402
 
 # Rate limit - test için yüksek limitler
 app.add_middleware(RateLimitMiddleware, requests_per_minute=1000, requests_per_second=100)
 
 # CSRF Protection
-from app.middleware.csrf import CSRFMiddleware
+from app.middleware.csrf import CSRFMiddleware  # noqa: E402
 
 app.add_middleware(CSRFMiddleware)
 
 # Admin Access Control
-from app.middleware.admin_access import AdminAccessMiddleware
+from app.middleware.admin_access import AdminAccessMiddleware  # noqa: E402
 
 app.add_middleware(AdminAccessMiddleware)
 
@@ -543,6 +543,12 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Core APIs
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+
+# Steam OAuth
+from app.api import steam_auth  # noqa: E402
+
+app.include_router(steam_auth.router, prefix="/api/auth/steam", tags=["Steam Auth"])
+
 app.include_router(user.router, prefix="/api/user", tags=["User"])
 app.include_router(user_favorites.router, prefix="/api", tags=["User Favorites"])
 app.include_router(user_preferences.router, tags=["User Preferences"])
@@ -552,7 +558,7 @@ app.include_router(leaderboard.router, prefix="/api", tags=["Leaderboard & ELO"]
 app.include_router(game_integration.router, prefix="/api", tags=["Game Integration"])
 
 # Role Management
-from app.api import roles
+from app.api import roles  # noqa: E402
 
 app.include_router(roles.router, prefix="/api/roles", tags=["Roles"])
 
@@ -577,7 +583,7 @@ app.include_router(analytics_enhanced.router, tags=["Advanced Analytics"])
 # Legacy Forum APIs - TODO: Remove after migration
 app.include_router(forum.router, prefix="/api/forum", tags=["Forum - LEGACY"])
 app.include_router(forum_v2.router, prefix="/api", tags=["Forum v2 - Advanced Features - LEGACY"])
-from app.api import forum_gamification
+from app.api import forum_gamification  # noqa: E402
 
 app.include_router(forum_gamification.router, prefix="/api", tags=["Forum Gamification"])
 app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
@@ -663,7 +669,7 @@ async def get_announcements(db: Session = Depends(get_db)):
     """Get active announcements"""
     announcements = (
         db.query(Announcement)
-        .filter(Announcement.is_active == True)
+        .filter(Announcement.is_active.is_(True))
         .order_by(Announcement.created_at.desc())
         .limit(5)
         .all()
@@ -686,7 +692,7 @@ async def get_packages(db: Session = Depends(get_db)):
     """Get available server packages"""
     packages = (
         db.query(ServerPackage)
-        .filter(ServerPackage.is_active == True)
+        .filter(ServerPackage.is_active.is_(True))
         .order_by(ServerPackage.display_order)
         .all()
     )

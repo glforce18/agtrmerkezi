@@ -83,6 +83,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Alias for compatibility
+  const fetchProfile = fetchUser
+
   return {
     user,
     token,
@@ -93,6 +96,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     fetchUser,
+    fetchProfile,
     init
   }
 })

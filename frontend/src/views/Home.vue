@@ -1,8 +1,18 @@
 <template>
   <div class="min-h-screen">
     <!-- Hero Section -->
-    <section class="relative pt-20 pb-32">
-      <div class="container mx-auto px-4">
+    <section class="relative pt-20 pb-32 hero-section overflow-hidden">
+      <!-- Background Image with Overlay -->
+      <div class="absolute inset-0 z-0">
+        <img :src="getBackgroundImage('tunnel')" alt="" class="absolute inset-0 w-full h-full object-cover opacity-70" />
+        <div class="absolute inset-0 bg-gradient-to-b from-dark-bg/40 via-dark-bg/50 to-dark-bg"></div>
+        <div class="absolute inset-0 bg-gradient-radial from-primary/20 via-transparent to-transparent"></div>
+
+        <!-- Particles Canvas -->
+        <canvas ref="particlesCanvas" class="absolute inset-0 w-full h-full"></canvas>
+      </div>
+
+      <div class="container mx-auto px-4 relative z-10">
         <div class="text-center max-w-4xl mx-auto">
           <!-- Logo -->
           <div class="mb-8">
@@ -12,16 +22,16 @@
           </div>
 
           <!-- Main Heading -->
-          <h1 class="text-5xl md:text-6xl font-bold text-text-primary mb-6">
-            AGTR Merkezi
+          <h1 class="text-5xl md:text-6xl font-bold mb-6 fade-in-up">
+            <span class="text-gradient-animated">AGTR Merkezi</span>
           </h1>
 
-          <p class="text-xl md:text-2xl text-text-secondary mb-12 max-w-2xl mx-auto">
-            Profesyonel <span class="text-primary font-semibold">Counter-Strike 1.6</span> sunucu hosting platformu
+          <p class="text-xl md:text-2xl text-text-secondary mb-12 max-w-2xl mx-auto fade-in-up delay-100">
+            Profesyonel <span class="text-gradient font-semibold">Counter-Strike 1.6</span> sunucu hosting platformu
           </p>
 
           <!-- CTA Buttons -->
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 fade-in-up delay-200">
             <router-link to="/servers/rent" class="btn btn-primary text-lg px-8 py-4 w-full sm:w-auto">
               🚀 Sunucu Kirala
             </router-link>
@@ -32,18 +42,18 @@
 
           <!-- Live Stats -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-            <div class="stat-card">
-              <div class="text-4xl font-bold text-primary mb-2">150+</div>
+            <div class="glass-card p-6 rounded-xl scale-in delay-300">
+              <div class="text-4xl font-bold text-gradient mb-2">150+</div>
               <div class="text-text-secondary">Aktif Sunucu</div>
             </div>
 
-            <div class="stat-card">
-              <div class="text-4xl font-bold text-primary mb-2">5,000+</div>
+            <div class="glass-card p-6 rounded-xl scale-in delay-400">
+              <div class="text-4xl font-bold text-gradient mb-2">5,000+</div>
               <div class="text-text-secondary">Oyuncu</div>
             </div>
 
-            <div class="stat-card">
-              <div class="text-4xl font-bold text-primary mb-2">24/7</div>
+            <div class="glass-card p-6 rounded-xl scale-in delay-500">
+              <div class="text-4xl font-bold text-gradient mb-2">24/7</div>
               <div class="text-text-secondary">Destek</div>
             </div>
           </div>
@@ -52,8 +62,14 @@
     </section>
 
     <!-- Features Section -->
-    <section class="py-20">
-      <div class="container mx-auto px-4">
+    <section class="relative py-20 overflow-hidden">
+      <!-- Background -->
+      <div class="absolute inset-0 z-0">
+        <img :src="getBackgroundImage('scifi')" alt="" class="absolute inset-0 w-full h-full object-cover opacity-60" />
+        <div class="absolute inset-0 bg-gradient-to-b from-dark-bg/50 via-dark-bg/60 to-dark-bg"></div>
+      </div>
+
+      <div class="container mx-auto px-4 relative z-10">
         <!-- Section Header -->
         <div class="text-center mb-16">
           <h2 class="text-4xl md:text-5xl font-bold text-text-primary mb-4">
@@ -68,7 +84,7 @@
         <!-- Feature Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           <!-- Feature 1 -->
-          <div class="card p-8 group">
+          <div class="glass-card p-8 group fade-in-up delay-100">
             <div class="mb-6">
               <div class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <span class="text-4xl">⚡</span>
@@ -81,7 +97,7 @@
           </div>
 
           <!-- Feature 2 -->
-          <div class="card p-8 group">
+          <div class="glass-card p-8 group fade-in-up delay-200">
             <div class="mb-6">
               <div class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <span class="text-4xl">🔧</span>
@@ -94,7 +110,7 @@
           </div>
 
           <!-- Feature 3 -->
-          <div class="card p-8 group">
+          <div class="glass-card p-8 group fade-in-up delay-300">
             <div class="mb-6">
               <div class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <span class="text-4xl">🛡️</span>
@@ -107,7 +123,7 @@
           </div>
 
           <!-- Feature 4 -->
-          <div class="card p-8 group">
+          <div class="glass-card p-8 group fade-in-up delay-100">
             <div class="mb-6">
               <div class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <span class="text-4xl">🌐</span>
@@ -120,7 +136,7 @@
           </div>
 
           <!-- Feature 5 -->
-          <div class="card p-8 group">
+          <div class="glass-card p-8 group fade-in-up delay-200">
             <div class="mb-6">
               <div class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <span class="text-4xl">💬</span>
@@ -133,7 +149,7 @@
           </div>
 
           <!-- Feature 6 -->
-          <div class="card p-8 group">
+          <div class="glass-card p-8 group fade-in-up delay-300">
             <div class="mb-6">
               <div class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <span class="text-4xl">💰</span>
@@ -149,9 +165,15 @@
     </section>
 
     <!-- Forum CTA Section -->
-    <section class="py-20">
-      <div class="container mx-auto px-4">
-        <div class="card p-12 text-center max-w-3xl mx-auto">
+    <section class="relative py-20 overflow-hidden">
+      <!-- Background -->
+      <div class="absolute inset-0 z-0">
+        <img :src="getBackgroundImage('energy')" alt="" class="absolute inset-0 w-full h-full object-cover opacity-65" />
+        <div class="absolute inset-0 bg-gradient-to-b from-dark-bg/40 via-dark-bg/55 to-dark-bg"></div>
+      </div>
+
+      <div class="container mx-auto px-4 relative z-10">
+        <div class="glass-card p-12 text-center max-w-3xl mx-auto fade-in-up neon-border">
           <h2 class="text-3xl md:text-4xl font-bold text-text-primary mb-4">
             Topluluğa Katıl
           </h2>
@@ -171,8 +193,14 @@
     </section>
 
     <!-- Popular Servers Section -->
-    <section class="py-20 bg-dark-card/50">
-      <div class="container mx-auto px-4">
+    <section class="relative py-20 overflow-hidden">
+      <!-- Background -->
+      <div class="absolute inset-0 z-0">
+        <img :src="getBackgroundImage('gaming')" alt="" class="absolute inset-0 w-full h-full object-cover opacity-60" />
+        <div class="absolute inset-0 bg-gradient-to-b from-dark-bg/50 via-dark-card/55 to-dark-bg/60"></div>
+      </div>
+
+      <div class="container mx-auto px-4 relative z-10">
         <div class="text-center mb-12">
           <h2 class="text-3xl md:text-4xl font-bold text-text-primary mb-4">
             Popüler Sunucular
@@ -182,7 +210,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           <!-- Server cards would be dynamically loaded here -->
-          <div v-for="i in 6" :key="i" class="card p-6">
+          <div v-for="i in 6" :key="i" class="glass-card p-6 fade-in-up" :class="`delay-${i}00`">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-semibold text-text-primary">CS 1.6 Server #{{ i }}</h3>
               <span class="badge badge-success">Online</span>
@@ -215,5 +243,20 @@
 </template>
 
 <script setup>
-// No complex logic needed for home page
+import { ref } from 'vue'
+import { useParticles } from '@/composables/useParticles'
+
+// Background image helper
+const getBackgroundImage = (name) => {
+  const baseUrl = window.location.origin
+  return `${baseUrl}/static/images/backgrounds/${name}.jpg`
+}
+
+// Particles
+const particlesCanvas = ref(null)
+useParticles(particlesCanvas, {
+  particleCount: 60,
+  speed: 0.3,
+  connectionDistance: 120
+})
 </script>
