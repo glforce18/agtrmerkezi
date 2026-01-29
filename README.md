@@ -1,5 +1,12 @@
 # AGTR Merkezi
 
+[![CI - Backend Tests & Linting](https://github.com/glforce18/agtrmerkezi/workflows/CI%20-%20Backend%20Tests%20&%20Linting/badge.svg)](https://github.com/glforce18/agtrmerkezi/actions)
+[![Quick Check](https://github.com/glforce18/agtrmerkezi/workflows/Quick%20Check/badge.svg)](https://github.com/glforce18/agtrmerkezi/actions)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Vue 3](https://img.shields.io/badge/vue-3.x-green.svg)](https://vuejs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-teal.svg)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Counter-Strike 1.6 Game Server Management Panel with Vue.js SPA frontend and FastAPI backend.
 
 ## 🎮 Features
