@@ -19,23 +19,17 @@ scheduler = AsyncIOScheduler()
 
 class TaskManager:
     """Gorev yoneticisi"""
-    
+
     def __init__(self):
         self.tasks = {}
         self.task_history = []
-    
+
     def add_task(self, task_id: str, func: Callable, trigger, **kwargs):
         """Yeni gorev ekle"""
-        job = scheduler.add_job(
-            func,
-            trigger=trigger,
-            id=task_id,
-            replace_existing=True,
-            **kwargs
-        )
+        job = scheduler.add_job(func, trigger=trigger, id=task_id, replace_existing=True, **kwargs)
         # next_run_time attribute sadece scheduler başladıktan sonra mevcut olur
         try:
-            next_run = job.next_run_time if hasattr(job, 'next_run_time') else None
+            next_run = job.next_run_time if hasattr(job, "next_run_time") else None
         except AttributeError:
             next_run = None
 
@@ -43,11 +37,11 @@ class TaskManager:
             "func": func.__name__,
             "trigger": str(trigger),
             "next_run": next_run,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.utcnow(),
         }
         logger.info(f"Task added: {task_id}")
         return job
-    
+
     def remove_task(self, task_id: str):
         """Gorevi kaldir"""
         try:
@@ -59,28 +53,32 @@ class TaskManager:
         except Exception as e:
             logger.error(f"Task remove error: {e}")
             return False
-    
+
     def get_tasks(self) -> list:
         """Tum gorevleri listele"""
         jobs = []
         for job in scheduler.get_jobs():
-            jobs.append({
-                "id": job.id,
-                "name": job.name,
-                "next_run": job.next_run_time,
-                "trigger": str(job.trigger)
-            })
+            jobs.append(
+                {
+                    "id": job.id,
+                    "name": job.name,
+                    "next_run": job.next_run_time,
+                    "trigger": str(job.trigger),
+                }
+            )
         return jobs
-    
+
     def log_execution(self, task_id: str, status: str, duration_ms: int = 0, error: str = None):
         """Gorev calisma logu"""
-        self.task_history.append({
-            "task_id": task_id,
-            "status": status,
-            "duration_ms": duration_ms,
-            "error": error,
-            "executed_at": datetime.utcnow()
-        })
+        self.task_history.append(
+            {
+                "task_id": task_id,
+                "status": status,
+                "duration_ms": duration_ms,
+                "error": error,
+                "executed_at": datetime.utcnow(),
+            }
+        )
         # Son 1000 kayit tut
         if len(self.task_history) > 1000:
             self.task_history = self.task_history[-1000:]
@@ -91,19 +89,18 @@ task_manager = TaskManager()
 
 # ==================== BUILT-IN TASKS ====================
 
+
 async def cleanup_expired_sessions():
     """Suresi dolmus session'lari temizle"""
     from app.models.connection import SessionLocal
     from app.models.database import UserSession
-    
+
     start = datetime.utcnow()
     db = SessionLocal()
     try:
-        expired = db.query(UserSession).filter(
-            UserSession.expires_at < datetime.utcnow()
-        ).delete()
+        expired = db.query(UserSession).filter(UserSession.expires_at < datetime.utcnow()).delete()
         db.commit()
-        
+
         duration = (datetime.utcnow() - start).total_seconds() * 1000
         task_manager.log_execution("cleanup_sessions", "success", int(duration))
         logger.info(f"Cleaned up {expired} expired sessions")
@@ -119,7 +116,7 @@ async def cleanup_old_logs():
     """30 gunluk loglari temizle"""
     from app.models.connection import SessionLocal
     from app.models.database import AuditLog, SystemLog
-    
+
     start = datetime.utcnow()
     cutoff = datetime.utcnow() - timedelta(days=30)
     db = SessionLocal()
@@ -127,7 +124,7 @@ async def cleanup_old_logs():
         system_deleted = db.query(SystemLog).filter(SystemLog.created_at < cutoff).delete()
         audit_deleted = db.query(AuditLog).filter(AuditLog.created_at < cutoff).delete()
         db.commit()
-        
+
         duration = (datetime.utcnow() - start).total_seconds() * 1000
         task_manager.log_execution("cleanup_logs", "success", int(duration))
         logger.info(f"Cleaned up {system_deleted + audit_deleted} old logs")
@@ -143,35 +140,43 @@ async def check_expiring_servers():
     """Suresi dolmak uzere olan sunuculari kontrol et"""
     from app.models.connection import SessionLocal
     from app.models.database import GameServer, Notification, ServerStatus
-    
+
     start = datetime.utcnow()
     warning_date = datetime.utcnow() + timedelta(days=3)
     db = SessionLocal()
     try:
-        expiring = db.query(GameServer).filter(
-            GameServer.status == ServerStatus.RUNNING,
-            GameServer.expires_at <= warning_date,
-            GameServer.expires_at > datetime.utcnow()
-        ).all()
-        
+        expiring = (
+            db.query(GameServer)
+            .filter(
+                GameServer.status == ServerStatus.RUNNING,
+                GameServer.expires_at <= warning_date,
+                GameServer.expires_at > datetime.utcnow(),
+            )
+            .all()
+        )
+
         for server in expiring:
             # Bildirim olustur
-            existing = db.query(Notification).filter(
-                Notification.user_id == server.user_id,
-                Notification.type == "server_expiring",
-                Notification.created_at > datetime.utcnow() - timedelta(days=1)
-            ).first()
-            
+            existing = (
+                db.query(Notification)
+                .filter(
+                    Notification.user_id == server.user_id,
+                    Notification.type == "server_expiring",
+                    Notification.created_at > datetime.utcnow() - timedelta(days=1),
+                )
+                .first()
+            )
+
             if not existing:
                 notification = Notification(
                     user_id=server.user_id,
                     type="server_expiring",
                     title="Sunucu Suresi Doluyor",
                     message=f"{server.name} sunucunuzun suresi {server.expires_at.strftime('%d.%m.%Y')} tarihinde doluyor.",
-                    link=f"/panel/servers/{server.id}"
+                    link=f"/panel/servers/{server.id}",
                 )
                 db.add(notification)
-        
+
         db.commit()
         duration = (datetime.utcnow() - start).total_seconds() * 1000
         task_manager.log_execution("check_expiring", "success", int(duration))
@@ -188,19 +193,19 @@ async def update_server_stats():
     """Sunucu istatistiklerini guncelle"""
     from app.models.connection import SessionLocal
     from app.models.database import GameServer, ServerStatus
-    
+
     start = datetime.utcnow()
     db = SessionLocal()
     try:
-        active_servers = db.query(GameServer).filter(
-            GameServer.status == ServerStatus.RUNNING
-        ).all()
-        
+        active_servers = (
+            db.query(GameServer).filter(GameServer.status == ServerStatus.RUNNING).all()
+        )
+
         for server in active_servers:
             # Burada gercek sunucu sorgulamasi yapilabilir
             # Simdilik placeholder
             pass
-        
+
         duration = (datetime.utcnow() - start).total_seconds() * 1000
         task_manager.log_execution("update_stats", "success", int(duration))
     except Exception as e:
@@ -222,10 +227,12 @@ async def daily_report():
     db = SessionLocal()
     try:
         new_users = db.query(User).filter(User.created_at >= yesterday).count()
-        new_payments = db.query(func.sum(Payment.amount)).filter(
-            Payment.created_at >= yesterday,
-            Payment.status == PaymentStatus.COMPLETED
-        ).scalar() or 0
+        new_payments = (
+            db.query(func.sum(Payment.amount))
+            .filter(Payment.created_at >= yesterday, Payment.status == PaymentStatus.COMPLETED)
+            .scalar()
+            or 0
+        )
 
         logger.info(f"Daily Report - New Users: {new_users}, Revenue: {new_payments} TL")
 
@@ -272,48 +279,68 @@ def init_scheduler():
 
     # Sonra görevleri ekle (scheduler başladıktan sonra next_run_time mevcut olur)
     # Her saat session temizligi
-    task_manager.add_task(
-        "cleanup_sessions",
-        cleanup_expired_sessions,
-        IntervalTrigger(hours=1)
-    )
+    task_manager.add_task("cleanup_sessions", cleanup_expired_sessions, IntervalTrigger(hours=1))
 
     # Her gun gece 3'te log temizligi
-    task_manager.add_task(
-        "cleanup_logs",
-        cleanup_old_logs,
-        CronTrigger(hour=3, minute=0)
-    )
+    task_manager.add_task("cleanup_logs", cleanup_old_logs, CronTrigger(hour=3, minute=0))
 
     # Her 6 saatte sunucu suresi kontrolu
-    task_manager.add_task(
-        "check_expiring",
-        check_expiring_servers,
-        IntervalTrigger(hours=6)
-    )
+    task_manager.add_task("check_expiring", check_expiring_servers, IntervalTrigger(hours=6))
 
     # Her 5 dakikada sunucu stats
-    task_manager.add_task(
-        "update_stats",
-        update_server_stats,
-        IntervalTrigger(minutes=5)
-    )
+    task_manager.add_task("update_stats", update_server_stats, IntervalTrigger(minutes=5))
 
     # Her gun sabah 9'da rapor
-    task_manager.add_task(
-        "daily_report",
-        daily_report,
-        CronTrigger(hour=9, minute=0)
-    )
+    task_manager.add_task("daily_report", daily_report, CronTrigger(hour=9, minute=0))
 
     # Her 30 dakikada topluluk sunucularini tara
+    task_manager.add_task("scan_servers", scan_community_servers, IntervalTrigger(minutes=30))
+
+    # ==================== SUBSCRIPTION SYSTEM JOBS ====================
+
+    # Subscription billing - Daily at 03:00 AM
+    from app.tasks.billing_job import process_subscription_billing_with_error_handling
+
     task_manager.add_task(
-        "scan_servers",
-        scan_community_servers,
-        IntervalTrigger(minutes=30)
+        "subscription_billing",
+        process_subscription_billing_with_error_handling,
+        CronTrigger(hour=3, minute=0),
+    )
+    logger.info("Subscription billing job registered (daily at 03:00)")
+
+    # Expiry notifications - Daily at 09:00 AM
+    from app.tasks.expiry_notification_job import (
+        send_expiry_notifications_with_error_handling,
     )
 
-    logger.info("All background tasks initialized")
+    task_manager.add_task(
+        "expiry_notifications",
+        send_expiry_notifications_with_error_handling,
+        CronTrigger(hour=9, minute=0),
+    )
+    logger.info("Expiry notification job registered (daily at 09:00)")
+
+    # Status synchronization - Every hour
+    from app.tasks.status_sync_job import sync_server_status_with_error_handling
+
+    task_manager.add_task(
+        "status_sync", sync_server_status_with_error_handling, IntervalTrigger(hours=1)
+    )
+    logger.info("Status sync job registered (every hour)")
+
+    # Resource monitoring - Every 5 minutes
+    from app.tasks.resource_monitoring_job import (
+        monitor_server_resources_with_error_handling,
+    )
+
+    task_manager.add_task(
+        "resource_monitoring",
+        monitor_server_resources_with_error_handling,
+        IntervalTrigger(minutes=5),
+    )
+    logger.info("Resource monitoring job registered (every 5 minutes)")
+
+    logger.info("All background tasks initialized (including subscription system jobs)")
 
 
 def shutdown_scheduler():
@@ -324,31 +351,32 @@ def shutdown_scheduler():
 
 # ==================== SCHEDULER WRAPPER ====================
 
+
 class TaskScheduler:
     """Kolay kullanim icin scheduler wrapper"""
-    
+
     def __init__(self):
         self.is_running = False
-    
+
     def start(self):
         """Scheduler'i baslat"""
         if not self.is_running:
             init_scheduler()
             self.is_running = True
-    
+
     def stop(self):
         """Scheduler'i durdur"""
         if self.is_running:
             shutdown_scheduler()
             self.is_running = False
-    
+
     def get_jobs(self):
         """Aktif gorevleri getir"""
         return [
             {
                 "id": job.id,
                 "name": job.name,
-                "next_run": job.next_run_time.isoformat() if job.next_run_time else None
+                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
             }
             for job in scheduler.get_jobs()
         ]

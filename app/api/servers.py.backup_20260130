@@ -769,45 +769,105 @@ async def order_package_with_wallet(
     db.add(server)
     db.flush()
 
-    # Payment kaydı (tamamlanmış olarak)
-    payment = Payment(
-        user_id=current_user.id,
-        amount=total_price_tl,
-        status=PaymentStatus.COMPLETED,
-        reference_code=generate_reference_code("WLT"),
-        description=f"{package.name} - {data.months} Aylik ({currency_name} ile)",
-        server_id=server.id,
-        months=data.months,
-    )
-    db.add(payment)
-    db.commit()
+    try:
+        # Payment kaydı (tamamlanmış olarak)
+        payment = Payment(
+            user_id=current_user.id,
+            amount=total_price_tl,
+            status=PaymentStatus.COMPLETED,
+            reference_code=generate_reference_code("WLT"),
+            description=f"{package.name} - {data.months} Aylik ({currency_name} ile)",
+            server_id=server.id,
+            months=data.months,
+        )
+        db.add(payment)
+        db.flush()
 
-    # Unique code oluştur
-    installation_service = ServerInstallationService(db)
-    unique_code = installation_service.generate_unique_code()
-    server.unique_code = unique_code
-    db.commit()
+        # ==================== SUBSCRIPTION OLUŞTUR ====================
+        from app.services.subscription_service import SubscriptionService
+        from app.models.database import BillingPeriod
 
-    return {
-        "success": True,
-        "message": f"Sunucu basariyla satin alindi! {amount_to_deduct} {currency_name} odendi. Lütfen sunucu ayarlarını yapılandırın.",
-        "order": {
-            "server_id": server.id,
-            "payment_id": payment.id,
-            "reference_code": payment.reference_code,
-            "amount_paid": amount_to_deduct,
-            "currency": data.payment_type,
-            "server_info": {
-                "name": server.name,
-                "ip": f"{ip}:{port}",
-                "slots": server.slots,
-                "unique_code": unique_code,
-                "status": "pending_configuration",
-                "expires_at": server.expires_at.isoformat() if server.expires_at else None,
+        # Billing period'u belirle (months sayısına göre)
+        if data.months >= 12:
+            billing_period = BillingPeriod.ANNUAL
+        elif data.months >= 6:
+            billing_period = BillingPeriod.BIANNUAL
+        elif data.months >= 3:
+            billing_period = BillingPeriod.QUARTERLY
+        else:
+            billing_period = BillingPeriod.MONTHLY
+
+        subscription_service = SubscriptionService(db)
+        subscription = subscription_service.create_subscription(
+            game_server_id=server.id,
+            user_id=current_user.id,
+            billing_period=billing_period,
+            auto_renew_enabled=data.auto_renew,
+            payment_method=wallet_type,
+            monthly_amount=package.price_monthly,
+            initial_expiry_date=server.expires_at
+        )
+
+        # Link payment to subscription
+        payment.subscription_id = subscription.id
+        # ===========================================================
+
+        db.commit()
+
+        # Unique code oluştur
+        installation_service = ServerInstallationService(db)
+        unique_code = installation_service.generate_unique_code()
+        server.unique_code = unique_code
+        db.commit()
+
+        return {
+            "success": True,
+            "message": f"Sunucu basariyla satin alindi! {amount_to_deduct} {currency_name} odendi. Lütfen sunucu ayarlarını yapılandırın.",
+            "order": {
+                "server_id": server.id,
+                "payment_id": payment.id,
+                "subscription_id": subscription.id,
+                "reference_code": payment.reference_code,
+                "amount_paid": amount_to_deduct,
+                "currency": data.payment_type,
+                "server_info": {
+                    "name": server.name,
+                    "ip": f"{ip}:{port}",
+                    "slots": server.slots,
+                    "unique_code": unique_code,
+                    "status": "pending_configuration",
+                    "expires_at": server.expires_at.isoformat() if server.expires_at else None,
+                    "auto_renew_enabled": subscription.auto_renew_enabled,
+                },
             },
-        },
-        "new_balance": tx.balance_after,
-    }
+            "new_balance": tx.balance_after,
+        }
+
+    except Exception as e:
+        # Hata durumunda rollback
+        db.rollback()
+        logger.error(f"Sunucu oluşturma hatası: {e}", exc_info=True)
+
+        # Ödemeyi geri al (refund)
+        try:
+            from app.services.error_handler import TransactionRollbackService
+
+            rollback_service = TransactionRollbackService(db)
+            rollback_result = rollback_service.rollback_server_creation(
+                server_id=server.id if server else None,
+                payment_id=payment.id if payment else None,
+                reason=f"Sunucu oluşturma hatası: {str(e)}",
+                send_notification=True
+            )
+
+            logger.info(f"Rollback tamamlandı: {rollback_result}")
+        except Exception as rollback_error:
+            logger.error(f"Rollback hatası: {rollback_error}", exc_info=True)
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Sunucu oluşturulamadı. Ödemeniz iade edildi. Hata: {str(e)}"
+        )
 
 
 @router.get("/my-servers")
@@ -830,6 +890,8 @@ async def my_servers(
                 "ip_address": s.ip_address,
                 "port": s.port,
                 "slots": s.slots,
+                "current_players": 0,  # TODO: Get from A2S query
+                "map": "de_dust2",  # TODO: Get from A2S query
                 "status": s.status.value,
                 "rcon_password": s.rcon_password,
                 "monthly_price": s.monthly_price,
@@ -840,6 +902,45 @@ async def my_servers(
             for s in servers
         ],
         "count": len(servers),
+    }
+
+
+@router.get("/my-servers/{server_id}")
+async def get_my_server(
+    server_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_required)
+):
+    """Get a single server by ID"""
+    server = (
+        db.query(GameServer)
+        .filter(
+            GameServer.id == server_id,
+            GameServer.owner_id == current_user.id,
+            GameServer.status != ServerStatus.DELETED
+        )
+        .first()
+    )
+
+    if not server:
+        raise HTTPException(status_code=404, detail="Sunucu bulunamadı")
+
+    return {
+        "id": server.id,
+        "name": server.name,
+        "unique_code": server.unique_code,
+        "game_type": server.game_type.value,
+        "ip_address": server.ip_address,
+        "port": server.port,
+        "slots": server.slots,
+        "current_players": 0,  # TODO: Get from A2S query
+        "map": "de_dust2",  # TODO: Get from A2S query
+        "status": server.status.value,
+        "rcon_password": server.rcon_password,
+        "monthly_price": server.monthly_price,
+        "expires_at": server.expires_at.isoformat() if server.expires_at else None,
+        "created_at": server.created_at.isoformat(),
+        "auto_renew": server.auto_renew,
     }
 
 
@@ -1112,7 +1213,7 @@ async def execute_rcon(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_required),
 ):
-    """RCON komutu calistir"""
+    """RCON komutu calistir - Rate limited: 10 komut/dakika"""
     server = (
         db.query(GameServer)
         .filter(GameServer.id == server_id, GameServer.owner_id == current_user.id)
@@ -1127,12 +1228,83 @@ async def execute_rcon(
     if not server.rcon_password:
         raise HTTPException(status_code=400, detail="RCON sifresi ayarlanmamis")
 
-    # Tehlikeli komutlari engelle
-    dangerous_commands = ["quit", "exit", "rcon_password", "_restart", "sv_password"]
+    # ==================== RATE LIMITING ====================
+    # 10 komut/dakika sınırı
+    from app.services.rcon_rate_limiter import check_rcon_rate_limit
+
+    is_allowed, wait_seconds = check_rcon_rate_limit(
+        server_id=server_id,
+        user_id=current_user.id,
+        max_commands=10,
+        window_seconds=60
+    )
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Rate limit aşıldı. {wait_seconds} saniye sonra tekrar deneyin."
+        )
+    # ======================================================
+
+    # Tehlikeli komutlari engelle (genişletilmiş liste)
+    dangerous_commands = [
+        "quit", "exit", "rcon_password", "_restart", "sv_password",
+        "shutdown", "killserver", "changelevel", "restart"
+    ]
     cmd_lower = data.command.lower().strip()
+
+    # Komut başlangıcını kontrol et
     for dangerous in dangerous_commands:
         if cmd_lower.startswith(dangerous):
-            raise HTTPException(status_code=403, detail=f"'{dangerous}' komutu yasakli")
+            # ==================== ADMIN ALERT ====================
+            # Tehlikeli komut denemesi - admin'e bildir
+            logger.warning(
+                f"🚨 SUSPICIOUS RCON ATTEMPT: User {current_user.username} "
+                f"tried '{data.command}' on server {server_id}"
+            )
+
+            # Veritabanına şüpheli aktivite kaydı
+            from app.models.database import SecurityEvent
+            security_event = SecurityEvent(
+                user_id=current_user.id,
+                event_type="suspicious_rcon",
+                description=f"Attempted dangerous RCON command: {data.command}",
+                ip_address=request.client.host if request.client else None,
+                severity="high"
+            )
+            db.add(security_event)
+            db.commit()
+            # ====================================================
+
+            raise HTTPException(status_code=403, detail=f"'{dangerous}' komutu yasaklı")
+
+    # ==================== COMMAND WHITELIST (Opsiyonel) ====================
+    # Admin whitelist modunu kontrol et
+    from app.core.config import settings
+
+    if hasattr(settings, 'RCON_WHITELIST_ENABLED') and settings.RCON_WHITELIST_ENABLED:
+        allowed_commands = getattr(settings, 'RCON_ALLOWED_COMMANDS', [
+            'status', 'say', 'users', 'changelevel', 'kick', 'ban',
+            'amx_addadmin', 'amx_kick', 'amx_ban', 'mp_'
+        ])
+
+        # Komutun whitelist'te olup olmadığını kontrol et
+        is_allowed_cmd = False
+        for allowed in allowed_commands:
+            if cmd_lower.startswith(allowed):
+                is_allowed_cmd = True
+                break
+
+        if not is_allowed_cmd:
+            logger.warning(
+                f"RCON command not in whitelist: {data.command} "
+                f"by user {current_user.username} on server {server_id}"
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="Bu komut whitelist modunda izinli değil"
+            )
+    # =====================================================================
 
     client_ip = request.client.host if request.client else None
 
@@ -1145,13 +1317,14 @@ async def execute_rcon(
         ) as client:
             response = client.run(data.command)
 
-        # Log kaydet
+        # Log kaydet (geliştirilmiş)
         rcon_log = RconLog(
             server_id=server_id,
             user_id=current_user.id,
             command=data.command,
             response=response[:2000] if response else None,
             ip_address=client_ip,
+            success=True
         )
         db.add(rcon_log)
         db.commit()
@@ -1161,6 +1334,18 @@ async def execute_rcon(
         return {"success": True, "response": response}
 
     except Exception as e:
+        # Hata durumunda da logla
+        rcon_log = RconLog(
+            server_id=server_id,
+            user_id=current_user.id,
+            command=data.command,
+            response=str(e)[:2000],
+            ip_address=client_ip,
+            success=False
+        )
+        db.add(rcon_log)
+        db.commit()
+
         logger.error(f"RCON hatasi: {e}")
         return {"success": False, "error": str(e)}
 

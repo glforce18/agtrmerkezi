@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Wallet API</title>
+</head>
+<body>
+    <h1>Wallet API Debug</h1>
+
+    <div>
+        <h2>1. Get Token</h2>
+        <p>Token: <span id="token"></span></p>
+        <button onclick="getToken()">Get from localStorage</button>
+    </div>
+
+    <div>
+        <h2>2. Test Balance API</h2>
+        <button onclick="testBalance()">Fetch Balance</button>
+        <pre id="balance-result"></pre>
+    </div>
+
+    <script>
+        function getToken() {
+            const token = localStorage.getItem('auth_token');
+            document.getElementById('token').textContent = token || 'NO TOKEN';
+            return token;
+        }
+
+        async function testBalance() {
+            const token = getToken();
+            if (!token) {
+                document.getElementById('balance-result').textContent = 'ERROR: No auth token found';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/wallet/balance', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                document.getElementById('balance-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('balance-result').textContent = 'ERROR: ' + error.message;
+            }
+        }
+
+        // Auto-load token on page load
+        getToken();
+    </script>
+</body>
+</html>

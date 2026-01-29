@@ -176,10 +176,10 @@ async def get_users(
         )
 
     return {
-        "users": users_data,
+        "data": users_data,  # Changed from "users" to "data" for consistency
         "total": total,
         "page": page,
-        "limit": limit,
+        "per_page": limit,
         "pages": (total + limit - 1) // limit if limit > 0 else 1,
     }
 

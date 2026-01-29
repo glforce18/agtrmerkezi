@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Merhaba {{ user.username }}!</h2>
+
+<div class="alert alert-danger">
+    <strong>⚠️ Sunucu Yenileme Başarısız!</strong>
+</div>
+
+<div class="info-box">
+    <p><strong>Sunucu:</strong> {{ server.name }}</p>
+    <p><strong>Gerekli Tutar:</strong> {{ amount }} TL</p>
+    <p><strong>Başarısız Deneme Sayısı:</strong> {{ failure_count }}</p>
+</div>
+
+{% if first_attempt %}
+    <p>
+        <strong>Yetersiz bakiye nedeniyle sunucunuz otomatik olarak yenilenemedi.</strong>
+    </p>
+
+    <div class="alert alert-warning">
+        <strong>3 Gün Yetkisiz Kullanım Süresi Verildi</strong><br>
+        Bu süre içinde bakiye yüklemezseniz sunucunuz askıya alınacaktır.
+    </div>
+{% else %}
+    <p>
+        <strong>Sunucu yenileme işlemi tekrar başarısız oldu!</strong>
+    </p>
+
+    <div class="alert alert-danger">
+        <strong>Dikkat!</strong> {{ failure_count }} başarısız deneme yapıldı.<br>
+        3 başarısız denemeden sonra sunucunuz askıya alınacaktır!
+    </div>
+{% endif %}
+
+<a href="https://agtrmerkezi.com/wallet" class="button">Hemen Bakiye Yükle</a>
+
+<p style="margin-top: 20px;">
+    Sunucunuzun kesintiye uğramaması için lütfen en kısa sürede bakiye yükleyin.
+</p>
+
+<p>
+    Saygılarımızla,<br>
+    <strong>AGTR Merkezi Ekibi</strong>
+</p>
+{% endblock %}

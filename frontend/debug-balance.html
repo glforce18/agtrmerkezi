@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance Debug - AGTR Merkezi</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #f97316, #fb923c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+        .section h2 {
+            color: #f97316;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(255,255,255,0.02);
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 3px solid #f97316;
+        }
+        .info-label {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+        .info-value {
+            color: #fff;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+        .success { color: #10b981 !important; }
+        .error { color: #ef4444 !important; }
+        .warning { color: #f59e0b !important; }
+        button {
+            background: linear-gradient(90deg, #f97316, #fb923c);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 8px 8px 8px 0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        pre {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: #10b98144; color: #10b981; }
+        .badge-error { background: #ef444444; color: #ef4444; }
+        .badge-warning { background: #f59e0b44; color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Balance Debug Tool</h1>
+        <p style="color: #9ca3af; margin-bottom: 30px;">AGTR Merkezi - Frontend Balance Görüntüleme Testi</p>
+
+        <!-- Status -->
+        <div class="section">
+            <h2>📊 Durum</h2>
+            <div class="info-row">
+                <span class="info-label">Auth Token:</span>
+                <span class="info-value" id="token-status">❌ Yok</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">User Data:</span>
+                <span class="info-value" id="user-status">❌ Yok</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Balance API:</span>
+                <span class="info-value" id="api-status">⏳ Test edilmedi</span>
+            </div>
+        </div>
+
+        <!-- LocalStorage -->
+        <div class="section">
+            <h2>💾 LocalStorage</h2>
+            <div id="localStorage-content"></div>
+        </div>
+
+        <!-- API Response -->
+        <div class="section">
+            <h2>🌐 API Balance Response</h2>
+            <button onclick="testBalanceAPI()">Balance API Test Et</button>
+            <button onclick="testLoginAPI()">Login API Test Et (glforce)</button>
+            <button onclick="clearStorage()">LocalStorage Temizle</button>
+            <pre id="api-response">API henüz test edilmedi...</pre>
+        </div>
+
+        <!-- Console Log -->
+        <div class="section">
+            <h2>📝 Console Log</h2>
+            <pre id="console-log">Waiting for tests...</pre>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        let logs = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('tr-TR');
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logs.push(`[${timestamp}] ${icon} ${message}`);
+            document.getElementById('console-log').textContent = logs.join('\n');
+            console.log(`[Balance Debug] ${message}`);
+        }
+
+        function checkLocalStorage() {
+            const token = localStorage.getItem('auth_token');
+            const user = localStorage.getItem('user');
+
+            let html = '';
+
+            if (token) {
+                html += `<div class="info-row">
+                    <span class="info-label">auth_token:</span>
+                    <span class="info-value success">${token.substring(0, 40)}...</span>
+                </div>`;
+                document.getElementById('token-status').innerHTML = '<span class="success">✅ Var</span>';
+            } else {
+                html += `<div class="info-row">
+                    <span class="info-label">auth_token:</span>
+                    <span class="info-value error">❌ Yok</span>
+                </div>`;
+                document.getElementById('token-status').innerHTML = '<span class="error">❌ Yok</span>';
+            }
+
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    html += `<div class="info-row">
+                        <span class="info-label">user.username:</span>
+                        <span class="info-value">${userData.username || 'N/A'}</span>
+                    </div>`;
+                    html += `<div class="info-row">
+                        <span class="info-label">user.balance:</span>
+                        <span class="info-value">${userData.balance || 0}₺</span>
+                    </div>`;
+                    html += `<div class="info-row">
+                        <span class="info-label">user.balance_coin:</span>
+                        <span class="info-value">${userData.balance_coin || 0} Armor</span>
+                    </div>`;
+                    document.getElementById('user-status').innerHTML = `<span class="success">✅ ${userData.username}</span>`;
+                } catch (e) {
+                    html += `<div class="info-row">
+                        <span class="info-label">user:</span>
+                        <span class="info-value error">❌ Parse hatası</span>
+                    </div>`;
+                    document.getElementById('user-status').innerHTML = '<span class="error">❌ Hatalı</span>';
+                }
+            } else {
+                html += `<div class="info-row">
+                    <span class="info-label">user:</span>
+                    <span class="info-value error">❌ Yok</span>
+                </div>`;
+                document.getElementById('user-status').innerHTML = '<span class="error">❌ Yok</span>';
+            }
+
+            document.getElementById('localStorage-content').innerHTML = html || '<p class="error">LocalStorage boş</p>';
+        }
+
+        async function testBalanceAPI() {
+            log('Balance API test başladı...', 'info');
+            const token = localStorage.getItem('auth_token');
+
+            if (!token) {
+                document.getElementById('api-response').textContent = '❌ ERROR: Token bulunamadı! Önce giriş yapın.';
+                document.getElementById('api-status').innerHTML = '<span class="error">❌ Token yok</span>';
+                log('Token bulunamadı', 'error');
+                return;
+            }
+
+            try {
+                log(`Token ile API çağrısı yapılıyor: ${API_BASE}/wallet/balance`, 'info');
+                const response = await fetch(`${API_BASE}/wallet/balance`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log(`API Response Status: ${response.status}`, response.ok ? 'success' : 'error');
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                    document.getElementById('api-status').innerHTML = '<span class="success">✅ Başarılı</span>';
+                    log(`Balance alındı: ${data.balance_real}₺, ${data.balance_coin} Armor`, 'success');
+                } else {
+                    document.getElementById('api-response').textContent = `❌ ERROR ${response.status}:\n${JSON.stringify(data, null, 2)}`;
+                    document.getElementById('api-status').innerHTML = `<span class="error">❌ ${response.status}</span>`;
+                    log(`API Hatası: ${data.detail || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('api-response').textContent = `❌ NETWORK ERROR:\n${error.message}`;
+                document.getElementById('api-status').innerHTML = '<span class="error">❌ Network Error</span>';
+                log(`Network hatası: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLoginAPI() {
+            log('Login API test başladı (glforce)...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin159',
+                        password: 'sedatimbataktaymis'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    log('✅ Login başarılı! Token ve user localStorage\'a kaydedildi', 'success');
+                    log(`User: ${data.user.username}, Balance: ${data.user.balance}₺`, 'success');
+                    checkLocalStorage();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    log(`❌ Login hatası: ${data.detail || 'Unknown error'}`, 'error');
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                log(`❌ Network hatası: ${error.message}`, 'error');
+            }
+        }
+
+        function clearStorage() {
+            localStorage.clear();
+            log('LocalStorage temizlendi', 'warning');
+            checkLocalStorage();
+            document.getElementById('api-response').textContent = 'LocalStorage temizlendi...';
+        }
+
+        // Initial check
+        checkLocalStorage();
+        log('Debug tool yüklendi', 'success');
+    </script>
+</body>
+</html>

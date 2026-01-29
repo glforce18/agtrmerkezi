@@ -69,11 +69,16 @@ class Settings(BaseSettings):
     WS_MAX_CONNECTIONS: int = 100
 
     # Game server ayarlari
-    GAME_SERVER_IPS: List[str] = ["185.171.25.138", "185.171.25.139", "185.171.25.140"]
+    GAME_SERVER_IPS: List[str] = [
+        "185.171.25.137",
+        "185.171.25.138",
+        "185.171.25.139",
+        "185.171.25.140",
+    ]
     MAIN_SERVER_IP: str = "185.171.25.137"
     GAME_PORT_START: int = 27018
-    GAME_PORT_END: int = 27067
-    PORTS_PER_IP: int = 50
+    GAME_PORT_END: int = 27050
+    PORTS_PER_IP: int = 33  # 27018-27050 = 33 ports per IP
 
     # Paths
     HLDS_PATH: str = "/home/gameservers"

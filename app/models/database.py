@@ -463,12 +463,15 @@ class GameType(enum.Enum):
 class ServerStatus(enum.Enum):
     PENDING = "pending"
     CREATING = "creating"
+    INSTALLING = "installing"
     RUNNING = "running"
     STOPPED = "stopped"
     SUSPENDED = "suspended"
     EXPIRED = "expired"
     DELETED = "deleted"
     CANCELLED = "cancelled"
+    REJECTED = "rejected"
+    ERROR = "error"
 
 
 class PaymentStatus(enum.Enum):
@@ -498,6 +501,13 @@ class TicketPriority(enum.Enum):
     MEDIUM = "medium"
     HIGH = "high"
     URGENT = "urgent"
+
+
+class WalletType(enum.Enum):
+    """Wallet types for dual-wallet system"""
+
+    REAL = "real"  # TL balance (real money)
+    COIN = "coin"  # Virtual currency (Armor)
 
 
 # ==================== USER MODELS ====================
@@ -643,6 +653,8 @@ class ServerPackage(Base):
     name = Column(String(100), nullable=False)
     game_type = Column(Enum(GameType), nullable=False)
     slots = Column(Integer, nullable=False)
+    ram_mb = Column(Integer, nullable=False, default=512)
+    disk_gb = Column(Integer, nullable=False, default=10)
     features = Column(JSON)
     description = Column(Text)
     price_monthly = Column(Float, nullable=False)
@@ -704,6 +716,172 @@ class GameServer(Base):
     # Relationships
     owner = relationship("User", back_populates="servers")
     package = relationship("ServerPackage", backref="servers")
+
+
+# ==================== SUBSCRIPTION MODELS ====================
+
+
+class SubscriptionStatus(enum.Enum):
+    """Subscription status enumeration"""
+
+    ACTIVE = "active"
+    CANCELLED = "cancelled"
+    SUSPENDED = "suspended"
+    EXPIRED = "expired"
+    GRACE_PERIOD = "grace_period"
+
+
+class BillingPeriod(enum.Enum):
+    """Billing period enumeration"""
+
+    MONTHLY = "monthly"
+    QUARTERLY = "quarterly"
+    BIANNUAL = "biannual"
+    ANNUAL = "annual"
+
+
+class Subscription(Base):
+    """Server subscription and automatic billing management"""
+
+    __tablename__ = "subscriptions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Foreign keys
+    game_server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    # Billing configuration
+    billing_period = Column(Enum(BillingPeriod), nullable=False, default=BillingPeriod.MONTHLY)
+    auto_renew_enabled = Column(Boolean, nullable=False, default=True)
+    payment_method = Column(Enum(WalletType), nullable=False, default=WalletType.REAL)
+
+    # Billing dates
+    next_billing_date = Column(Date, nullable=False, index=True)
+    last_billing_date = Column(Date)
+    grace_period_started_at = Column(DateTime)
+    suspended_at = Column(DateTime)
+    cancelled_at = Column(DateTime)
+
+    # Status
+    status = Column(
+        Enum(SubscriptionStatus), nullable=False, default=SubscriptionStatus.ACTIVE, index=True
+    )
+
+    # Notification flags
+    notification_7days_sent = Column(Boolean, nullable=False, default=False)
+    notification_3days_sent = Column(Boolean, nullable=False, default=False)
+    notification_1day_sent = Column(Boolean, nullable=False, default=False)
+
+    # Billing metadata
+    failure_count = Column(Integer, nullable=False, default=0)
+    last_failure_reason = Column(String(500))
+    monthly_amount = Column(Float, nullable=False)
+
+    # Timestamps
+    created_at = Column(DateTime, nullable=False, default=func.now())
+    updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
+
+    # Composite indexes for performance
+    __table_args__ = (
+        Index(
+            "idx_subscriptions_next_billing", "next_billing_date", "auto_renew_enabled", "status"
+        ),
+        Index("idx_subscriptions_user", "user_id", "status"),
+        Index(
+            "idx_subscriptions_expiry_notifications",
+            "next_billing_date",
+            "notification_7days_sent",
+            "notification_3days_sent",
+            "notification_1day_sent",
+        ),
+    )
+
+    # Relationships
+    game_server = relationship("GameServer", backref="subscription")
+    user = relationship("User", backref="subscriptions")
+    billing_history = relationship(
+        "SubscriptionBillingHistory", back_populates="subscription", cascade="all, delete-orphan"
+    )
+
+    def get_billing_months(self) -> int:
+        """Get number of months for current billing period"""
+        period_months = {
+            BillingPeriod.MONTHLY: 1,
+            BillingPeriod.QUARTERLY: 3,
+            BillingPeriod.BIANNUAL: 6,
+            BillingPeriod.ANNUAL: 12,
+        }
+        return period_months.get(self.billing_period, 1)
+
+    def calculate_billing_amount(self) -> float:
+        """Calculate total amount for current billing period"""
+        return self.monthly_amount * self.get_billing_months()
+
+
+class BillingHistoryStatus(enum.Enum):
+    """Billing history status enumeration"""
+
+    SUCCESS = "success"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    RETRYING = "retrying"
+
+
+class SubscriptionBillingHistory(Base):
+    """Audit trail for all subscription billing attempts"""
+
+    __tablename__ = "subscription_billing_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Foreign keys
+    subscription_id = Column(
+        Integer, ForeignKey("subscriptions.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    game_server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False
+    )
+
+    # Billing attempt details
+    billing_date = Column(Date, nullable=False)
+    billing_period = Column(Enum(BillingPeriod), nullable=False)
+    amount = Column(Float, nullable=False)
+    payment_method = Column(Enum(WalletType), nullable=False)
+
+    # Result
+    status = Column(Enum(BillingHistoryStatus), nullable=False, index=True)
+    failure_reason = Column(String(500))
+    retry_count = Column(Integer, nullable=False, default=0)
+
+    # Wallet snapshots (for audit)
+    balance_before = Column(Float)
+    balance_after = Column(Float)
+
+    # Related records
+    transaction_id = Column(Integer, ForeignKey("transactions.id", ondelete="SET NULL"))
+    payment_id = Column(Integer, ForeignKey("payments.id", ondelete="SET NULL"))
+
+    # Timestamps
+    created_at = Column(DateTime, nullable=False, default=func.now())
+    completed_at = Column(DateTime)
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_billing_history_subscription", "subscription_id", "billing_date"),
+        Index("idx_billing_history_user", "user_id", "billing_date"),
+        Index("idx_billing_history_status", "status", "created_at"),
+    )
+
+    # Relationships
+    subscription = relationship("Subscription", back_populates="billing_history")
+    user = relationship("User", backref="billing_history")
+    game_server = relationship("GameServer", backref="billing_history")
+    transaction = relationship("Transaction", backref="billing_history")
+    payment = relationship("Payment", backref="billing_history")
 
 
 class ServerAction(Base):
@@ -2047,11 +2225,6 @@ class Invoice(Base):
 
 
 # ==================== TRANSACTION ====================
-class WalletType(enum.Enum):
-    """Cüzdan türleri"""
-
-    REAL = "real"  # TL bakiye
-    COIN = "coin"  # Sanal para
 
 
 class TransactionType(enum.Enum):

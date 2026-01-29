@@ -577,7 +577,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user_re
     return {
         "id": current_user.id,
         "username": current_user.username,
-        "email": current_user.email,
+        "email": current_user.email,  # Steam users will have None
         "display_name": current_user.display_name,
         "avatar": format_avatar_url(current_user.avatar),
         "role": current_user.role.value,

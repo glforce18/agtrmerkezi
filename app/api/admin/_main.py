@@ -422,7 +422,7 @@ async def list_users(
     )
 
     return {
-        "users": [
+        "data": [
             {
                 "id": u.id,
                 "username": u.username,
@@ -620,6 +620,11 @@ async def list_servers(
     result = []
     for s in servers:
         owner = db.query(User).filter(User.id == s.owner_id).first()
+
+        # Safe enum value extraction (handle both enum and string)
+        game_type_val = s.game_type.value if hasattr(s.game_type, "value") else s.game_type
+        status_val = s.status.value if hasattr(s.status, "value") else s.status
+
         result.append(
             {
                 "id": s.id,
@@ -629,14 +634,18 @@ async def list_servers(
                     "username": owner.username if owner else "N/A",
                 },
                 "owner_username": owner.username if owner else "N/A",
-                "game_type": s.game_type.value,
+                "game_type": game_type_val,
                 "ip": s.ip_address,
                 "ip_address": s.ip_address,
                 "port": s.port,
                 "slots": s.slots,
                 "max_players": s.slots,
-                "status": s.status.value,
-                "is_online": s.status == ServerStatus.RUNNING,
+                "status": status_val,
+                "is_online": (
+                    status_val.upper() == "RUNNING"
+                    if isinstance(status_val, str)
+                    else s.status == ServerStatus.RUNNING
+                ),
                 "current_players": getattr(s, "current_players", 0) or 0,
                 "current_map": getattr(s, "current_map", "N/A") or "N/A",
                 "map": getattr(s, "current_map", "N/A") or "N/A",
@@ -659,7 +668,7 @@ async def list_servers(
         )
 
     return {
-        "servers": result,
+        "data": result,
         "pagination": {
             "page": page,
             "per_page": per_page,

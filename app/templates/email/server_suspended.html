@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Merhaba {{ user.username }}!</h2>
+
+<div class="alert alert-danger">
+    <strong>⛔ Sunucunuz Askıya Alındı!</strong>
+</div>
+
+<div class="info-box">
+    <p><strong>Sunucu:</strong> {{ server.name }}</p>
+    <p><strong>Askıya Alma Nedeni:</strong> 3 başarısız ödeme denemesi</p>
+    <p><strong>Yeniden Etkinleştirme İçin Gerekli:</strong> {{ amount }} TL</p>
+</div>
+
+<p>
+    <strong>Sunucunuz 3 başarısız ödeme denemesi sonrasında askıya alınmıştır.</strong>
+</p>
+
+<p>
+    Sunucunuzu yeniden etkinleştirmek için:
+</p>
+
+<ol>
+    <li>{{ amount }} TL bakiye yükleyin</li>
+    <li>Sunucu yönetim panelinden aboneliğinizi yeniden etkinleştirin</li>
+</ol>
+
+<a href="https://agtrmerkezi.com/wallet" class="button">Bakiye Yükle</a>
+<a href="https://agtrmerkezi.com/panel/servers/{{ server.id }}" class="button">Sunucu Yönetimi</a>
+
+<div class="alert alert-warning" style="margin-top: 20px;">
+    <strong>Veri Saklama Politikası:</strong><br>
+    Askıya alınan sunucu verileri 30 gün boyunca saklanır. Bu süre sonunda verileriniz silinecektir.
+</div>
+
+<p style="margin-top: 20px;">
+    Sorularınız için destek ekibimizle iletişime geçebilirsiniz.
+</p>
+
+<p>
+    Saygılarımızla,<br>
+    <strong>AGTR Merkezi Ekibi</strong>
+</p>
+{% endblock %}

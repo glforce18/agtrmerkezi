@@ -25,6 +25,20 @@ STEAM_OPENID_URL = "https://steamcommunity.com/openid/login"
 STEAM_API_KEY = settings.STEAM_API_KEY if hasattr(settings, "STEAM_API_KEY") else None
 
 
+def steamid64_to_steamid(steamid64: str) -> str:
+    """Convert SteamID64 to classic STEAM_0:X:XXXXXXX format"""
+    try:
+        steamid64_int = int(steamid64)
+        # Calculate Y (0 or 1)
+        y = steamid64_int % 2
+        # Calculate Z
+        z = (steamid64_int - 76561197960265728 - y) // 2
+        return f"STEAM_0:{y}:{z}"
+    except (ValueError, TypeError):
+        logger.error(f"Invalid SteamID64: {steamid64}")
+        return steamid64
+
+
 def get_steam_login_url(return_url: str) -> str:
     """Generate Steam OpenID login URL"""
     params = {
@@ -112,16 +126,20 @@ async def steam_callback(request: Request, db: Session = Depends(get_db)):
         params = dict(request.query_params)
 
         # Validate Steam response
-        steam_id = validate_steam_response(params)
+        steam_id64 = validate_steam_response(params)
 
-        if not steam_id:
+        if not steam_id64:
             logger.error("Steam authentication failed: Invalid response")
             return RedirectResponse(url=f"{settings.FRONTEND_URL}/?error=steam_auth_failed")
 
-        # Get Steam user info
-        steam_info = await get_steam_user_info(steam_id)
+        # Convert SteamID64 to classic STEAM_0 format for game servers
+        steam_id = steamid64_to_steamid(steam_id64)
+        logger.info(f"Steam login: SteamID64={steam_id64}, GameID={steam_id}")
 
-        # Find or create user
+        # Get Steam user info (uses SteamID64 for API)
+        steam_info = await get_steam_user_info(steam_id64)
+
+        # Find or create user (search by game Steam ID)
         user = db.query(User).filter(User.steam_id == steam_id).first()
 
         if user:
@@ -135,7 +153,7 @@ async def steam_callback(request: Request, db: Session = Depends(get_db)):
 
             user.last_login = datetime.utcnow()
             db.commit()
-            logger.info(f"User logged in via Steam: {user.username} (Steam ID: {steam_id})")
+            logger.info(f"User logged in via Steam: {user.username} (Game ID: {steam_id})")
 
         else:
             # Create new user
@@ -159,7 +177,7 @@ async def steam_callback(request: Request, db: Session = Depends(get_db)):
 
             user = User(
                 username=username,
-                email=f"{steam_id}@steam.local",  # Placeholder email
+                email=None,  # Steam users don't need email
                 password_hash="",  # No password for Steam users
                 display_name=steam_info.get("personaname") if steam_info else username,
                 steam_id=steam_id,
@@ -176,7 +194,7 @@ async def steam_callback(request: Request, db: Session = Depends(get_db)):
             db.add(user)
             db.commit()
             db.refresh(user)
-            logger.info(f"New user created via Steam: {user.username} (Steam ID: {steam_id})")
+            logger.info(f"New user created via Steam: {user.username} (Game ID: {steam_id})")
 
         # Create access token and session
         access_token = create_access_token(data={"sub": str(user.id)})

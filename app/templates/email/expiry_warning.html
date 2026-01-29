@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Merhaba {{ user.username }}!</h2>
+
+<div class="alert alert-warning">
+    <strong>⚠️ Dikkat!</strong> Sunucunuz {{ days }} gün içinde sona eriyor.
+</div>
+
+<div class="info-box">
+    <p><strong>Sunucu:</strong> {{ server.name }}</p>
+    <p><strong>Bitiş Tarihi:</strong> {{ expiry_date }}</p>
+    <p><strong>Yenileme Tutarı:</strong> {{ amount }} TL</p>
+    <p><strong>Ödeme Yöntemi:</strong> {{ wallet_name }}</p>
+    <p><strong>Mevcut Bakiye:</strong> {{ current_balance }} TL</p>
+</div>
+
+{% if subscription.auto_renew_enabled %}
+    {% if current_balance >= amount %}
+        <div class="alert alert-success">
+            <strong>✓ Otomatik Yenileme Aktif</strong><br>
+            Sunucunuz otomatik olarak yenilenecek. {{ amount }} TL bakiyenizden çekilecek.
+        </div>
+    {% else %}
+        <div class="alert alert-danger">
+            <strong>⚠️ Yetersiz Bakiye!</strong><br>
+            Otomatik yenileme aktif ancak bakiyeniz yetersiz!<br>
+            Gerekli: {{ amount }} TL | Mevcut: {{ current_balance }} TL<br>
+            Lütfen en kısa sürede bakiye yükleyin.
+        </div>
+        <a href="https://agtrmerkezi.com/wallet" class="button">Bakiye Yükle</a>
+    {% endif %}
+{% else %}
+    <div class="alert alert-info">
+        <strong>ℹ️ Otomatik Yenileme Kapalı</strong><br>
+        Sunucunuzu yenilemek için bakiye yükleyin veya otomatik yenilemeyi aktifleştirin.
+    </div>
+    <a href="https://agtrmerkezi.com/wallet" class="button">Bakiye Yükle</a>
+    <a href="https://agtrmerkezi.com/panel/servers/{{ server.id }}" class="button">Sunucu Yönetimi</a>
+{% endif %}
+
+<p style="margin-top: 20px;">
+    Sunucunuzun kesintisiz hizmet vermesi için zamanında yenileme yapmanızı öneririz.
+</p>
+
+<p>
+    Saygılarımızla,<br>
+    <strong>AGTR Merkezi Ekibi</strong>
+</p>
+{% endblock %}

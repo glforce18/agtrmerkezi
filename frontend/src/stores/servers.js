@@ -11,9 +11,10 @@ export const useServersStore = defineStore('servers', () => {
     loading.value = true
     try {
       const response = await serversAPI.getMyServers()
-      servers.value = response.data
+      servers.value = response.data.servers || []
     } catch (error) {
       console.error('Failed to fetch servers:', error)
+      servers.value = []
     } finally {
       loading.value = false
     }

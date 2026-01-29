@@ -17,7 +17,8 @@ import { onMounted } from 'vue'
 const authStore = useAuthStore()
 
 onMounted(async () => {
-  authStore.init()
+  // Initialize auth store (load from localStorage)
+  await authStore.init()
 
   // If we have a token but no user data, fetch it
   if (authStore.token && !authStore.user) {

@@ -72,6 +72,7 @@ from app.api import (  # noqa: E402
 from app.api.admin import forum_categories as admin_forum_categories  # noqa: E402
 from app.api.admin import forum_topics as admin_forum_topics  # noqa: E402
 from app.api.admin import pages as admin_pages  # noqa: E402
+from app.api.admin import server_approval  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.models.connection import get_db, init_db  # noqa: E402
 from app.models.database import (  # noqa: E402
@@ -491,8 +492,6 @@ cors_origins = (
     else [
         "https://agtrmerkezi.com",
         "https://www.agtrmerkezi.com",
-        "http://localhost:3000",
-        "http://localhost:8000",
     ]
 )
 app.add_middleware(
@@ -521,8 +520,12 @@ app.add_middleware(CacheControlMiddleware)
 # Rate Limit
 from app.middleware.rate_limit import RateLimitMiddleware  # noqa: E402
 
-# Rate limit - test için yüksek limitler
-app.add_middleware(RateLimitMiddleware, requests_per_minute=1000, requests_per_second=100)
+# Rate limit - production limits
+app.add_middleware(
+    RateLimitMiddleware,
+    requests_per_minute=300 if not settings.DEBUG else 1000,
+    requests_per_second=10 if not settings.DEBUG else 100,
+)
 
 # CSRF Protection
 from app.middleware.csrf import CSRFMiddleware  # noqa: E402
@@ -571,8 +574,7 @@ app.include_router(servers_unified.router, tags=["Servers v3 - Unified"])
 
 # ==================== LEGACY APIs (Deprecated) ====================
 # TODO: Remove after frontend migration complete
-# DISABLED: Conflicts with servers_unified.router - causes packages endpoint to require auth
-# app.include_router(servers.router, prefix="/api/servers", tags=["Game Servers - LEGACY"])
+# NOTE: servers.router removed - replaced by servers_unified.router (see line 571)
 app.include_router(metrics.router, tags=["Server Metrics"])
 app.include_router(crash_stats.router, tags=["Crash Detection"])
 app.include_router(command_quotas.router, tags=["Command Quotas"])
@@ -581,7 +583,6 @@ app.include_router(plugins_enhanced.router, tags=["Plugin Management"])
 app.include_router(analytics_enhanced.router, tags=["Advanced Analytics"])
 
 # Legacy Forum APIs - TODO: Remove after migration
-app.include_router(forum.router, prefix="/api/forum", tags=["Forum - LEGACY"])
 app.include_router(forum_v2.router, prefix="/api", tags=["Forum v2 - Advanced Features - LEGACY"])
 from app.api import forum_gamification  # noqa: E402
 
@@ -593,6 +594,7 @@ app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(admin_forum_categories.router, prefix="/api", tags=["Admin Forum"])
 app.include_router(admin_forum_topics.router, prefix="/api", tags=["Admin Forum"])
 app.include_router(admin_pages.router, tags=["Admin Pages"])
+app.include_router(server_approval.router, tags=["Admin Server Approval"])
 
 # Feature APIs
 app.include_router(websocket.router, tags=["WebSocket"])

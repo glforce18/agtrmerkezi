@@ -7,9 +7,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from app.api.common import (
@@ -19,11 +19,7 @@ from app.api.common import (
     paginated_response,
     success_response,
 )
-from app.api.servers import (
-    create_physical_server,
-    delete_physical_server,
-    start_physical_server,
-)
+from app.api.servers import delete_physical_server
 from app.core.security import get_current_admin
 from app.models.connection import get_db
 from app.models.database import (
@@ -44,6 +40,38 @@ from app.models.database import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+# ==================== PAYMENT STATS ====================
+
+
+@router.get("/payments/stats", response_model=dict)
+async def get_payment_stats(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    """Get payment statistics"""
+    # Count by status
+    pending_count = db.query(Payment).filter(Payment.status == PaymentStatus.PENDING).count()
+    completed_count = db.query(Payment).filter(Payment.status == PaymentStatus.COMPLETED).count()
+    cancelled_count = db.query(Payment).filter(Payment.status == PaymentStatus.CANCELLED).count()
+
+    # Total revenue (completed payments)
+    total_revenue = (
+        db.query(func.sum(Payment.amount))
+        .filter(Payment.status == PaymentStatus.COMPLETED)
+        .scalar()
+        or 0
+    )
+
+    return success_response(
+        data={
+            "pending": pending_count,
+            "completed": completed_count,
+            "cancelled": cancelled_count,
+            "total_revenue": float(total_revenue),
+        }
+    )
 
 
 # ==================== REQUEST MODELS ====================
@@ -181,6 +209,7 @@ async def list_pending_payments(
 async def approve_payment(
     payment_id: int,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
@@ -212,12 +241,16 @@ async def approve_payment(
                         balance_before = user.balance
                         user.balance -= payment.amount
 
+                        from app.models.database import WalletType
+
                         transaction = Transaction(
                             user_id=user.id,
+                            wallet_type=WalletType.REAL,
                             type="payment",
                             amount=-payment.amount,
                             description=f"Sunucu ödemesi: {server.name}",
-                            payment_id=payment.id,
+                            reference_id=str(payment.id),
+                            reference_type="payment",
                             balance_before=balance_before,
                             balance_after=user.balance,
                         )
@@ -236,30 +269,76 @@ async def approve_payment(
                     server.expires_at = server.expires_at + timedelta(days=30 * payment.months)
                 else:
                     server.expires_at = datetime.utcnow() + timedelta(days=30 * payment.months)
-                server.status = ServerStatus.RUNNING
 
-                # Create physical server
-                game_type = server.game_type.value
-                create_result = create_physical_server(
-                    server.id,
-                    server.ip_address,
-                    server.port,
-                    game_type,
-                    server.slots,
-                    server.rcon_password,
-                    server.name,
-                )
+                # Keep server as PENDING during installation
+                server.status = ServerStatus.PENDING
 
-                if create_result["success"]:
-                    start_physical_server(server.id)
+                # Trigger server installation (background task)
+                async def trigger_installation():
+                    """Background task to install server"""
+                    from app.models.connection import SessionLocal
+                    from app.services.server_installation import (
+                        ServerInstallationService,
+                    )
+
+                    task_db = SessionLocal()
+                    try:
+                        install_service = ServerInstallationService(task_db)
+
+                        # Create installation record
+                        installation = await install_service.create_installation(
+                            server_id=server.id,
+                            user_id=user.id,
+                            mod_type=server.game_type.value,
+                            config={},
+                        )
+
+                        # Run installation
+                        config = {
+                            "hostname": server.name,
+                            "rcon_password": server.rcon_password,
+                            "port": server.port,
+                            "maxplayers": server.slots,
+                            "admins": [],  # Auto-admin will be added in installation
+                        }
+
+                        success, msg = await install_service.run_installation(
+                            installation.id, config
+                        )
+
+                        # Update server status
+                        if success:
+                            server_obj = (
+                                task_db.query(GameServer).filter(GameServer.id == server.id).first()
+                            )
+                            if server_obj:
+                                server_obj.status = ServerStatus.STOPPED  # Ready but not running
+                                task_db.commit()
+
+                                logger.info(f"Server installation completed: {server.id}")
+                        else:
+                            logger.error(f"Server installation failed: {server.id} - {msg}")
+                            server_obj = (
+                                task_db.query(GameServer).filter(GameServer.id == server.id).first()
+                            )
+                            if server_obj:
+                                server_obj.status = ServerStatus.ERROR
+                                task_db.commit()
+                    except Exception as e:
+                        logger.error(f"Installation task error: {e}")
+                    finally:
+                        task_db.close()
+
+                # Add background task
+                background_tasks.add_task(trigger_installation)
 
                 # Notification
                 notification = Notification(
                     user_id=user.id,
                     type="server",
-                    title="Sunucunuz Aktif!",
-                    message=f"{server.name} sunucunuz başarıyla kuruldu.",
-                    link=f"/panel/servers/{server.id}",
+                    title="Sunucu Kurulumu Başladı!",
+                    message=f"{server.name} sunucunuz kuruluyor. Birkaç dakika içinde hazır olacak.",
+                    link=f"/servers/{server.id}",
                 )
                 db.add(notification)
         else:
@@ -269,10 +348,12 @@ async def approve_payment(
 
             transaction = Transaction(
                 user_id=user.id,
+                wallet_type=WalletType.REAL,
                 type="deposit",
                 amount=payment.amount,
                 description=f"Bakiye yükleme: {payment.reference_code}",
-                payment_id=payment.id,
+                reference_id=str(payment.id),
+                reference_type="payment",
                 balance_before=balance_before,
                 balance_after=user.balance,
             )
@@ -453,7 +534,7 @@ async def update_package(
     try:
         package = db.query(ServerPackage).filter(ServerPackage.id == package_id).first()
         if not package:
-            raise NotFoundError("Paket bulunamadı")
+            raise NotFoundError("Package not found")
 
         if data.name is not None:
             package.name = data.name
@@ -471,7 +552,7 @@ async def update_package(
             package.display_order = data.display_order
 
         db.commit()
-        return success_response(message="Paket güncellendi")
+        return success_response(message="Package updated")
 
     except NotFoundError:
         raise
@@ -489,7 +570,7 @@ async def delete_package(
     try:
         package = db.query(ServerPackage).filter(ServerPackage.id == package_id).first()
         if not package:
-            raise NotFoundError("Paket bulunamadı")
+            raise NotFoundError("Package not found")
 
         active_servers = (
             db.query(GameServer)

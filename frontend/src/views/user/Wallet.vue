@@ -245,6 +245,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import walletAPI from '@/api/wallet'
 
 const authStore = useAuthStore()
 
@@ -272,11 +273,50 @@ const filteredTransactions = computed(() => {
 })
 
 onMounted(async () => {
-  // Fetch wallet data
-  // TODO: Add API call
-  loading.value = false
-  balance.value = authStore.user?.balance || 0
+  await fetchWalletData()
 })
+
+const fetchWalletData = async () => {
+  try {
+    loading.value = true
+
+    // Fetch balance
+    const balanceResponse = await walletAPI.getBalance()
+    balance.value = balanceResponse.data.balance_real || 0
+
+    // Fetch transactions
+    const txResponse = await walletAPI.getTransactions({
+      wallet_type: 'real',
+      limit: 50
+    })
+    transactions.value = txResponse.data || []
+    totalTransactions.value = transactions.value.length
+
+    // Calculate monthly stats
+    const now = new Date()
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+    const monthlyTxs = transactions.value.filter(tx => {
+      const txDate = new Date(tx.created_at)
+      return txDate >= firstDayOfMonth
+    })
+
+    monthlyDeposit.value = monthlyTxs
+      .filter(tx => tx.amount > 0)
+      .reduce((sum, tx) => sum + tx.amount, 0)
+
+    monthlySpent.value = Math.abs(monthlyTxs
+      .filter(tx => tx.amount < 0)
+      .reduce((sum, tx) => sum + tx.amount, 0))
+
+  } catch (error) {
+    console.error('Failed to fetch wallet data:', error)
+    // Fallback to auth store balance
+    balance.value = authStore.balance?.balance_real || 0
+  } finally {
+    loading.value = false
+  }
+}
 
 const formatDate = (dateString) => {
   const date = new Date(dateString)
@@ -298,13 +338,49 @@ const getStatusLabel = (status) => {
   return labels[status] || status
 }
 
-const loadMore = () => {
-  console.log('Load more transactions')
+const loadMore = async () => {
+  try {
+    const offset = transactions.value.length
+    const txResponse = await walletAPI.getTransactions({
+      wallet_type: 'real',
+      limit: 50,
+      offset
+    })
+
+    const newTxs = txResponse.data || []
+    transactions.value.push(...newTxs)
+    hasMore.value = newTxs.length === 50
+  } catch (error) {
+    console.error('Failed to load more transactions:', error)
+  }
 }
 
-const submitAddFunds = () => {
-  console.log('Add funds:', addFundsAmount.value, paymentMethod.value)
-  // TODO: Implement payment gateway
-  showAddFunds.value = false
+const submitAddFunds = async () => {
+  try {
+    if (!paymentMethod.value) {
+      alert('Lütfen ödeme yöntemi seçiniz')
+      return
+    }
+
+    const response = await walletAPI.deposit({
+      amount: addFundsAmount.value,
+      payment_method: paymentMethod.value
+    })
+
+    if (response.data.success) {
+      // Refresh wallet data
+      await fetchWalletData()
+      await authStore.fetchBalance()
+
+      showAddFunds.value = false
+      addFundsAmount.value = 100
+      paymentMethod.value = ''
+
+      alert('Bakiye yükleme başarılı!')
+    }
+  } catch (error) {
+    console.error('Add funds error:', error)
+    alert(error.response?.data?.detail || 'Bakiye yüklenirken hata oluştu')
+  }
 }
 </script>

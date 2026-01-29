@@ -18,7 +18,7 @@
             <h1 class="text-4xl font-bold text-text-primary mt-2">
               <span class="text-primary">{{ server.name }}</span>
             </h1>
-            <p class="text-text-secondary font-mono mt-1">{{ server.ip }}:{{ server.port }}</p>
+            <p class="text-text-secondary font-mono mt-1">{{ server.ip_address }}:{{ server.port }}</p>
           </div>
           <div
             class="px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-wider"
@@ -35,7 +35,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <div class="text-text-muted text-xs uppercase tracking-wide mb-1">Players Online</div>
-                <div class="text-3xl font-bold text-green-400">{{ server.current_players }}/{{ server.max_players }}</div>
+                <div class="text-3xl font-bold text-green-400">{{ server.current_players }}/{{ server.slots }}</div>
               </div>
               <div class="text-4xl opacity-20">👥</div>
             </div>
@@ -55,7 +55,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <div class="text-text-muted text-xs uppercase tracking-wide mb-1">Game Type</div>
-                <div class="text-lg font-bold text-cyan-400">{{ getGameTypeName(server.game) }}</div>
+                <div class="text-lg font-bold text-cyan-400">{{ getGameTypeName(server.game_type) }}</div>
               </div>
               <div class="text-4xl opacity-20">🎮</div>
             </div>

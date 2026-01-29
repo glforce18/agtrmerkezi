@@ -104,21 +104,83 @@
 
               <!-- Features -->
               <div class="space-y-2">
-                <div class="flex items-center justify-between text-xs px-2 py-1 bg-dark-bg/50 rounded">
-                  <span class="text-gray-400">Slot:</span>
-                  <span class="text-white font-semibold">{{ pkg.max_slots }}</span>
+                <!-- Slots -->
+                <div class="flex items-center justify-between text-xs px-3 py-2 bg-dark-bg/50 rounded hover:bg-dark-bg/70 transition-colors">
+                  <span class="text-gray-400 flex items-center gap-1">
+                    <span class="text-primary">👥</span> Maksimum Oyuncu
+                  </span>
+                  <span class="text-white font-bold">{{ pkg.max_slots }} Kişi</span>
                 </div>
 
-                <div class="flex items-center justify-center gap-4 text-xs text-gray-400 py-2">
-                  <span class="flex items-center gap-1">
-                    <span class="text-green-400">✓</span> DDoS
+                <!-- Tick Rate -->
+                <div class="flex items-center justify-between text-xs px-3 py-2 bg-dark-bg/50 rounded hover:bg-dark-bg/70 transition-colors">
+                  <span class="text-gray-400 flex items-center gap-1">
+                    <span class="text-primary">⚡</span> Tick Rate
                   </span>
-                  <span class="flex items-center gap-1">
-                    <span class="text-green-400">✓</span> RCON
+                  <span class="text-white font-bold">1000 FPS</span>
+                </div>
+
+                <!-- Ping -->
+                <div class="flex items-center justify-between text-xs px-3 py-2 bg-dark-bg/50 rounded hover:bg-dark-bg/70 transition-colors">
+                  <span class="text-gray-400 flex items-center gap-1">
+                    <span class="text-primary">📡</span> Ortalama Ping
                   </span>
-                  <span class="flex items-center gap-1">
-                    <span class="text-green-400">✓</span> 24/7
+                  <span class="text-white font-bold">5-15ms</span>
+                </div>
+
+                <!-- Mod Support -->
+                <div class="flex items-center justify-between text-xs px-3 py-2 bg-dark-bg/50 rounded hover:bg-dark-bg/70 transition-colors">
+                  <span class="text-gray-400 flex items-center gap-1">
+                    <span class="text-primary">🎮</span> Mod/Plugin
                   </span>
+                  <span class="text-white font-bold">Sınırsız</span>
+                </div>
+
+                <!-- Map Support -->
+                <div class="flex items-center justify-between text-xs px-3 py-2 bg-dark-bg/50 rounded hover:bg-dark-bg/70 transition-colors">
+                  <span class="text-gray-400 flex items-center gap-1">
+                    <span class="text-primary">🗺️</span> Harita Desteği
+                  </span>
+                  <span class="text-white font-bold">Tüm Haritalar</span>
+                </div>
+
+                <!-- Admin Tools -->
+                <div class="flex items-center justify-between text-xs px-3 py-2 bg-dark-bg/50 rounded hover:bg-dark-bg/70 transition-colors">
+                  <span class="text-gray-400 flex items-center gap-1">
+                    <span class="text-primary">🛠️</span> Admin Panel
+                  </span>
+                  <span class="text-white font-bold">Web + RCON</span>
+                </div>
+
+                <!-- Included Features -->
+                <div class="border-t border-primary/20 pt-3 mt-2">
+                  <div class="text-xs text-gray-400 mb-2 font-semibold">🎯 Oyun Özellikleri:</div>
+                  <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex items-center gap-1 text-green-400">
+                      <span>✓</span> <span class="text-gray-300">AMX Mod X</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-green-400">
+                      <span>✓</span> <span class="text-gray-300">MetaMod</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-green-400">
+                      <span>✓</span> <span class="text-gray-300">Custom Maplar</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-green-400">
+                      <span>✓</span> <span class="text-gray-300">Fast Download</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-green-400">
+                      <span>✓</span> <span class="text-gray-300">HLTV Desteği</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-green-400">
+                      <span>✓</span> <span class="text-gray-300">Anti-Cheat</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-green-400">
+                      <span>✓</span> <span class="text-gray-300">Stat Tracking</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-green-400">
+                      <span>✓</span> <span class="text-gray-300">7/24 Aktif</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -160,17 +222,6 @@
               <p class="text-gray-500 text-xs mt-1">Sunucunuzun görünen adı</p>
             </div>
 
-            <!-- Server Location -->
-            <div>
-              <label class="block text-gray-400 text-sm mb-2">Sunucu Lokasyonu</label>
-              <select v-model="orderForm.location" class="form-input" required>
-                <option value="">Seçiniz</option>
-                <option value="istanbul">İstanbul, TR</option>
-                <option value="ankara">Ankara, TR</option>
-                <option value="izmir">İzmir, TR</option>
-              </select>
-            </div>
-
             <!-- Duration -->
             <div>
               <label class="block text-gray-400 text-sm mb-2">Süre</label>
@@ -195,11 +246,6 @@
                 <div class="flex justify-between">
                   <span class="text-gray-400">Süre:</span>
                   <span class="text-white">{{ orderForm.duration }} Ay</span>
-                </div>
-
-                <div class="flex justify-between">
-                  <span class="text-gray-400">Lokasyon:</span>
-                  <span class="text-white">{{ getLocationText(orderForm.location) }}</span>
                 </div>
 
                 <div v-if="discount > 0" class="flex justify-between text-green-400">
@@ -272,7 +318,6 @@ const error = ref(null)
 
 const orderForm = ref({
   server_name: '',
-  location: '',
   duration: '1',
   accept_terms: false
 })
@@ -298,9 +343,22 @@ onMounted(async () => {
 const fetchPackages = async () => {
   try {
     const response = await serversAPI.getPackages()
-    packages.value = response.data
+    // Map API response to component expectations
+    const apiData = response.data.data || response.data.packages || response.data
+    packages.value = apiData.map(pkg => ({
+      id: pkg.id,
+      slug: pkg.slug,
+      name: pkg.name,
+      game_type: pkg.game_type,
+      description: pkg.description || 'Yüksek performanslı oyun sunucusu - AMX Mod X, MetaMod ve tüm plugin desteği',
+      max_slots: pkg.max_slots || pkg.slots,  // API returns 'max_slots'
+      price: pkg.price || pkg.price_monthly,  // API returns 'price'
+      is_popular: pkg.is_popular || false,
+      is_active: pkg.is_active !== false
+    }))
   } catch (err) {
     console.error('Failed to fetch packages:', err)
+    error.value = 'Paketler yüklenirken hata oluştu'
   } finally {
     loading.value = false
   }
@@ -341,18 +399,21 @@ const handleOrder = async () => {
   ordering.value = true
 
   try {
-    const response = await serversAPI.orderServer({
+    // Use wallet order endpoint
+    const response = await serversAPI.orderPackageWallet({
       package_id: selectedPackage.value.id,
       server_name: orderForm.value.server_name,
-      location: orderForm.value.location,
-      duration: parseInt(orderForm.value.duration)
+      months: parseInt(orderForm.value.duration),
+      payment_type: 'TL', // Use TL wallet by default
+      auto_renew: true // Enable auto-renewal by default
     })
 
-    // Redirect to payment page or server details
-    if (response.data.payment_url) {
-      window.location.href = response.data.payment_url
-    } else if (response.data.server_id) {
-      router.push(`/servers/${response.data.server_id}`)
+    // Show success message and redirect to server panel
+    if (response.data.success && response.data.order && response.data.order.server_id) {
+      // Show success toast
+      alert(`Siparişiniz oluşturuldu! Admin onayından sonra sunucunuz kurulacak.`)
+      // Redirect to my servers page
+      router.push('/servers/my')
     }
   } catch (err) {
     error.value = err.response?.data?.detail || 'Sipariş oluşturulamadı'
@@ -365,17 +426,8 @@ const getDurationText = (duration) => {
   return duration === 'monthly' ? 'Ay' : 'Yıl'
 }
 
-const getLocationText = (location) => {
-  const locations = {
-    'istanbul': 'İstanbul, TR',
-    'ankara': 'Ankara, TR',
-    'izmir': 'İzmir, TR'
-  }
-  return locations[location] || 'Seçiniz'
-}
-
 const getPackageImage = (packageName) => {
-  // Map package names to image files - use absolute URL for runtime loading
+  // Map package names to image files
   const baseUrl = window.location.origin
   const imageMap = {
     'Half-Life Deathmatch': `${baseUrl}/static/images/packages/hlpaket.png`,
@@ -383,7 +435,7 @@ const getPackageImage = (packageName) => {
     'CS 1.6 Pro/Public': `${baseUrl}/static/images/packages/cspropublicpaket.png`,
     'CS 1.6 Fun/Zombie': `${baseUrl}/static/images/packages/cszombiefunpaket.png`
   }
-  return imageMap[packageName] || `${baseUrl}/static/images/packages/hlpaket.png`
+  return imageMap[packageName] || `${baseUrl}/static/images/packages/default.png`
 }
 
 const handleImageError = (event) => {
@@ -414,7 +466,7 @@ const getBackgroundImage = (name) => {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   @apply border-2 border-primary/20 rounded-xl cursor-pointer transition-all duration-500 relative shadow-xl overflow-hidden;
-  min-height: 500px;
+  min-height: 680px;
   display: flex;
   flex-direction: column;
   animation: fadeInUp 0.6s ease-out forwards;

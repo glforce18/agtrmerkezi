@@ -152,10 +152,10 @@ async def get_servers(
         )
 
     return {
-        "servers": servers_data,
+        "data": servers_data,  # Changed from "servers" to "data" for consistency
         "total": total,
         "page": page,
-        "limit": limit,
+        "per_page": limit,
         "pages": (total + limit - 1) // limit if limit > 0 else 1,
     }
 
@@ -187,9 +187,19 @@ async def get_server_stats(db: Session = Depends(get_db), admin: User = Depends(
         or 0
     )
 
-    # Error servers
+    # Pending servers
+    pending_servers = (
+        db.query(func.count(GameServer.id))
+        .filter(GameServer.status == ServerStatus.PENDING)
+        .scalar()
+        or 0
+    )
+
+    # Suspended servers (error state)
     error_servers = (
-        db.query(func.count(GameServer.id)).filter(GameServer.status == ServerStatus.ERROR).scalar()
+        db.query(func.count(GameServer.id))
+        .filter(GameServer.status == ServerStatus.SUSPENDED)
+        .scalar()
         or 0
     )
 
@@ -230,10 +240,11 @@ async def get_server_stats(db: Session = Depends(get_db), admin: User = Depends(
     )
 
     return {
-        "total_servers": total_servers,
-        "running_servers": running_servers,
-        "stopped_servers": stopped_servers,
-        "error_servers": error_servers,
+        "total": total_servers,
+        "running": running_servers,
+        "stopped": stopped_servers,
+        "pending": pending_servers,
+        "error": error_servers,
         "total_players_online": total_players,
         "game_type_distribution": game_types,
         "new_servers_this_week": new_servers_week,

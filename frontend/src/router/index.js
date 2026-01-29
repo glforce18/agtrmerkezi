@@ -21,13 +21,11 @@ const router = createRouter({
     },
     {
       path: '/register',
-      name: 'register',
-      component: () => import('@/views/auth/Register.vue'),
-      meta: { guest: true }
+      redirect: '/login'
     },
     {
       path: '/auth/register',
-      redirect: '/register'
+      redirect: '/login'
     },
     {
       path: '/oauth-callback',
@@ -109,6 +107,42 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: () => import('@/views/admin/AdminDashboard.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: () => import('@/views/admin/AdminUsers.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/servers',
+      name: 'admin-servers',
+      component: () => import('@/views/admin/AdminServers.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/payments',
+      name: 'admin-payments',
+      component: () => import('@/views/admin/AdminPayments.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/packages',
+      name: 'admin-packages',
+      component: () => import('@/views/admin/AdminPackages.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/server-approval',
+      name: 'admin-server-approval',
+      component: () => import('@/views/admin/ServerApproval.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/settings',
+      name: 'admin-settings',
+      component: () => import('@/views/admin/AdminSettings.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
     }
   ],

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Merhaba {{ user.username }}!</h2>
+
+<div class="alert alert-success">
+    <strong>✓ Sunucunuz Başarıyla Yenilendi!</strong>
+</div>
+
+<div class="info-box">
+    <p><strong>Sunucu:</strong> {{ server.name }}</p>
+    <p><strong>Ödenen Tutar:</strong> {{ amount }} TL</p>
+    <p><strong>Yeni Bitiş Tarihi:</strong> {{ new_expiry_date }}</p>
+</div>
+
+<p>
+    Sunucunuz otomatik olarak yenilendi ve {{ amount }} TL bakiyenizden çekildi.
+    Sunucunuz {{ new_expiry_date }} tarihine kadar aktif olarak hizmet verecektir.
+</p>
+
+<a href="https://agtrmerkezi.com/panel/servers/{{ server.id }}" class="button">Sunucu Yönetimine Git</a>
+
+<p style="margin-top: 20px;">
+    Kesintisiz hizmet için teşekkür ederiz!
+</p>
+
+<p>
+    Saygılarımızla,<br>
+    <strong>AGTR Merkezi Ekibi</strong>
+</p>
+{% endblock %}

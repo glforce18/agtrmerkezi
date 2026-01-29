@@ -32,7 +32,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/api/payments/callback",  # Payment gateway callbacks
             "/api/media",  # Protected by auth middleware
             "/api/smart-media",  # Protected by auth middleware
-            "/api/admin/media",  # Admin media upload - protected by admin auth
+            "/api/admin",  # Admin API - protected by admin auth
             "/api/notifications",  # Notification actions
             "/api/user/avatar",  # Avatar upload
             "/api/maintenance",  # Maintenance admin - protected by admin auth
@@ -41,6 +41,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/api/tournaments",  # Tournament API - protected by JWT auth
             "/api/clans",  # Clans API - protected by JWT auth
             "/api/leaderboard",  # Leaderboard API - protected by JWT auth
+            "/api/servers",  # Server management API - protected by JWT auth
+            "/api/wallet",  # Wallet API - protected by JWT auth
             "/api/errors",  # Error reporting
             "/ws",  # WebSocket connections
         ]

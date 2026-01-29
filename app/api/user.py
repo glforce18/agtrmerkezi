@@ -1006,7 +1006,8 @@ def steam64_to_steam2(steam64: str) -> str:
         y = steam64_int & 1
         z = (steam64_int - 76561197960265728) >> 1
         return f"STEAM_0:{y}:{z}"
-    except:
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Failed to convert Steam64 to Steam2: {e}")
         return None
 
 
@@ -1016,7 +1017,8 @@ def steam64_to_steam3(steam64: str) -> str:
         steam64_int = int(steam64)
         account_id = steam64_int - 76561197960265728
         return f"[U:1:{account_id}]"
-    except:
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Failed to convert Steam64 to Steam3: {e}")
         return None
 
 
@@ -1030,8 +1032,8 @@ def steam2_to_steam64(steam2: str) -> str:
             z = int(match.group(2))
             steam64 = 76561197960265728 + (z * 2) + y
             return str(steam64)
-    except:
-        pass
+    except (ValueError, AttributeError) as e:
+        logger.warning(f"Failed to convert Steam2 to Steam64: {e}")
     return None
 
 
@@ -1090,16 +1092,6 @@ async def get_public_profile_by_username(
     return await _get_public_profile(username, db, current_user)
 
 
-@router.get("/users/{username}")
-async def get_public_profile(
-    username: str,
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
-):
-    """Public profil goruntule"""
-    return await _get_public_profile(username, db, current_user)
-
-
 async def _get_public_profile(username: str, db: Session, current_user: Optional[User]):
     """Public profil helper fonksiyonu"""
     from sqlalchemy import func
@@ -1131,8 +1123,8 @@ async def _get_public_profile(username: str, db: Session, current_user: Optional
     servers_count = 0
     try:
         servers_count = db.query(GameServer).filter(GameServer.owner_id == user.id).count()
-    except:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to get server count for user {user.id}: {e}")
 
     # Son forum konularini getir (opsiyonel)
     recent_topics = []

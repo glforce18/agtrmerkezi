@@ -107,7 +107,7 @@
               {{ server.name }}
             </h3>
             <div class="text-primary text-sm font-medium">
-              {{ getGameTypeName(server.game) }}
+              {{ getGameTypeName(server.game_type) }}
             </div>
           </div>
 
@@ -115,11 +115,11 @@
           <div class="grid grid-cols-2 gap-3 text-sm">
             <div class="bg-dark-elevated rounded-lg p-3">
               <div class="text-text-muted text-xs mb-1">IP Address</div>
-              <div class="text-text-primary font-mono text-sm">{{ server.ip }}:{{ server.port }}</div>
+              <div class="text-text-primary font-mono text-sm">{{ server.ip_address }}:{{ server.port }}</div>
             </div>
             <div class="bg-dark-elevated rounded-lg p-3">
               <div class="text-text-muted text-xs mb-1">Players</div>
-              <div class="text-status-success font-semibold">{{ server.current_players }}/{{ server.max_players }}</div>
+              <div class="text-status-success font-semibold">{{ server.current_players || 0 }}/{{ server.slots }}</div>
             </div>
             <div class="bg-dark-elevated rounded-lg p-3 col-span-2">
               <div class="text-text-muted text-xs mb-1">Current Map</div>
@@ -129,33 +129,57 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex gap-2">
-          <button
-            v-if="server.status === 'stopped'"
-            @click="handleStart(server.id)"
-            class="btn btn-secondary flex-1 text-status-success border-status-success/30 hover:bg-status-success/10"
-          >
-            ▶ Start
-          </button>
-          <button
-            v-if="server.status === 'running'"
-            @click="handleStop(server.id)"
-            class="btn btn-secondary flex-1 text-status-error border-status-error/30 hover:bg-status-error/10"
-          >
-            ⏹ Stop
-          </button>
-          <button
-            v-if="server.status === 'running'"
-            @click="handleRestart(server.id)"
-            class="btn btn-secondary flex-1 text-status-warning border-status-warning/30 hover:bg-status-warning/10"
-          >
-            🔄 Restart
-          </button>
-          <router-link :to="`/servers/${server.id}`" class="flex-1">
-            <button class="btn btn-primary w-full">
-              🎮 Manage
+        <div class="flex flex-col gap-2">
+          <!-- Status Messages for non-operational servers -->
+          <div v-if="server.status === 'pending'" class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
+            <p class="text-yellow-300 text-sm">⏳ Admin onayı bekleniyor</p>
+          </div>
+          <div v-else-if="server.status === 'installing'" class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-center">
+            <p class="text-blue-300 text-sm">🔧 Sunucu kuruluyor...</p>
+            <p class="text-blue-200 text-xs mt-1">Kurulum tamamlandığında erişebilirsiniz</p>
+          </div>
+          <div v-else-if="server.status === 'rejected'" class="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-center">
+            <p class="text-red-300 text-sm">❌ Sunucu reddedildi</p>
+            <p class="text-red-200 text-xs mt-1">Destek ile iletişime geçin</p>
+          </div>
+          <div v-else-if="server.status === 'error'" class="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-center">
+            <p class="text-red-300 text-sm">⚠️ Kurulum başarısız</p>
+            <p class="text-red-200 text-xs mt-1">Destek ekibine bildirildi</p>
+          </div>
+          <div v-else-if="server.status === 'suspended'" class="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-center">
+            <p class="text-orange-300 text-sm">⏸ Sunucu askıda</p>
+            <p class="text-orange-200 text-xs mt-1">Ödeme gerekli</p>
+          </div>
+
+          <!-- Normal controls for running/stopped servers -->
+          <div v-else class="flex gap-2">
+            <button
+              v-if="server.status === 'stopped'"
+              @click="handleStart(server.id)"
+              class="btn btn-secondary flex-1 text-status-success border-status-success/30 hover:bg-status-success/10"
+            >
+              ▶ Start
             </button>
-          </router-link>
+            <button
+              v-if="server.status === 'running'"
+              @click="handleStop(server.id)"
+              class="btn btn-secondary flex-1 text-status-error border-status-error/30 hover:bg-status-error/10"
+            >
+              ⏹ Stop
+            </button>
+            <button
+              v-if="server.status === 'running'"
+              @click="handleRestart(server.id)"
+              class="btn btn-secondary flex-1 text-status-warning border-status-warning/30 hover:bg-status-warning/10"
+            >
+              🔄 Restart
+            </button>
+            <router-link :to="`/servers/${server.id}`" class="flex-1">
+              <button class="btn btn-primary w-full">
+                🎮 Manage
+              </button>
+            </router-link>
+          </div>
         </div>
       </div>
     </div>
@@ -183,7 +207,7 @@ const totalPlayers = computed(() => {
 })
 
 const totalSlots = computed(() => {
-  return serversStore.servers.reduce((sum, s) => sum + (s.max_players || 0), 0)
+  return serversStore.servers.reduce((sum, s) => sum + (s.slots || 0), 0)
 })
 
 // Status helpers
@@ -192,9 +216,15 @@ const statusBadgeClass = (status) => {
     running: 'badge-success',
     stopped: 'badge-neutral',
     starting: 'badge-warning',
-    error: 'badge-error'
+    pending: 'badge-warning',
+    installing: 'badge-info',
+    rejected: 'badge-error',
+    error: 'badge-error',
+    suspended: 'badge-error',
+    expired: 'badge-neutral',
+    cancelled: 'badge-neutral'
   }
-  return classes[status] || classes.stopped
+  return classes[status?.toLowerCase()] || classes.stopped
 }
 
 const statusDotClass = (status) => {
@@ -202,9 +232,15 @@ const statusDotClass = (status) => {
     running: 'online',
     stopped: 'offline',
     starting: 'online',
-    error: 'offline'
+    pending: 'offline',
+    installing: 'online',
+    rejected: 'offline',
+    error: 'offline',
+    suspended: 'offline',
+    expired: 'offline',
+    cancelled: 'offline'
   }
-  return classes[status] || classes.stopped
+  return classes[status?.toLowerCase()] || classes.stopped
 }
 
 const statusText = (status) => {
@@ -212,9 +248,15 @@ const statusText = (status) => {
     running: 'Online',
     stopped: 'Offline',
     starting: 'Starting',
-    error: 'Error'
+    pending: '🕐 Onay Bekleniyor',
+    installing: '🔧 Kuruluyor',
+    rejected: '❌ Reddedildi',
+    error: '⚠️ Hata',
+    suspended: '⏸ Askıda',
+    expired: '⏰ Süresi Doldu',
+    cancelled: 'İptal Edildi'
   }
-  return texts[status] || 'Offline'
+  return texts[status?.toLowerCase()] || 'Offline'
 }
 
 const getGameTypeName = (game) => {
