@@ -1,0 +1,66 @@
+name: Docker Build & Test
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  docker-build:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Check if Dockerfile exists
+      id: check_dockerfile
+      run: |
+        if [ -f "Dockerfile" ]; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build Docker image
+      if: steps.check_dockerfile.outputs.exists == 'true'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: agtrmerkezi:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test Docker image
+      if: steps.check_dockerfile.outputs.exists == 'true'
+      run: |
+        docker run --rm agtrmerkezi:test python --version
+        docker run --rm agtrmerkezi:test pip list
+
+    - name: Run security scan on Docker image
+      if: steps.check_dockerfile.outputs.exists == 'true'
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'agtrmerkezi:test'
+        format: 'table'
+        exit-code: '0'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Export Docker image
+      if: steps.check_dockerfile.outputs.exists == 'true'
+      run: |
+        docker save agtrmerkezi:test | gzip > agtrmerkezi-image.tar.gz
+
+    - name: Upload Docker image artifact
+      if: steps.check_dockerfile.outputs.exists == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: agtrmerkezi-image.tar.gz
+        retention-days: 1

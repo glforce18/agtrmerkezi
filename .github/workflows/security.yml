@@ -1,0 +1,189 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight
+
+jobs:
+  # ============================================================================
+  # Dependency Scanning
+  # ============================================================================
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Snyk to check for vulnerabilities (Python)
+      uses: snyk/actions/python@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+    - name: Run Snyk to check for vulnerabilities (Node.js)
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+    - name: Upload Snyk results to GitHub
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      continue-on-error: true
+      with:
+        sarif_file: snyk.sarif
+
+  # ============================================================================
+  # OWASP Dependency Check
+  # ============================================================================
+  owasp-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      id: depcheck
+      with:
+        project: 'agtrmerkezi'
+        path: '.'
+        format: 'HTML'
+        args: >
+          --enableRetired
+          --enableExperimental
+
+    - name: Upload OWASP report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: owasp-dependency-check-report
+        path: ${{ github.workspace }}/reports
+
+  # ============================================================================
+  # CodeQL Analysis
+  # ============================================================================
+  codeql:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'python', 'javascript' ]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{ matrix.language }}"
+
+  # ============================================================================
+  # Secret Scanning
+  # ============================================================================
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: TruffleHog Secret Scan
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --debug --only-verified
+
+  # ============================================================================
+  # Container Scanning
+  # ============================================================================
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: |
+        if [ -f Dockerfile ]; then
+          docker build -t agtrmerkezi:${{ github.sha }} .
+        else
+          echo "No Dockerfile found, skipping"
+          exit 0
+        fi
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      if: hashFiles('Dockerfile') != ''
+      with:
+        image-ref: 'agtrmerkezi:${{ github.sha }}'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # ============================================================================
+  # Security Summary
+  # ============================================================================
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, owasp-check, codeql, secret-scan]
+    if: always()
+
+    steps:
+    - name: Check results
+      run: |
+        echo "Dependency Scan: ${{ needs.dependency-scan.result }}"
+        echo "OWASP Check: ${{ needs.owasp-check.result }}"
+        echo "CodeQL: ${{ needs.codeql.result }}"
+        echo "Secret Scan: ${{ needs.secret-scan.result }}"
+
+        if [ "${{ needs.dependency-scan.result }}" = "failure" ] || \
+           [ "${{ needs.owasp-check.result }}" = "failure" ] || \
+           [ "${{ needs.codeql.result }}" = "failure" ] || \
+           [ "${{ needs.secret-scan.result }}" = "failure" ]; then
+          echo "⚠️ Some security checks failed!"
+          exit 1
+        else
+          echo "✅ All security checks passed!"
+        fi

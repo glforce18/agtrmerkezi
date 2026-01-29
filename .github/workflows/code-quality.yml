@@ -1,0 +1,218 @@
+name: Code Quality Analysis
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  # ============================================================================
+  # Python Code Quality
+  # ============================================================================
+  python-quality:
+    name: Python Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install black isort flake8 mypy bandit pylint radon
+
+    - name: Code formatting check
+      run: |
+        echo "Checking code formatting with Black..."
+        black --check --diff app/ tests/ || true
+
+    - name: Import sorting check
+      run: |
+        echo "Checking import sorting with isort..."
+        isort --check-only --diff app/ tests/ || true
+
+    - name: Linting with flake8
+      run: |
+        echo "Running flake8 linting..."
+        flake8 app/ tests/ --count --statistics --max-line-length=127
+
+    - name: Type checking with mypy
+      run: |
+        echo "Running mypy type checking..."
+        mypy app/ || true
+
+    - name: Security check with Bandit
+      run: |
+        echo "Running Bandit security check..."
+        bandit -r app/ -f json -o bandit-report.json || true
+
+    - name: Code quality with Pylint
+      run: |
+        echo "Running Pylint code quality check..."
+        pylint app/ --output-format=text --exit-zero
+
+    - name: Complexity analysis with Radon
+      run: |
+        echo "Analyzing code complexity..."
+        radon cc app/ -a -nb
+        radon mi app/ -nb
+
+    - name: Upload quality reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-quality-reports
+        path: |
+          bandit-report.json
+
+  # ============================================================================
+  # JavaScript/Vue Code Quality
+  # ============================================================================
+  javascript-quality:
+    name: JavaScript/Vue Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Run ESLint
+      working-directory: ./frontend
+      run: |
+        npm run lint || true
+
+    - name: Type checking
+      working-directory: ./frontend
+      run: |
+        npm run type-check || true
+
+  # ============================================================================
+  # Code Metrics
+  # ============================================================================
+  code-metrics:
+    name: Code Metrics & Stats
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Count lines of code
+      run: |
+        echo "=== Lines of Code ==="
+        echo "Python files:"
+        find app/ -name "*.py" | xargs wc -l | tail -1
+        echo ""
+        echo "JavaScript/Vue files:"
+        find frontend/src -name "*.js" -o -name "*.vue" | xargs wc -l | tail -1 || true
+        echo ""
+        echo "Test files:"
+        find tests/ -name "*.py" | xargs wc -l | tail -1
+
+    - name: Count files
+      run: |
+        echo "=== File Counts ==="
+        echo "Python files: $(find app/ -name "*.py" | wc -l)"
+        echo "Test files: $(find tests/ -name "*.py" | wc -l)"
+        echo "JavaScript/Vue files: $(find frontend/src -name "*.js" -o -name "*.vue" | wc -l || echo 0)"
+
+    - name: Generate code statistics
+      run: |
+        echo "=== Code Statistics ==="
+        git log --oneline | wc -l | awk '{print "Total commits: " $1}'
+        git shortlog -sn --no-merges | head -5
+        echo ""
+        echo "Repository size:"
+        du -sh .
+
+  # ============================================================================
+  # Accessibility Tests
+  # ============================================================================
+  accessibility:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: pip install -r requirements.txt
+
+    - name: Start backend
+      run: |
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        sleep 10
+      env:
+        DATABASE_URL: sqlite:///./test.db
+        SECRET_KEY: test_secret_key
+
+    - name: Install Playwright
+      working-directory: ./frontend
+      run: npx playwright install --with-deps chromium
+
+    - name: Run accessibility tests
+      working-directory: ./frontend
+      run: |
+        npx playwright test tests/e2e/homepage.spec.js --grep "accessibility"
+      env:
+        BASE_URL: http://localhost:8000
+
+  # ============================================================================
+  # Quality Summary
+  # ============================================================================
+  quality-summary:
+    name: Quality Summary
+    runs-on: ubuntu-latest
+    needs: [python-quality, javascript-quality, code-metrics, accessibility]
+    if: always()
+
+    steps:
+    - name: Check results
+      run: |
+        echo "Python Quality: ${{ needs.python-quality.result }}"
+        echo "JavaScript Quality: ${{ needs.javascript-quality.result }}"
+        echo "Code Metrics: ${{ needs.code-metrics.result }}"
+        echo "Accessibility: ${{ needs.accessibility.result }}"
+
+        if [ "${{ needs.python-quality.result }}" = "failure" ] || \
+           [ "${{ needs.javascript-quality.result }}" = "failure" ] || \
+           [ "${{ needs.code-metrics.result }}" = "failure" ] || \
+           [ "${{ needs.accessibility.result }}" = "failure" ]; then
+          echo "⚠️ Some quality checks failed!"
+          exit 1
+        else
+          echo "✅ All quality checks passed!"
+        fi

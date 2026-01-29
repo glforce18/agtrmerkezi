@@ -1,0 +1,346 @@
+name: Comprehensive CI Pipeline
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+env:
+  NODE_VERSION: '22'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ============================================================================
+  # Backend Tests
+  # ============================================================================
+  backend-tests:
+    name: Backend Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: agtrmerkezi
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: agtrmerkezi_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpq-dev
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install black isort flake8 bandit mypy
+
+    - name: Check code formatting with Black
+      run: black --check app/ tests/
+      continue-on-error: true
+
+    - name: Check imports with isort
+      run: isort --check-only app/ tests/
+      continue-on-error: true
+
+    - name: Lint with flake8
+      run: |
+        flake8 app/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 app/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+
+    - name: Type check with mypy
+      run: mypy app/
+      continue-on-error: true
+
+    - name: Security check with Bandit
+      run: bandit -r app/ -f json -o bandit-report.json
+      continue-on-error: true
+
+    - name: Run unit tests
+      env:
+        DATABASE_URL: postgresql://agtrmerkezi:test_password@localhost:5432/agtrmerkezi_test
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test_secret_key_for_ci
+        DEBUG: "true"
+      run: |
+        pytest tests/ -v -m "not slow" --cov=app --cov-report=term-missing --cov-report=xml --cov-report=html
+
+    - name: Run integration tests
+      env:
+        DATABASE_URL: postgresql://agtrmerkezi:test_password@localhost:5432/agtrmerkezi_test
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test_secret_key_for_ci
+        DEBUG: "true"
+      run: |
+        pytest tests/ -v -m "integration" --cov=app --cov-append --cov-report=xml
+      continue-on-error: true
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: backend-py${{ matrix.python-version }}
+        name: backend-${{ matrix.python-version }}
+      continue-on-error: true
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-test-results-${{ matrix.python-version }}
+        path: |
+          coverage.xml
+          htmlcov/
+          bandit-report.json
+
+  # ============================================================================
+  # Frontend Tests
+  # ============================================================================
+  frontend-unit-tests:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Run ESLint
+      working-directory: ./frontend
+      run: npm run lint
+      continue-on-error: true
+
+    - name: Type check
+      working-directory: ./frontend
+      run: npm run type-check
+      continue-on-error: true
+
+    - name: Run unit tests
+      working-directory: ./frontend
+      run: npm run test:coverage
+
+    - name: Upload coverage
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./frontend/coverage/coverage-final.json
+        flags: frontend
+        name: frontend-unit
+      continue-on-error: true
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-unit-test-results
+        path: |
+          frontend/coverage/
+
+  frontend-build:
+    name: Frontend Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Build frontend
+      working-directory: ./frontend
+      run: npm run build
+      env:
+        NODE_ENV: production
+
+    - name: Check build output
+      run: |
+        if [ ! -d "static/dist" ]; then
+          echo "Build output directory not found!"
+          exit 1
+        fi
+        echo "Build successful! Output size:"
+        du -sh static/dist
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: static/dist
+        retention-days: 7
+
+  # ============================================================================
+  # E2E Tests
+  # ============================================================================
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-build]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Install Playwright browsers
+      working-directory: ./frontend
+      run: npx playwright install --with-deps chromium firefox
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Start backend server
+      run: |
+        pip install -r requirements.txt
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        sleep 10
+      env:
+        DATABASE_URL: sqlite:///./test.db
+        SECRET_KEY: test_secret_key
+
+    - name: Run E2E tests
+      working-directory: ./frontend
+      run: npm run test:e2e
+      env:
+        BASE_URL: http://localhost:8000
+
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: frontend/playwright-report
+        retention-days: 7
+
+  # ============================================================================
+  # Database Migration Tests
+  # ============================================================================
+  migration-tests:
+    name: Database Migration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: agtrmerkezi
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: agtrmerkezi_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Test migrations
+      env:
+        DATABASE_URL: postgresql://agtrmerkezi:test_password@localhost:5432/agtrmerkezi_test
+      run: |
+        pytest tests/test_migrations.py -v -m slow
+
+  # ============================================================================
+  # Summary
+  # ============================================================================
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-unit-tests, frontend-build, e2e-tests, migration-tests]
+    if: always()
+
+    steps:
+    - name: Check results
+      run: |
+        echo "Backend Tests: ${{ needs.backend-tests.result }}"
+        echo "Frontend Unit Tests: ${{ needs.frontend-unit-tests.result }}"
+        echo "Frontend Build: ${{ needs.frontend-build.result }}"
+        echo "E2E Tests: ${{ needs.e2e-tests.result }}"
+        echo "Migration Tests: ${{ needs.migration-tests.result }}"
+
+        if [ "${{ needs.backend-tests.result }}" = "failure" ] || \
+           [ "${{ needs.frontend-unit-tests.result }}" = "failure" ] || \
+           [ "${{ needs.frontend-build.result }}" = "failure" ] || \
+           [ "${{ needs.e2e-tests.result }}" = "failure" ] || \
+           [ "${{ needs.migration-tests.result }}" = "failure" ]; then
+          echo "❌ Some checks failed!"
+          exit 1
+        else
+          echo "✅ All checks passed!"
+        fi
