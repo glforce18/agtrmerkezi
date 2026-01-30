@@ -215,7 +215,7 @@ class ServerInstallationService:
         self, server_id: int, mod_type: str, installation_id: int
     ) -> Tuple[bool, str]:
         """
-        Template'i sunucu dizinine kopyala (cache'ten extract veya rsync fallback)
+        Template'i sunucu dizinine kopyala (2-stage: base HLDS + mod folder)
 
         Args:
             server_id: Sunucu ID
@@ -255,29 +255,68 @@ class ServerInstallationService:
                 logger.warning(f"Cache extraction failed: {message}, falling back to rsync")
 
         # Fallback to rsync if cache not available or extraction failed
-        template_path = self.get_template_path(mod_type)
-        if not template_path:
-            return False, f"Template bulunamadi: {mod_type}"
+        logger.info(f"Using rsync fallback for {mod_type} (2-stage copy)")
 
-        logger.info(f"Using rsync fallback for {mod_type}")
+        template_base_path = Path(self.TEMPLATE_BASE)
+        if not template_base_path.exists():
+            return False, f"Template base bulunamadi: {self.TEMPLATE_BASE}"
 
-        # rsync ile kopyala
         try:
-            cmd = ["rsync", "-av", "--progress", f"{template_path}/", f"{server_path}/"]
+            # STAGE 1: Copy base HLDS files (hlds_run, .so files, etc.)
+            logger.info("Stage 1: Copying base HLDS files")
+
+            # Exclude mod folders during base copy
+            exclude_mods = ["valve", "cstrike", "ag", "ag_openag", "valvenewvalve", "valve_addon"]
+            exclude_args = []
+            for mod in exclude_mods:
+                exclude_args.extend(["--exclude", mod])
+
+            cmd_base = (
+                ["rsync", "-a"] + exclude_args + [f"{template_base_path}/", f"{server_path}/"]
+            )
 
             process = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                *cmd_base, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
 
             stdout, stderr = await process.communicate()
 
             if process.returncode != 0:
                 error_msg = stderr.decode() if stderr else "Bilinmeyen hata"
-                logger.error(f"rsync hatasi: {error_msg}")
-                return False, f"Kopyalama hatasi: {error_msg}"
+                logger.error(f"Stage 1 rsync hatasi: {error_msg}")
+                return False, f"Base HLDS kopyalama hatasi: {error_msg}"
 
-            logger.info(f"Template kopyalandi (rsync): {template_path} -> {server_path}")
-            return True, "Basarili (rsync fallback)"
+            logger.info(f"Stage 1 completed: Base HLDS copied to {server_path}")
+
+            # STAGE 2: Copy specific mod folder
+            mod_folder_name = self.TEMPLATES.get(mod_type)
+            if not mod_folder_name:
+                return False, f"Mod tipi bulunamadi: {mod_type}"
+
+            mod_source_path = template_base_path / mod_folder_name
+            if not mod_source_path.exists():
+                return False, f"Mod klasoru bulunamadi: {mod_source_path}"
+
+            mod_dest_path = server_path / mod_folder_name
+
+            logger.info(f"Stage 2: Copying mod folder {mod_folder_name}")
+
+            cmd_mod = ["rsync", "-a", f"{mod_source_path}/", f"{mod_dest_path}/"]
+
+            process = await asyncio.create_subprocess_exec(
+                *cmd_mod, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
+
+            stdout, stderr = await process.communicate()
+
+            if process.returncode != 0:
+                error_msg = stderr.decode() if stderr else "Bilinmeyen hata"
+                logger.error(f"Stage 2 rsync hatasi: {error_msg}")
+                return False, f"Mod kopyalama hatasi: {error_msg}"
+
+            logger.info(f"Stage 2 completed: Mod {mod_folder_name} copied to {mod_dest_path}")
+            logger.info(f"Template installation completed: {server_path}")
+            return True, "Basarili (2-stage rsync)"
 
         except Exception as e:
             logger.error(f"Template kopyalama hatasi: {e}")
@@ -607,20 +646,20 @@ echo "Server stopped: $SCREEN_NAME"
             self.db.commit()
 
             # Adim 1: Dizin hazirlama (10%)
-            self.update_installation_progress(installation_id, 0, 10)
+            await self.update_installation_progress(installation_id, 0, 10)
             server_path = self.get_server_path(server_id)
             server_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Adim 2: Template kopyalama (40%)
-            self.update_installation_progress(installation_id, 1, 20)
+            await self.update_installation_progress(installation_id, 1, 20)
             success, msg = await self.copy_template(server_id, mod_type, installation_id)
             if not success:
-                self.update_installation_progress(installation_id, 1, 20, msg)
+                await self.update_installation_progress(installation_id, 1, 20, msg)
                 return False, msg
-            self.update_installation_progress(installation_id, 1, 40)
+            await self.update_installation_progress(installation_id, 1, 40)
 
             # Adim 3: server.cfg yapilandirma (50%)
-            self.update_installation_progress(installation_id, 2, 45)
+            await self.update_installation_progress(installation_id, 2, 45)
             success, msg = self.configure_server(
                 server_id,
                 hostname=config.get("hostname", f"AGTR Server #{server_id}"),
@@ -630,30 +669,30 @@ echo "Server stopped: $SCREEN_NAME"
                 port=config.get("port", 27015),
             )
             if not success:
-                self.update_installation_progress(installation_id, 2, 45, msg)
+                await self.update_installation_progress(installation_id, 2, 45, msg)
                 return False, msg
-            self.update_installation_progress(installation_id, 2, 50)
+            await self.update_installation_progress(installation_id, 2, 50)
 
             # Adim 4: AMXModX ayarlari (60%)
-            self.update_installation_progress(installation_id, 3, 55)
+            await self.update_installation_progress(installation_id, 3, 55)
             # Ek AMXModX ayarlari yapilabilir
-            self.update_installation_progress(installation_id, 3, 60)
+            await self.update_installation_progress(installation_id, 3, 60)
 
             # Adim 5: Admin listesi (70%)
-            self.update_installation_progress(installation_id, 4, 65)
+            await self.update_installation_progress(installation_id, 4, 65)
             admins = config.get("admins", [])
             success, msg = self.setup_amxx_config(server_id, admins)
             if not success:
-                self.update_installation_progress(installation_id, 4, 65, msg)
+                await self.update_installation_progress(installation_id, 4, 65, msg)
                 return False, msg
-            self.update_installation_progress(installation_id, 4, 70)
+            await self.update_installation_progress(installation_id, 4, 70)
 
             # Auto-admin: Sahip otomatik admin olarak ekle
             try:
                 from app.services.amxx_admin import AMXXAdminService
 
                 amxx_service = AMXXAdminService(self.db)
-                success, msg = amxx_service.add_owner_as_admin(server_id, server.owner_id)
+                success, msg = amxx_service.add_owner_as_admin(server_id, installation.user_id)
                 if success:
                     logger.info(f"Auto-admin: {msg}")
                 else:
@@ -662,31 +701,31 @@ echo "Server stopped: $SCREEN_NAME"
                 logger.error(f"Auto-admin exception: {e}")
 
             # Adim 6: Startup script (80%)
-            self.update_installation_progress(installation_id, 5, 75)
+            await self.update_installation_progress(installation_id, 5, 75)
             success, msg = self.create_startup_script(
                 server_id, port=config.get("port", 27015), maxplayers=config.get("maxplayers", 32)
             )
             if not success:
-                self.update_installation_progress(installation_id, 5, 75, msg)
+                await self.update_installation_progress(installation_id, 5, 75, msg)
                 return False, msg
-            self.update_installation_progress(installation_id, 5, 80)
+            await self.update_installation_progress(installation_id, 5, 80)
 
             # Adim 7: Dogrulama (90%)
-            self.update_installation_progress(installation_id, 6, 85)
+            await self.update_installation_progress(installation_id, 6, 85)
             valid, missing = self.validate_installation(server_id)
             if not valid:
                 msg = f"Eksik dosyalar: {', '.join(missing)}"
-                self.update_installation_progress(installation_id, 6, 85, msg)
+                await self.update_installation_progress(installation_id, 6, 85, msg)
                 return False, msg
-            self.update_installation_progress(installation_id, 6, 90)
+            await self.update_installation_progress(installation_id, 6, 90)
 
             # Adim 8: Test baslat (100%)
-            self.update_installation_progress(installation_id, 7, 95)
+            await self.update_installation_progress(installation_id, 7, 95)
             success, msg = await self.test_start(server_id)
             if not success:
                 # Test hatasi kritik degil, uyari ver
                 logger.warning(f"Test baslat hatasi: {msg}")
-            self.update_installation_progress(installation_id, 7, 100)
+            await self.update_installation_progress(installation_id, 7, 100)
 
             # Tamamlandi
             installation.status = InstallationStatus.COMPLETED

@@ -150,7 +150,22 @@ async def get_my_servers(
         )
 
         return {
-            "data": [ServerResponse.from_orm(s).dict() for s in servers],
+            "servers": [
+                {
+                    "id": s.id,
+                    "name": s.name,
+                    "ip": s.ip_address,
+                    "port": s.port,
+                    "game": s.game_type.value if s.game_type else "unknown",
+                    "status": s.status.value if s.status else "unknown",
+                    "current_players": s.current_players or 0,
+                    "max_players": s.slots,
+                    "map": s.current_map,
+                    "created_at": s.created_at,
+                    "expires_at": s.expires_at,
+                }
+                for s in servers
+            ],
             "pagination": {
                 "page": page,
                 "per_page": per_page,
@@ -264,7 +279,7 @@ async def start_server(
 
         # Use ServerControlService
         control_service = ServerControlService(db)
-        result = await control_service.start_server(server)
+        result = await control_service.start_server(server_id)
 
         if result:
             return success_response(message="Server is starting")
@@ -297,7 +312,7 @@ async def stop_server(
             raise BadRequestError("Server is not running")
 
         control_service = ServerControlService(db)
-        result = await control_service.stop_server(server)
+        result = await control_service.stop_server(server_id)
 
         if result:
             return success_response(message="Server is stopping")
@@ -327,7 +342,7 @@ async def restart_server(
         validate_server_ownership(server, current_user)
 
         control_service = ServerControlService(db)
-        result = await control_service.restart_server(server)
+        result = await control_service.restart_server(server_id)
 
         if result:
             return success_response(message="Server is restarting")
@@ -797,9 +812,78 @@ async def order_server_with_wallet(
             f"payment_id={payment.id}, user_id={current_user.id}, wallet={wallet_type.value}"
         )
 
+        # Trigger server installation (background task)
+        async def trigger_installation():
+            """Background task to install server"""
+            from app.models.connection import SessionLocal
+            from app.models.database import Notification
+            from app.services.server_installation import ServerInstallationService
+
+            task_db = SessionLocal()
+            try:
+                install_service = ServerInstallationService(task_db)
+
+                # Create installation record
+                installation = await install_service.create_installation(
+                    server_id=server.id,
+                    user_id=current_user.id,
+                    mod_type=server.game_type.value,
+                    config={},
+                )
+
+                # Run installation
+                config = {
+                    "hostname": server.name,
+                    "rcon_password": server.rcon_password,
+                    "port": server.port,
+                    "maxplayers": server.slots,
+                    "admins": [],
+                }
+
+                success, msg = await install_service.run_installation(installation.id, config)
+
+                # Update server status
+                if success:
+                    server_obj = (
+                        task_db.query(GameServer).filter(GameServer.id == server.id).first()
+                    )
+                    if server_obj:
+                        server_obj.status = ServerStatus.STOPPED
+                        task_db.commit()
+
+                        # Send success notification
+                        notification = Notification(
+                            user_id=current_user.id,
+                            type="server",
+                            title="Sunucu Hazır!",
+                            message=f"{server.name} sunucunuz kuruldu ve başlatılmaya hazır.",
+                            link=f"/servers/{server.id}",
+                        )
+                        task_db.add(notification)
+                        task_db.commit()
+
+                        logger.info(f"Server installation completed: {server.id}")
+                else:
+                    logger.error(f"Server installation failed: {server.id} - {msg}")
+                    server_obj = (
+                        task_db.query(GameServer).filter(GameServer.id == server.id).first()
+                    )
+                    if server_obj:
+                        server_obj.status = ServerStatus.SUSPENDED
+                        task_db.commit()
+            except Exception as e:
+                logger.error(f"Installation task error: {e}")
+            finally:
+                task_db.close()
+
+        # Add background task
+        background_tasks.add_task(trigger_installation)
+
+        logger.info(f"Installation triggered for server_id={server.id}")
+
         return {
             "success": True,
-            "message": "Sunucu siparişiniz alındı! Admin onayından sonra kurulum başlayacak.",
+            "message": "Sunucu siparişiniz alındı! Kurulum başlatılıyor...",
             "order": {
                 "server_id": server.id,
                 "payment_id": payment.id,

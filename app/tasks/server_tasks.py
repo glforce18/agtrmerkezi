@@ -426,28 +426,10 @@ class ServerTaskManager:
         """
         Template cache'lerini guncelle
 
-        Gunluk calisir (3 AM):
-        - Tum template'leri yeniden cache'le
-        - Cache validation yap
+        DISABLED: Cache system temporarily disabled, using direct rsync instead
         """
-        db = self.get_db()
-        try:
-            from app.services.template_cache_service import update_template_caches
-
-            result = await update_template_caches(db)
-
-            success_count = sum(1 for s in result["cache_results"].values() if s)
-            total = len(result["cache_results"])
-
-            logger.info(
-                f"Template cache update: {success_count}/{total} cached, "
-                f"Total size: {result['stats']['total_size_mb']} MB"
-            )
-
-        except Exception as e:
-            logger.error(f"Template cache update task hatasi: {e}")
-        finally:
-            db.close()
+        logger.info("Template cache update: DISABLED (using direct rsync)")
+        return
 
     async def start(self):
         """Tum gorevleri baslat"""
