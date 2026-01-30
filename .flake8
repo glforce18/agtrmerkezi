@@ -13,10 +13,6 @@ exclude =
     .mypy_cache,
     node_modules,
     migrations
-ignore =
-    W292,  # no newline at end of file
-    W293,  # blank line contains whitespace
-    E203,  # whitespace before ':'
-    E501,  # line too long (handled by max-line-length)
+ignore = W292,W293,E203,E501
 per-file-ignores =
     __init__.py:F401
