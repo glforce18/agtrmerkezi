@@ -19,8 +19,7 @@ from app.api.common import (
     paginated_response,
     success_response,
 )
-
-# from app.api.servers import delete_physical_server  # TODO: Fix import - module not found
+from app.api.servers import delete_physical_server
 from app.core.security import get_current_admin
 from app.models.connection import get_db
 from app.models.database import (
@@ -425,7 +424,7 @@ async def reject_payment(
             server = db.query(GameServer).filter(GameServer.id == payment.server_id).first()
             if server:
                 server.status = ServerStatus.DELETED
-                # delete_physical_server(server.id)  # TODO: Fix - function not available
+                delete_physical_server(server.id)
 
         # Update bank transfer
         bank_transfer = db.query(BankTransfer).filter(BankTransfer.payment_id == payment_id).first()
