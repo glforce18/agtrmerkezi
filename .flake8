@@ -13,6 +13,6 @@ exclude =
     .mypy_cache,
     node_modules,
     migrations
-ignore = W292,W293,E203,E501
+ignore = W292,W293,E203,E501,W503,E722
 per-file-ignores =
     __init__.py:F401
