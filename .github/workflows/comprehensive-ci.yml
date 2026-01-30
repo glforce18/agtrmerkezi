@@ -97,6 +97,7 @@ jobs:
         SECRET_KEY: test_secret_key_for_ci
         DEBUG: "true"
       run: |
+        mkdir -p uploads
         pytest tests/ -v -m "not slow" --cov=app --cov-report=term-missing --cov-report=xml --cov-report=html
 
     - name: Run integration tests
@@ -106,6 +107,7 @@ jobs:
         SECRET_KEY: test_secret_key_for_ci
         DEBUG: "true"
       run: |
+        mkdir -p uploads
         pytest tests/ -v -m "integration" --cov=app --cov-append --cov-report=xml
       continue-on-error: true
 
@@ -314,6 +316,7 @@ jobs:
       env:
         DATABASE_URL: postgresql://agtrmerkezi:test_password@localhost:5432/agtrmerkezi_test
       run: |
+        mkdir -p uploads
         pytest tests/test_migrations.py -v -m slow
 
   # ============================================================================
