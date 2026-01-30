@@ -154,13 +154,13 @@ async def get_my_servers(
                 {
                     "id": s.id,
                     "name": s.name,
-                    "ip": s.ip_address,
+                    "ip_address": s.ip_address,
                     "port": s.port,
-                    "game": s.game_type.value if s.game_type else "unknown",
+                    "game_type": s.game_type.value if s.game_type else "unknown",
                     "status": s.status.value if s.status else "unknown",
                     "current_players": s.current_players or 0,
-                    "max_players": s.slots,
-                    "map": s.current_map,
+                    "slots": s.slots,
+                    "map": s.current_map or "N/A",
                     "created_at": s.created_at,
                     "expires_at": s.expires_at,
                 }
@@ -281,10 +281,11 @@ async def start_server(
         control_service = ServerControlService(db)
         result = await control_service.start_server(server_id)
 
-        if result:
+        if result.get("success"):
             return success_response(message="Server is starting")
         else:
-            raise HTTPException(status_code=500, detail="Sunucu başlatılamadı")
+            error_msg = result.get("message", "Sunucu başlatılamadı")
+            raise HTTPException(status_code=500, detail=error_msg)
 
     except APIError:
         raise
@@ -314,10 +315,11 @@ async def stop_server(
         control_service = ServerControlService(db)
         result = await control_service.stop_server(server_id)
 
-        if result:
+        if result.get("success"):
             return success_response(message="Server is stopping")
         else:
-            raise HTTPException(status_code=500, detail="Sunucu durdurulamadı")
+            error_msg = result.get("message", "Sunucu durdurulamadı")
+            raise HTTPException(status_code=500, detail=error_msg)
 
     except APIError:
         raise
@@ -344,10 +346,11 @@ async def restart_server(
         control_service = ServerControlService(db)
         result = await control_service.restart_server(server_id)
 
-        if result:
+        if result.get("success"):
             return success_response(message="Server is restarting")
         else:
-            raise HTTPException(status_code=500, detail="Sunucu yeniden başlatılamadı")
+            error_msg = result.get("message", "Sunucu yeniden başlatılamadı")
+            raise HTTPException(status_code=500, detail=error_msg)
 
     except APIError:
         raise
