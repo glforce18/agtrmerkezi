@@ -115,7 +115,7 @@ class WalletOrderRequest(BaseModel):
     server_name: str = Field(..., min_length=3, max_length=50, description="Server name")
     months: int = Field(default=1, ge=1, le=12, description="Duration in months (1-12)")
     payment_type: str = Field(
-        default="TL", regex="^(TL|coin)$", description="Payment type: TL or coin"
+        default="TL", pattern="^(TL|coin)$", description="Payment type: TL or coin"
     )
     auto_renew: bool = Field(default=True, description="Auto-renew subscription")
 
@@ -683,13 +683,15 @@ async def order_server_with_wallet(
         if data.payment_type.upper() == "TL" or data.payment_type == "real":
             if current_user.balance < total_price:
                 raise BadRequestError(
-                    f"Yetersiz TL bakiye. Mevcut: {current_user.balance:.2f} TL, Gerekli: {total_price:.2f} TL"
+                    f"Yetersiz TL bakiye. Mevcut: {current_user.balance:.2f} TL, "
+                    f"Gerekli: {total_price:.2f} TL"
                 )
             wallet_type = WalletType.REAL
         else:
             if current_user.balance_coin < total_price:
                 raise BadRequestError(
-                    f"Yetersiz Armor bakiye. Mevcut: {current_user.balance_coin:.2f}, Gerekli: {total_price:.2f}"
+                    f"Yetersiz Armor bakiye. Mevcut: {current_user.balance_coin:.2f}, "
+                    f"Gerekli: {total_price:.2f}"
                 )
             wallet_type = WalletType.COIN
 

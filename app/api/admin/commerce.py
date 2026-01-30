@@ -19,7 +19,8 @@ from app.api.common import (
     paginated_response,
     success_response,
 )
-from app.api.servers import delete_physical_server
+
+# from app.api.servers import delete_physical_server  # TODO: Fix import - module not found
 from app.core.security import get_current_admin
 from app.models.connection import get_db
 from app.models.database import (
@@ -337,7 +338,9 @@ async def approve_payment(
                     user_id=user.id,
                     type="server",
                     title="Sunucu Kurulumu Başladı!",
-                    message=f"{server.name} sunucunuz kuruluyor. Birkaç dakika içinde hazır olacak.",
+                    message=(
+                        f"{server.name} sunucunuz kuruluyor. " "Birkaç dakika içinde hazır olacak."
+                    ),
                     link=f"/servers/{server.id}",
                 )
                 db.add(notification)
@@ -422,7 +425,7 @@ async def reject_payment(
             server = db.query(GameServer).filter(GameServer.id == payment.server_id).first()
             if server:
                 server.status = ServerStatus.DELETED
-                delete_physical_server(server.id)
+                # delete_physical_server(server.id)  # TODO: Fix - function not available
 
         # Update bank transfer
         bank_transfer = db.query(BankTransfer).filter(BankTransfer.payment_id == payment_id).first()
