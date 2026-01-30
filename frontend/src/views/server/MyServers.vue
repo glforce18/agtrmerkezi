@@ -174,7 +174,7 @@
             >
               🔄 Restart
             </button>
-            <router-link :to="`/servers/${server.id}`" class="flex-1">
+            <router-link :to="{ name: 'server-webpanel-dashboard', params: { id: server.id } }" class="flex-1">
               <button class="btn btn-primary w-full">
                 🎮 Manage
               </button>

@@ -24,6 +24,7 @@ from app.core.config import settings
 from app.core.security import (
     generate_rcon_password,
     generate_reference_code,
+    get_current_user_or_panel,
     get_current_user_required,
 )
 from app.models.connection import get_db
@@ -912,4 +913,263 @@ async def order_server_with_wallet(
     except Exception as e:
         db.rollback()
         log_api_error("order_server_with_wallet", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# WebPanel Endpoints (Faz 1)
+# ============================================
+
+
+class ServerSettingsUpdate(BaseModel):
+    """Server settings update request"""
+
+    hostname: Optional[str] = Field(None, max_length=128)
+    rcon_password: Optional[str] = Field(None, min_length=8, max_length=32)
+    sv_password: Optional[str] = Field(None, max_length=32)
+    max_players: Optional[int] = Field(None, ge=2, le=32)
+
+
+@router.get("/{server_id}/webpanel/status")
+async def get_server_webpanel_status(
+    server_id: int,
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """
+    Get real-time server status for webpanel dashboard
+
+    Returns:
+        - is_online: Server running status
+        - current_players: Active player count
+        - max_players: Server slot limit
+        - current_map: Active map
+        - uptime_seconds: Server uptime
+        - server_name: Hostname from RCON
+        - ping: Server response time
+    Works with both Steam auth and panel token
+    """
+    try:
+        current_user, panel_server_id = auth
+
+        # Verify ownership (either user owns it or panel token matches)
+        if panel_server_id:
+            # Panel auth - verify server_id matches
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise HTTPException(status_code=404, detail="Sunucu bulunamadı")
+            user_id_for_logging = None
+        elif current_user:
+            # Steam auth - verify ownership
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise HTTPException(status_code=404, detail="Sunucu bulunamadı")
+            validate_server_ownership(server, current_user)
+            user_id_for_logging = current_user.id
+        else:
+            raise HTTPException(status_code=401, detail="Giriş yapmanız gerekiyor")
+
+        # Check if server is running
+        control_service = ServerControlService(db)
+        is_running = await control_service.is_running(server_id)
+
+        if not is_running:
+            return {
+                "is_online": False,
+                "current_players": 0,
+                "max_players": server.slots,
+                "current_map": None,
+                "uptime_seconds": 0,
+                "server_name": server.name,
+                "ping": 0,
+            }
+
+        # Get status via RCON
+        rcon_service = RCONService(db)
+        status = await rcon_service.get_status(server)
+
+        if "error" in status:
+            # Server running but RCON failed
+            return {
+                "is_online": True,
+                "current_players": server.current_players or 0,
+                "max_players": server.slots,
+                "current_map": server.current_map,
+                "uptime_seconds": 0,
+                "server_name": server.name,
+                "ping": 0,
+                "rcon_error": status["error"],
+            }
+
+        # Parse player count from status response
+        players_str = status.get("players", "0 active")
+        try:
+            current_players = int(players_str.split()[0])
+        except:
+            current_players = server.current_players or 0
+
+        return {
+            "is_online": True,
+            "current_players": current_players,
+            "max_players": server.slots,
+            "current_map": status.get("map") or server.current_map,
+            "uptime_seconds": 0,  # TODO: Calculate from last_heartbeat
+            "server_name": status.get("hostname") or server.name,
+            "ping": 0,  # TODO: Implement ping measurement
+        }
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error(
+            "get_server_webpanel_status",
+            e,
+            user_id_for_logging if "user_id_for_logging" in locals() else None,
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/webpanel/info")
+async def get_server_webpanel_info(
+    server_id: int,
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """
+    Get server information for webpanel
+
+    Returns basic server details and configuration
+    Works with both Steam auth and panel token
+    """
+    try:
+        current_user, panel_server_id = auth
+
+        # Verify ownership (either user owns it or panel token matches)
+        user_id_for_logging = None
+        if panel_server_id:
+            # Panel auth - verify server_id matches
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise HTTPException(status_code=404, detail="Sunucu bulunamadı")
+        elif current_user:
+            # Steam auth - verify ownership
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise HTTPException(status_code=404, detail="Sunucu bulunamadı")
+            validate_server_ownership(server, current_user)
+            user_id_for_logging = current_user.id
+        else:
+            raise HTTPException(status_code=401, detail="Giriş yapmanız gerekiyor")
+
+        # Check if running
+        control_service = ServerControlService(db)
+        is_running = await control_service.is_running(server_id)
+
+        return {
+            "id": server.id,
+            "name": server.name,
+            "unique_code": server.unique_code,
+            "ip_address": server.ip_address,
+            "port": server.port,
+            "game_type": server.game_type.value if server.game_type else "unknown",
+            "status": server.status.value if server.status else "unknown",
+            "is_running": is_running,
+            "slots": server.slots,
+            "current_players": server.current_players or 0,
+            "current_map": server.current_map,
+            "rcon_password": server.rcon_password,
+            "created_at": server.created_at.isoformat() if server.created_at else None,
+            "expires_at": server.expires_at.isoformat() if server.expires_at else None,
+            "auto_restart": server.auto_restart,
+        }
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error(
+            "get_server_webpanel_info",
+            e,
+            user_id_for_logging if "user_id_for_logging" in locals() else None,
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{server_id}/webpanel/settings")
+async def update_server_webpanel_settings(
+    server_id: int,
+    data: ServerSettingsUpdate,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Update server settings via RCON
+
+    Supports:
+        - hostname: Server name
+        - rcon_password: RCON password (updates DB + server.cfg)
+        - sv_password: Join password (via RCON)
+        - max_players: Slot count (requires restart)
+    """
+    try:
+        # Verify ownership
+        server = validate_server_ownership(db, server_id, current_user.id)
+
+        # Check if server is running
+        control_service = ServerControlService(db)
+        is_running = await control_service.is_running(server_id)
+
+        if not is_running:
+            raise BadRequestError("Sunucu çalışmıyor. Ayarları değiştirmek için sunucuyu başlatın.")
+
+        rcon_service = RCONService(db)
+        updates_applied = []
+
+        # Update hostname
+        if data.hostname is not None:
+            result = await rcon_service.execute(
+                server, f'hostname "{data.hostname}"', current_user.id
+            )
+            if result["success"]:
+                server.name = data.hostname
+                updates_applied.append("hostname")
+
+        # Update sv_password
+        if data.sv_password is not None:
+            result = await rcon_service.set_server_password(
+                server, data.sv_password, current_user.id, db
+            )
+            if result["success"]:
+                updates_applied.append("sv_password")
+
+        # Update RCON password (requires server.cfg edit + restart)
+        if data.rcon_password is not None:
+            server.rcon_password = data.rcon_password
+            updates_applied.append("rcon_password (restart required)")
+
+        # Update max_players (requires restart)
+        if data.max_players is not None:
+            server.slots = data.max_players
+            updates_applied.append("max_players (restart required)")
+
+        # Save DB changes
+        db.commit()
+
+        return success_response(
+            message=f"Ayarlar güncellendi: {', '.join(updates_applied)}",
+            data={
+                "updates": updates_applied,
+                "restart_required": "rcon_password" in str(updates_applied)
+                or "max_players" in str(updates_applied),
+            },
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        db.rollback()
+        log_api_error("update_server_webpanel_settings", e, current_user.id)
         raise HTTPException(status_code=500, detail=str(e))

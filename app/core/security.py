@@ -50,18 +50,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Access token olustur"""
     to_encode = data.copy()
-    
+
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode.update({
-        "exp": expire,
-        "type": "access",
-        "iat": datetime.utcnow()
-    })
-    
+
+    to_encode.update({"exp": expire, "type": "access", "iat": datetime.utcnow()})
+
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -85,7 +81,7 @@ def get_client_ip(request: Request) -> Optional[str]:
         return None
     if request.client is None:
         return None
-    if not hasattr(request.client, 'host'):
+    if not hasattr(request.client, "host"):
         return None
     return request.client.host
 
@@ -97,7 +93,7 @@ def create_session(db: Session, user_id: int, token: str, request: Request) -> U
         token_hash=hash_token(token),
         ip_address=get_client_ip(request),
         user_agent=request.headers.get("user-agent", "")[:500] if request else "",
-        expires_at=datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_at=datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     db.add(session)
     db.commit()
@@ -118,6 +114,7 @@ def invalidate_all_sessions(db: Session, user_id: int):
 
 
 # ==================== IP BLACKLIST/WHITELIST ====================
+
 
 def is_ip_blacklisted(ip: str) -> bool:
     """IP blacklist'te mi kontrol"""
@@ -164,15 +161,13 @@ def unblacklist_ip(ip: str):
     """IP'yi blacklist'ten cikar"""
     try:
         redis_delete(f"blacklist:ip:{ip}")
-        logger.info(
-            f"SECURITY_EVENT: IP unblacklisted | "
-            f"ip={ip}"
-        )
+        logger.info(f"SECURITY_EVENT: IP unblacklisted | " f"ip={ip}")
     except Exception as e:
         logger.error(f"IP unblacklist hatasi: {e}")
 
 
 # ==================== RATE LIMITING ====================
+
 
 def check_rate_limit(key: str, limit: int = 100, window: int = 60) -> bool:
     """Rate limit kontrolu - True ise limit asilmis"""
@@ -205,10 +200,11 @@ def get_rate_limit_count(key: str) -> int:
 
 # ==================== AUTHENTICATION ====================
 
+
 async def get_current_user_optional(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> Optional[User]:
     """Mevcut kullaniciyi getir (opsiyonel - login olmadan da calisir)"""
     # IP kontrolu - full null safety
@@ -238,6 +234,13 @@ async def get_current_user_optional(
     if not user_id:
         return None
 
+    # Check if this is a panel token (format: "panel_<server_id>")
+    token_type = payload.get("type")
+    if token_type == "panel" or (isinstance(user_id, str) and user_id.startswith("panel_")):
+        # Panel tokens don't have user sessions, return None (panel routes don't need user)
+        # Panel authentication is handled separately in panel routes
+        return None
+
     # Type-safe user_id conversion
     try:
         user_id_int = int(user_id)
@@ -248,10 +251,11 @@ async def get_current_user_optional(
     # Session kontrolu with proper time comparison
     token_hash = hash_token(token)
     current_time = datetime.utcnow()
-    session = db.query(UserSession).filter(
-        UserSession.token_hash == token_hash,
-        UserSession.expires_at > current_time
-    ).first()
+    session = (
+        db.query(UserSession)
+        .filter(UserSession.token_hash == token_hash, UserSession.expires_at > current_time)
+        .first()
+    )
 
     if not session:
         return None
@@ -273,7 +277,7 @@ async def get_current_user_optional(
 async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> Optional[User]:
     """Mevcut kullaniciyi getir (opsiyonel)"""
     # IP kontrolu - full null safety
@@ -304,6 +308,13 @@ async def get_current_user(
     if not user_id:
         return None
 
+    # Check if this is a panel token (format: "panel_<server_id>")
+    token_type = payload.get("type")
+    if token_type == "panel" or (isinstance(user_id, str) and user_id.startswith("panel_")):
+        # Panel tokens don't have user sessions, return None (panel routes don't need user)
+        # Panel authentication is handled separately in panel routes
+        return None
+
     # Type-safe user_id conversion
     try:
         user_id_int = int(user_id)
@@ -314,10 +325,11 @@ async def get_current_user(
     # Session kontrolu with proper time comparison
     token_hash = hash_token(token)
     current_time = datetime.utcnow()
-    session = db.query(UserSession).filter(
-        UserSession.token_hash == token_hash,
-        UserSession.expires_at > current_time
-    ).first()
+    session = (
+        db.query(UserSession)
+        .filter(UserSession.token_hash == token_hash, UserSession.expires_at > current_time)
+        .first()
+    )
 
     if not session:
         return None
@@ -336,69 +348,57 @@ async def get_current_user(
     return user
 
 
-async def get_current_user_required(
-    user: Optional[User] = Depends(get_current_user)
-) -> User:
+async def get_current_user_required(user: Optional[User] = Depends(get_current_user)) -> User:
     """Mevcut kullaniciyi getir (zorunlu)"""
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Giris yapmaniz gerekiyor",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return user
 
 
-async def get_current_admin(
-    user: User = Depends(get_current_user_required)
-) -> User:
+async def get_current_admin(user: User = Depends(get_current_user_required)) -> User:
     """Admin kullanici getir"""
     if user.role not in [UserRole.ADMIN, UserRole.SUPERADMIN]:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bu islem icin yetkiniz yok"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Bu islem icin yetkiniz yok"
         )
     return user
 
 
-async def get_current_moderator(
-    user: User = Depends(get_current_user_required)
-) -> User:
+async def get_current_moderator(user: User = Depends(get_current_user_required)) -> User:
     """Moderator veya ustu kullanici getir"""
     if user.role not in [UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPERADMIN]:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bu islem icin yetkiniz yok"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Bu islem icin yetkiniz yok"
         )
     return user
 
 
-async def get_superadmin(
-    user: User = Depends(get_current_user_required)
-) -> User:
+async def get_superadmin(user: User = Depends(get_current_user_required)) -> User:
     """Superadmin kullanici getir"""
     if user.role != UserRole.SUPERADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bu islem icin superadmin yetkiniz gerekiyor"
+            detail="Bu islem icin superadmin yetkiniz gerekiyor",
         )
     return user
 
 
-async def get_current_user_with_steam(
-    user: User = Depends(get_current_user_required)
-) -> User:
+async def get_current_user_with_steam(user: User = Depends(get_current_user_required)) -> User:
     """Steam hesabi bagli kullanici getir"""
     if not user.steam_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bu ozellik icin Steam hesabi baglantisi gerekli. Profil ayarlarindan Steam hesabinizi baglayabilirsiniz."
+            detail="Bu ozellik icin Steam hesabi baglantisi gerekli. Profil ayarlarindan Steam hesabinizi baglayabilirsiniz.",
         )
     return user
 
 
 async def get_current_user_with_steam_optional(
-    user: Optional[User] = Depends(get_current_user)
+    user: Optional[User] = Depends(get_current_user),
 ) -> Optional[User]:
     """Steam hesabi bagli kullanici getir (opsiyonel - steam yoksa None doner)"""
     if user and not user.steam_id:
@@ -447,10 +447,11 @@ def get_current_user_from_token(db: Session, token: str) -> Optional[User]:
     # Session kontrolu with proper time comparison
     token_hash = hash_token(token)
     current_time = datetime.utcnow()
-    session = db.query(UserSession).filter(
-        UserSession.token_hash == token_hash,
-        UserSession.expires_at > current_time
-    ).first()
+    session = (
+        db.query(UserSession)
+        .filter(UserSession.token_hash == token_hash, UserSession.expires_at > current_time)
+        .first()
+    )
 
     if not session:
         return None
@@ -467,3 +468,61 @@ def get_current_user_from_token(db: Session, token: str) -> Optional[User]:
         return None
 
     return user
+
+
+async def get_panel_server_id(
+    request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> Optional[int]:
+    """
+    Extract server_id from panel token
+    Returns server_id if panel token is valid, None otherwise
+    """
+    token = None
+
+    # Get token from header
+    if credentials:
+        token = credentials.credentials
+
+    # Get token from cookie
+    if not token:
+        token = request.cookies.get("access_token")
+
+    if not token:
+        return None
+
+    # Decode token
+    payload = decode_token(token)
+    if not payload:
+        return None
+
+    # Check if this is a panel token
+    token_type = payload.get("type")
+    user_id = payload.get("sub")
+
+    if token_type == "panel" or (isinstance(user_id, str) and user_id.startswith("panel_")):
+        # Extract server_id from panel token
+        server_id = payload.get("server_id")
+        if server_id:
+            logger.info(f"Panel token validated for server {server_id}")
+            return int(server_id)
+
+    return None
+
+
+async def get_current_user_or_panel(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: Session = Depends(get_db),
+) -> tuple[Optional[User], Optional[int]]:
+    """
+    Get either current user OR panel server_id
+    Returns (user, None) if Steam auth, or (None, server_id) if panel auth
+    """
+    # Try panel auth first
+    panel_server_id = await get_panel_server_id(request, credentials)
+    if panel_server_id:
+        return (None, panel_server_id)
+
+    # Try regular user auth
+    user = await get_current_user(request, credentials, db)
+    return (user, None)

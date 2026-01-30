@@ -42,6 +42,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             "/api/clans",  # Clans API - protected by JWT auth
             "/api/leaderboard",  # Leaderboard API - protected by JWT auth
             "/api/servers",  # Server management API - protected by JWT auth
+            "/api/panel",  # Panel authentication - public access
             "/api/wallet",  # Wallet API - protected by JWT auth
             "/api/errors",  # Error reporting
             "/ws",  # WebSocket connections

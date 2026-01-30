@@ -5,8 +5,10 @@ Half-Life/GoldSrc RCON protokolu
 
 import asyncio
 import logging
+import os
 import re
 import socket
+import tempfile
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
@@ -327,6 +329,10 @@ class RCONService:
         execution_time_ms: int = 0,
     ):
         """Komut gecmisini kaydet"""
+        # Skip logging if user_id is 0 (system commands)
+        if user_id == 0:
+            return
+
         log = ServerConsoleHistory(
             server_id=server_id,
             user_id=user_id,

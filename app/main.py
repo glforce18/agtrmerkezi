@@ -20,6 +20,7 @@ setup_logging(json_format=not settings.DEBUG, log_level="DEBUG" if settings.DEBU
 logger = get_logger(__name__)
 
 from app.api import forum  # noqa: E402 # New modular forum API
+from app.api import panel_auth  # noqa: E402 # Panel authentication
 from app.api import servers_unified  # noqa: E402 # New unified server API
 from app.api import (  # noqa: E402
     activities,
@@ -640,6 +641,7 @@ app.include_router(player_management.router, tags=["Player Management"])
 
 # Anti-Cheat API (AGTR Anti-Cheat Integration)
 app.include_router(anticheat.router, tags=["Anti-Cheat"])
+app.include_router(panel_auth.router, tags=["Panel Authentication"])
 
 
 # ==================== HEALTH & STATUS ====================
