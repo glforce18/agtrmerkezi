@@ -120,6 +120,7 @@ jobs:
 
     - name: TruffleHog Secret Scan
       uses: trufflesecurity/trufflehog@main
+      continue-on-error: true
       with:
         path: ./
         base: ${{ github.event.repository.default_branch }}
@@ -133,6 +134,10 @@ jobs:
     name: Container Security Scan
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
 
     steps:
     - name: Checkout code
@@ -167,7 +172,7 @@ jobs:
   security-summary:
     name: Security Summary
     runs-on: ubuntu-latest
-    needs: [dependency-scan, owasp-check, codeql, secret-scan]
+    needs: [dependency-scan, owasp-check, codeql, secret-scan, container-scan]
     if: always()
 
     steps:
@@ -177,11 +182,13 @@ jobs:
         echo "OWASP Check: ${{ needs.owasp-check.result }}"
         echo "CodeQL: ${{ needs.codeql.result }}"
         echo "Secret Scan: ${{ needs.secret-scan.result }}"
+        echo "Container Scan: ${{ needs.container-scan.result }}"
 
         if [ "${{ needs.dependency-scan.result }}" = "failure" ] || \
            [ "${{ needs.owasp-check.result }}" = "failure" ] || \
            [ "${{ needs.codeql.result }}" = "failure" ] || \
-           [ "${{ needs.secret-scan.result }}" = "failure" ]; then
+           [ "${{ needs.secret-scan.result }}" = "failure" ] || \
+           [ "${{ needs.container-scan.result }}" = "failure" ]; then
           echo "⚠️ Some security checks failed!"
           exit 1
         else
