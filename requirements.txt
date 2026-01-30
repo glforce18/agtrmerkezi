@@ -95,3 +95,4 @@ typer>=0.13.0
 # Scraper dependencies
 beautifulsoup4>=4.12.0
 python-steamgriddb>=1.0.5
+python-a2s>=1.3.0
