@@ -133,6 +133,34 @@ class WalletOrderRequest(BaseModel):
     auto_renew: bool = Field(default=True, description="Auto-renew subscription")
 
 
+async def get_auth_and_server(
+    server_id: int,
+    auth: tuple,
+    db: Session,
+) -> tuple:
+    """Validate auth (panel token or user) and return (current_user, server).
+
+    current_user may be None for panel token auth.
+    """
+    current_user, panel_server_id = auth
+
+    if panel_server_id:
+        if server_id != panel_server_id:
+            raise HTTPException(status_code=403, detail="Panel token is for a different server")
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        return current_user, server
+    elif current_user:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+        return current_user, server
+    else:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+
 # ============================================
 # Server Lifecycle Endpoints
 # ============================================
@@ -233,17 +261,12 @@ async def get_packages(db: Session = Depends(get_db)):
 @router.get("/{server_id}", response_model=ServerDetailResponse)
 async def get_server(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get server details"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-
-        if not server:
-            raise NotFoundError("Server not found")
-
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         # Map database fields to response model
         return {
@@ -267,7 +290,7 @@ async def get_server(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_server", e, current_user.id)
+        log_api_error("get_server", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -275,17 +298,12 @@ async def get_server(
 async def start_server(
     server_id: int,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Start server"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-
-        if not server:
-            raise NotFoundError("Server not found")
-
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if server.status == ServerStatus.RUNNING:
             raise BadRequestError("Server is already running")
@@ -303,24 +321,19 @@ async def start_server(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("start_server", e, current_user.id)
+        log_api_error("start_server", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{server_id}/stop")
 async def stop_server(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Stop server"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-
-        if not server:
-            raise NotFoundError("Server not found")
-
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if server.status != ServerStatus.RUNNING:
             raise BadRequestError("Server is not running")
@@ -337,24 +350,19 @@ async def stop_server(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("stop_server", e, current_user.id)
+        log_api_error("stop_server", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{server_id}/restart")
 async def restart_server(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Restart server"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-
-        if not server:
-            raise NotFoundError("Server not found")
-
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         control_service = ServerControlService(db)
         result = await control_service.restart_server(server_id)
@@ -368,7 +376,7 @@ async def restart_server(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("restart_server", e, current_user.id)
+        log_api_error("restart_server", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -386,25 +394,7 @@ async def execute_rcon_command(
 ):
     """Execute RCON command"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if server.status != ServerStatus.RUNNING:
             raise BadRequestError("Server is not running")
@@ -430,7 +420,7 @@ async def execute_rcon_command(
     except APIError:
         raise
     except Exception as e:
-        user_id = current_user.id if current_user else panel_server_id
+        user_id = current_user.id if current_user else None
         log_api_error("execute_rcon_command", e, user_id)
         return RCONResponse(success=False, error=str(e))
 
@@ -448,20 +438,7 @@ async def get_live_chat(
         import re
         from glob import glob
 
-        current_user, panel_server_id = auth
-
-        # Authenticate
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if not server:
             raise NotFoundError("Server not found")
@@ -554,20 +531,7 @@ async def get_server_players(
 ):
     """Get online players list by parsing RCON status command"""
     try:
-        current_user, panel_server_id = auth
-
-        # Authenticate
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if not server:
             raise NotFoundError("Server not found")
@@ -656,20 +620,7 @@ async def get_server_logs(
 ):
     """Get server log files"""
     try:
-        current_user, panel_server_id = auth
-
-        # Authenticate
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if not server:
             raise NotFoundError("Server not found")
@@ -727,17 +678,12 @@ async def get_server_logs(
 @router.get("/{server_id}/players_old", response_model=List[PlayerInfo])
 async def get_server_players_old(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get server players via RCON"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-
-        if not server:
-            raise NotFoundError("Server not found")
-
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if server.status != ServerStatus.RUNNING:
             return []
@@ -750,7 +696,7 @@ async def get_server_players_old(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_server_players", e, current_user.id)
+        log_api_error("get_server_players", e, current_user.id if current_user else None)
         return []
 
 
@@ -758,17 +704,12 @@ async def get_server_players_old(
 async def kick_player(
     server_id: int,
     slot: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Kick player from server"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-
-        if not server:
-            raise NotFoundError("Server not found")
-
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if server.status != ServerStatus.RUNNING:
             raise BadRequestError("Server is not running")
@@ -783,7 +724,7 @@ async def kick_player(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("kick_player", e, current_user.id)
+        log_api_error("kick_player", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1294,26 +1235,8 @@ async def get_server_webpanel_status(
     Works with both Steam auth and panel token
     """
     try:
-        current_user, panel_server_id = auth
-
-        # Verify ownership (either user owns it or panel token matches)
-        if panel_server_id:
-            # Panel auth - verify server_id matches
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise HTTPException(status_code=404, detail="Sunucu bulunamadı")
-            user_id_for_logging = None
-        elif current_user:
-            # Steam auth - verify ownership
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise HTTPException(status_code=404, detail="Sunucu bulunamadı")
-            validate_server_ownership(server, current_user)
-            user_id_for_logging = current_user.id
-        else:
-            raise HTTPException(status_code=401, detail="Giriş yapmanız gerekiyor")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
+        user_id_for_logging = current_user.id if current_user else None
 
         # Check if server is running
         control_service = ServerControlService(db)
@@ -1388,26 +1311,8 @@ async def get_server_webpanel_info(
     Works with both Steam auth and panel token
     """
     try:
-        current_user, panel_server_id = auth
-
-        # Verify ownership (either user owns it or panel token matches)
-        user_id_for_logging = None
-        if panel_server_id:
-            # Panel auth - verify server_id matches
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise HTTPException(status_code=404, detail="Sunucu bulunamadı")
-        elif current_user:
-            # Steam auth - verify ownership
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise HTTPException(status_code=404, detail="Sunucu bulunamadı")
-            validate_server_ownership(server, current_user)
-            user_id_for_logging = current_user.id
-        else:
-            raise HTTPException(status_code=401, detail="Giriş yapmanız gerekiyor")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
+        user_id_for_logging = current_user.id if current_user else None
 
         # Check if running
         control_service = ServerControlService(db)
@@ -1446,7 +1351,7 @@ async def get_server_webpanel_info(
 async def update_server_webpanel_settings(
     server_id: int,
     data: ServerSettingsUpdate,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """
@@ -1460,10 +1365,7 @@ async def update_server_webpanel_settings(
     """
     try:
         # Get server and verify ownership
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         # Check if server is running
         control_service = ServerControlService(db)
@@ -1478,7 +1380,7 @@ async def update_server_webpanel_settings(
         # Update hostname
         if data.hostname is not None:
             result = await rcon_service.execute(
-                server, f'hostname "{data.hostname}"', current_user.id
+                server, f'hostname "{data.hostname}"', current_user.id if current_user else None
             )
             if result["success"]:
                 server.name = data.hostname
@@ -1487,7 +1389,7 @@ async def update_server_webpanel_settings(
         # Update sv_password
         if data.sv_password is not None:
             result = await rcon_service.set_server_password(
-                server, data.sv_password, current_user.id, db
+                server, data.sv_password, current_user.id if current_user else None, db
             )
             if result["success"]:
                 updates_applied.append("sv_password")
@@ -1518,7 +1420,9 @@ async def update_server_webpanel_settings(
         raise
     except Exception as e:
         db.rollback()
-        log_api_error("update_server_webpanel_settings", e, current_user.id)
+        log_api_error(
+            "update_server_webpanel_settings", e, current_user.id if current_user else None
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1537,7 +1441,7 @@ class PluginUploadRequest(BaseModel):
 @router.get("/{server_id}/plugins/all")
 async def get_all_plugins(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """
@@ -1550,18 +1454,19 @@ async def get_all_plugins(
     """
     try:
         # Get server and verify ownership
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.plugin_manager_service import PluginManagerService
 
         plugin_service = PluginManagerService(db)
 
         server_plugins = plugin_service.list_server_plugins(server_id)
-        user_plugins = plugin_service.list_user_plugins(server_id, current_user.id)
-        stats = plugin_service.get_plugin_stats(server_id, current_user.id)
+        user_plugins = plugin_service.list_user_plugins(
+            server_id, current_user.id if current_user else None
+        )
+        stats = plugin_service.get_plugin_stats(
+            server_id, current_user.id if current_user else None
+        )
 
         return success_response(
             data={
@@ -1574,7 +1479,7 @@ async def get_all_plugins(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_all_plugins", e, current_user.id)
+        log_api_error("get_all_plugins", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1582,7 +1487,7 @@ async def get_all_plugins(
 async def upload_plugin(
     server_id: int,
     request: PluginUploadRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """
@@ -1597,10 +1502,7 @@ async def upload_plugin(
     """
     try:
         # Get server and verify ownership
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         # Decode base64 content
         import base64
@@ -1615,7 +1517,7 @@ async def upload_plugin(
         plugin_service = PluginManagerService(db)
 
         success, message, plugin_info = plugin_service.upload_plugin(
-            server_id, current_user.id, request.filename, content
+            server_id, current_user.id if current_user else None, request.filename, content
         )
 
         if not success:
@@ -1626,7 +1528,7 @@ async def upload_plugin(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("upload_plugin", e, current_user.id)
+        log_api_error("upload_plugin", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1634,7 +1536,7 @@ async def upload_plugin(
 async def delete_plugin(
     server_id: int,
     filename: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """
@@ -1648,16 +1550,15 @@ async def delete_plugin(
     """
     try:
         # Get server and verify ownership
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.plugin_manager_service import PluginManagerService
 
         plugin_service = PluginManagerService(db)
 
-        success, message = plugin_service.delete_plugin(server_id, current_user.id, filename)
+        success, message = plugin_service.delete_plugin(
+            server_id, current_user.id if current_user else None, filename
+        )
 
         if not success:
             raise BadRequestError(message)
@@ -1667,7 +1568,7 @@ async def delete_plugin(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_plugin", e, current_user.id)
+        log_api_error("delete_plugin", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1676,7 +1577,7 @@ async def toggle_plugin(
     server_id: int,
     filename: str,
     enable: bool,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """
@@ -1691,17 +1592,14 @@ async def toggle_plugin(
     """
     try:
         # Get server and verify ownership
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.plugin_manager_service import PluginManagerService
 
         plugin_service = PluginManagerService(db)
 
         success, message = plugin_service.toggle_plugin(
-            server_id, current_user.id, filename, enable
+            server_id, current_user.id if current_user else None, filename, enable
         )
 
         if not success:
@@ -1712,7 +1610,7 @@ async def toggle_plugin(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("toggle_plugin", e, current_user.id)
+        log_api_error("toggle_plugin", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1730,7 +1628,7 @@ class CvarUpdate(BaseModel):
 @router.get("/{server_id}/config/server")
 async def get_server_config(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """
@@ -1742,10 +1640,7 @@ async def get_server_config(
     """
     try:
         # Get server and verify ownership
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -1766,7 +1661,7 @@ async def get_server_config(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_server_config", e, current_user.id)
+        log_api_error("get_server_config", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1774,7 +1669,7 @@ async def get_server_config(
 async def update_server_config(
     server_id: int,
     request: CvarUpdate,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """
@@ -1788,10 +1683,7 @@ async def update_server_config(
     """
     try:
         # Get server and verify ownership
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -1814,22 +1706,19 @@ async def update_server_config(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_server_config", e, current_user.id)
+        log_api_error("update_server_config", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{server_id}/config/mapcycle")
 async def get_mapcycle(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get mapcycle.txt map list"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -1845,7 +1734,7 @@ async def get_mapcycle(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_mapcycle", e, current_user.id)
+        log_api_error("get_mapcycle", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1853,15 +1742,12 @@ async def get_mapcycle(
 async def update_mapcycle(
     server_id: int,
     maps: List[str],
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Update mapcycle.txt map list"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -1882,7 +1768,7 @@ async def update_mapcycle(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_mapcycle", e, current_user.id)
+        log_api_error("update_mapcycle", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2027,7 +1913,7 @@ class FileOperationRequest(BaseModel):
 async def browse_files(
     server_id: int,
     path: str = "",
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """
@@ -2041,10 +1927,7 @@ async def browse_files(
         - current_path: Current directory path
     """
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2099,7 +1982,7 @@ async def browse_files(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("browse_files", e, current_user.id)
+        log_api_error("browse_files", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2128,15 +2011,12 @@ class BanAddRequest(BaseModel):
 @router.get("/{server_id}/admin/users")
 async def get_admin_users(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get admin users from users.ini"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2152,7 +2032,7 @@ async def get_admin_users(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_admin_users", e, current_user.id)
+        log_api_error("get_admin_users", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2160,15 +2040,12 @@ async def get_admin_users(
 async def add_admin_user(
     server_id: int,
     request: AdminAddRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Add admin to users.ini"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2191,7 +2068,7 @@ async def add_admin_user(
         # Log action
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id,
+            admin_id=current_user.id if current_user else None,
             action_type="admin_add",
             target_steam_id=request.steam_id,
             reason=f"Flags: {request.flags}",
@@ -2202,7 +2079,7 @@ async def add_admin_user(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("add_admin_user", e, current_user.id)
+        log_api_error("add_admin_user", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2210,15 +2087,12 @@ async def add_admin_user(
 async def remove_admin_user(
     server_id: int,
     steam_id: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Remove admin from users.ini"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2235,7 +2109,7 @@ async def remove_admin_user(
         # Log action
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id,
+            admin_id=current_user.id if current_user else None,
             action_type="admin_remove",
             target_steam_id=steam_id,
         )
@@ -2245,22 +2119,19 @@ async def remove_admin_user(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("remove_admin_user", e, current_user.id)
+        log_api_error("remove_admin_user", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{server_id}/admin/bans")
 async def get_bans(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get ban list from banned.cfg"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2276,7 +2147,7 @@ async def get_bans(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_bans", e, current_user.id)
+        log_api_error("get_bans", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2284,15 +2155,12 @@ async def get_bans(
 async def add_ban(
     server_id: int,
     request: BanAddRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Add ban to banned.cfg"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if request.ban_type not in ["ip", "steam_id"]:
             raise BadRequestError("Geçersiz ban tipi (ip veya steam_id olmalı)")
@@ -2314,7 +2182,7 @@ async def add_ban(
         # Log action
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id,
+            admin_id=current_user.id if current_user else None,
             action_type="ban",
             target_steam_id=request.value if request.ban_type == "steam_id" else None,
             reason=f"{request.ban_type}: {request.value}",
@@ -2328,7 +2196,7 @@ async def add_ban(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("add_ban", e, current_user.id)
+        log_api_error("add_ban", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2337,15 +2205,12 @@ async def remove_ban(
     server_id: int,
     ban_type: str,
     value: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Remove ban from banned.cfg"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2362,7 +2227,7 @@ async def remove_ban(
         # Log action
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id,
+            admin_id=current_user.id if current_user else None,
             action_type="unban",
             target_steam_id=value if ban_type == "steam_id" else None,
             reason=f"{ban_type}: {value}",
@@ -2373,7 +2238,7 @@ async def remove_ban(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("remove_ban", e, current_user.id)
+        log_api_error("remove_ban", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2394,21 +2259,18 @@ async def kick_player_rcon(
     server_id: int,
     slot: int,
     request: PlayerActionRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Kick a player via RCON"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         rcon_service = RCONService(db)
 
         # Execute kick command
         result = await rcon_service.execute(
-            server, f"kick #{slot} {request.reason}", current_user.id
+            server, f"kick #{slot} {request.reason}", current_user.id if current_user else None
         )
 
         if not result["success"]:
@@ -2421,7 +2283,7 @@ async def kick_player_rcon(
         admin_service = AdminService(db)
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id,
+            admin_id=current_user.id if current_user else None,
             action_type="kick",
             target_name=f"Slot {slot}",
             reason=request.reason,
@@ -2432,7 +2294,7 @@ async def kick_player_rcon(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("kick_player_rcon", e, current_user.id)
+        log_api_error("kick_player_rcon", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2440,20 +2302,19 @@ async def kick_player_rcon(
 async def slay_player_rcon(
     server_id: int,
     slot: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Slay a player via RCON"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         rcon_service = RCONService(db)
 
         # Execute slay command
-        result = await rcon_service.execute(server, f"amx_slay #{slot}", current_user.id)
+        result = await rcon_service.execute(
+            server, f"amx_slay #{slot}", current_user.id if current_user else None
+        )
 
         if not result["success"]:
             raise BadRequestError(result.get("error", "Slay komutu başarısız"))
@@ -2465,7 +2326,7 @@ async def slay_player_rcon(
         admin_service = AdminService(db)
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id,
+            admin_id=current_user.id if current_user else None,
             action_type="slay",
             target_name=f"Slot {slot}",
         )
@@ -2475,7 +2336,7 @@ async def slay_player_rcon(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("slay_player_rcon", e, current_user.id)
+        log_api_error("slay_player_rcon", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2493,7 +2354,7 @@ class MapcycleUpdateRequest(BaseModel):
 @router.get("/{server_id}/maps/library")
 async def get_map_library(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """
@@ -2505,10 +2366,7 @@ async def get_map_library(
         - custom_count: Number of custom maps
     """
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2575,22 +2433,19 @@ async def get_map_library(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_map_library", e, current_user.id)
+        log_api_error("get_map_library", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{server_id}/maps/mapcycle")
 async def get_mapcycle_maps(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get current mapcycle"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2606,7 +2461,7 @@ async def get_mapcycle_maps(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_mapcycle_maps", e, current_user.id)
+        log_api_error("get_mapcycle_maps", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2614,15 +2469,12 @@ async def get_mapcycle_maps(
 async def update_mapcycle_maps(
     server_id: int,
     request: MapcycleUpdateRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Update mapcycle with drag-drop reordered maps"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2644,7 +2496,7 @@ async def update_mapcycle_maps(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_mapcycle_maps", e, current_user.id)
+        log_api_error("update_mapcycle_maps", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2657,15 +2509,12 @@ async def update_mapcycle_maps(
 async def list_server_backups(
     server_id: int,
     backup_type: Optional[str] = Query(None, description="Filter: config, full, database"),
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """List all backups for server"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.tasks.backup import backup_manager
 
@@ -2690,7 +2539,7 @@ async def list_server_backups(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("list_server_backups", e, current_user.id)
+        log_api_error("list_server_backups", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2698,15 +2547,12 @@ async def list_server_backups(
 async def create_server_backup(
     server_id: int,
     backup_type: str = Query(..., description="Type: config or full"),
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Create manual backup (config or full)"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         if backup_type not in ["config", "full"]:
             raise BadRequestError("Geçersiz yedek tipi (config veya full)")
@@ -2734,7 +2580,7 @@ async def create_server_backup(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="backup_create",
             details={"backup_type": backup_type, "filename": result["filename"]},
         )
@@ -2747,7 +2593,7 @@ async def create_server_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("create_server_backup", e, current_user.id)
+        log_api_error("create_server_backup", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2755,15 +2601,12 @@ async def create_server_backup(
 async def restore_server_backup(
     server_id: int,
     filename: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Restore server from backup"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2824,7 +2667,7 @@ async def restore_server_backup(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="backup_restore",
             details={"filename": filename, "restore_type": restore_type},
         )
@@ -2837,7 +2680,7 @@ async def restore_server_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("restore_server_backup", e, current_user.id)
+        log_api_error("restore_server_backup", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2845,15 +2688,12 @@ async def restore_server_backup(
 async def delete_server_backup(
     server_id: int,
     filename: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Delete a backup file"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -2878,7 +2718,7 @@ async def delete_server_backup(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="backup_delete",
             details={"filename": filename},
         )
@@ -2891,22 +2731,19 @@ async def delete_server_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_server_backup", e, current_user.id)
+        log_api_error("delete_server_backup", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{server_id}/backups/schedule")
 async def get_backup_schedule(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get backup schedule settings"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         # For now return default schedule (can be made configurable later)
         schedule = {
@@ -2925,7 +2762,7 @@ async def get_backup_schedule(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_backup_schedule", e, current_user.id)
+        log_api_error("get_backup_schedule", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2945,15 +2782,12 @@ class CompilePluginRequest(BaseModel):
 async def compile_plugin(
     server_id: int,
     request: CompilePluginRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Compile .sma plugin to .amxx"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.plugin_compiler_service import PluginCompilerService
 
@@ -2988,7 +2822,7 @@ async def compile_plugin(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="plugin_compile",
             details={"plugin_name": request.plugin_name},
         )
@@ -3007,7 +2841,7 @@ async def compile_plugin(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("compile_plugin", e, current_user.id)
+        log_api_error("compile_plugin", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3015,15 +2849,12 @@ async def compile_plugin(
 async def validate_plugin_syntax(
     server_id: int,
     request: CompilePluginRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Validate plugin syntax without compiling"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.plugin_compiler_service import PluginCompilerService
 
@@ -3047,22 +2878,19 @@ async def validate_plugin_syntax(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("validate_plugin_syntax", e, current_user.id)
+        log_api_error("validate_plugin_syntax", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{server_id}/plugins/compiler-info")
 async def get_compiler_info(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get compiler availability and version"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.plugin_compiler_service import PluginCompilerService
 
@@ -3079,7 +2907,7 @@ async def get_compiler_info(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_compiler_info", e, current_user.id)
+        log_api_error("get_compiler_info", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3091,15 +2919,12 @@ async def get_compiler_info(
 @router.get("/{server_id}/plugins/configs/list")
 async def list_plugin_configs(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """List all available plugin config files"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -3134,7 +2959,7 @@ async def list_plugin_configs(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("list_plugin_configs", e, current_user.id)
+        log_api_error("list_plugin_configs", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3142,15 +2967,12 @@ async def list_plugin_configs(
 async def get_plugin_config(
     server_id: int,
     filename: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get plugin config file content"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -3188,7 +3010,7 @@ async def get_plugin_config(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_plugin_config", e, current_user.id)
+        log_api_error("get_plugin_config", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3203,15 +3025,12 @@ async def update_plugin_config(
     server_id: int,
     filename: str,
     request: UpdatePluginConfigRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Update plugin config file"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -3244,7 +3063,7 @@ async def update_plugin_config(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="plugin_config_update",
             details={"filename": filename},
         )
@@ -3257,7 +3076,7 @@ async def update_plugin_config(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_plugin_config", e, current_user.id)
+        log_api_error("update_plugin_config", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3303,15 +3122,12 @@ def parse_ini_content(content: str) -> dict:
 @router.get("/{server_id}/plugins/logs/list")
 async def list_plugin_logs(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """List available plugin log files"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -3341,7 +3157,7 @@ async def list_plugin_logs(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("list_plugin_logs", e, current_user.id)
+        log_api_error("list_plugin_logs", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3352,15 +3168,12 @@ async def get_plugin_log(
     lines: int = Query(500, ge=1, le=5000, description="Number of lines to read"),
     level: Optional[str] = Query(None, description="Filter by level (error, warning, info)"),
     search: Optional[str] = Query(None, description="Search term"),
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get plugin log content with filtering"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -3409,7 +3222,7 @@ async def get_plugin_log(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_plugin_log", e, current_user.id)
+        log_api_error("get_plugin_log", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3417,15 +3230,12 @@ async def get_plugin_log(
 async def delete_plugin_log(
     server_id: int,
     filename: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Delete a plugin log file"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -3450,7 +3260,7 @@ async def delete_plugin_log(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="plugin_log_delete",
             details={"filename": filename},
         )
@@ -3462,7 +3272,7 @@ async def delete_plugin_log(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_plugin_log", e, current_user.id)
+        log_api_error("delete_plugin_log", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3517,15 +3327,12 @@ def parse_log_line(line: str) -> Optional[dict]:
 @router.get("/{server_id}/config/templates")
 async def get_config_templates(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get available config templates"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         # Get built-in templates
         template_list = get_builtin_templates(server.game_type)
@@ -3535,7 +3342,7 @@ async def get_config_templates(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_config_templates", e, current_user.id)
+        log_api_error("get_config_templates", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3549,15 +3356,12 @@ class ApplyTemplateRequest(BaseModel):
 async def apply_config_template(
     server_id: int,
     request: ApplyTemplateRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Apply a config template to server"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         # Get built-in template
         builtin = get_builtin_templates(server.game_type)
@@ -3587,7 +3391,7 @@ async def apply_config_template(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="config_template_apply",
             details={"template_name": template_name, "cvars_count": len(cvars)},
         )
@@ -3600,7 +3404,7 @@ async def apply_config_template(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("apply_config_template", e, current_user.id)
+        log_api_error("apply_config_template", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3672,15 +3476,12 @@ def get_builtin_templates(game_type: str) -> list:
 @router.get("/{server_id}/config/backups")
 async def get_config_backups(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get config backup history"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -3712,22 +3513,19 @@ async def get_config_backups(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_config_backups", e, current_user.id)
+        log_api_error("get_config_backups", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{server_id}/config/backup")
 async def create_config_backup(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Create a manual config backup"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         import shutil
         import time
@@ -3750,7 +3548,7 @@ async def create_config_backup(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="config_backup_create",
             details={"filename": backup_file.name},
         )
@@ -3767,7 +3565,7 @@ async def create_config_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("create_config_backup", e, current_user.id)
+        log_api_error("create_config_backup", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3775,15 +3573,12 @@ async def create_config_backup(
 async def get_config_diff(
     server_id: int,
     filename: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get diff between current config and backup"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         import difflib
         from pathlib import Path
@@ -3832,7 +3627,7 @@ async def get_config_diff(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_config_diff", e, current_user.id)
+        log_api_error("get_config_diff", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3840,15 +3635,12 @@ async def get_config_diff(
 async def restore_config_backup(
     server_id: int,
     filename: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Restore config from backup"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         import shutil
         import time
@@ -3881,7 +3673,7 @@ async def restore_config_backup(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="config_backup_restore",
             details={"filename": filename},
         )
@@ -3894,7 +3686,7 @@ async def restore_config_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("restore_config_backup", e, current_user.id)
+        log_api_error("restore_config_backup", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3902,15 +3694,12 @@ async def restore_config_backup(
 async def delete_config_backup(
     server_id: int,
     filename: str,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Delete a config backup"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -3936,7 +3725,7 @@ async def delete_config_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_config_backup", e, current_user.id)
+        log_api_error("delete_config_backup", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3948,15 +3737,12 @@ async def delete_config_backup(
 @router.get("/{server_id}/config/motd")
 async def get_motd(
     server_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Get MOTD content"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -3986,7 +3772,7 @@ async def get_motd(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_motd", e, current_user.id)
+        log_api_error("get_motd", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4000,15 +3786,12 @@ class UpdateMotdRequest(BaseModel):
 async def update_motd(
     server_id: int,
     request: UpdateMotdRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Update MOTD content"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         import shutil
         from pathlib import Path
@@ -4038,7 +3821,7 @@ async def update_motd(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="motd_update",
             details={"size": len(content.encode("utf-8"))},
         )
@@ -4051,7 +3834,7 @@ async def update_motd(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_motd", e, current_user.id)
+        log_api_error("update_motd", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4073,23 +3856,7 @@ async def get_player_leaderboard(
 ):
     """Get player leaderboard"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4125,23 +3892,7 @@ async def get_player_stats(
 ):
     """Get individual player statistics"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4169,23 +3920,7 @@ async def get_top_players(
 ):
     """Get top players in different categories"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4210,23 +3945,7 @@ async def get_recent_matches(
 ):
     """Get recent match history"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4251,23 +3970,7 @@ async def get_player_activity_chart(
 ):
     """Get player activity chart data"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4296,23 +3999,7 @@ async def get_current_performance(
 ):
     """Get current server performance metrics"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.performance_service import PerformanceService
 
@@ -4355,23 +4042,7 @@ async def get_performance_history(
 ):
     """Get performance metrics history"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.performance_service import PerformanceService
 
@@ -4400,23 +4071,7 @@ async def get_performance_summary(
 ):
     """Get performance metrics summary (averages, peaks)"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.services.performance_service import PerformanceService
 
@@ -4459,23 +4114,7 @@ async def upload_custom_map(
 ):
     """Upload custom map (.bsp file)"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         import hashlib
         from pathlib import Path
@@ -4564,23 +4203,7 @@ async def get_custom_maps(
 ):
     """Get list of custom uploaded maps"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.models.database import CustomMap
 
@@ -4627,23 +4250,7 @@ async def delete_custom_map(
 ):
     """Delete custom map"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from pathlib import Path
 
@@ -4712,23 +4319,7 @@ async def get_vip_members(
 ):
     """Get VIP members list"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.models.database import VIPMember
 
@@ -4775,23 +4366,7 @@ async def add_vip_member(
 ):
     """Add VIP member"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.models.database import VIPMember
 
@@ -4860,23 +4435,7 @@ async def update_vip_member(
 ):
     """Update VIP member"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.models.database import VIPMember
 
@@ -4929,23 +4488,7 @@ async def delete_vip_member(
 ):
     """Delete VIP member"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.models.database import VIPMember
 
@@ -4993,23 +4536,7 @@ async def toggle_vip_status(
 ):
     """Toggle VIP active status"""
     try:
-        current_user, panel_server_id = auth
-
-        # Panel authentication
-        if panel_server_id:
-            if server_id != panel_server_id:
-                raise HTTPException(status_code=403, detail="Panel token is for a different server")
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-        # Steam authentication
-        elif current_user:
-            server = db.query(GameServer).filter(GameServer.id == server_id).first()
-            if not server:
-                raise NotFoundError("Server not found")
-            validate_server_ownership(server, current_user)
-        else:
-            raise HTTPException(status_code=401, detail="Authentication required")
+        current_user, server = await get_auth_and_server(server_id, auth, db)
 
         from app.models.database import VIPMember
 
