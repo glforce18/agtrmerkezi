@@ -413,7 +413,7 @@ export default {
    * @throws {Error} If request fails
    */
   compilePlugin(id, data) {
-    return apiClient.post(`/servers/${id}/plugins/compile`, data)
+    return apiClient.post(`/servers/${id}/plugins/compile`, data).then(r => r.data)
   },
 
   /**
@@ -424,7 +424,7 @@ export default {
    * @throws {Error} If request fails
    */
   validatePluginSyntax(id, data) {
-    return apiClient.post(`/servers/${id}/plugins/validate`, data)
+    return apiClient.post(`/servers/${id}/plugins/validate`, data).then(r => r.data)
   },
 
   /**
@@ -434,7 +434,7 @@ export default {
    * @throws {Error} If request fails
    */
   getCompilerInfo(id) {
-    return apiClient.get(`/servers/${id}/plugins/compiler-info`)
+    return apiClient.get(`/servers/${id}/plugins/compiler-info`).then(r => r.data)
   },
 
   // Plugin Config Editor (Phase 2)
@@ -445,7 +445,7 @@ export default {
    * @throws {Error} If request fails
    */
   listPluginConfigs(id) {
-    return apiClient.get(`/servers/${id}/plugins/configs/list`)
+    return apiClient.get(`/servers/${id}/plugins/configs/list`).then(r => r.data)
   },
 
   /**
@@ -456,7 +456,7 @@ export default {
    * @throws {Error} If request fails
    */
   getPluginConfig(id, filename) {
-    return apiClient.get(`/servers/${id}/plugins/configs/${filename}`)
+    return apiClient.get(`/servers/${id}/plugins/configs/${filename}`).then(r => r.data)
   },
 
   /**
@@ -468,7 +468,7 @@ export default {
    * @throws {Error} If request fails
    */
   updatePluginConfig(id, filename, data) {
-    return apiClient.put(`/servers/${id}/plugins/configs/${filename}`, data)
+    return apiClient.put(`/servers/${id}/plugins/configs/${filename}`, data).then(r => r.data)
   },
 
   // Plugin Logs Viewer (Phase 2)
@@ -479,7 +479,7 @@ export default {
    * @throws {Error} If request fails
    */
   listPluginLogs(id) {
-    return apiClient.get(`/servers/${id}/plugins/logs/list`)
+    return apiClient.get(`/servers/${id}/plugins/logs/list`).then(r => r.data)
   },
 
   /**
@@ -491,7 +491,7 @@ export default {
    * @throws {Error} If request fails
    */
   getPluginLog(id, filename, params = {}) {
-    return apiClient.get(`/servers/${id}/plugins/logs/${filename}`, { params })
+    return apiClient.get(`/servers/${id}/plugins/logs/${filename}`, { params }).then(r => r.data)
   },
 
   /**
@@ -502,7 +502,7 @@ export default {
    * @throws {Error} If request fails
    */
   deletePluginLog(id, filename) {
-    return apiClient.delete(`/servers/${id}/plugins/logs/${filename}`)
+    return apiClient.delete(`/servers/${id}/plugins/logs/${filename}`).then(r => r.data)
   },
 
   // Config Templates (Phase 2)
@@ -513,7 +513,7 @@ export default {
    * @throws {Error} If request fails
    */
   getConfigTemplates(id) {
-    return apiClient.get(`/servers/${id}/config/templates`)
+    return apiClient.get(`/servers/${id}/config/templates`).then(r => r.data)
   },
 
   /**
@@ -524,7 +524,7 @@ export default {
    * @throws {Error} If request fails
    */
   applyConfigTemplate(id, data) {
-    return apiClient.post(`/servers/${id}/config/apply-template`, data)
+    return apiClient.post(`/servers/${id}/config/apply-template`, data).then(r => r.data)
   },
 
   // Config Backup & Restore (Phase 2)
@@ -535,7 +535,7 @@ export default {
    * @throws {Error} If request fails
    */
   getConfigBackups(id) {
-    return apiClient.get(`/servers/${id}/config/backups`)
+    return apiClient.get(`/servers/${id}/config/backups`).then(r => r.data)
   },
 
   /**
@@ -545,7 +545,7 @@ export default {
    * @throws {Error} If request fails
    */
   createConfigBackup(id) {
-    return apiClient.post(`/servers/${id}/config/backup`)
+    return apiClient.post(`/servers/${id}/config/backup`).then(r => r.data)
   },
 
   /**
@@ -556,7 +556,7 @@ export default {
    * @throws {Error} If request fails
    */
   getConfigDiff(id, filename) {
-    return apiClient.get(`/servers/${id}/config/backups/${filename}/diff`)
+    return apiClient.get(`/servers/${id}/config/backups/${filename}/diff`).then(r => r.data)
   },
 
   /**
@@ -567,7 +567,7 @@ export default {
    * @throws {Error} If request fails
    */
   restoreConfigBackup(id, filename) {
-    return apiClient.post(`/servers/${id}/config/backups/${filename}/restore`)
+    return apiClient.post(`/servers/${id}/config/backups/${filename}/restore`).then(r => r.data)
   },
 
   /**
@@ -578,7 +578,7 @@ export default {
    * @throws {Error} If request fails
    */
   deleteConfigBackup(id, filename) {
-    return apiClient.delete(`/servers/${id}/config/backups/${filename}`)
+    return apiClient.delete(`/servers/${id}/config/backups/${filename}`).then(r => r.data)
   },
 
   // MOTD Editor (Phase 2)
@@ -589,7 +589,7 @@ export default {
    * @throws {Error} If request fails
    */
   getMotd(id) {
-    return apiClient.get(`/servers/${id}/config/motd`)
+    return apiClient.get(`/servers/${id}/config/motd`).then(r => r.data)
   },
 
   /**
@@ -600,7 +600,7 @@ export default {
    * @throws {Error} If request fails
    */
   updateMotd(id, data) {
-    return apiClient.put(`/servers/${id}/config/motd`, data)
+    return apiClient.put(`/servers/${id}/config/motd`, data).then(r => r.data)
   },
 
   // Player Statistics (Feature #17)
@@ -612,7 +612,7 @@ export default {
    * @throws {Error} If request fails
    */
   getPlayerLeaderboard(id, params = {}) {
-    return apiClient.get(`/servers/${id}/stats/leaderboard`, { params })
+    return apiClient.get(`/servers/${id}/stats/leaderboard`, { params }).then(r => r.data)
   },
 
   /**
@@ -623,7 +623,7 @@ export default {
    * @throws {Error} If request fails
    */
   getPlayerStats(id, steamId) {
-    return apiClient.get(`/servers/${id}/stats/player/${steamId}`)
+    return apiClient.get(`/servers/${id}/stats/player/${steamId}`).then(r => r.data)
   },
 
   /**
@@ -634,7 +634,7 @@ export default {
    * @throws {Error} If request fails
    */
   getTopPlayers(id, limit = 5) {
-    return apiClient.get(`/servers/${id}/stats/top-players`, { params: { limit } })
+    return apiClient.get(`/servers/${id}/stats/top-players`, { params: { limit } }).then(r => r.data)
   },
 
   /**
@@ -645,7 +645,7 @@ export default {
    * @throws {Error} If request fails
    */
   getRecentMatches(id, limit = 20) {
-    return apiClient.get(`/servers/${id}/stats/matches`, { params: { limit } })
+    return apiClient.get(`/servers/${id}/stats/matches`, { params: { limit } }).then(r => r.data)
   },
 
   /**
@@ -656,7 +656,7 @@ export default {
    * @throws {Error} If request fails
    */
   getPlayerActivityChart(id, days = 30) {
-    return apiClient.get(`/servers/${id}/stats/activity-chart`, { params: { days } })
+    return apiClient.get(`/servers/${id}/stats/activity-chart`, { params: { days } }).then(r => r.data)
   },
 
   // Server Performance Metrics (Feature #18)
@@ -667,7 +667,7 @@ export default {
    * @throws {Error} If request fails
    */
   getCurrentPerformance(id) {
-    return apiClient.get(`/servers/${id}/performance/current`)
+    return apiClient.get(`/servers/${id}/performance/current`).then(r => r.data)
   },
 
   /**
@@ -678,7 +678,7 @@ export default {
    * @throws {Error} If request fails
    */
   getPerformanceHistory(id, params = {}) {
-    return apiClient.get(`/servers/${id}/performance/history`, { params })
+    return apiClient.get(`/servers/${id}/performance/history`, { params }).then(r => r.data)
   },
 
   /**
@@ -689,7 +689,7 @@ export default {
    * @throws {Error} If request fails
    */
   getPerformanceSummary(id, hours = 24) {
-    return apiClient.get(`/servers/${id}/performance/summary`, { params: { hours } })
+    return apiClient.get(`/servers/${id}/performance/summary`, { params: { hours } }).then(r => r.data)
   },
 
   // Custom Map Uploader (Feature #19)
@@ -703,7 +703,7 @@ export default {
   uploadCustomMap(id, formData) {
     return apiClient.post(`/servers/${id}/maps/upload`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    }).then(r => r.data)
   },
 
   /**
@@ -713,7 +713,7 @@ export default {
    * @throws {Error} If request fails
    */
   getCustomMaps(id) {
-    return apiClient.get(`/servers/${id}/maps/custom`)
+    return apiClient.get(`/servers/${id}/maps/custom`).then(r => r.data)
   },
 
   /**
@@ -724,7 +724,7 @@ export default {
    * @throws {Error} If request fails
    */
   deleteCustomMap(id, mapId) {
-    return apiClient.delete(`/servers/${id}/maps/custom/${mapId}`)
+    return apiClient.delete(`/servers/${id}/maps/custom/${mapId}`).then(r => r.data)
   },
 
   // VIP System Manager (Feature #20)
@@ -735,7 +735,7 @@ export default {
    * @throws {Error} If request fails
    */
   getVIPMembers(id) {
-    return apiClient.get(`/servers/${id}/vip/members`)
+    return apiClient.get(`/servers/${id}/vip/members`).then(r => r.data)
   },
 
   /**
@@ -746,7 +746,7 @@ export default {
    * @throws {Error} If request fails
    */
   addVIPMember(id, data) {
-    return apiClient.post(`/servers/${id}/vip/members`, data)
+    return apiClient.post(`/servers/${id}/vip/members`, data).then(r => r.data)
   },
 
   /**
@@ -758,7 +758,7 @@ export default {
    * @throws {Error} If request fails
    */
   updateVIPMember(id, vipId, data) {
-    return apiClient.put(`/servers/${id}/vip/members/${vipId}`, data)
+    return apiClient.put(`/servers/${id}/vip/members/${vipId}`, data).then(r => r.data)
   },
 
   /**
@@ -769,7 +769,7 @@ export default {
    * @throws {Error} If request fails
    */
   deleteVIPMember(id, vipId) {
-    return apiClient.delete(`/servers/${id}/vip/members/${vipId}`)
+    return apiClient.delete(`/servers/${id}/vip/members/${vipId}`).then(r => r.data)
   },
 
   /**
@@ -780,6 +780,6 @@ export default {
    * @throws {Error} If request fails
    */
   toggleVIPStatus(id, vipId) {
-    return apiClient.post(`/servers/${id}/vip/members/${vipId}/toggle`)
+    return apiClient.post(`/servers/${id}/vip/members/${vipId}/toggle`).then(r => r.data)
   }
 }

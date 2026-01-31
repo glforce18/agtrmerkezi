@@ -4074,9 +4074,22 @@ async def get_player_leaderboard(
     """Get player leaderboard"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4113,9 +4126,22 @@ async def get_player_stats(
     """Get individual player statistics"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4144,9 +4170,22 @@ async def get_top_players(
     """Get top players in different categories"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4172,9 +4211,22 @@ async def get_recent_matches(
     """Get recent match history"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4200,9 +4252,22 @@ async def get_player_activity_chart(
     """Get player activity chart data"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.services.player_stats_service import PlayerStatsService
 
@@ -4232,9 +4297,22 @@ async def get_current_performance(
     """Get current server performance metrics"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.services.performance_service import PerformanceService
 
@@ -4278,9 +4356,22 @@ async def get_performance_history(
     """Get performance metrics history"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.services.performance_service import PerformanceService
 
@@ -4310,9 +4401,22 @@ async def get_performance_summary(
     """Get performance metrics summary (averages, peaks)"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.services.performance_service import PerformanceService
 
@@ -4350,15 +4454,28 @@ async def upload_custom_map(
     display_name: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     author: Optional[str] = Form(None),
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Upload custom map (.bsp file)"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, panel_server_id = auth
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         import hashlib
         from pathlib import Path
@@ -4418,7 +4535,7 @@ async def upload_custom_map(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="map_upload",
             details={"map_name": map_name, "file_size": file_size},
         )
@@ -4435,7 +4552,7 @@ async def upload_custom_map(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("upload_custom_map", e, current_user.id)
+        log_api_error("upload_custom_map", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4448,16 +4565,29 @@ async def get_custom_maps(
     """Get list of custom uploaded maps"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.models.database import CustomMap
 
         maps = (
             db.query(CustomMap)
             .filter(CustomMap.server_id == server_id)
-            .order_by(CustomMap.uploaded_at.desc())
+            .order_by(CustomMap.upload_date.desc())
             .all()
         )
 
@@ -4473,7 +4603,7 @@ async def get_custom_maps(
                         "description": m.description,
                         "author": m.author,
                         "thumbnail_url": m.thumbnail_url,
-                        "uploaded_at": m.uploaded_at.isoformat() if m.uploaded_at else None,
+                        "uploaded_at": m.upload_date.isoformat() if m.upload_date else None,
                     }
                     for m in maps
                 ],
@@ -4492,15 +4622,28 @@ async def get_custom_maps(
 async def delete_custom_map(
     server_id: int,
     map_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Delete custom map"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, panel_server_id = auth
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from pathlib import Path
 
@@ -4532,7 +4675,7 @@ async def delete_custom_map(
         admin_service = AdminService(db)
         await admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             action_type="map_delete",
             details={"map_name": custom_map.map_name},
         )
@@ -4542,7 +4685,7 @@ async def delete_custom_map(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_custom_map", e, current_user.id)
+        log_api_error("delete_custom_map", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4570,9 +4713,22 @@ async def get_vip_members(
     """Get VIP members list"""
     try:
         current_user, panel_server_id = auth
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.models.database import VIPMember
 
@@ -4590,11 +4746,10 @@ async def get_vip_members(
                         "id": v.id,
                         "steam_id": v.steam_id,
                         "player_name": v.player_name,
-                        "flags": v.flags,
+                        "flags": v.vip_flags,
                         "expires_at": v.expires_at.isoformat() if v.expires_at else None,
                         "is_active": v.is_active,
                         "is_expired": v.expires_at < datetime.utcnow() if v.expires_at else False,
-                        "notes": v.notes,
                         "created_at": v.created_at.isoformat() if v.created_at else None,
                     }
                     for v in vips
@@ -4615,15 +4770,28 @@ async def get_vip_members(
 async def add_vip_member(
     server_id: int,
     request: AddVIPRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Add VIP member"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, panel_server_id = auth
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.models.database import VIPMember
 
@@ -4645,23 +4813,26 @@ async def add_vip_member(
             server_id=server_id,
             steam_id=request.steam_id,
             player_name=request.player_name,
-            flags=request.flags,
+            vip_flags=request.flags,
             expires_at=request.expires_at,
-            notes=request.notes,
         )
         db.add(vip)
         db.commit()
 
-        # Log action
-        from app.services.admin_service import AdminService
+        # Log action (non-critical, wrapped in try-except)
+        try:
+            from app.services.admin_service import AdminService
 
-        admin_service = AdminService(db)
-        await admin_service.log_action(
-            server_id=server_id,
-            user_id=current_user.id,
-            action_type="vip_add",
-            details={"steam_id": request.steam_id, "flags": request.flags},
-        )
+            admin_service = AdminService(db)
+            admin_service.log_action(
+                server_id=server_id,
+                admin_id=current_user.id if current_user else None,
+                action_type="vip_add",
+                target_steam_id=request.steam_id,
+                reason=f"VIP flags: {request.flags}",
+            )
+        except Exception as log_err:
+            logger.warning(f"VIP log action failed: {log_err}")
 
         return success_response(
             message="VIP eklendi",
@@ -4675,7 +4846,7 @@ async def add_vip_member(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("add_vip_member", e, current_user.id)
+        log_api_error("add_vip_member", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4684,15 +4855,28 @@ async def update_vip_member(
     server_id: int,
     vip_id: int,
     request: AddVIPRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Update VIP member"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, panel_server_id = auth
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.models.database import VIPMember
 
@@ -4707,9 +4891,8 @@ async def update_vip_member(
 
         # Update fields
         vip.player_name = request.player_name
-        vip.flags = request.flags
+        vip.vip_flags = request.flags
         vip.expires_at = request.expires_at
-        vip.notes = request.notes
         vip.updated_at = datetime.utcnow()
 
         db.commit()
@@ -4717,20 +4900,23 @@ async def update_vip_member(
         # Log action
         from app.services.admin_service import AdminService
 
-        admin_service = AdminService(db)
-        await admin_service.log_action(
-            server_id=server_id,
-            user_id=current_user.id,
-            action_type="vip_update",
-            details={"steam_id": vip.steam_id},
-        )
+        try:
+            admin_service = AdminService(db)
+            admin_service.log_action(
+                server_id=server_id,
+                admin_id=current_user.id if current_user else None,
+                action_type="vip_update",
+                target_steam_id=vip.steam_id,
+            )
+        except Exception as log_err:
+            logger.warning(f"VIP log action failed: {log_err}")
 
         return success_response(message="VIP güncellendi")
 
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_vip_member", e, current_user.id)
+        log_api_error("update_vip_member", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4738,15 +4924,28 @@ async def update_vip_member(
 async def delete_vip_member(
     server_id: int,
     vip_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Delete VIP member"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, panel_server_id = auth
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.models.database import VIPMember
 
@@ -4763,22 +4962,25 @@ async def delete_vip_member(
         db.commit()
 
         # Log action
-        from app.services.admin_service import AdminService
+        try:
+            from app.services.admin_service import AdminService
 
-        admin_service = AdminService(db)
-        await admin_service.log_action(
-            server_id=server_id,
-            user_id=current_user.id,
-            action_type="vip_delete",
-            details={"steam_id": vip.steam_id},
-        )
+            admin_service = AdminService(db)
+            admin_service.log_action(
+                server_id=server_id,
+                admin_id=current_user.id if current_user else None,
+                action_type="vip_delete",
+                target_steam_id=vip.steam_id,
+            )
+        except Exception as log_err:
+            logger.warning(f"VIP log action failed: {log_err}")
 
         return success_response(message="VIP silindi")
 
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_vip_member", e, current_user.id)
+        log_api_error("delete_vip_member", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4786,15 +4988,28 @@ async def delete_vip_member(
 async def toggle_vip_status(
     server_id: int,
     vip_id: int,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Toggle VIP active status"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
-        if not server:
-            raise NotFoundError("Sunucu bulunamadı")
-        validate_server_ownership(server, current_user)
+        current_user, panel_server_id = auth
+
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         from app.models.database import VIPMember
 
@@ -4820,5 +5035,5 @@ async def toggle_vip_status(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("toggle_vip_status", e, current_user.id)
+        log_api_error("toggle_vip_status", e, current_user.id if current_user else None)
         raise HTTPException(status_code=500, detail=str(e))
