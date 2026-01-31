@@ -122,5 +122,285 @@ export default {
    */
   orderPackageWallet(data) {
     return apiClient.post('/servers/order/package-wallet', data)
+  },
+
+  // Plugin Management
+  /**
+   * Get all plugins (server + user plugins)
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {server_plugins: Array, user_plugins: Array, stats: Object}}>}
+   * @throws {Error} If request fails
+   */
+  getAllPlugins(id) {
+    return apiClient.get(`/servers/${id}/plugins/all`)
+  },
+
+  /**
+   * Upload a plugin file
+   * @param {number} id - Server ID
+   * @param {object} data - {filename: string, content_base64: string}
+   * @returns {Promise} Upload result
+   * @throws {Error} If request fails or validation error
+   */
+  uploadPlugin(id, data) {
+    return apiClient.post(`/servers/${id}/plugins/upload`, data)
+  },
+
+  /**
+   * Delete a plugin
+   * @param {number} id - Server ID
+   * @param {string} filename - Plugin filename
+   * @returns {Promise} Delete result
+   * @throws {Error} If request fails
+   */
+  deletePlugin(id, filename) {
+    return apiClient.delete(`/servers/${id}/plugins/${filename}`)
+  },
+
+  /**
+   * Toggle plugin enable/disable
+   * @param {number} id - Server ID
+   * @param {string} filename - Plugin filename
+   * @param {boolean} enable - True to enable, false to disable
+   * @returns {Promise} Toggle result
+   * @throws {Error} If request fails
+   */
+  togglePlugin(id, filename, enable) {
+    return apiClient.post(`/servers/${id}/plugins/${filename}/toggle`, null, {
+      params: { enable }
+    })
+  },
+
+  // Config Management
+  /**
+   * Get server.cfg parsed into CVARs
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {cvars: Object, categorized: Object}}>}
+   * @throws {Error} If request fails
+   */
+  getServerConfig(id) {
+    return apiClient.get(`/servers/${id}/config/server`)
+  },
+
+  /**
+   * Update server.cfg CVARs
+   * @param {number} id - Server ID
+   * @param {object} data - {cvars: {cvar_name: value}}
+   * @returns {Promise} Update result
+   * @throws {Error} If request fails
+   */
+  updateServerConfig(id, data) {
+    return apiClient.put(`/servers/${id}/config/server`, data)
+  },
+
+  /**
+   * Get mapcycle.txt map list
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {maps: Array}}>}
+   * @throws {Error} If request fails
+   */
+  getMapcycle(id) {
+    return apiClient.get(`/servers/${id}/config/mapcycle`)
+  },
+
+  /**
+   * Update mapcycle.txt map list
+   * @param {number} id - Server ID
+   * @param {Array<string>} maps - List of map names
+   * @returns {Promise} Update result
+   * @throws {Error} If request fails
+   */
+  updateMapcycle(id, maps) {
+    return apiClient.put(`/servers/${id}/config/mapcycle`, maps)
+  },
+
+  // File Browser
+  /**
+   * Browse server files
+   * @param {number} id - Server ID
+   * @param {string} path - Directory path
+   * @returns {Promise<{data: {files: Array, current_path: string}}>}
+   * @throws {Error} If request fails
+   */
+  browseFiles(id, path = '') {
+    return apiClient.get(`/servers/${id}/files/browse`, { params: { path } })
+  },
+
+  // Admin Management
+  /**
+   * Get admin users from users.ini
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {admins: Array}}>}
+   * @throws {Error} If request fails
+   */
+  getAdminUsers(id) {
+    return apiClient.get(`/servers/${id}/admin/users`)
+  },
+
+  /**
+   * Add admin user
+   * @param {number} id - Server ID
+   * @param {object} data - {steam_id, flags, password, connection_flags}
+   * @returns {Promise} Add result
+   * @throws {Error} If request fails
+   */
+  addAdminUser(id, data) {
+    return apiClient.post(`/servers/${id}/admin/users`, data)
+  },
+
+  /**
+   * Delete admin user
+   * @param {number} id - Server ID
+   * @param {string} steamId - Steam ID
+   * @returns {Promise} Delete result
+   * @throws {Error} If request fails
+   */
+  deleteAdminUser(id, steamId) {
+    return apiClient.delete(`/servers/${id}/admin/users/${steamId}`)
+  },
+
+  /**
+   * Get ban list
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {bans: Array}}>}
+   * @throws {Error} If request fails
+   */
+  getBans(id) {
+    return apiClient.get(`/servers/${id}/admin/bans`)
+  },
+
+  /**
+   * Add ban
+   * @param {number} id - Server ID
+   * @param {object} data - {ban_type, value, duration}
+   * @returns {Promise} Add result
+   * @throws {Error} If request fails
+   */
+  addBan(id, data) {
+    return apiClient.post(`/servers/${id}/admin/bans`, data)
+  },
+
+  /**
+   * Delete ban
+   * @param {number} id - Server ID
+   * @param {string} banType - "ip" or "steam_id"
+   * @param {string} value - IP or Steam ID
+   * @returns {Promise} Delete result
+   * @throws {Error} If request fails
+   */
+  deleteBan(id, banType, value) {
+    return apiClient.delete(`/servers/${id}/admin/bans/${banType}/${value}`)
+  },
+
+  // Player Actions (RCON)
+  /**
+   * Kick player via RCON
+   * @param {number} id - Server ID
+   * @param {number} slot - Player slot
+   * @param {object} data - {reason}
+   * @returns {Promise} Kick result
+   * @throws {Error} If request fails
+   */
+  kickPlayerRcon(id, slot, data) {
+    return apiClient.post(`/servers/${id}/players/${slot}/kick`, data)
+  },
+
+  /**
+   * Slay player via RCON
+   * @param {number} id - Server ID
+   * @param {number} slot - Player slot
+   * @param {object} data - {}
+   * @returns {Promise} Slay result
+   * @throws {Error} If request fails
+   */
+  slayPlayerRcon(id, slot, data) {
+    return apiClient.post(`/servers/${id}/players/${slot}/slay`, data)
+  },
+
+  // Map Management
+  /**
+   * Get map library (all maps)
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {maps: Array, base_count: number, custom_count: number}}>}
+   * @throws {Error} If request fails
+   */
+  getMapLibrary(id) {
+    return apiClient.get(`/servers/${id}/maps/library`)
+  },
+
+  /**
+   * Get mapcycle list
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {maps: Array}}>}
+   * @throws {Error} If request fails
+   */
+  getMapcycleList(id) {
+    return apiClient.get(`/servers/${id}/maps/mapcycle`)
+  },
+
+  /**
+   * Update mapcycle list
+   * @param {number} id - Server ID
+   * @param {object} data - {maps: Array}
+   * @returns {Promise} Update result
+   * @throws {Error} If request fails
+   */
+  updateMapcycleList(id, data) {
+    return apiClient.put(`/servers/${id}/maps/mapcycle`, data)
+  },
+
+  // Backup Management
+  /**
+   * Get backup list
+   * @param {number} id - Server ID
+   * @param {string} type - Filter by type (config, full, database)
+   * @returns {Promise<{data: {backups: Array, count: number, total_size: number}}>}
+   * @throws {Error} If request fails
+   */
+  getBackups(id, type = null) {
+    return apiClient.get(`/servers/${id}/backups`, { params: { backup_type: type } })
+  },
+
+  /**
+   * Create backup
+   * @param {number} id - Server ID
+   * @param {string} type - Backup type (config or full)
+   * @returns {Promise} Create result
+   * @throws {Error} If request fails
+   */
+  createBackup(id, type) {
+    return apiClient.post(`/servers/${id}/backups/create`, null, { params: { backup_type: type } })
+  },
+
+  /**
+   * Restore from backup
+   * @param {number} id - Server ID
+   * @param {string} filename - Backup filename
+   * @returns {Promise} Restore result
+   * @throws {Error} If request fails
+   */
+  restoreBackup(id, filename) {
+    return apiClient.post(`/servers/${id}/backups/${filename}/restore`)
+  },
+
+  /**
+   * Delete backup
+   * @param {number} id - Server ID
+   * @param {string} filename - Backup filename
+   * @returns {Promise} Delete result
+   * @throws {Error} If request fails
+   */
+  deleteBackup(id, filename) {
+    return apiClient.delete(`/servers/${id}/backups/${filename}`)
+  },
+
+  /**
+   * Get backup schedule
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {schedule: Object}}>}
+   * @throws {Error} If request fails
+   */
+  getBackupSchedule(id) {
+    return apiClient.get(`/servers/${id}/backups/schedule`)
   }
 }

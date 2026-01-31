@@ -9,13 +9,14 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.common import (
     APIError,
     BadRequestError,
+    ForbiddenError,
     NotFoundError,
     log_api_call,
     log_api_error,
@@ -1510,4 +1511,1411 @@ async def update_server_webpanel_settings(
     except Exception as e:
         db.rollback()
         log_api_error("update_server_webpanel_settings", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# Plugin Management Endpoints
+# ============================================
+
+
+class PluginUploadRequest(BaseModel):
+    """Plugin upload request"""
+
+    filename: str
+    content_base64: str  # Base64 encoded .amxx file
+
+
+@router.get("/{server_id}/plugins/all")
+async def get_all_plugins(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Get all plugins (server plugins + user plugins)
+
+    Returns:
+        - server_plugins: List of server plugins (read-only)
+        - user_plugins: List of user's uploaded plugins
+        - stats: Plugin statistics
+    """
+    try:
+        # Get server and verify ownership
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.services.plugin_manager_service import PluginManagerService
+
+        plugin_service = PluginManagerService(db)
+
+        server_plugins = plugin_service.list_server_plugins(server_id)
+        user_plugins = plugin_service.list_user_plugins(server_id, current_user.id)
+        stats = plugin_service.get_plugin_stats(server_id, current_user.id)
+
+        return success_response(
+            data={
+                "server_plugins": server_plugins,
+                "user_plugins": user_plugins,
+                "stats": stats,
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_all_plugins", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/plugins/upload")
+async def upload_plugin(
+    server_id: int,
+    request: PluginUploadRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Upload a plugin file (.amxx)
+
+    Args:
+        filename: Plugin filename (must end with .amxx)
+        content_base64: Base64 encoded file content
+
+    Returns:
+        Success message and plugin info
+    """
+    try:
+        # Get server and verify ownership
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        # Decode base64 content
+        import base64
+
+        try:
+            content = base64.b64decode(request.content_base64)
+        except Exception:
+            raise BadRequestError("Geçersiz dosya içeriği (base64 decode hatası)")
+
+        from app.services.plugin_manager_service import PluginManagerService
+
+        plugin_service = PluginManagerService(db)
+
+        success, message, plugin_info = plugin_service.upload_plugin(
+            server_id, current_user.id, request.filename, content
+        )
+
+        if not success:
+            raise BadRequestError(message)
+
+        return success_response(message=message, data={"plugin": plugin_info})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("upload_plugin", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{server_id}/plugins/{filename}")
+async def delete_plugin(
+    server_id: int,
+    filename: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete a user's plugin
+
+    Args:
+        filename: Plugin filename to delete
+
+    Returns:
+        Success message
+    """
+    try:
+        # Get server and verify ownership
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.services.plugin_manager_service import PluginManagerService
+
+        plugin_service = PluginManagerService(db)
+
+        success, message = plugin_service.delete_plugin(server_id, current_user.id, filename)
+
+        if not success:
+            raise BadRequestError(message)
+
+        return success_response(message=message)
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("delete_plugin", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/plugins/{filename}/toggle")
+async def toggle_plugin(
+    server_id: int,
+    filename: str,
+    enable: bool,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Enable or disable a plugin
+
+    Args:
+        filename: Plugin filename
+        enable: True to enable, False to disable
+
+    Returns:
+        Success message
+    """
+    try:
+        # Get server and verify ownership
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.services.plugin_manager_service import PluginManagerService
+
+        plugin_service = PluginManagerService(db)
+
+        success, message = plugin_service.toggle_plugin(
+            server_id, current_user.id, filename, enable
+        )
+
+        if not success:
+            raise BadRequestError(message)
+
+        return success_response(message=message)
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("toggle_plugin", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# Config Management Endpoints
+# ============================================
+
+
+class CvarUpdate(BaseModel):
+    """CVAR update request"""
+
+    cvars: dict  # Dict of cvar_name -> value
+
+
+@router.get("/{server_id}/config/server")
+async def get_server_config(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Get server.cfg parsed into CVARs
+
+    Returns:
+        - cvars: Dict of CVAR name -> value
+        - categorized: CVARs grouped by category
+    """
+    try:
+        # Get server and verify ownership
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.config_service import ConfigService
+
+        config_service = ConfigService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        cvars = config_service.parse_server_cfg(server_path)
+
+        # Categorize CVARs for better UI
+        categorized = categorize_cvars(cvars)
+
+        return success_response(
+            data={"cvars": cvars, "categorized": categorized, "total": len(cvars)}
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_server_config", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{server_id}/config/server")
+async def update_server_config(
+    server_id: int,
+    request: CvarUpdate,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Update server.cfg CVARs
+
+    Args:
+        cvars: Dict of CVAR name -> value to update
+
+    Returns:
+        Success message
+    """
+    try:
+        # Get server and verify ownership
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.config_service import ConfigService
+
+        config_service = ConfigService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        # Update CVARs (with automatic backup)
+        success = config_service.update_server_cfg(server_path, request.cvars, backup=True)
+
+        if not success:
+            raise BadRequestError("Config güncellenemedi")
+
+        return success_response(
+            message=f"{len(request.cvars)} CVAR başarıyla güncellendi",
+            data={"updated_count": len(request.cvars), "restart_required": True},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("update_server_config", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/config/mapcycle")
+async def get_mapcycle(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get mapcycle.txt map list"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.config_service import ConfigService
+
+        config_service = ConfigService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        maps = config_service.get_mapcycle(server_path)
+
+        return success_response(data={"maps": maps, "count": len(maps)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_mapcycle", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{server_id}/config/mapcycle")
+async def update_mapcycle(
+    server_id: int,
+    maps: List[str],
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Update mapcycle.txt map list"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.config_service import ConfigService
+
+        config_service = ConfigService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        success = config_service.update_mapcycle(server_path, maps)
+
+        if not success:
+            raise BadRequestError("Mapcycle güncellenemedi")
+
+        return success_response(
+            message=f"Mapcycle güncellendi ({len(maps)} map)", data={"count": len(maps)}
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("update_mapcycle", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def categorize_cvars(cvars: dict) -> dict:
+    """
+    Categorize CVARs for better UI organization
+
+    Returns:
+        Dict of category -> list of {name, value, description}
+    """
+    categories = {
+        "server": {"name": "Server Settings", "cvars": []},
+        "game": {"name": "Game Settings", "cvars": []},
+        "network": {"name": "Network Settings", "cvars": []},
+        "security": {"name": "Security", "cvars": []},
+        "other": {"name": "Other", "cvars": []},
+    }
+
+    # CVAR definitions with categories
+    cvar_metadata = {
+        "hostname": {
+            "category": "server",
+            "description": "Server name (appears in browser)",
+            "type": "string",
+        },
+        "rcon_password": {
+            "category": "security",
+            "description": "RCON password for remote control",
+            "type": "password",
+        },
+        "sv_password": {
+            "category": "security",
+            "description": "Join password (empty = no password)",
+            "type": "password",
+        },
+        "maxplayers": {
+            "category": "server",
+            "description": "Maximum player slots",
+            "type": "number",
+            "min": 2,
+            "max": 32,
+        },
+        "sv_lan": {
+            "category": "network",
+            "description": "LAN mode (0=Internet, 1=LAN)",
+            "type": "boolean",
+        },
+        "sv_region": {
+            "category": "network",
+            "description": (
+                "Server region (0=US East, 1=US West, 2=South America, "
+                "3=Europe, 4=Asia, 5=Australia, 6=Middle East, "
+                "7=Africa, 255=World)"
+            ),
+            "type": "number",
+        },
+        "sv_contact": {"category": "server", "description": "Admin contact", "type": "string"},
+        "mp_timelimit": {
+            "category": "game",
+            "description": "Map time limit (minutes)",
+            "type": "number",
+        },
+        "mp_fraglimit": {
+            "category": "game",
+            "description": "Frag limit to win",
+            "type": "number",
+        },
+        "mp_friendlyfire": {
+            "category": "game",
+            "description": "Friendly fire (0=off, 1=on)",
+            "type": "boolean",
+        },
+        "sv_gravity": {
+            "category": "game",
+            "description": "Gravity value (default: 800)",
+            "type": "number",
+        },
+        "sv_airaccelerate": {
+            "category": "game",
+            "description": "Air acceleration",
+            "type": "number",
+        },
+        "sv_maxspeed": {
+            "category": "game",
+            "description": "Maximum player speed",
+            "type": "number",
+        },
+        "sv_cheats": {
+            "category": "security",
+            "description": "Enable cheats (0=off, 1=on)",
+            "type": "boolean",
+        },
+        "sv_allowdownload": {
+            "category": "network",
+            "description": "Allow client downloads (0=off, 1=on)",
+            "type": "boolean",
+        },
+        "sv_allowupload": {
+            "category": "network",
+            "description": "Allow client uploads (0=off, 1=on)",
+            "type": "boolean",
+        },
+        "sv_logblocks": {
+            "category": "server",
+            "description": "Log blocked commands (0=off, 1=on)",
+            "type": "boolean",
+        },
+    }
+
+    # Categorize each CVAR
+    for cvar_name, cvar_value in cvars.items():
+        metadata = cvar_metadata.get(cvar_name, {})
+        category = metadata.get("category", "other")
+
+        categories[category]["cvars"].append(
+            {
+                "name": cvar_name,
+                "value": cvar_value,
+                "description": metadata.get("description", ""),
+                "type": metadata.get("type", "string"),
+                "min": metadata.get("min"),
+                "max": metadata.get("max"),
+            }
+        )
+
+    # Remove empty categories
+    return {k: v for k, v in categories.items() if len(v["cvars"]) > 0}
+
+
+# ============================================
+# File Browser Endpoints
+# ============================================
+
+
+class FileOperationRequest(BaseModel):
+    """File operation request"""
+
+    path: str
+
+
+@router.get("/{server_id}/files/browse")
+async def browse_files(
+    server_id: int,
+    path: str = "",
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Browse server files with tree structure
+
+    Args:
+        path: Relative path from server root (e.g., "valve/addons")
+
+    Returns:
+        - files: List of files/directories
+        - current_path: Current directory path
+    """
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_root = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        # Validate and resolve path (prevent path traversal)
+        if path:
+            requested_path = (server_root / path).resolve()
+            if not str(requested_path).startswith(str(server_root)):
+                raise BadRequestError("Geçersiz path")
+        else:
+            requested_path = server_root
+
+        if not requested_path.exists():
+            raise NotFoundError("Dizin bulunamadı")
+
+        # List directory contents
+        items = []
+        try:
+            for item in sorted(requested_path.iterdir()):
+                try:
+                    stat = item.stat()
+                    relative_path = str(item.relative_to(server_root))
+
+                    items.append(
+                        {
+                            "name": item.name,
+                            "path": relative_path,
+                            "type": "directory" if item.is_dir() else "file",
+                            "size": stat.st_size if item.is_file() else 0,
+                            "modified": stat.st_mtime,
+                            "is_symlink": item.is_symlink(),
+                        }
+                    )
+                except Exception:
+                    continue  # Skip inaccessible items
+        except PermissionError:
+            raise BadRequestError("Dizine erişim izni yok")
+
+        return success_response(
+            data={
+                "files": items,
+                "current_path": path,
+                "parent_path": (
+                    str(requested_path.parent.relative_to(server_root))
+                    if requested_path != server_root
+                    else None
+                ),
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("browse_files", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# Admin Management Endpoints
+# ============================================
+
+
+class AdminAddRequest(BaseModel):
+    """Add admin request"""
+
+    steam_id: str
+    flags: str = "abcdefghijklmnopqrstu"
+    password: str = ""
+    connection_flags: str = "ce"
+
+
+class BanAddRequest(BaseModel):
+    """Add ban request"""
+
+    ban_type: str  # "ip" or "steam_id"
+    value: str
+    duration: int = 0  # 0 = permanent
+
+
+@router.get("/{server_id}/admin/users")
+async def get_admin_users(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get admin users from users.ini"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        admins = admin_service.parse_users_ini(server_path)
+
+        return success_response(data={"admins": admins, "count": len(admins)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_admin_users", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/admin/users")
+async def add_admin_user(
+    server_id: int,
+    request: AdminAddRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Add admin to users.ini"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        success = admin_service.add_admin(
+            server_path,
+            request.steam_id,
+            request.flags,
+            request.password,
+            request.connection_flags,
+        )
+
+        if not success:
+            raise BadRequestError("Admin eklenemedi (zaten mevcut olabilir)")
+
+        # Log action
+        admin_service.log_action(
+            server_id=server_id,
+            admin_id=current_user.id,
+            action_type="admin_add",
+            target_steam_id=request.steam_id,
+            reason=f"Flags: {request.flags}",
+        )
+
+        return success_response(message=f"Admin eklendi: {request.steam_id}")
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("add_admin_user", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{server_id}/admin/users/{steam_id}")
+async def remove_admin_user(
+    server_id: int,
+    steam_id: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Remove admin from users.ini"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        success = admin_service.remove_admin(server_path, steam_id)
+
+        if not success:
+            raise BadRequestError("Admin silinemedi (bulunamadı)")
+
+        # Log action
+        admin_service.log_action(
+            server_id=server_id,
+            admin_id=current_user.id,
+            action_type="admin_remove",
+            target_steam_id=steam_id,
+        )
+
+        return success_response(message=f"Admin silindi: {steam_id}")
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("remove_admin_user", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/admin/bans")
+async def get_bans(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get ban list from banned.cfg"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        bans = admin_service.parse_banned_cfg(server_path)
+
+        return success_response(data={"bans": bans, "count": len(bans)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_bans", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/admin/bans")
+async def add_ban(
+    server_id: int,
+    request: BanAddRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Add ban to banned.cfg"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        if request.ban_type not in ["ip", "steam_id"]:
+            raise BadRequestError("Geçersiz ban tipi (ip veya steam_id olmalı)")
+
+        from pathlib import Path
+
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        success = admin_service.add_ban(
+            server_path, request.ban_type, request.value, request.duration
+        )
+
+        if not success:
+            raise BadRequestError("Ban eklenemedi (zaten mevcut olabilir)")
+
+        # Log action
+        admin_service.log_action(
+            server_id=server_id,
+            admin_id=current_user.id,
+            action_type="ban",
+            target_steam_id=request.value if request.ban_type == "steam_id" else None,
+            reason=f"{request.ban_type}: {request.value}",
+            duration_minutes=request.duration,
+        )
+
+        return success_response(
+            message=f"Ban eklendi: {request.value} ({request.duration or 'kalıcı'})"
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("add_ban", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{server_id}/admin/bans/{ban_type}/{value}")
+async def remove_ban(
+    server_id: int,
+    ban_type: str,
+    value: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Remove ban from banned.cfg"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        success = admin_service.remove_ban(server_path, ban_type, value)
+
+        if not success:
+            raise BadRequestError("Ban silinemedi (bulunamadı)")
+
+        # Log action
+        admin_service.log_action(
+            server_id=server_id,
+            admin_id=current_user.id,
+            action_type="unban",
+            target_steam_id=value if ban_type == "steam_id" else None,
+            reason=f"{ban_type}: {value}",
+        )
+
+        return success_response(message=f"Ban kaldırıldı: {value}")
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("remove_ban", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# Player Actions Endpoints (Kick/Slay via RCON)
+# ============================================
+
+
+class PlayerActionRequest(BaseModel):
+    """Player action request"""
+
+    slot: int
+    reason: Optional[str] = ""
+
+
+@router.post("/{server_id}/players/{slot}/kick")
+async def kick_player_rcon(
+    server_id: int,
+    slot: int,
+    request: PlayerActionRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Kick a player via RCON"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        rcon_service = RCONService(db)
+
+        # Execute kick command
+        result = await rcon_service.execute(
+            server, f"kick #{slot} {request.reason}", current_user.id
+        )
+
+        if not result["success"]:
+            raise BadRequestError(result.get("error", "Kick komutu başarısız"))
+
+        # Log action
+
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        admin_service.log_action(
+            server_id=server_id,
+            admin_id=current_user.id,
+            action_type="kick",
+            target_name=f"Slot {slot}",
+            reason=request.reason,
+        )
+
+        return success_response(message=f"Oyuncu kicklendi (Slot: {slot})")
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("kick_player_rcon", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/players/{slot}/slay")
+async def slay_player_rcon(
+    server_id: int,
+    slot: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Slay a player via RCON"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        rcon_service = RCONService(db)
+
+        # Execute slay command
+        result = await rcon_service.execute(server, f"amx_slay #{slot}", current_user.id)
+
+        if not result["success"]:
+            raise BadRequestError(result.get("error", "Slay komutu başarısız"))
+
+        # Log action
+
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        admin_service.log_action(
+            server_id=server_id,
+            admin_id=current_user.id,
+            action_type="slay",
+            target_name=f"Slot {slot}",
+        )
+
+        return success_response(message=f"Oyuncu öldürüldü (Slot: {slot})")
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("slay_player_rcon", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# Map Management Endpoints
+# ============================================
+
+
+class MapcycleUpdateRequest(BaseModel):
+    """Mapcycle update request"""
+
+    maps: List[str]
+
+
+@router.get("/{server_id}/maps/library")
+async def get_map_library(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Get all available maps (base + custom)
+
+    Returns:
+        - maps: List of all maps with metadata
+        - base_count: Number of base maps
+        - custom_count: Number of custom maps
+    """
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        maps_path = server_path / "valve" / "maps"
+
+        all_maps = []
+        base_count = 0
+        custom_count = 0
+
+        if maps_path.exists():
+            # Get custom maps from database
+            from app.models.database import CustomMap
+
+            custom_maps_db = db.query(CustomMap).filter_by(server_id=server_id).all()
+            custom_map_names = {m.map_name for m in custom_maps_db}
+
+            # Scan .bsp files
+            for bsp_file in maps_path.glob("*.bsp"):
+                map_name = bsp_file.stem
+                is_custom = map_name in custom_map_names
+
+                # Get custom map details if available
+                custom_map = None
+                if is_custom:
+                    custom_map = next((m for m in custom_maps_db if m.map_name == map_name), None)
+
+                map_info = {
+                    "name": map_name,
+                    "display_name": custom_map.display_name if custom_map else map_name,
+                    "is_custom": is_custom,
+                    "file_size": bsp_file.stat().st_size,
+                    "is_symlink": bsp_file.is_symlink(),
+                }
+
+                # Add custom map metadata if available
+                if custom_map:
+                    map_info.update(
+                        {
+                            "thumbnail_url": custom_map.thumbnail_url,
+                            "description": custom_map.description,
+                            "author": custom_map.author,
+                            "play_count": custom_map.play_count,
+                        }
+                    )
+                    custom_count += 1
+                else:
+                    base_count += 1
+
+                all_maps.append(map_info)
+
+        # Sort alphabetically
+        all_maps.sort(key=lambda x: x["name"])
+
+        return success_response(
+            data={
+                "maps": all_maps,
+                "total": len(all_maps),
+                "base_count": base_count,
+                "custom_count": custom_count,
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_map_library", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/maps/mapcycle")
+async def get_mapcycle_maps(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get current mapcycle"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.config_service import ConfigService
+
+        config_service = ConfigService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        maps = config_service.get_mapcycle(server_path)
+
+        return success_response(data={"maps": maps, "count": len(maps)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_mapcycle_maps", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{server_id}/maps/mapcycle")
+async def update_mapcycle_maps(
+    server_id: int,
+    request: MapcycleUpdateRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Update mapcycle with drag-drop reordered maps"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.services.config_service import ConfigService
+
+        config_service = ConfigService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        success = config_service.update_mapcycle(server_path, request.maps)
+
+        if not success:
+            raise BadRequestError("Mapcycle güncellenemedi")
+
+        return success_response(
+            message=f"Mapcycle güncellendi ({len(request.maps)} map)",
+            data={"count": len(request.maps)},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("update_mapcycle_maps", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# BACKUP MANAGEMENT
+# ============================================
+
+
+@router.get("/{server_id}/backups")
+async def list_server_backups(
+    server_id: int,
+    backup_type: Optional[str] = Query(None, description="Filter: config, full, database"),
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """List all backups for server"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.tasks.backup import backup_manager
+
+        all_backups = backup_manager.list_backups(backup_type=backup_type)
+
+        # Filter server-specific backups
+        server_backups = [
+            b
+            for b in all_backups
+            if f"server_{server_id}_" in b["filename"]
+            or (backup_type == "database" and b["type"] == "database")
+        ]
+
+        return success_response(
+            data={
+                "backups": server_backups,
+                "count": len(server_backups),
+                "total_size": sum(b["size"] for b in server_backups),
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("list_server_backups", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/backups/create")
+async def create_server_backup(
+    server_id: int,
+    backup_type: str = Query(..., description="Type: config or full"),
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Create manual backup (config or full)"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        if backup_type not in ["config", "full"]:
+            raise BadRequestError("Geçersiz yedek tipi (config veya full)")
+
+        from pathlib import Path
+
+        from app.tasks.backup import backup_manager
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        if not server_path.exists():
+            raise NotFoundError("Sunucu dizini bulunamadı")
+
+        if backup_type == "config":
+            result = await backup_manager.backup_server_configs(server_id, str(server_path))
+        else:
+            result = await backup_manager.backup_full_server(server_id, str(server_path))
+
+        if not result["success"]:
+            raise BadRequestError(result.get("error", "Yedekleme başarısız"))
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="backup_create",
+            details={"backup_type": backup_type, "filename": result["filename"]},
+        )
+
+        return success_response(
+            message=f"{backup_type.capitalize()} yedek oluşturuldu",
+            data={"backup": result},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("create_server_backup", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/backups/{filename}/restore")
+async def restore_server_backup(
+    server_id: int,
+    filename: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Restore server from backup"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.tasks.backup import BACKUP_DIR
+
+        backup_path = Path(BACKUP_DIR) / filename
+
+        if not backup_path.exists():
+            raise NotFoundError("Yedek dosyası bulunamadı")
+
+        # Verify file belongs to this server
+        if f"server_{server_id}_" not in filename:
+            raise ForbiddenError("Bu yedek bu sunucuya ait değil")
+
+        # Extract backup
+        import tarfile
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        # Safe extraction helper
+        def safe_extract(tar, path):
+            """Extract tar safely, filtering dangerous members"""
+            for member in tar.getmembers():
+                # Prevent path traversal
+                if member.name.startswith("/") or ".." in member.name:
+                    continue
+                tar.extract(member, path)
+
+        if "_config_" in filename:
+            # Restore configs only
+            with tarfile.open(backup_path, "r:gz") as tar:
+                safe_extract(tar, server_path / "valve" / "addons" / "amxmodx" / "configs")
+                safe_extract(tar, server_path / "valve")
+
+            restore_type = "config"
+
+        elif "_full_" in filename:
+            # Full restore - extract to temp then move
+            import shutil
+            import tempfile
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                with tarfile.open(backup_path, "r:gz") as tar:
+                    safe_extract(tar, tmpdir)
+
+                # Move extracted files
+                extracted_dir = Path(tmpdir) / f"server_{server_id}"
+                if extracted_dir.exists():
+                    shutil.copytree(extracted_dir, server_path, dirs_exist_ok=True)
+
+            restore_type = "full"
+        else:
+            raise BadRequestError("Geçersiz yedek tipi")
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="backup_restore",
+            details={"filename": filename, "restore_type": restore_type},
+        )
+
+        return success_response(
+            message=f"{restore_type.capitalize()} yedek geri yüklendi",
+            data={"filename": filename},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("restore_server_backup", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{server_id}/backups/{filename}")
+async def delete_server_backup(
+    server_id: int,
+    filename: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Delete a backup file"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.tasks.backup import BACKUP_DIR
+
+        backup_path = Path(BACKUP_DIR) / filename
+
+        if not backup_path.exists():
+            raise NotFoundError("Yedek dosyası bulunamadı")
+
+        # Verify file belongs to this server (unless database backup)
+        if "db_backup" not in filename and f"server_{server_id}_" not in filename:
+            raise ForbiddenError("Bu yedek bu sunucuya ait değil")
+
+        # Delete file
+        file_size = backup_path.stat().st_size
+        backup_path.unlink()
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="backup_delete",
+            details={"filename": filename},
+        )
+
+        return success_response(
+            message="Yedek silindi",
+            data={"filename": filename, "size": file_size},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("delete_server_backup", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/backups/schedule")
+async def get_backup_schedule(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get backup schedule settings"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        # For now return default schedule (can be made configurable later)
+        schedule = {
+            "enabled": True,
+            "config_backup": {"interval": "daily", "time": "03:00", "retention_days": 30},
+            "full_backup": {
+                "interval": "weekly",
+                "day": "sunday",
+                "time": "04:00",
+                "retention_days": 90,
+            },
+        }
+
+        return success_response(data={"schedule": schedule})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_backup_schedule", e, current_user.id)
         raise HTTPException(status_code=500, detail=str(e))

@@ -75,6 +75,13 @@
                   ⚡
                 </button>
                 <button
+                  @click="slayPlayer(player)"
+                  class="btn-action btn-slay"
+                  title="Oyuncuyu öldür"
+                >
+                  ☠️
+                </button>
+                <button
                   @click="banPlayer(player)"
                   class="btn-action btn-ban"
                   title="Oyuncuyu yasakla"
@@ -233,6 +240,22 @@ const kickPlayer = (player) => {
   selectedPlayer.value = player
   kickReason.value = ''
   showKickDialog.value = true
+}
+
+const slayPlayer = async (player) => {
+  if (!confirm(`"${player.name}" oyuncusunu öldürmek istediğinizden emin misiniz?`)) {
+    return
+  }
+
+  try {
+    const response = await api.slayPlayerRcon(serverId.value, player.id, {})
+
+    if (response.success) {
+      toast.show(response.message, 'success')
+    }
+  } catch (error) {
+    toast.show(error.response?.data?.detail || 'Oyuncu öldürülemedi', 'error')
+  }
 }
 
 const confirmKick = async () => {

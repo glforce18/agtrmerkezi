@@ -96,9 +96,44 @@ const router = createRouter({
           component: () => import('@/views/server/webpanel/Players.vue')
         },
         {
+          path: 'plugins',
+          name: 'server-webpanel-plugins',
+          component: () => import('@/views/server/webpanel/Plugins.vue')
+        },
+        {
+          path: 'config',
+          name: 'server-webpanel-config',
+          component: () => import('@/views/server/webpanel/ConfigEditor.vue')
+        },
+        {
+          path: 'files-browser',
+          name: 'server-webpanel-files-browser',
+          component: () => import('@/views/server/webpanel/FileBrowser.vue')
+        },
+        {
+          path: 'admin',
+          name: 'server-webpanel-admin',
+          component: () => import('@/views/server/webpanel/AdminPanel.vue')
+        },
+        {
+          path: 'maps',
+          name: 'server-webpanel-maps',
+          component: () => import('@/views/server/webpanel/MapLibrary.vue')
+        },
+        {
+          path: 'mapcycle',
+          name: 'server-webpanel-mapcycle',
+          component: () => import('@/views/server/webpanel/MapcycleEditor.vue')
+        },
+        {
           path: 'logs',
           name: 'server-webpanel-logs',
           component: () => import('@/views/server/webpanel/Logs.vue')
+        },
+        {
+          path: 'backups',
+          name: 'server-webpanel-backups',
+          component: () => import('@/views/server/webpanel/Backups.vue')
         }
       ]
     },

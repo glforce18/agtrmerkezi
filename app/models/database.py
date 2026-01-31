@@ -3531,6 +3531,422 @@ class AdminActivity(Base):
     )
 
 
+# ==================== WEBPANEL ADVANCED FEATURES ====================
+
+
+class PluginDependency(Base):
+    """Plugin dependencies - AMXModX modules and plugins"""
+
+    __tablename__ = "plugin_dependencies"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    plugin_filename = Column(String(100), nullable=False, comment="Plugin .amxx filename")
+    dependency_type = Column(
+        Enum("module", "plugin", name="dependency_type"),
+        nullable=False,
+        comment="module (.so) or plugin (.amxx)",
+    )
+    dependency_name = Column(String(100), nullable=False, comment="Required dependency")
+    is_optional = Column(Boolean, default=False, comment="Optional dependency")
+    min_version = Column(String(20), comment="Minimum required version")
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (Index("idx_plugin_deps", "plugin_filename", "dependency_type"),)
+
+
+class PluginMarketplace(Base):
+    """Plugin marketplace - community plugin store"""
+
+    __tablename__ = "plugin_marketplace"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False, comment="Plugin name")
+    filename = Column(String(100), nullable=False, unique=True, comment=".amxx filename")
+    description = Column(Text, comment="Plugin description")
+    category = Column(String(50), nullable=False, comment="admin, fun, gameplay, etc.")
+    author = Column(String(100), comment="Plugin author")
+    version = Column(String(20), comment="Plugin version")
+    file_url = Column(String(500), nullable=False, comment="Download URL")
+    file_size = Column(Integer, comment="File size in bytes")
+    file_hash = Column(String(64), comment="SHA256 hash for verification")
+    source_url = Column(String(500), comment=".sma source URL")
+    homepage_url = Column(String(500), comment="Plugin homepage")
+    dependencies = Column(JSON, comment="Required modules/plugins")
+    compatible_games = Column(JSON, comment='["AG", "HLDM", "CS16"]')
+    install_count = Column(Integer, default=0, comment="Times installed")
+    rating = Column(Float, default=0.0, comment="Average rating 0-5")
+    rating_count = Column(Integer, default=0, comment="Number of ratings")
+    is_verified = Column(Boolean, default=False, comment="AGTR verified")
+    is_active = Column(Boolean, default=True, comment="Available in marketplace")
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("idx_marketplace_category", "category", "is_active"),
+        Index("idx_marketplace_rating", "rating", "is_active"),
+    )
+
+
+class PluginPerformance(Base):
+    """Plugin performance metrics"""
+
+    __tablename__ = "plugin_performance"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    plugin_filename = Column(String(100), nullable=False)
+    cpu_usage_percent = Column(Float, comment="CPU usage %")
+    memory_kb = Column(Integer, comment="Memory usage KB")
+    tick_time_ms = Column(Float, comment="Average tick time ms")
+    error_count = Column(Integer, default=0, comment="Errors since last check")
+    last_error = Column(Text, comment="Last error message")
+    checked_at = Column(DateTime, default=func.now(), nullable=False)
+
+    # Relationship
+    server = relationship("GameServer", backref="plugin_performance_metrics")
+
+    __table_args__ = (Index("idx_plugin_perf", "server_id", "plugin_filename", "checked_at"),)
+
+
+class PluginLog(Base):
+    """Plugin error and warning logs"""
+
+    __tablename__ = "plugin_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    plugin_filename = Column(String(100), comment="NULL for general AMXModX")
+    log_level = Column(Enum("ERROR", "WARNING", "INFO", name="plugin_log_level"), nullable=False)
+    message = Column(Text, nullable=False, comment="Log message")
+    stack_trace = Column(Text, comment="Stack trace if error")
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    # Relationship
+    server = relationship("GameServer", backref="plugin_logs")
+
+    __table_args__ = (Index("idx_plugin_logs", "server_id", "log_level", "created_at"),)
+
+
+class ConfigTemplate(Base):
+    """Config templates - preset server.cfg configurations"""
+
+    __tablename__ = "config_templates"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False, comment="Template name")
+    description = Column(Text, comment="Template description")
+    game_type = Column(Enum("HLDM", "AG", "CS16", name="gametype"), nullable=False)
+    preset_type = Column(String(50), nullable=False, comment="competitive, casual, training, etc.")
+    config_content = Column(Text, nullable=False, comment="server.cfg content")
+    cvars = Column(JSON, comment="Parsed CVARs for quick editing")
+    is_official = Column(Boolean, default=False, comment="AGTR official template")
+    is_public = Column(Boolean, default=True, comment="Available to all users")
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    use_count = Column(Integer, default=0, comment="Times applied")
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationship
+    owner = relationship("User", backref="config_templates")
+
+    __table_args__ = (Index("idx_config_templates", "game_type", "preset_type", "is_public"),)
+
+
+class MotdTemplate(Base):
+    """MOTD templates - HTML message of the day"""
+
+    __tablename__ = "motd_templates"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False, comment="Template name")
+    description = Column(Text)
+    html_content = Column(Text, nullable=False, comment="MOTD HTML content")
+    is_official = Column(Boolean, default=False, comment="AGTR official")
+    is_public = Column(Boolean, default=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    use_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationship
+    owner = relationship("User", backref="motd_templates")
+
+    __table_args__ = (Index("idx_motd_templates", "is_public", "is_official"),)
+
+
+class PlayerStatistics(Base):
+    """Player statistics - kills, deaths, ELO, etc."""
+
+    __tablename__ = "player_statistics"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    steam_id = Column(String(32), nullable=False)
+    player_name = Column(String(100), comment="Last known name")
+    total_playtime_seconds = Column(Integer, default=0)
+    total_kills = Column(Integer, default=0)
+    total_deaths = Column(Integer, default=0)
+    total_headshots = Column(Integer, default=0)
+    total_score = Column(Integer, default=0)
+    total_rounds = Column(Integer, default=0)
+    wins = Column(Integer, default=0)
+    losses = Column(Integer, default=0)
+    elo_rating = Column(Integer, default=1000, comment="ELO rating")
+    rank = Column(Integer, comment="Server rank")
+    favorite_weapon = Column(String(50))
+    favorite_map = Column(String(64))
+    first_seen = Column(DateTime, default=func.now())
+    last_seen = Column(DateTime, default=func.now(), onupdate=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationship
+    server = relationship("GameServer", backref="player_statistics")
+
+    __table_args__ = (
+        UniqueConstraint("server_id", "steam_id", name="uq_player_stats"),
+        Index("idx_player_stats_leaderboard", "server_id", "elo_rating", "last_seen"),
+        Index("idx_player_stats_steam", "steam_id"),
+    )
+
+
+class MatchHistory(Base):
+    """Match history - parsed match results"""
+
+    __tablename__ = "match_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    match_date = Column(DateTime, default=func.now(), nullable=False)
+    map_name = Column(String(64), nullable=False)
+    match_type = Column(String(50), comment="deathmatch, teamplay, ag, etc.")
+    duration_seconds = Column(Integer)
+    team1_score = Column(Integer)
+    team2_score = Column(Integer)
+    winner_team = Column(Integer, comment="1 or 2")
+    total_kills = Column(Integer, default=0)
+    total_deaths = Column(Integer, default=0)
+    player_count = Column(Integer, comment="Players in match")
+    match_data = Column(JSON, comment="Full match JSON data")
+    log_file_path = Column(String(500), comment="Path to log file")
+
+    # Relationship
+    server = relationship("GameServer", backref="match_history")
+
+    __table_args__ = (
+        Index("idx_match_history", "server_id", "match_date"),
+        Index("idx_match_map", "map_name"),
+    )
+
+
+class ServerAnalytics(Base):
+    """Server performance analytics - CPU, RAM, network"""
+
+    __tablename__ = "server_analytics"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    recorded_at = Column(DateTime, default=func.now(), nullable=False)
+    cpu_usage_percent = Column(Float)
+    memory_usage_mb = Column(Float)
+    network_in_mbps = Column(Float)
+    network_out_mbps = Column(Float)
+    disk_usage_mb = Column(Float)
+    player_count = Column(Integer)
+    tick_rate = Column(Float, comment="Server tickrate")
+    fps = Column(Float, comment="Server FPS")
+    ping_avg = Column(Float, comment="Average player ping")
+    ping_max = Column(Float, comment="Max player ping")
+    current_map = Column(String(64))
+
+    # Relationship
+    server = relationship("GameServer", backref="analytics")
+
+    __table_args__ = (Index("idx_server_analytics", "server_id", "recorded_at"),)
+
+
+class CustomMap(Base):
+    """Custom uploaded maps"""
+
+    __tablename__ = "custom_maps"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    map_name = Column(String(64), nullable=False, comment="Map name without .bsp")
+    display_name = Column(String(100), comment="Friendly display name")
+    file_size_bytes = Column(Integer)
+    file_hash = Column(String(64), comment="SHA256 hash")
+    thumbnail_url = Column(String(500), comment="Map thumbnail/screenshot")
+    description = Column(Text)
+    author = Column(String(100))
+    upload_date = Column(DateTime, default=func.now())
+    play_count = Column(Integer, default=0, comment="Times played")
+    last_played = Column(DateTime)
+    has_nav_file = Column(Boolean, default=False)
+    has_res_file = Column(Boolean, default=False)
+    has_txt_file = Column(Boolean, default=False)
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+
+    # Relationships
+    server = relationship("GameServer", backref="custom_maps")
+    uploader = relationship("User", backref="uploaded_maps")
+
+    __table_args__ = (
+        UniqueConstraint("server_id", "map_name", name="uq_custom_map"),
+        Index("idx_custom_maps", "server_id", "upload_date"),
+    )
+
+
+class CustomModel(Base):
+    """Custom uploaded 3D models"""
+
+    __tablename__ = "custom_models"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    model_name = Column(String(100), nullable=False, comment="Model filename")
+    model_type = Column(String(50), nullable=False, comment="player, weapon, world, etc.")
+    file_size_bytes = Column(Integer)
+    file_hash = Column(String(64))
+    preview_url = Column(String(500), comment="Preview image")
+    description = Column(Text)
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    upload_date = Column(DateTime, default=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="custom_models")
+    uploader = relationship("User", backref="uploaded_models")
+
+    __table_args__ = (Index("idx_custom_models", "server_id", "model_type"),)
+
+
+class CustomSound(Base):
+    """Custom uploaded sounds"""
+
+    __tablename__ = "custom_sounds"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    sound_name = Column(String(100), nullable=False, comment="Sound filename")
+    sound_type = Column(String(50), nullable=False, comment="weapon, ambient, voice, etc.")
+    file_size_bytes = Column(Integer)
+    file_hash = Column(String(64))
+    duration_seconds = Column(Float)
+    description = Column(Text)
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    upload_date = Column(DateTime, default=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="custom_sounds")
+    uploader = relationship("User", backref="uploaded_sounds")
+
+    __table_args__ = (Index("idx_custom_sounds", "server_id", "sound_type"),)
+
+
+class VIPMember(Base):
+    """VIP members - users.ini VIP flags"""
+
+    __tablename__ = "vip_members"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    steam_id = Column(String(32), nullable=False)
+    player_name = Column(String(100))
+    vip_flags = Column(String(50), nullable=False, comment="AMXModX VIP flags")
+    password = Column(String(100), comment="Optional password")
+    expires_at = Column(DateTime, comment="NULL = permanent")
+    is_active = Column(Boolean, default=True)
+    added_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="vip_members")
+    admin = relationship("User", backref="added_vips")
+
+    __table_args__ = (
+        UniqueConstraint("server_id", "steam_id", name="uq_vip_member"),
+        Index("idx_vip_members", "server_id", "is_active"),
+        Index("idx_vip_steam", "steam_id"),
+    )
+
+
+class PlayerActionLog(Base):
+    """Player actions log - kicks, bans, slays"""
+
+    __tablename__ = "player_actions_log"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    admin_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), comment="Admin who performed action"
+    )
+    target_steam_id = Column(String(32), comment="Target player Steam ID")
+    target_name = Column(String(100), comment="Target player name")
+    action_type = Column(
+        Enum("kick", "ban", "slay", "unban", "mute", "unmute", name="player_action_type"),
+        nullable=False,
+    )
+    reason = Column(Text)
+    duration_minutes = Column(Integer, comment="Ban/mute duration")
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="player_actions")
+    admin = relationship("User", backref="player_actions")
+
+    __table_args__ = (
+        Index("idx_player_actions", "server_id", "action_type", "created_at"),
+        Index("idx_player_actions_steam", "target_steam_id"),
+    )
+
+
+class MapVote(Base):
+    """Map voting system"""
+
+    __tablename__ = "map_votes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    vote_title = Column(String(200), nullable=False, comment="Vote description")
+    map_options = Column(JSON, nullable=False, comment='["map1", "map2", "map3"]')
+    vote_results = Column(JSON, comment='{"map1": 5, "map2": 3}')
+    winning_map = Column(String(64))
+    is_active = Column(Boolean, default=True, comment="Currently accepting votes")
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+    ends_at = Column(DateTime, comment="Vote end time")
+    completed_at = Column(DateTime)
+
+    # Relationships
+    server = relationship("GameServer", backref="map_votes")
+    creator = relationship("User", backref="created_map_votes")
+
+    __table_args__ = (Index("idx_map_votes", "server_id", "is_active", "created_at"),)
+
+
+class MapRotationSchedule(Base):
+    """Map rotation schedules - time-based map changes"""
+
+    __tablename__ = "map_rotation_schedules"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
+    schedule_name = Column(String(100), nullable=False, comment="Schedule display name")
+    maps_rotation = Column(JSON, nullable=False, comment='["map1", "map2", ...]')
+    rotation_mode = Column(String(50), nullable=False, comment="sequential, random, time-based")
+    time_per_map_minutes = Column(Integer, comment="Minutes per map")
+    time_schedule = Column(JSON, comment='{"00:00": "map1", "12:00": "map2"}')
+    is_active = Column(Boolean, default=False, comment="Currently active schedule")
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    server = relationship("GameServer", backref="map_rotation_schedules")
+    creator = relationship("User", backref="created_rotation_schedules")
+
+    __table_args__ = (Index("idx_map_rotation", "server_id", "is_active"),)
+
+
 # ==================== ENUM VALIDATION EVENT LISTENERS ====================
 # Register validators for critical enum columns to ensure data integrity
 
