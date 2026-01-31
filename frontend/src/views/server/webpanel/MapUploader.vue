@@ -324,7 +324,7 @@ const fetchCustomMaps = async () => {
   try {
     const response = await api.getCustomMaps(serverId.value)
     if (response.success) {
-      customMaps.value = response.data.maps
+      customMaps.value = response.data?.maps || []
     }
   } catch (error) {
     toast.show(error.response?.data?.detail || 'Maps yüklenemedi', 'error')

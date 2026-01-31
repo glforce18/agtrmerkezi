@@ -289,7 +289,7 @@ const fetchBackups = async () => {
   try {
     const response = await api.getBackups(serverId.value)
     if (response.success) {
-      backups.value = response.data.backups
+      backups.value = response.data?.backups || []
     }
   } catch (error) {
     toast.show(error.response?.data?.detail || 'Yedekler yüklenemedi', 'error')
@@ -302,7 +302,7 @@ const fetchSchedule = async () => {
   try {
     const response = await api.getBackupSchedule(serverId.value)
     if (response.success) {
-      schedule.value = response.data.schedule
+      schedule.value = response.data?.schedule || null
     }
   } catch (error) {
     console.error('Schedule yüklenemedi:', error)

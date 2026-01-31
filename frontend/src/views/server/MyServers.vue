@@ -96,7 +96,7 @@
             <span class="status-dot inline-block mr-2" :class="statusDotClass(server.status) + ' pulse'"></span>
             {{ statusText(server.status) }}
           </span>
-          <span class="text-text-muted text-sm font-mono">#{server.id}</span>
+          <span class="text-primary/70 text-sm font-mono font-bold">ID #{{ server.id }}</span>
         </div>
 
         <!-- Server Info -->

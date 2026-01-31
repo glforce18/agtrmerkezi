@@ -227,7 +227,7 @@ const fetchCompilerInfo = async () => {
   try {
     const response = await api.getCompilerInfo(serverId.value)
     if (response.success) {
-      compilerInfo.value = response.data
+      compilerInfo.value = response.data || {}
     }
   } catch (error) {
     console.error('Compiler info yüklenemedi:', error)
@@ -257,8 +257,8 @@ const compileCode = async () => {
 
       if (data.success) {
         compiled.value = true
-        compiledData.value = data.compiled_data
-        compiledFilename.value = data.filename
+        compiledData.value = data.compiled_data || ''
+        compiledFilename.value = data.filename || ''
         warnings.value = data.warnings || []
         compilerOutput.value = data.output || ''
         toast.show('Plugin başarıyla derlendi!', 'success')

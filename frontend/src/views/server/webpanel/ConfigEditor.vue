@@ -382,7 +382,7 @@ const fetchTemplates = async () => {
   try {
     const response = await api.getConfigTemplates(serverId.value)
     if (response.success) {
-      templates.value = response.data.templates
+      templates.value = response.data?.templates || []
     }
   } catch (error) {
     console.error('Templates yüklenemedi:', error)

@@ -314,7 +314,7 @@ const fetchTopPlayers = async () => {
   try {
     const response = await api.getTopPlayers(serverId.value, 5)
     if (response.success) {
-      topPlayers.value = response.data
+      topPlayers.value = response.data || {}
     }
   } catch (error) {
     console.error('Failed to fetch top players:', error)
@@ -330,7 +330,7 @@ const fetchLeaderboard = async () => {
       min_playtime: minPlaytime.value
     })
     if (response.success) {
-      leaderboard.value = response.data.leaderboard
+      leaderboard.value = response.data?.leaderboard || []
     }
   } catch (error) {
     toast.show(error.response?.data?.detail || 'Leaderboard yüklenemedi', 'error')
@@ -343,7 +343,7 @@ const fetchRecentMatches = async () => {
   try {
     const response = await api.getRecentMatches(serverId.value, 10)
     if (response.success) {
-      recentMatches.value = response.data.matches
+      recentMatches.value = response.data?.matches || []
     }
   } catch (error) {
     console.error('Failed to fetch matches:', error)

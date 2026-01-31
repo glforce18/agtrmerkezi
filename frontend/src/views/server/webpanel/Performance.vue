@@ -346,7 +346,7 @@ const fetchCurrentMetrics = async () => {
   try {
     const response = await api.getCurrentPerformance(serverId.value)
     if (response.success) {
-      currentMetrics.value = response.data
+      currentMetrics.value = response.data || {}
     }
   } catch (error) {
     console.error('Failed to fetch current metrics:', error)
@@ -360,7 +360,7 @@ const fetchPerformanceHistory = async () => {
       interval: timeRange.value > 24 ? 60 : 5
     })
     if (response.success) {
-      history.value = response.data.history
+      history.value = response.data?.history || []
     }
   } catch (error) {
     console.error('Failed to fetch history:', error)
@@ -371,7 +371,7 @@ const fetchPerformanceSummary = async () => {
   try {
     const response = await api.getPerformanceSummary(serverId.value, timeRange.value)
     if (response.success) {
-      summary.value = response.data
+      summary.value = response.data || {}
     }
   } catch (error) {
     console.error('Failed to fetch summary:', error)

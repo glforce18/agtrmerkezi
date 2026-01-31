@@ -290,7 +290,7 @@ async def get_server(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_server", e, current_user.id if current_user else None)
+        log_api_error("get_server", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -321,7 +321,7 @@ async def start_server(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("start_server", e, current_user.id if current_user else None)
+        log_api_error("start_server", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -350,7 +350,7 @@ async def stop_server(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("stop_server", e, current_user.id if current_user else None)
+        log_api_error("stop_server", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -376,7 +376,7 @@ async def restart_server(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("restart_server", e, current_user.id if current_user else None)
+        log_api_error("restart_server", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -402,7 +402,7 @@ async def execute_rcon_command(
         # Use RCONService
         rcon_service = RCONService(db)
         # For panel auth, user_id is None (panel users are not in users table)
-        user_id = current_user.id if current_user else None
+        user_id = locals().get("current_user") and current_user.id
 
         result = await rcon_service.execute(
             server=server,
@@ -420,7 +420,7 @@ async def execute_rcon_command(
     except APIError:
         raise
     except Exception as e:
-        user_id = current_user.id if current_user else None
+        user_id = locals().get("current_user") and current_user.id
         log_api_error("execute_rcon_command", e, user_id)
         return RCONResponse(success=False, error=str(e))
 
@@ -541,7 +541,7 @@ async def get_server_players(
 
         # Execute status command via RCON
         rcon_service = RCONService(db)
-        user_id = current_user.id if current_user else None
+        user_id = locals().get("current_user") and current_user.id
 
         result = await rcon_service.execute(
             server=server,
@@ -696,7 +696,7 @@ async def get_server_players_old(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_server_players", e, current_user.id if current_user else None)
+        log_api_error("get_server_players", e, locals().get("current_user") and current_user.id)
         return []
 
 
@@ -724,7 +724,7 @@ async def kick_player(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("kick_player", e, current_user.id if current_user else None)
+        log_api_error("kick_player", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1236,7 +1236,7 @@ async def get_server_webpanel_status(
     """
     try:
         current_user, server = await get_auth_and_server(server_id, auth, db)
-        user_id_for_logging = current_user.id if current_user else None
+        user_id_for_logging = locals().get("current_user") and current_user.id
 
         # Check if server is running
         control_service = ServerControlService(db)
@@ -1312,7 +1312,7 @@ async def get_server_webpanel_info(
     """
     try:
         current_user, server = await get_auth_and_server(server_id, auth, db)
-        user_id_for_logging = current_user.id if current_user else None
+        user_id_for_logging = locals().get("current_user") and current_user.id
 
         # Check if running
         control_service = ServerControlService(db)
@@ -1380,7 +1380,9 @@ async def update_server_webpanel_settings(
         # Update hostname
         if data.hostname is not None:
             result = await rcon_service.execute(
-                server, f'hostname "{data.hostname}"', current_user.id if current_user else None
+                server,
+                f'hostname "{data.hostname}"',
+                locals().get("current_user") and current_user.id,
             )
             if result["success"]:
                 server.name = data.hostname
@@ -1389,7 +1391,7 @@ async def update_server_webpanel_settings(
         # Update sv_password
         if data.sv_password is not None:
             result = await rcon_service.set_server_password(
-                server, data.sv_password, current_user.id if current_user else None, db
+                server, data.sv_password, locals().get("current_user") and current_user.id, db
             )
             if result["success"]:
                 updates_applied.append("sv_password")
@@ -1421,7 +1423,7 @@ async def update_server_webpanel_settings(
     except Exception as e:
         db.rollback()
         log_api_error(
-            "update_server_webpanel_settings", e, current_user.id if current_user else None
+            "update_server_webpanel_settings", e, locals().get("current_user") and current_user.id
         )
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1462,10 +1464,10 @@ async def get_all_plugins(
 
         server_plugins = plugin_service.list_server_plugins(server_id)
         user_plugins = plugin_service.list_user_plugins(
-            server_id, current_user.id if current_user else None
+            server_id, locals().get("current_user") and current_user.id
         )
         stats = plugin_service.get_plugin_stats(
-            server_id, current_user.id if current_user else None
+            server_id, locals().get("current_user") and current_user.id
         )
 
         return success_response(
@@ -1479,7 +1481,7 @@ async def get_all_plugins(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_all_plugins", e, current_user.id if current_user else None)
+        log_api_error("get_all_plugins", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1517,7 +1519,7 @@ async def upload_plugin(
         plugin_service = PluginManagerService(db)
 
         success, message, plugin_info = plugin_service.upload_plugin(
-            server_id, current_user.id if current_user else None, request.filename, content
+            server_id, locals().get("current_user") and current_user.id, request.filename, content
         )
 
         if not success:
@@ -1528,7 +1530,7 @@ async def upload_plugin(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("upload_plugin", e, current_user.id if current_user else None)
+        log_api_error("upload_plugin", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1557,7 +1559,7 @@ async def delete_plugin(
         plugin_service = PluginManagerService(db)
 
         success, message = plugin_service.delete_plugin(
-            server_id, current_user.id if current_user else None, filename
+            server_id, locals().get("current_user") and current_user.id, filename
         )
 
         if not success:
@@ -1568,7 +1570,7 @@ async def delete_plugin(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_plugin", e, current_user.id if current_user else None)
+        log_api_error("delete_plugin", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1599,7 +1601,7 @@ async def toggle_plugin(
         plugin_service = PluginManagerService(db)
 
         success, message = plugin_service.toggle_plugin(
-            server_id, current_user.id if current_user else None, filename, enable
+            server_id, locals().get("current_user") and current_user.id, filename, enable
         )
 
         if not success:
@@ -1610,7 +1612,7 @@ async def toggle_plugin(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("toggle_plugin", e, current_user.id if current_user else None)
+        log_api_error("toggle_plugin", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1661,7 +1663,7 @@ async def get_server_config(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_server_config", e, current_user.id if current_user else None)
+        log_api_error("get_server_config", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1706,7 +1708,7 @@ async def update_server_config(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_server_config", e, current_user.id if current_user else None)
+        log_api_error("update_server_config", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1734,7 +1736,7 @@ async def get_mapcycle(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_mapcycle", e, current_user.id if current_user else None)
+        log_api_error("get_mapcycle", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1768,7 +1770,7 @@ async def update_mapcycle(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_mapcycle", e, current_user.id if current_user else None)
+        log_api_error("update_mapcycle", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1982,7 +1984,7 @@ async def browse_files(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("browse_files", e, current_user.id if current_user else None)
+        log_api_error("browse_files", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2032,7 +2034,7 @@ async def get_admin_users(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_admin_users", e, current_user.id if current_user else None)
+        log_api_error("get_admin_users", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2068,7 +2070,7 @@ async def add_admin_user(
         # Log action
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id if current_user else None,
+            admin_id=locals().get("current_user") and current_user.id,
             action_type="admin_add",
             target_steam_id=request.steam_id,
             reason=f"Flags: {request.flags}",
@@ -2079,7 +2081,7 @@ async def add_admin_user(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("add_admin_user", e, current_user.id if current_user else None)
+        log_api_error("add_admin_user", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2109,7 +2111,7 @@ async def remove_admin_user(
         # Log action
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id if current_user else None,
+            admin_id=locals().get("current_user") and current_user.id,
             action_type="admin_remove",
             target_steam_id=steam_id,
         )
@@ -2119,7 +2121,7 @@ async def remove_admin_user(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("remove_admin_user", e, current_user.id if current_user else None)
+        log_api_error("remove_admin_user", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2147,7 +2149,7 @@ async def get_bans(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_bans", e, current_user.id if current_user else None)
+        log_api_error("get_bans", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2182,7 +2184,7 @@ async def add_ban(
         # Log action
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id if current_user else None,
+            admin_id=locals().get("current_user") and current_user.id,
             action_type="ban",
             target_steam_id=request.value if request.ban_type == "steam_id" else None,
             reason=f"{request.ban_type}: {request.value}",
@@ -2196,7 +2198,7 @@ async def add_ban(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("add_ban", e, current_user.id if current_user else None)
+        log_api_error("add_ban", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2227,7 +2229,7 @@ async def remove_ban(
         # Log action
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id if current_user else None,
+            admin_id=locals().get("current_user") and current_user.id,
             action_type="unban",
             target_steam_id=value if ban_type == "steam_id" else None,
             reason=f"{ban_type}: {value}",
@@ -2238,7 +2240,7 @@ async def remove_ban(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("remove_ban", e, current_user.id if current_user else None)
+        log_api_error("remove_ban", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2270,7 +2272,9 @@ async def kick_player_rcon(
 
         # Execute kick command
         result = await rcon_service.execute(
-            server, f"kick #{slot} {request.reason}", current_user.id if current_user else None
+            server,
+            f"kick #{slot} {request.reason}",
+            locals().get("current_user") and current_user.id,
         )
 
         if not result["success"]:
@@ -2283,7 +2287,7 @@ async def kick_player_rcon(
         admin_service = AdminService(db)
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id if current_user else None,
+            admin_id=locals().get("current_user") and current_user.id,
             action_type="kick",
             target_name=f"Slot {slot}",
             reason=request.reason,
@@ -2294,7 +2298,7 @@ async def kick_player_rcon(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("kick_player_rcon", e, current_user.id if current_user else None)
+        log_api_error("kick_player_rcon", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2313,7 +2317,7 @@ async def slay_player_rcon(
 
         # Execute slay command
         result = await rcon_service.execute(
-            server, f"amx_slay #{slot}", current_user.id if current_user else None
+            server, f"amx_slay #{slot}", locals().get("current_user") and current_user.id
         )
 
         if not result["success"]:
@@ -2326,7 +2330,7 @@ async def slay_player_rcon(
         admin_service = AdminService(db)
         admin_service.log_action(
             server_id=server_id,
-            admin_id=current_user.id if current_user else None,
+            admin_id=locals().get("current_user") and current_user.id,
             action_type="slay",
             target_name=f"Slot {slot}",
         )
@@ -2336,7 +2340,7 @@ async def slay_player_rcon(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("slay_player_rcon", e, current_user.id if current_user else None)
+        log_api_error("slay_player_rcon", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2433,7 +2437,7 @@ async def get_map_library(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_map_library", e, current_user.id if current_user else None)
+        log_api_error("get_map_library", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2461,7 +2465,7 @@ async def get_mapcycle_maps(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_mapcycle_maps", e, current_user.id if current_user else None)
+        log_api_error("get_mapcycle_maps", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2496,7 +2500,7 @@ async def update_mapcycle_maps(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_mapcycle_maps", e, current_user.id if current_user else None)
+        log_api_error("update_mapcycle_maps", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2539,7 +2543,7 @@ async def list_server_backups(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("list_server_backups", e, current_user.id if current_user else None)
+        log_api_error("list_server_backups", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2578,9 +2582,9 @@ async def create_server_backup(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="backup_create",
             details={"backup_type": backup_type, "filename": result["filename"]},
         )
@@ -2593,7 +2597,7 @@ async def create_server_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("create_server_backup", e, current_user.id if current_user else None)
+        log_api_error("create_server_backup", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2665,9 +2669,9 @@ async def restore_server_backup(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="backup_restore",
             details={"filename": filename, "restore_type": restore_type},
         )
@@ -2680,7 +2684,7 @@ async def restore_server_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("restore_server_backup", e, current_user.id if current_user else None)
+        log_api_error("restore_server_backup", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2716,9 +2720,9 @@ async def delete_server_backup(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="backup_delete",
             details={"filename": filename},
         )
@@ -2731,7 +2735,7 @@ async def delete_server_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_server_backup", e, current_user.id if current_user else None)
+        log_api_error("delete_server_backup", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2762,7 +2766,7 @@ async def get_backup_schedule(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_backup_schedule", e, current_user.id if current_user else None)
+        log_api_error("get_backup_schedule", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2820,9 +2824,9 @@ async def compile_plugin(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="plugin_compile",
             details={"plugin_name": request.plugin_name},
         )
@@ -2841,7 +2845,7 @@ async def compile_plugin(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("compile_plugin", e, current_user.id if current_user else None)
+        log_api_error("compile_plugin", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2878,7 +2882,7 @@ async def validate_plugin_syntax(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("validate_plugin_syntax", e, current_user.id if current_user else None)
+        log_api_error("validate_plugin_syntax", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2907,7 +2911,7 @@ async def get_compiler_info(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_compiler_info", e, current_user.id if current_user else None)
+        log_api_error("get_compiler_info", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2959,7 +2963,7 @@ async def list_plugin_configs(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("list_plugin_configs", e, current_user.id if current_user else None)
+        log_api_error("list_plugin_configs", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3010,7 +3014,7 @@ async def get_plugin_config(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_plugin_config", e, current_user.id if current_user else None)
+        log_api_error("get_plugin_config", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3061,9 +3065,9 @@ async def update_plugin_config(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="plugin_config_update",
             details={"filename": filename},
         )
@@ -3076,7 +3080,7 @@ async def update_plugin_config(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_plugin_config", e, current_user.id if current_user else None)
+        log_api_error("update_plugin_config", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3157,7 +3161,7 @@ async def list_plugin_logs(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("list_plugin_logs", e, current_user.id if current_user else None)
+        log_api_error("list_plugin_logs", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3222,7 +3226,7 @@ async def get_plugin_log(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_plugin_log", e, current_user.id if current_user else None)
+        log_api_error("get_plugin_log", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3258,9 +3262,9 @@ async def delete_plugin_log(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="plugin_log_delete",
             details={"filename": filename},
         )
@@ -3272,7 +3276,7 @@ async def delete_plugin_log(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_plugin_log", e, current_user.id if current_user else None)
+        log_api_error("delete_plugin_log", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3342,7 +3346,7 @@ async def get_config_templates(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_config_templates", e, current_user.id if current_user else None)
+        log_api_error("get_config_templates", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3389,9 +3393,9 @@ async def apply_config_template(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="config_template_apply",
             details={"template_name": template_name, "cvars_count": len(cvars)},
         )
@@ -3404,7 +3408,7 @@ async def apply_config_template(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("apply_config_template", e, current_user.id if current_user else None)
+        log_api_error("apply_config_template", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3513,7 +3517,7 @@ async def get_config_backups(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_config_backups", e, current_user.id if current_user else None)
+        log_api_error("get_config_backups", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3546,9 +3550,9 @@ async def create_config_backup(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="config_backup_create",
             details={"filename": backup_file.name},
         )
@@ -3565,7 +3569,7 @@ async def create_config_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("create_config_backup", e, current_user.id if current_user else None)
+        log_api_error("create_config_backup", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3627,7 +3631,7 @@ async def get_config_diff(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_config_diff", e, current_user.id if current_user else None)
+        log_api_error("get_config_diff", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3671,9 +3675,9 @@ async def restore_config_backup(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="config_backup_restore",
             details={"filename": filename},
         )
@@ -3686,7 +3690,7 @@ async def restore_config_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("restore_config_backup", e, current_user.id if current_user else None)
+        log_api_error("restore_config_backup", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3725,7 +3729,7 @@ async def delete_config_backup(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_config_backup", e, current_user.id if current_user else None)
+        log_api_error("delete_config_backup", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3772,7 +3776,7 @@ async def get_motd(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_motd", e, current_user.id if current_user else None)
+        log_api_error("get_motd", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3819,9 +3823,9 @@ async def update_motd(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="motd_update",
             details={"size": len(content.encode("utf-8"))},
         )
@@ -3834,7 +3838,7 @@ async def update_motd(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_motd", e, current_user.id if current_user else None)
+        log_api_error("update_motd", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3879,7 +3883,7 @@ async def get_player_leaderboard(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_player_leaderboard", e, current_user.id if current_user else None)
+        log_api_error("get_player_leaderboard", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3907,7 +3911,7 @@ async def get_player_stats(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_player_stats", e, current_user.id if current_user else None)
+        log_api_error("get_player_stats", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3932,7 +3936,7 @@ async def get_top_players(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_top_players", e, current_user.id if current_user else None)
+        log_api_error("get_top_players", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3957,7 +3961,7 @@ async def get_recent_matches(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_recent_matches", e, current_user.id if current_user else None)
+        log_api_error("get_recent_matches", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3982,7 +3986,9 @@ async def get_player_activity_chart(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_player_activity_chart", e, current_user.id if current_user else None)
+        log_api_error(
+            "get_player_activity_chart", e, locals().get("current_user") and current_user.id
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4028,7 +4034,9 @@ async def get_current_performance(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_current_performance", e, current_user.id if current_user else None)
+        log_api_error(
+            "get_current_performance", e, locals().get("current_user") and current_user.id
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4058,7 +4066,9 @@ async def get_performance_history(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_performance_history", e, current_user.id if current_user else None)
+        log_api_error(
+            "get_performance_history", e, locals().get("current_user") and current_user.id
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4083,7 +4093,9 @@ async def get_performance_summary(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_performance_summary", e, current_user.id if current_user else None)
+        log_api_error(
+            "get_performance_summary", e, locals().get("current_user") and current_user.id
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4172,9 +4184,9 @@ async def upload_custom_map(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="map_upload",
             details={"map_name": map_name, "file_size": file_size},
         )
@@ -4191,7 +4203,7 @@ async def upload_custom_map(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("upload_custom_map", e, current_user.id if current_user else None)
+        log_api_error("upload_custom_map", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4237,7 +4249,7 @@ async def get_custom_maps(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_custom_maps", e, current_user.id if current_user else None)
+        log_api_error("get_custom_maps", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4280,9 +4292,9 @@ async def delete_custom_map(
         from app.services.admin_service import AdminService
 
         admin_service = AdminService(db)
-        await admin_service.log_action(
+        admin_service.log_action(
             server_id=server_id,
-            user_id=current_user.id if current_user else None,
+            user_id=locals().get("current_user") and current_user.id,
             action_type="map_delete",
             details={"map_name": custom_map.map_name},
         )
@@ -4292,7 +4304,7 @@ async def delete_custom_map(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_custom_map", e, current_user.id if current_user else None)
+        log_api_error("delete_custom_map", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4353,7 +4365,7 @@ async def get_vip_members(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("get_vip_members", e, current_user.id if current_user else None)
+        log_api_error("get_vip_members", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4401,7 +4413,7 @@ async def add_vip_member(
             admin_service = AdminService(db)
             admin_service.log_action(
                 server_id=server_id,
-                admin_id=current_user.id if current_user else None,
+                admin_id=locals().get("current_user") and current_user.id,
                 action_type="vip_add",
                 target_steam_id=request.steam_id,
                 reason=f"VIP flags: {request.flags}",
@@ -4421,7 +4433,7 @@ async def add_vip_member(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("add_vip_member", e, current_user.id if current_user else None)
+        log_api_error("add_vip_member", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4463,7 +4475,7 @@ async def update_vip_member(
             admin_service = AdminService(db)
             admin_service.log_action(
                 server_id=server_id,
-                admin_id=current_user.id if current_user else None,
+                admin_id=locals().get("current_user") and current_user.id,
                 action_type="vip_update",
                 target_steam_id=vip.steam_id,
             )
@@ -4475,7 +4487,7 @@ async def update_vip_member(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("update_vip_member", e, current_user.id if current_user else None)
+        log_api_error("update_vip_member", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4511,7 +4523,7 @@ async def delete_vip_member(
             admin_service = AdminService(db)
             admin_service.log_action(
                 server_id=server_id,
-                admin_id=current_user.id if current_user else None,
+                admin_id=locals().get("current_user") and current_user.id,
                 action_type="vip_delete",
                 target_steam_id=vip.steam_id,
             )
@@ -4523,7 +4535,7 @@ async def delete_vip_member(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("delete_vip_member", e, current_user.id if current_user else None)
+        log_api_error("delete_vip_member", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4562,5 +4574,5 @@ async def toggle_vip_status(
     except APIError:
         raise
     except Exception as e:
-        log_api_error("toggle_vip_status", e, current_user.id if current_user else None)
+        log_api_error("toggle_vip_status", e, locals().get("current_user") and current_user.id)
         raise HTTPException(status_code=500, detail=str(e))

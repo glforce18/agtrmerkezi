@@ -321,7 +321,7 @@ const fetchVIPs = async () => {
   try {
     const response = await api.getVIPMembers(serverId.value)
     if (response.success) {
-      vips.value = response.data.vips
+      vips.value = response.data?.vips || []
     }
   } catch (error) {
     toast.show(error.response?.data?.detail || 'VIP listesi yüklenemedi', 'error')
