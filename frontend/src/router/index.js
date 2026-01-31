@@ -149,6 +149,31 @@ const router = createRouter({
           path: 'plugin-logs',
           name: 'server-webpanel-plugin-logs',
           component: () => import('@/views/server/webpanel/PluginLogsViewer.vue')
+        },
+        {
+          path: 'motd-editor',
+          name: 'server-webpanel-motd-editor',
+          component: () => import('@/views/server/webpanel/MOTDEditor.vue')
+        },
+        {
+          path: 'statistics',
+          name: 'server-webpanel-statistics',
+          component: () => import('@/views/server/webpanel/Statistics.vue')
+        },
+        {
+          path: 'performance',
+          name: 'server-webpanel-performance',
+          component: () => import('@/views/server/webpanel/Performance.vue')
+        },
+        {
+          path: 'map-uploader',
+          name: 'server-webpanel-map-uploader',
+          component: () => import('@/views/server/webpanel/MapUploader.vue')
+        },
+        {
+          path: 'vip-manager',
+          name: 'server-webpanel-vip-manager',
+          component: () => import('@/views/server/webpanel/VIPManager.vue')
         }
       ]
     },

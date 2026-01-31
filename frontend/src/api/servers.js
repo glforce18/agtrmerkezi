@@ -503,5 +503,283 @@ export default {
    */
   deletePluginLog(id, filename) {
     return apiClient.delete(`/servers/${id}/plugins/logs/${filename}`)
+  },
+
+  // Config Templates (Phase 2)
+  /**
+   * Get config templates
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {templates: Array, count: number}}>}
+   * @throws {Error} If request fails
+   */
+  getConfigTemplates(id) {
+    return apiClient.get(`/servers/${id}/config/templates`)
+  },
+
+  /**
+   * Apply config template
+   * @param {number} id - Server ID
+   * @param {object} data - {template_name: string}
+   * @returns {Promise} Apply result
+   * @throws {Error} If request fails
+   */
+  applyConfigTemplate(id, data) {
+    return apiClient.post(`/servers/${id}/config/apply-template`, data)
+  },
+
+  // Config Backup & Restore (Phase 2)
+  /**
+   * Get config backup history
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {backups: Array, count: number}}>}
+   * @throws {Error} If request fails
+   */
+  getConfigBackups(id) {
+    return apiClient.get(`/servers/${id}/config/backups`)
+  },
+
+  /**
+   * Create config backup
+   * @param {number} id - Server ID
+   * @returns {Promise} Create result
+   * @throws {Error} If request fails
+   */
+  createConfigBackup(id) {
+    return apiClient.post(`/servers/${id}/config/backup`)
+  },
+
+  /**
+   * Get diff between current and backup
+   * @param {number} id - Server ID
+   * @param {string} filename - Backup filename
+   * @returns {Promise<{data: {diff: Array, has_changes: boolean}}>}
+   * @throws {Error} If request fails
+   */
+  getConfigDiff(id, filename) {
+    return apiClient.get(`/servers/${id}/config/backups/${filename}/diff`)
+  },
+
+  /**
+   * Restore from backup
+   * @param {number} id - Server ID
+   * @param {string} filename - Backup filename
+   * @returns {Promise} Restore result
+   * @throws {Error} If request fails
+   */
+  restoreConfigBackup(id, filename) {
+    return apiClient.post(`/servers/${id}/config/backups/${filename}/restore`)
+  },
+
+  /**
+   * Delete config backup
+   * @param {number} id - Server ID
+   * @param {string} filename - Backup filename
+   * @returns {Promise} Delete result
+   * @throws {Error} If request fails
+   */
+  deleteConfigBackup(id, filename) {
+    return apiClient.delete(`/servers/${id}/config/backups/${filename}`)
+  },
+
+  // MOTD Editor (Phase 2)
+  /**
+   * Get MOTD content
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {content: string, size: number}}>}
+   * @throws {Error} If request fails
+   */
+  getMotd(id) {
+    return apiClient.get(`/servers/${id}/config/motd`)
+  },
+
+  /**
+   * Update MOTD content
+   * @param {number} id - Server ID
+   * @param {object} data - {content: string}
+   * @returns {Promise} Update result
+   * @throws {Error} If request fails
+   */
+  updateMotd(id, data) {
+    return apiClient.put(`/servers/${id}/config/motd`, data)
+  },
+
+  // Player Statistics (Feature #17)
+  /**
+   * Get player leaderboard
+   * @param {number} id - Server ID
+   * @param {object} params - {sort_by, limit, min_playtime}
+   * @returns {Promise<{data: {leaderboard: Array, total_players: number}}>}
+   * @throws {Error} If request fails
+   */
+  getPlayerLeaderboard(id, params = {}) {
+    return apiClient.get(`/servers/${id}/stats/leaderboard`, { params })
+  },
+
+  /**
+   * Get individual player statistics
+   * @param {number} id - Server ID
+   * @param {string} steamId - Player Steam ID
+   * @returns {Promise<{data: Object}>}
+   * @throws {Error} If request fails
+   */
+  getPlayerStats(id, steamId) {
+    return apiClient.get(`/servers/${id}/stats/player/${steamId}`)
+  },
+
+  /**
+   * Get top players in different categories
+   * @param {number} id - Server ID
+   * @param {number} limit - Number of top players per category
+   * @returns {Promise<{data: {top_elo, top_kd, top_kills, top_headshots}}>}
+   * @throws {Error} If request fails
+   */
+  getTopPlayers(id, limit = 5) {
+    return apiClient.get(`/servers/${id}/stats/top-players`, { params: { limit } })
+  },
+
+  /**
+   * Get recent match history
+   * @param {number} id - Server ID
+   * @param {number} limit - Max results
+   * @returns {Promise<{data: {matches: Array, total: number}}>}
+   * @throws {Error} If request fails
+   */
+  getRecentMatches(id, limit = 20) {
+    return apiClient.get(`/servers/${id}/stats/matches`, { params: { limit } })
+  },
+
+  /**
+   * Get player activity chart data
+   * @param {number} id - Server ID
+   * @param {number} days - Number of days
+   * @returns {Promise<{data: {labels: Array, data: Array}}>}
+   * @throws {Error} If request fails
+   */
+  getPlayerActivityChart(id, days = 30) {
+    return apiClient.get(`/servers/${id}/stats/activity-chart`, { params: { days } })
+  },
+
+  // Server Performance Metrics (Feature #18)
+  /**
+   * Get current server performance metrics
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: Object}>}
+   * @throws {Error} If request fails
+   */
+  getCurrentPerformance(id) {
+    return apiClient.get(`/servers/${id}/performance/current`)
+  },
+
+  /**
+   * Get performance metrics history
+   * @param {number} id - Server ID
+   * @param {object} params - {hours, interval}
+   * @returns {Promise<{data: {history: Array, total_points: number}}>}
+   * @throws {Error} If request fails
+   */
+  getPerformanceHistory(id, params = {}) {
+    return apiClient.get(`/servers/${id}/performance/history`, { params })
+  },
+
+  /**
+   * Get performance metrics summary
+   * @param {number} id - Server ID
+   * @param {number} hours - Time range in hours
+   * @returns {Promise<{data: Object}>}
+   * @throws {Error} If request fails
+   */
+  getPerformanceSummary(id, hours = 24) {
+    return apiClient.get(`/servers/${id}/performance/summary`, { params: { hours } })
+  },
+
+  // Custom Map Uploader (Feature #19)
+  /**
+   * Upload custom map
+   * @param {number} id - Server ID
+   * @param {FormData} formData - Form data with file and metadata
+   * @returns {Promise} Upload result
+   * @throws {Error} If request fails
+   */
+  uploadCustomMap(id, formData) {
+    return apiClient.post(`/servers/${id}/maps/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
+  /**
+   * Get custom uploaded maps
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {maps: Array, total: number}}>}
+   * @throws {Error} If request fails
+   */
+  getCustomMaps(id) {
+    return apiClient.get(`/servers/${id}/maps/custom`)
+  },
+
+  /**
+   * Delete custom map
+   * @param {number} id - Server ID
+   * @param {number} mapId - Map ID
+   * @returns {Promise} Delete result
+   * @throws {Error} If request fails
+   */
+  deleteCustomMap(id, mapId) {
+    return apiClient.delete(`/servers/${id}/maps/custom/${mapId}`)
+  },
+
+  // VIP System Manager (Feature #20)
+  /**
+   * Get VIP members list
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {vips: Array, total: number, active: number}}>}
+   * @throws {Error} If request fails
+   */
+  getVIPMembers(id) {
+    return apiClient.get(`/servers/${id}/vip/members`)
+  },
+
+  /**
+   * Add VIP member
+   * @param {number} id - Server ID
+   * @param {object} data - VIP data
+   * @returns {Promise} Add result
+   * @throws {Error} If request fails
+   */
+  addVIPMember(id, data) {
+    return apiClient.post(`/servers/${id}/vip/members`, data)
+  },
+
+  /**
+   * Update VIP member
+   * @param {number} id - Server ID
+   * @param {number} vipId - VIP ID
+   * @param {object} data - VIP data
+   * @returns {Promise} Update result
+   * @throws {Error} If request fails
+   */
+  updateVIPMember(id, vipId, data) {
+    return apiClient.put(`/servers/${id}/vip/members/${vipId}`, data)
+  },
+
+  /**
+   * Delete VIP member
+   * @param {number} id - Server ID
+   * @param {number} vipId - VIP ID
+   * @returns {Promise} Delete result
+   * @throws {Error} If request fails
+   */
+  deleteVIPMember(id, vipId) {
+    return apiClient.delete(`/servers/${id}/vip/members/${vipId}`)
+  },
+
+  /**
+   * Toggle VIP status
+   * @param {number} id - Server ID
+   * @param {number} vipId - VIP ID
+   * @returns {Promise} Toggle result
+   * @throws {Error} If request fails
+   */
+  toggleVIPStatus(id, vipId) {
+    return apiClient.post(`/servers/${id}/vip/members/${vipId}/toggle`)
   }
 }

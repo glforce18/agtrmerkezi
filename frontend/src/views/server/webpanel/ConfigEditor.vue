@@ -9,6 +9,15 @@
         </div>
         <div class="flex gap-3">
           <button
+            @click="showBackupModal = true"
+            class="btn-secondary"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Yedekler
+          </button>
+          <button
             @click="resetChanges"
             v-if="hasChanges"
             class="btn-secondary"
@@ -69,6 +78,39 @@
       </div>
     </div>
 
+    <!-- Config Templates (Phase 2 Feature #14) -->
+    <div class="glass-card p-6">
+      <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+        </svg>
+        Hazır Şablonlar
+      </h3>
+      <p class="text-gray-400 text-sm mb-4">Hızlı kurulum için hazır config şablonlarını kullanın</p>
+
+      <div v-if="templates.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <button
+          v-for="template in templates"
+          :key="template.name"
+          @click="applyTemplate(template)"
+          :disabled="applyingTemplate"
+          class="template-card p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-lg transition-all text-left"
+        >
+          <div class="flex items-start justify-between mb-2">
+            <h4 class="text-white font-medium">{{ template.name }}</h4>
+            <span class="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full">
+              {{ Object.keys(template.cvars).length }} CVAR
+            </span>
+          </div>
+          <p class="text-gray-400 text-sm">{{ template.description }}</p>
+        </button>
+      </div>
+
+      <div v-else class="text-center py-8 text-gray-400">
+        Bu oyun tipi için hazır şablon bulunamadı
+      </div>
+    </div>
+
     <!-- Loading state -->
     <div v-if="loading" class="space-y-4">
       <div v-for="i in 3" :key="i" class="glass-card p-6">
@@ -116,6 +158,99 @@
       <p class="text-gray-400 mb-2">server.cfg bulunamadı veya boş</p>
       <p class="text-gray-500 text-sm">Sunucu dosyalarını kontrol edin</p>
     </div>
+
+    <!-- Backup Modal -->
+    <div v-if="showBackupModal" class="modal-overlay" @click.self="showBackupModal = false">
+      <div class="modal-content max-w-4xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-bold text-white">Config Yedekleri</h3>
+          <button @click="showBackupModal = false" class="text-gray-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex justify-between items-center mb-4">
+          <p class="text-gray-400 text-sm">{{ backups.length }} yedek bulundu</p>
+          <button @click="createBackup" :disabled="creatingBackup" class="btn-primary text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            {{ creatingBackup ? 'Oluşturuluyor...' : 'Yeni Yedek Oluştur' }}
+          </button>
+        </div>
+
+        <div v-if="backups.length > 0" class="space-y-2 max-h-96 overflow-y-auto">
+          <div
+            v-for="backup in backups"
+            :key="backup.filename"
+            class="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <p class="text-white font-medium text-sm">{{ formatBackupDate(backup.created_at) }}</p>
+                <p class="text-gray-500 text-xs">{{ formatBytes(backup.size) }}</p>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  @click="viewDiff(backup)"
+                  class="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded text-xs"
+                >
+                  Fark Göster
+                </button>
+                <button
+                  @click="restoreBackup(backup)"
+                  class="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded text-xs"
+                >
+                  Geri Yükle
+                </button>
+                <button
+                  @click="deleteBackup(backup)"
+                  class="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded text-xs"
+                >
+                  Sil
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="text-center py-12">
+          <p class="text-gray-400">Henüz yedek oluşturulmamış</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Diff Viewer Modal -->
+    <div v-if="showDiffModal" class="modal-overlay" @click.self="showDiffModal = false">
+      <div class="modal-content max-w-6xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-bold text-white">Config Farkları</h3>
+          <button @click="showDiffModal = false" class="text-gray-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div v-if="diffLines.length > 0" class="bg-gray-900 rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-sm">
+          <div v-for="(line, i) in diffLines" :key="i"
+            :class="[
+              'leading-relaxed',
+              line.startsWith('+') && !line.startsWith('+++') ? 'text-green-400 bg-green-500/10' :
+              line.startsWith('-') && !line.startsWith('---') ? 'text-red-400 bg-red-500/10' :
+              line.startsWith('@@') ? 'text-blue-400 font-bold' :
+              'text-gray-400'
+            ]"
+          >{{ line }}</div>
+        </div>
+
+        <div v-else class="text-center py-12">
+          <p class="text-gray-400">Fark bulunamadı</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -132,10 +267,17 @@ const toast = useToast()
 const serverId = ref(parseInt(route.params.id))
 const loading = ref(false)
 const saving = ref(false)
+const applyingTemplate = ref(false)
+const creatingBackup = ref(false)
 
 const originalCvars = ref({})
 const categorized = ref({})
 const modifiedCvars = ref({})
+const templates = ref([])
+const backups = ref([])
+const showBackupModal = ref(false)
+const showDiffModal = ref(false)
+const diffLines = ref([])
 
 const totalCvars = computed(() => Object.keys(originalCvars.value).length)
 const changesCount = computed(() => Object.keys(modifiedCvars.value).length)
@@ -236,9 +378,151 @@ const getCategoryColor = (category) => {
   return colors[category] || 'text-gray-400'
 }
 
+const fetchTemplates = async () => {
+  try {
+    const response = await api.getConfigTemplates(serverId.value)
+    if (response.success) {
+      templates.value = response.data.templates
+    }
+  } catch (error) {
+    console.error('Templates yüklenemedi:', error)
+  }
+}
+
+const applyTemplate = async (template) => {
+  if (hasChanges.value) {
+    if (!confirm('Kaydedilmemiş değişiklikler var. Template uygulanırsa kaybolacak. Devam edilsin mi?')) {
+      return
+    }
+  }
+
+  if (!confirm(`"${template.name}" template uygulanacak.\n${Object.keys(template.cvars).length} CVAR değiştirilecek.\n\nDevam edilsin mi?`)) {
+    return
+  }
+
+  applyingTemplate.value = true
+  try {
+    const response = await api.applyConfigTemplate(serverId.value, {
+      template_name: template.name
+    })
+
+    if (response.success) {
+      toast.show(response.message, 'success')
+      modifiedCvars.value = {}
+      await fetchConfig()
+    }
+  } catch (error) {
+    toast.show(error.response?.data?.detail || 'Template uygulanamadı', 'error')
+  } finally {
+    applyingTemplate.value = false
+  }
+}
+
+const fetchBackups = async () => {
+  try {
+    const response = await api.getConfigBackups(serverId.value)
+    if (response.success) {
+      backups.value = response.data.backups
+    }
+  } catch (error) {
+    console.error('Backups yüklenemedi:', error)
+  }
+}
+
+const createBackup = async () => {
+  creatingBackup.value = true
+  try {
+    const response = await api.createConfigBackup(serverId.value)
+    if (response.success) {
+      toast.show(response.message, 'success')
+      await fetchBackups()
+    }
+  } catch (error) {
+    toast.show(error.response?.data?.detail || 'Yedek oluşturulamadı', 'error')
+  } finally {
+    creatingBackup.value = false
+  }
+}
+
+const viewDiff = async (backup) => {
+  try {
+    const response = await api.getConfigDiff(serverId.value, backup.filename)
+    if (response.success) {
+      diffLines.value = response.data.diff
+      showDiffModal.value = true
+    }
+  } catch (error) {
+    toast.show(error.response?.data?.detail || 'Fark gösterilemedi', 'error')
+  }
+}
+
+const restoreBackup = async (backup) => {
+  if (!confirm(`${formatBackupDate(backup.created_at)} tarihli yedek geri yüklenecek.\n\nMevcut config üzerine yazılacak. Devam edilsin mi?`)) {
+    return
+  }
+
+  try {
+    const response = await api.restoreConfigBackup(serverId.value, backup.filename)
+    if (response.success) {
+      toast.show(response.message, 'success')
+      showBackupModal.value = false
+      await fetchConfig()
+    }
+  } catch (error) {
+    toast.show(error.response?.data?.detail || 'Geri yükleme başarısız', 'error')
+  }
+}
+
+const deleteBackup = async (backup) => {
+  if (!confirm(`${formatBackupDate(backup.created_at)} tarihli yedek silinecek. Emin misiniz?`)) {
+    return
+  }
+
+  try {
+    const response = await api.deleteConfigBackup(serverId.value, backup.filename)
+    if (response.success) {
+      toast.show(response.message, 'success')
+      await fetchBackups()
+    }
+  } catch (error) {
+    toast.show(error.response?.data?.detail || 'Yedek silinemedi', 'error')
+  }
+}
+
+const formatBackupDate = (dateStr) => {
+  const date = new Date(dateStr)
+  return date.toLocaleString('tr-TR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const formatBytes = (bytes) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// Watch showBackupModal to fetch backups when opened
+const watchBackupModal = () => {
+  if (showBackupModal.value) {
+    fetchBackups()
+  }
+}
+
 onMounted(() => {
   fetchConfig()
+  fetchTemplates()
 })
+
+// Add watcher for backup modal
+import { watch } from 'vue'
+watch(showBackupModal, watchBackupModal)
 </script>
 
 <style scoped>
@@ -252,5 +536,13 @@ onMounted(() => {
 
 .btn-secondary {
   @apply px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-all flex items-center gap-2;
+}
+
+.modal-overlay {
+  @apply fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4;
+}
+
+.modal-content {
+  @apply bg-gradient-to-br from-gray-900 to-gray-800 border border-white/20 rounded-xl p-6 w-full shadow-2xl;
 }
 </style>

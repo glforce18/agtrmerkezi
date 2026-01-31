@@ -9,7 +9,15 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+)
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -3499,3 +3507,1318 @@ def parse_log_line(line: str) -> Optional[dict]:
         "message": message.strip(),
         "raw": line,
     }
+
+
+# ============================================
+# CONFIG TEMPLATES (Phase 2 - Feature #14)
+# ============================================
+
+
+@router.get("/{server_id}/config/templates")
+async def get_config_templates(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get available config templates"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        # Get built-in templates
+        template_list = get_builtin_templates(server.game_type)
+
+        return success_response(data={"templates": template_list, "count": len(template_list)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_config_templates", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ApplyTemplateRequest(BaseModel):
+    """Apply template request"""
+
+    template_name: str = Field(..., description="Template name")
+
+
+@router.post("/{server_id}/config/apply-template")
+async def apply_config_template(
+    server_id: int,
+    request: ApplyTemplateRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Apply a config template to server"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        # Get built-in template
+        builtin = get_builtin_templates(server.game_type)
+        template = next((t for t in builtin if t["name"] == request.template_name), None)
+        if not template:
+            raise NotFoundError("Template bulunamadı")
+
+        cvars = template["cvars"]
+        template_name = template["name"]
+
+        # Apply CVARs to server.cfg
+        from pathlib import Path
+
+        from app.services.config_service import ConfigService
+
+        config_service = ConfigService(db)
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+
+        success = config_service.update_server_cfg(server_path, cvars)
+
+        if not success:
+            raise BadRequestError("Template uygulanamadı")
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="config_template_apply",
+            details={"template_name": template_name, "cvars_count": len(cvars)},
+        )
+
+        return success_response(
+            message=f"{template_name} template uygulandı",
+            data={"template_name": template_name, "cvars_applied": len(cvars)},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("apply_config_template", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def get_builtin_templates(game_type: str) -> list:
+    """Get built-in config templates for game type"""
+    templates = []
+
+    # Common Half-Life templates
+    if game_type in ["ag", "hldm"]:
+        templates.extend(
+            [
+                {
+                    "name": "Competitive",
+                    "description": "Rekabetçi maçlar için optimize edilmiş ayarlar",
+                    "category": "gameplay",
+                    "cvars": {
+                        "mp_timelimit": "20",
+                        "mp_fraglimit": "0",
+                        "mp_friendlyfire": "1",
+                        "sv_cheats": "0",
+                        "sv_alltalk": "0",
+                    },
+                },
+                {
+                    "name": "Casual",
+                    "description": "Rahat oyun için dengeli ayarlar",
+                    "category": "gameplay",
+                    "cvars": {
+                        "mp_timelimit": "30",
+                        "mp_fraglimit": "50",
+                        "mp_friendlyfire": "0",
+                        "sv_cheats": "0",
+                        "sv_alltalk": "1",
+                    },
+                },
+                {
+                    "name": "Deathmatch",
+                    "description": "Hızlı tempolu deathmatch",
+                    "category": "gameplay",
+                    "cvars": {
+                        "mp_timelimit": "15",
+                        "mp_fraglimit": "100",
+                        "mp_friendlyfire": "0",
+                        "sv_cheats": "0",
+                    },
+                },
+                {
+                    "name": "Training",
+                    "description": "Antrenman ve test için",
+                    "category": "other",
+                    "cvars": {
+                        "mp_timelimit": "0",
+                        "mp_fraglimit": "0",
+                        "sv_cheats": "1",
+                        "sv_alltalk": "1",
+                    },
+                },
+            ]
+        )
+
+    return templates
+
+
+# ============================================
+# CONFIG BACKUP & RESTORE (Phase 2 - Feature #15)
+# ============================================
+
+
+@router.get("/{server_id}/config/backups")
+async def get_config_backups(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get config backup history"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        config_dir = server_path / "valve"
+
+        # Look for backup files (server.cfg.backup.*)
+        backups = []
+        for backup_file in config_dir.glob("server.cfg.backup.*"):
+            timestamp_str = backup_file.suffix[1:]  # Remove leading dot
+            try:
+                timestamp = float(timestamp_str)
+                backups.append(
+                    {
+                        "filename": backup_file.name,
+                        "timestamp": timestamp,
+                        "size": backup_file.stat().st_size,
+                        "created_at": datetime.fromtimestamp(timestamp).isoformat(),
+                    }
+                )
+            except ValueError:
+                continue
+
+        # Sort by timestamp (newest first)
+        backups.sort(key=lambda x: x["timestamp"], reverse=True)
+
+        return success_response(data={"backups": backups, "count": len(backups)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_config_backups", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/config/backup")
+async def create_config_backup(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Create a manual config backup"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        import shutil
+        import time
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        config_file = server_path / "valve" / "server.cfg"
+
+        if not config_file.exists():
+            raise NotFoundError("server.cfg bulunamadı")
+
+        # Create backup with timestamp
+        timestamp = time.time()
+        backup_file = server_path / "valve" / f"server.cfg.backup.{timestamp}"
+        shutil.copy2(config_file, backup_file)
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="config_backup_create",
+            details={"filename": backup_file.name},
+        )
+
+        return success_response(
+            message="Config yedek oluşturuldu",
+            data={
+                "filename": backup_file.name,
+                "timestamp": timestamp,
+                "size": backup_file.stat().st_size,
+            },
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("create_config_backup", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/config/backups/{filename}/diff")
+async def get_config_diff(
+    server_id: int,
+    filename: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get diff between current config and backup"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        import difflib
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        current_file = server_path / "valve" / "server.cfg"
+        backup_file = server_path / "valve" / filename
+
+        # Validate path
+        backup_file = backup_file.resolve()
+        if not str(backup_file).startswith(str(server_path / "valve")):
+            raise ForbiddenError("Path traversal detected")
+
+        if not backup_file.exists():
+            raise NotFoundError("Backup dosyası bulunamadı")
+
+        if not current_file.exists():
+            raise NotFoundError("server.cfg bulunamadı")
+
+        # Read files
+        with open(current_file, "r", encoding="utf-8", errors="ignore") as f:
+            current_lines = f.readlines()
+
+        with open(backup_file, "r", encoding="utf-8", errors="ignore") as f:
+            backup_lines = f.readlines()
+
+        # Generate unified diff
+        diff = list(
+            difflib.unified_diff(
+                backup_lines,
+                current_lines,
+                fromfile=filename,
+                tofile="server.cfg (current)",
+                lineterm="",
+            )
+        )
+
+        return success_response(
+            data={
+                "diff": diff,
+                "has_changes": len(diff) > 0,
+                "backup_file": filename,
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_config_diff", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/config/backups/{filename}/restore")
+async def restore_config_backup(
+    server_id: int,
+    filename: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Restore config from backup"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        import shutil
+        import time
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        current_file = server_path / "valve" / "server.cfg"
+        backup_file = server_path / "valve" / filename
+
+        # Validate path
+        backup_file = backup_file.resolve()
+        if not str(backup_file).startswith(str(server_path / "valve")):
+            raise ForbiddenError("Path traversal detected")
+
+        if not backup_file.exists():
+            raise NotFoundError("Backup dosyası bulunamadı")
+
+        # Create backup of current config before restoring
+        if current_file.exists():
+            timestamp = time.time()
+            auto_backup = server_path / "valve" / f"server.cfg.backup.{timestamp}"
+            shutil.copy2(current_file, auto_backup)
+
+        # Restore from backup
+        shutil.copy2(backup_file, current_file)
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="config_backup_restore",
+            details={"filename": filename},
+        )
+
+        return success_response(
+            message="Config geri yüklendi",
+            data={"restored_from": filename},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("restore_config_backup", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{server_id}/config/backups/{filename}")
+async def delete_config_backup(
+    server_id: int,
+    filename: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Delete a config backup"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        backup_file = server_path / "valve" / filename
+
+        # Validate path
+        backup_file = backup_file.resolve()
+        if not str(backup_file).startswith(str(server_path / "valve")):
+            raise ForbiddenError("Path traversal detected")
+
+        if not backup_file.exists():
+            raise NotFoundError("Backup dosyası bulunamadı")
+
+        # Delete file
+        file_size = backup_file.stat().st_size
+        backup_file.unlink()
+
+        return success_response(
+            message="Backup silindi", data={"filename": filename, "size": file_size}
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("delete_config_backup", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# MOTD EDITOR (Phase 2 - Feature #16)
+# ============================================
+
+
+@router.get("/{server_id}/config/motd")
+async def get_motd(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get MOTD content"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        motd_file = server_path / "valve" / "motd.txt"
+
+        # Create default MOTD if not exists
+        if not motd_file.exists():
+            default_motd = f"""<html>
+<head>
+<title>Welcome to {server.name}</title>
+</head>
+<body bgcolor="#000000" text="#FFFFFF">
+<h1>Welcome to {server.name}!</h1>
+<p>Enjoy your game!</p>
+</body>
+</html>"""
+            with open(motd_file, "w", encoding="utf-8") as f:
+                f.write(default_motd)
+            content = default_motd
+        else:
+            with open(motd_file, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+
+        return success_response(data={"content": content, "size": len(content.encode("utf-8"))})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_motd", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class UpdateMotdRequest(BaseModel):
+    """Update MOTD request"""
+
+    content: str = Field(..., description="HTML content")
+
+
+@router.put("/{server_id}/config/motd")
+async def update_motd(
+    server_id: int,
+    request: UpdateMotdRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Update MOTD content"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        import shutil
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        motd_file = server_path / "valve" / "motd.txt"
+
+        # Backup existing MOTD
+        if motd_file.exists():
+            backup_file = server_path / "valve" / "motd.txt.backup"
+            shutil.copy2(motd_file, backup_file)
+
+        # Sanitize HTML (basic)
+
+        content = request.content
+        # Don't escape the whole content, just validate it's not too large
+        if len(content.encode("utf-8")) > 100 * 1024:  # 100 KB limit
+            raise BadRequestError("MOTD çok büyük (max 100 KB)")
+
+        # Write new MOTD
+        with open(motd_file, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="motd_update",
+            details={"size": len(content.encode("utf-8"))},
+        )
+
+        return success_response(
+            message="MOTD güncellendi",
+            data={"size": len(content.encode("utf-8"))},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("update_motd", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# PLAYER STATISTICS ENDPOINTS (Feature #17)
+# ============================================
+
+
+@router.get("/{server_id}/stats/leaderboard")
+async def get_player_leaderboard(
+    server_id: int,
+    sort_by: str = Query(
+        "elo_rating", description="Sort by: elo_rating, total_kills, total_score, kd_ratio"
+    ),
+    limit: int = Query(100, ge=1, le=500),
+    min_playtime: int = Query(3600, description="Minimum playtime in seconds"),
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get player leaderboard"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.services.player_stats_service import PlayerStatsService
+
+        stats_service = PlayerStatsService()
+        leaderboard = stats_service.get_leaderboard(
+            server_id=server_id,
+            sort_by=sort_by,
+            limit=limit,
+            min_playtime=min_playtime,
+        )
+
+        return success_response(
+            data={
+                "leaderboard": leaderboard,
+                "total_players": len(leaderboard),
+                "sort_by": sort_by,
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_player_leaderboard", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/stats/player/{steam_id}")
+async def get_player_stats(
+    server_id: int,
+    steam_id: str,
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get individual player statistics"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.services.player_stats_service import PlayerStatsService
+
+        stats_service = PlayerStatsService()
+        player_stats = stats_service.get_player_stats(server_id=server_id, steam_id=steam_id)
+
+        if not player_stats:
+            raise NotFoundError("Oyuncu istatistikleri bulunamadı")
+
+        return success_response(data=player_stats)
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_player_stats", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/stats/top-players")
+async def get_top_players(
+    server_id: int,
+    limit: int = Query(5, ge=1, le=20),
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get top players in different categories"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.services.player_stats_service import PlayerStatsService
+
+        stats_service = PlayerStatsService()
+        top_players = stats_service.get_top_players_by_category(server_id=server_id, limit=limit)
+
+        return success_response(data=top_players)
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_top_players", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/stats/matches")
+async def get_recent_matches(
+    server_id: int,
+    limit: int = Query(20, ge=1, le=100),
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get recent match history"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.services.player_stats_service import PlayerStatsService
+
+        stats_service = PlayerStatsService()
+        matches = stats_service.get_recent_matches(server_id=server_id, limit=limit)
+
+        return success_response(data={"matches": matches, "total": len(matches)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_recent_matches", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/stats/activity-chart")
+async def get_player_activity_chart(
+    server_id: int,
+    days: int = Query(30, ge=1, le=90),
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get player activity chart data"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.services.player_stats_service import PlayerStatsService
+
+        stats_service = PlayerStatsService()
+        chart_data = stats_service.get_player_activity_chart(server_id=server_id, days=days)
+
+        return success_response(data=chart_data)
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_player_activity_chart", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# SERVER PERFORMANCE METRICS ENDPOINTS (Feature #18)
+# ============================================
+
+
+@router.get("/{server_id}/performance/current")
+async def get_current_performance(
+    server_id: int,
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get current server performance metrics"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.services.performance_service import PerformanceService
+
+        perf_service = PerformanceService()
+        metrics = perf_service.get_current_metrics(server_id=server_id)
+
+        if not metrics:
+            # Return default metrics if no data
+            metrics = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "cpu_usage": 0,
+                "memory_usage": 0,
+                "network_in": 0,
+                "network_out": 0,
+                "disk_usage": 0,
+                "player_count": 0,
+                "tick_rate": 0,
+                "fps": 0,
+                "ping_avg": 0,
+                "ping_max": 0,
+                "current_map": "N/A",
+            }
+
+        return success_response(data=metrics)
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_current_performance", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/performance/history")
+async def get_performance_history(
+    server_id: int,
+    hours: int = Query(24, ge=1, le=168),
+    interval: int = Query(5, ge=1, le=60, description="Sample interval in minutes"),
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get performance metrics history"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.services.performance_service import PerformanceService
+
+        perf_service = PerformanceService()
+        history = perf_service.get_metrics_history(
+            server_id=server_id,
+            hours=hours,
+            interval_minutes=interval,
+        )
+
+        return success_response(data={"history": history, "total_points": len(history)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_performance_history", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/performance/summary")
+async def get_performance_summary(
+    server_id: int,
+    hours: int = Query(24, ge=1, le=168),
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get performance metrics summary (averages, peaks)"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.services.performance_service import PerformanceService
+
+        perf_service = PerformanceService()
+        summary = perf_service.get_metrics_summary(server_id=server_id, hours=hours)
+
+        return success_response(data=summary)
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_performance_summary", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# CUSTOM MAP UPLOADER ENDPOINTS (Feature #19)
+# ============================================
+
+
+class UploadMapRequest(BaseModel):
+    """Upload map request"""
+
+    map_name: str = Field(..., description="Map name without .bsp")
+    display_name: Optional[str] = Field(None, description="Friendly display name")
+    description: Optional[str] = Field(None, description="Map description")
+    author: Optional[str] = Field(None, description="Map author")
+
+
+@router.post("/{server_id}/maps/upload")
+async def upload_custom_map(
+    server_id: int,
+    file: UploadFile,
+    map_name: str = Form(...),
+    display_name: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    author: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Upload custom map (.bsp file)"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        import hashlib
+        from pathlib import Path
+
+        # Validate file extension
+        if not file.filename.endswith(".bsp"):
+            raise BadRequestError("Sadece .bsp dosyaları yüklenebilir")
+
+        # Read file
+        content = await file.read()
+        file_size = len(content)
+
+        # Validate file size (max 50 MB)
+        if file_size > 50 * 1024 * 1024:
+            raise BadRequestError("Map dosyası çok büyük (max 50 MB)")
+
+        # Calculate hash
+        file_hash = hashlib.sha256(content).hexdigest()
+
+        # Check if map already exists
+        from app.models.database import CustomMap
+
+        existing = (
+            db.query(CustomMap)
+            .filter(CustomMap.server_id == server_id, CustomMap.map_name == map_name)
+            .first()
+        )
+
+        if existing:
+            raise BadRequestError("Bu isimde bir map zaten mevcut")
+
+        # Save to server maps directory
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        maps_dir = server_path / server.game_type / "maps"
+        maps_dir.mkdir(parents=True, exist_ok=True)
+
+        map_file = maps_dir / f"{map_name}.bsp"
+        with open(map_file, "wb") as f:
+            f.write(content)
+
+        # Create database record
+        custom_map = CustomMap(
+            server_id=server_id,
+            map_name=map_name,
+            display_name=display_name or map_name,
+            file_size_bytes=file_size,
+            file_hash=file_hash,
+            description=description,
+            author=author,
+        )
+        db.add(custom_map)
+        db.commit()
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="map_upload",
+            details={"map_name": map_name, "file_size": file_size},
+        )
+
+        return success_response(
+            message="Map yüklendi",
+            data={
+                "map_name": map_name,
+                "display_name": custom_map.display_name,
+                "file_size": file_size,
+            },
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("upload_custom_map", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/maps/custom")
+async def get_custom_maps(
+    server_id: int,
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get list of custom uploaded maps"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.models.database import CustomMap
+
+        maps = (
+            db.query(CustomMap)
+            .filter(CustomMap.server_id == server_id)
+            .order_by(CustomMap.uploaded_at.desc())
+            .all()
+        )
+
+        return success_response(
+            data={
+                "maps": [
+                    {
+                        "id": m.id,
+                        "map_name": m.map_name,
+                        "display_name": m.display_name,
+                        "file_size": m.file_size_bytes,
+                        "file_hash": m.file_hash,
+                        "description": m.description,
+                        "author": m.author,
+                        "thumbnail_url": m.thumbnail_url,
+                        "uploaded_at": m.uploaded_at.isoformat() if m.uploaded_at else None,
+                    }
+                    for m in maps
+                ],
+                "total": len(maps),
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_custom_maps", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{server_id}/maps/custom/{map_id}")
+async def delete_custom_map(
+    server_id: int,
+    map_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Delete custom map"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        from app.models.database import CustomMap
+
+        custom_map = (
+            db.query(CustomMap)
+            .filter(CustomMap.id == map_id, CustomMap.server_id == server_id)
+            .first()
+        )
+
+        if not custom_map:
+            raise NotFoundError("Map bulunamadı")
+
+        # Delete file
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        map_file = server_path / server.game_type / "maps" / f"{custom_map.map_name}.bsp"
+
+        if map_file.exists():
+            map_file.unlink()
+
+        # Delete database record
+        db.delete(custom_map)
+        db.commit()
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="map_delete",
+            details={"map_name": custom_map.map_name},
+        )
+
+        return success_response(message="Map silindi")
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("delete_custom_map", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# VIP SYSTEM MANAGER ENDPOINTS (Feature #20)
+# ============================================
+
+
+class AddVIPRequest(BaseModel):
+    """Add VIP member request"""
+
+    steam_id: str = Field(..., description="Player Steam ID")
+    player_name: str = Field(..., description="Player name")
+    flags: str = Field(..., description="VIP flags (abcdefghijklmnopqrstu)")
+    expires_at: Optional[datetime] = Field(None, description="Expiration date (None = permanent)")
+    notes: Optional[str] = Field(None, description="Admin notes")
+
+
+@router.get("/{server_id}/vip/members")
+async def get_vip_members(
+    server_id: int,
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get VIP members list"""
+    try:
+        current_user, panel_server_id = auth
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+
+        from app.models.database import VIPMember
+
+        vips = (
+            db.query(VIPMember)
+            .filter(VIPMember.server_id == server_id)
+            .order_by(VIPMember.created_at.desc())
+            .all()
+        )
+
+        return success_response(
+            data={
+                "vips": [
+                    {
+                        "id": v.id,
+                        "steam_id": v.steam_id,
+                        "player_name": v.player_name,
+                        "flags": v.flags,
+                        "expires_at": v.expires_at.isoformat() if v.expires_at else None,
+                        "is_active": v.is_active,
+                        "is_expired": v.expires_at < datetime.utcnow() if v.expires_at else False,
+                        "notes": v.notes,
+                        "created_at": v.created_at.isoformat() if v.created_at else None,
+                    }
+                    for v in vips
+                ],
+                "total": len(vips),
+                "active": sum(1 for v in vips if v.is_active),
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_vip_members", e, current_user.id if current_user else None)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/vip/members")
+async def add_vip_member(
+    server_id: int,
+    request: AddVIPRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Add VIP member"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.models.database import VIPMember
+
+        # Check if already exists
+        existing = (
+            db.query(VIPMember)
+            .filter(
+                VIPMember.server_id == server_id,
+                VIPMember.steam_id == request.steam_id,
+            )
+            .first()
+        )
+
+        if existing:
+            raise BadRequestError("Bu Steam ID zaten VIP listesinde")
+
+        # Create VIP member
+        vip = VIPMember(
+            server_id=server_id,
+            steam_id=request.steam_id,
+            player_name=request.player_name,
+            flags=request.flags,
+            expires_at=request.expires_at,
+            notes=request.notes,
+        )
+        db.add(vip)
+        db.commit()
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="vip_add",
+            details={"steam_id": request.steam_id, "flags": request.flags},
+        )
+
+        return success_response(
+            message="VIP eklendi",
+            data={
+                "id": vip.id,
+                "steam_id": vip.steam_id,
+                "player_name": vip.player_name,
+            },
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("add_vip_member", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{server_id}/vip/members/{vip_id}")
+async def update_vip_member(
+    server_id: int,
+    vip_id: int,
+    request: AddVIPRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Update VIP member"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.models.database import VIPMember
+
+        vip = (
+            db.query(VIPMember)
+            .filter(VIPMember.id == vip_id, VIPMember.server_id == server_id)
+            .first()
+        )
+
+        if not vip:
+            raise NotFoundError("VIP bulunamadı")
+
+        # Update fields
+        vip.player_name = request.player_name
+        vip.flags = request.flags
+        vip.expires_at = request.expires_at
+        vip.notes = request.notes
+        vip.updated_at = datetime.utcnow()
+
+        db.commit()
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="vip_update",
+            details={"steam_id": vip.steam_id},
+        )
+
+        return success_response(message="VIP güncellendi")
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("update_vip_member", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{server_id}/vip/members/{vip_id}")
+async def delete_vip_member(
+    server_id: int,
+    vip_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Delete VIP member"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.models.database import VIPMember
+
+        vip = (
+            db.query(VIPMember)
+            .filter(VIPMember.id == vip_id, VIPMember.server_id == server_id)
+            .first()
+        )
+
+        if not vip:
+            raise NotFoundError("VIP bulunamadı")
+
+        db.delete(vip)
+        db.commit()
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="vip_delete",
+            details={"steam_id": vip.steam_id},
+        )
+
+        return success_response(message="VIP silindi")
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("delete_vip_member", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/vip/members/{vip_id}/toggle")
+async def toggle_vip_status(
+    server_id: int,
+    vip_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Toggle VIP active status"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.models.database import VIPMember
+
+        vip = (
+            db.query(VIPMember)
+            .filter(VIPMember.id == vip_id, VIPMember.server_id == server_id)
+            .first()
+        )
+
+        if not vip:
+            raise NotFoundError("VIP bulunamadı")
+
+        vip.is_active = not vip.is_active
+        vip.updated_at = datetime.utcnow()
+        db.commit()
+
+        status_text = "aktif" if vip.is_active else "devre dışı"
+        return success_response(
+            message=f"VIP {status_text}",
+            data={"is_active": vip.is_active},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("toggle_vip_status", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
