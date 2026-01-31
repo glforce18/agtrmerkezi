@@ -128,6 +128,39 @@
               </router-link>
 
               <router-link
+                :to="{ name: 'server-webpanel-plugin-compiler' }"
+                class="nav-item"
+                active-class="active"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+                <span>Plugin Compiler</span>
+              </router-link>
+
+              <router-link
+                :to="{ name: 'server-webpanel-plugin-configs' }"
+                class="nav-item"
+                active-class="active"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                <span>Plugin Configs</span>
+              </router-link>
+
+              <router-link
+                :to="{ name: 'server-webpanel-plugin-logs' }"
+                class="nav-item"
+                active-class="active"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Plugin Logs</span>
+              </router-link>
+
+              <router-link
                 :to="{ name: 'server-webpanel-config' }"
                 class="nav-item"
                 active-class="active"

@@ -134,6 +134,21 @@ const router = createRouter({
           path: 'backups',
           name: 'server-webpanel-backups',
           component: () => import('@/views/server/webpanel/Backups.vue')
+        },
+        {
+          path: 'plugin-compiler',
+          name: 'server-webpanel-plugin-compiler',
+          component: () => import('@/views/server/webpanel/PluginCompiler.vue')
+        },
+        {
+          path: 'plugin-configs',
+          name: 'server-webpanel-plugin-configs',
+          component: () => import('@/views/server/webpanel/PluginConfigEditor.vue')
+        },
+        {
+          path: 'plugin-logs',
+          name: 'server-webpanel-plugin-logs',
+          component: () => import('@/views/server/webpanel/PluginLogsViewer.vue')
         }
       ]
     },

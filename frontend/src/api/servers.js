@@ -402,5 +402,106 @@ export default {
    */
   getBackupSchedule(id) {
     return apiClient.get(`/servers/${id}/backups/schedule`)
+  },
+
+  // Plugin Compiler (Phase 2)
+  /**
+   * Compile .sma plugin to .amxx
+   * @param {number} id - Server ID
+   * @param {object} data - {source_code: string, plugin_name: string}
+   * @returns {Promise<{data: {compiled_data: string, filename: string, warnings: Array, output: string}}>}
+   * @throws {Error} If request fails
+   */
+  compilePlugin(id, data) {
+    return apiClient.post(`/servers/${id}/plugins/compile`, data)
+  },
+
+  /**
+   * Validate plugin syntax
+   * @param {number} id - Server ID
+   * @param {object} data - {source_code: string, plugin_name: string}
+   * @returns {Promise<{data: {valid: boolean, errors: string, warnings: Array}}>}
+   * @throws {Error} If request fails
+   */
+  validatePluginSyntax(id, data) {
+    return apiClient.post(`/servers/${id}/plugins/validate`, data)
+  },
+
+  /**
+   * Get compiler info
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {available: boolean, version: string, compiler_path: string}}>}
+   * @throws {Error} If request fails
+   */
+  getCompilerInfo(id) {
+    return apiClient.get(`/servers/${id}/plugins/compiler-info`)
+  },
+
+  // Plugin Config Editor (Phase 2)
+  /**
+   * List plugin config files
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {configs: Array, count: number}}>}
+   * @throws {Error} If request fails
+   */
+  listPluginConfigs(id) {
+    return apiClient.get(`/servers/${id}/plugins/configs/list`)
+  },
+
+  /**
+   * Get plugin config content
+   * @param {number} id - Server ID
+   * @param {string} filename - Config filename
+   * @returns {Promise<{data: {filename: string, content: string, parsed: Object, size: number}}>}
+   * @throws {Error} If request fails
+   */
+  getPluginConfig(id, filename) {
+    return apiClient.get(`/servers/${id}/plugins/configs/${filename}`)
+  },
+
+  /**
+   * Update plugin config
+   * @param {number} id - Server ID
+   * @param {string} filename - Config filename
+   * @param {object} data - {content: string}
+   * @returns {Promise} Update result
+   * @throws {Error} If request fails
+   */
+  updatePluginConfig(id, filename, data) {
+    return apiClient.put(`/servers/${id}/plugins/configs/${filename}`, data)
+  },
+
+  // Plugin Logs Viewer (Phase 2)
+  /**
+   * List plugin log files
+   * @param {number} id - Server ID
+   * @returns {Promise<{data: {logs: Array, count: number}}>}
+   * @throws {Error} If request fails
+   */
+  listPluginLogs(id) {
+    return apiClient.get(`/servers/${id}/plugins/logs/list`)
+  },
+
+  /**
+   * Get plugin log content
+   * @param {number} id - Server ID
+   * @param {string} filename - Log filename
+   * @param {object} params - {lines: number, level: string, search: string}
+   * @returns {Promise<{data: {entries: Array, total_lines: number, filtered_lines: number}}>}
+   * @throws {Error} If request fails
+   */
+  getPluginLog(id, filename, params = {}) {
+    return apiClient.get(`/servers/${id}/plugins/logs/${filename}`, { params })
+  },
+
+  /**
+   * Delete plugin log
+   * @param {number} id - Server ID
+   * @param {string} filename - Log filename
+   * @returns {Promise} Delete result
+   * @throws {Error} If request fails
+   */
+  deletePluginLog(id, filename) {
+    return apiClient.delete(`/servers/${id}/plugins/logs/${filename}`)
   }
 }

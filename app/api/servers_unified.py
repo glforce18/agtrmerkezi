@@ -2919,3 +2919,583 @@ async def get_backup_schedule(
     except Exception as e:
         log_api_error("get_backup_schedule", e, current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# PLUGIN COMPILER (Phase 2 - Feature #11)
+# ============================================
+
+
+class CompilePluginRequest(BaseModel):
+    """Plugin compilation request"""
+
+    source_code: str = Field(..., description=".sma source code")
+    plugin_name: str = Field(..., min_length=1, max_length=50, description="Plugin name")
+
+
+@router.post("/{server_id}/plugins/compile")
+async def compile_plugin(
+    server_id: int,
+    request: CompilePluginRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Compile .sma plugin to .amxx"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.services.plugin_compiler_service import PluginCompilerService
+
+        compiler = PluginCompilerService()
+
+        if not compiler.is_compiler_available():
+            raise BadRequestError(
+                "AMXModX compiler sunucuda kurulu değil. " "Lütfen yönetici ile iletişime geçin."
+            )
+
+        # Compile
+        result = compiler.compile_plugin(request.source_code, request.plugin_name)
+
+        if not result["success"]:
+            return success_response(
+                message="Derleme başarısız",
+                data={
+                    "success": False,
+                    "error": result["error"],
+                    "warnings": result.get("warnings", []),
+                },
+            )
+
+        # Convert binary to base64 for JSON transfer
+        import base64
+
+        compiled_base64 = base64.b64encode(result["compiled_data"]).decode("utf-8")
+
+        # Log compilation
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="plugin_compile",
+            details={"plugin_name": request.plugin_name},
+        )
+
+        return success_response(
+            message="Plugin başarıyla derlendi",
+            data={
+                "success": True,
+                "compiled_data": compiled_base64,
+                "filename": f"{request.plugin_name}.amxx",
+                "warnings": result.get("warnings", []),
+                "output": result.get("output", ""),
+            },
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("compile_plugin", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{server_id}/plugins/validate")
+async def validate_plugin_syntax(
+    server_id: int,
+    request: CompilePluginRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Validate plugin syntax without compiling"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.services.plugin_compiler_service import PluginCompilerService
+
+        compiler = PluginCompilerService()
+
+        if not compiler.is_compiler_available():
+            raise BadRequestError("AMXModX compiler sunucuda kurulu değil")
+
+        # Validate
+        result = compiler.validate_syntax(request.source_code)
+
+        return success_response(
+            message="Syntax kontrolü tamamlandı",
+            data={
+                "valid": result["valid"],
+                "errors": result["errors"],
+                "warnings": result["warnings"],
+            },
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("validate_plugin_syntax", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/plugins/compiler-info")
+async def get_compiler_info(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get compiler availability and version"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from app.services.plugin_compiler_service import PluginCompilerService
+
+        compiler = PluginCompilerService()
+
+        return success_response(
+            data={
+                "available": compiler.is_compiler_available(),
+                "version": compiler.get_compiler_version(),
+                "compiler_path": str(compiler.compiler_path),
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_compiler_info", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# PLUGIN CONFIG EDITOR (Phase 2 - Feature #12)
+# ============================================
+
+
+@router.get("/{server_id}/plugins/configs/list")
+async def list_plugin_configs(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """List all available plugin config files"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        configs_path = server_path / "valve" / "addons" / "amxmodx" / "configs"
+
+        if not configs_path.exists():
+            return success_response(data={"configs": []})
+
+        # List .ini and .cfg files
+        config_files = []
+        for ext in ["*.ini", "*.cfg"]:
+            for file in configs_path.glob(ext):
+                # Skip some system files
+                if file.name in ["core.ini", "sql.ini", "modules.ini"]:
+                    continue
+
+                config_files.append(
+                    {
+                        "name": file.name,
+                        "path": str(file.relative_to(server_path)),
+                        "size": file.stat().st_size,
+                        "modified": file.stat().st_mtime,
+                    }
+                )
+
+        # Sort by name
+        config_files.sort(key=lambda x: x["name"])
+
+        return success_response(data={"configs": config_files, "count": len(config_files)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("list_plugin_configs", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/plugins/configs/{filename}")
+async def get_plugin_config(
+    server_id: int,
+    filename: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get plugin config file content"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        config_path = server_path / "valve" / "addons" / "amxmodx" / "configs" / filename
+
+        # Validate path (prevent traversal)
+        config_path = config_path.resolve()
+        if not str(config_path).startswith(
+            str(server_path / "valve" / "addons" / "amxmodx" / "configs")
+        ):
+            raise ForbiddenError("Path traversal detected")
+
+        if not config_path.exists():
+            raise NotFoundError("Config dosyası bulunamadı")
+
+        # Read file
+        with open(config_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+
+        # Parse as key-value if .ini
+        parsed_data = None
+        if filename.endswith(".ini"):
+            parsed_data = parse_ini_content(content)
+
+        return success_response(
+            data={
+                "filename": filename,
+                "content": content,
+                "parsed": parsed_data,
+                "size": config_path.stat().st_size,
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_plugin_config", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class UpdatePluginConfigRequest(BaseModel):
+    """Update plugin config request"""
+
+    content: str = Field(..., description="New config content")
+
+
+@router.put("/{server_id}/plugins/configs/{filename}")
+async def update_plugin_config(
+    server_id: int,
+    filename: str,
+    request: UpdatePluginConfigRequest,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Update plugin config file"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        config_path = server_path / "valve" / "addons" / "amxmodx" / "configs" / filename
+
+        # Validate path
+        config_path = config_path.resolve()
+        if not str(config_path).startswith(
+            str(server_path / "valve" / "addons" / "amxmodx" / "configs")
+        ):
+            raise ForbiddenError("Path traversal detected")
+
+        if not config_path.exists():
+            raise NotFoundError("Config dosyası bulunamadı")
+
+        # Backup original
+        import shutil
+
+        backup_path = config_path.with_suffix(config_path.suffix + ".backup")
+        shutil.copy2(config_path, backup_path)
+
+        # Write new content
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(request.content)
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="plugin_config_update",
+            details={"filename": filename},
+        )
+
+        return success_response(
+            message=f"{filename} güncellendi",
+            data={"filename": filename, "backup": str(backup_path)},
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("update_plugin_config", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def parse_ini_content(content: str) -> dict:
+    """Parse INI content into key-value pairs"""
+    parsed = {"sections": {}, "globals": []}
+    current_section = None
+
+    for line in content.split("\n"):
+        line = line.strip()
+
+        # Skip empty lines and comments
+        if not line or line.startswith(";") or line.startswith("#"):
+            continue
+
+        # Section header
+        if line.startswith("[") and line.endswith("]"):
+            current_section = line[1:-1]
+            parsed["sections"][current_section] = []
+            continue
+
+        # Key-value pair
+        if "=" in line:
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"')
+
+            entry = {"key": key, "value": value, "line": line}
+
+            if current_section:
+                parsed["sections"][current_section].append(entry)
+            else:
+                parsed["globals"].append(entry)
+
+    return parsed
+
+
+# ============================================
+# PLUGIN LOGS VIEWER (Phase 2 - Feature #13)
+# ============================================
+
+
+@router.get("/{server_id}/plugins/logs/list")
+async def list_plugin_logs(
+    server_id: int,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """List available plugin log files"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        logs_path = server_path / "valve" / "addons" / "amxmodx" / "logs"
+
+        if not logs_path.exists():
+            return success_response(data={"logs": []})
+
+        # List log files
+        log_files = []
+        for file in logs_path.glob("*.log"):
+            log_files.append(
+                {
+                    "name": file.name,
+                    "path": str(file.relative_to(server_path)),
+                    "size": file.stat().st_size,
+                    "modified": file.stat().st_mtime,
+                }
+            )
+
+        # Sort by modified time (newest first)
+        log_files.sort(key=lambda x: x["modified"], reverse=True)
+
+        return success_response(data={"logs": log_files, "count": len(log_files)})
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("list_plugin_logs", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{server_id}/plugins/logs/{filename}")
+async def get_plugin_log(
+    server_id: int,
+    filename: str,
+    lines: int = Query(500, ge=1, le=5000, description="Number of lines to read"),
+    level: Optional[str] = Query(None, description="Filter by level (error, warning, info)"),
+    search: Optional[str] = Query(None, description="Search term"),
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Get plugin log content with filtering"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        log_path = server_path / "valve" / "addons" / "amxmodx" / "logs" / filename
+
+        # Validate path
+        log_path = log_path.resolve()
+        if not str(log_path).startswith(str(server_path / "valve" / "addons" / "amxmodx" / "logs")):
+            raise ForbiddenError("Path traversal detected")
+
+        if not log_path.exists():
+            raise NotFoundError("Log dosyası bulunamadı")
+
+        # Read file (last N lines)
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            all_lines = f.readlines()
+
+        # Get last N lines
+        log_lines = all_lines[-lines:]
+
+        # Parse log entries
+        entries = []
+        for line in log_lines:
+            parsed = parse_log_line(line)
+            if parsed:
+                # Filter by level
+                if level and parsed["level"].lower() != level.lower():
+                    continue
+
+                # Filter by search term
+                if search and search.lower() not in parsed["message"].lower():
+                    continue
+
+                entries.append(parsed)
+
+        return success_response(
+            data={
+                "filename": filename,
+                "entries": entries,
+                "total_lines": len(all_lines),
+                "filtered_lines": len(entries),
+            }
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("get_plugin_log", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{server_id}/plugins/logs/{filename}")
+async def delete_plugin_log(
+    server_id: int,
+    filename: str,
+    current_user: User = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Delete a plugin log file"""
+    try:
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
+
+        from pathlib import Path
+
+        server_path = Path(f"/home/gameservers/servers/server_{server_id}")
+        log_path = server_path / "valve" / "addons" / "amxmodx" / "logs" / filename
+
+        # Validate path
+        log_path = log_path.resolve()
+        if not str(log_path).startswith(str(server_path / "valve" / "addons" / "amxmodx" / "logs")):
+            raise ForbiddenError("Path traversal detected")
+
+        if not log_path.exists():
+            raise NotFoundError("Log dosyası bulunamadı")
+
+        # Delete file
+        file_size = log_path.stat().st_size
+        log_path.unlink()
+
+        # Log action
+        from app.services.admin_service import AdminService
+
+        admin_service = AdminService(db)
+        await admin_service.log_action(
+            server_id=server_id,
+            user_id=current_user.id,
+            action_type="plugin_log_delete",
+            details={"filename": filename},
+        )
+
+        return success_response(
+            message="Log dosyası silindi", data={"filename": filename, "size": file_size}
+        )
+
+    except APIError:
+        raise
+    except Exception as e:
+        log_api_error("delete_plugin_log", e, current_user.id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def parse_log_line(line: str) -> Optional[dict]:
+    """Parse AMXModX log line into structured format"""
+    import re
+    from datetime import datetime
+
+    line = line.strip()
+    if not line:
+        return None
+
+    # AMXModX log format: L 01/31/2026 - 12:34:56: [MODULE] Message
+    # Or: L 01/31/2026 - 12:34:56: Message
+    pattern = r"L (\d{2}/\d{2}/\d{4}) - (\d{2}:\d{2}:\d{2}): (?:\[([^\]]+)\] )?(.*)"
+    match = re.match(pattern, line)
+
+    if not match:
+        # Not a standard log line, return as raw
+        return {"timestamp": None, "level": "info", "module": None, "message": line, "raw": line}
+
+    date_str, time_str, module, message = match.groups()
+
+    # Determine log level from message
+    level = "info"
+    if any(keyword in message.lower() for keyword in ["error", "fatal", "failed"]):
+        level = "error"
+    elif any(keyword in message.lower() for keyword in ["warning", "warn"]):
+        level = "warning"
+
+    # Parse timestamp
+    try:
+        timestamp_str = f"{date_str} {time_str}"
+        timestamp = datetime.strptime(timestamp_str, "%m/%d/%Y %H:%M:%S")
+    except Exception:
+        timestamp = None
+
+    return {
+        "timestamp": timestamp.isoformat() if timestamp else None,
+        "level": level,
+        "module": module,
+        "message": message.strip(),
+        "raw": line,
+    }
