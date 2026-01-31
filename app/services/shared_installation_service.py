@@ -364,24 +364,29 @@ class SharedInstallationService:
             except Exception as e:
                 logger.warning(f"Failed to copy addons: {e}")
 
-        # 7.6. TÜM map'leri kopyala (tasarruf etme - tam kopya)
+        # 7.6. Maps: Base maplar symlink, custom maplar individual
         maps_source = shared_mod / "maps"
         maps_target = mod_path / "maps"
         if maps_source.exists():
             try:
-                import shutil
+                # Maps klasörünü oluştur
+                maps_target.mkdir(exist_ok=True, parents=True)
 
-                # TÜM maps klasörünü kopyala (tüm .bsp dosyaları)
-                if maps_target.exists():
-                    shutil.rmtree(maps_target)
-                shutil.copytree(maps_source, maps_target)
+                # Her base map için symlink oluştur (.bsp, .txt, .nav, .res)
+                map_count = 0
+                for map_file in maps_source.glob("*"):
+                    if map_file.is_file():
+                        target_map = maps_target / map_file.name
+                        if not target_map.exists():
+                            target_map.symlink_to(map_file)
+                            map_count += 1
 
-                # Kopyalanan map sayısını say
-                map_count = len(list(maps_target.glob("*.bsp")))
-                maps_size_mb = sum(f.stat().st_size for f in maps_target.glob("*")) / 1024 / 1024
-                logger.info(f"Copied ALL maps: {map_count} maps ({maps_size_mb:.1f} MB)")
+                logger.info(
+                    f"Created symlinks for {map_count} base map files "
+                    "(custom maps can be uploaded)"
+                )
             except Exception as e:
-                logger.warning(f"Failed to copy maps: {e}")
+                logger.warning(f"Failed to create map symlinks: {e}")
 
         # 8. Individual config dosyalarını kopyala
         for filename in self.INDIVIDUAL_FILES:
