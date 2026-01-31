@@ -195,5 +195,81 @@ export default {
    */
   deletePackage(packageId) {
     return apiClient.delete(`/admin/commerce/packages/${packageId}`)
+  },
+
+  // Shared System Management
+  /**
+   * Get shared installation system status
+   * @returns {Promise<{data: Object}>} Shared templates status, disk usage, savings
+   * @throws {Error} If request fails
+   */
+  getSharedSystemStatus() {
+    return apiClient.get('/admin/shared-system/status')
+  },
+
+  /**
+   * Get detailed disk usage analytics with caching
+   * @param {boolean} forceRefresh - Force cache refresh
+   * @returns {Promise<{data: Object}>} Disk usage breakdown per server
+   * @throws {Error} If request fails
+   */
+  getDiskUsageAnalytics(forceRefresh = false) {
+    return apiClient.get('/admin/shared-system/disk-usage', {
+      params: { force_refresh: forceRefresh }
+    })
+  },
+
+  /**
+   * Validate template integrity
+   * @param {string} templateName - Template name (e.g., 'ag_base', 'hlds_base')
+   * @returns {Promise<{data: Object}>} Validation result with issues
+   * @throws {Error} If request fails or template not found
+   */
+  validateTemplate(templateName) {
+    return apiClient.post(`/admin/shared-system/validate-template/${templateName}`)
+  },
+
+  /**
+   * Find and optionally delete orphaned server directories
+   * @param {boolean} confirm - If true, actually delete orphans. If false, preview only.
+   * @returns {Promise<{data: Object}>} Orphan list and deletion results
+   * @throws {Error} If request fails
+   */
+  cleanupOrphans(confirm = false) {
+    return apiClient.post('/admin/shared-system/cleanup-orphans', null, {
+      params: { confirm }
+    })
+  },
+
+  /**
+   * Get installation progress and logs for a server
+   * @param {number} serverId - Server ID
+   * @param {number} lines - Number of log lines to return (10-500)
+   * @returns {Promise<{data: Object}>} Installation logs and errors
+   * @throws {Error} If request fails or server not found
+   */
+  getInstallationLog(serverId, lines = 50) {
+    return apiClient.get(`/admin/shared-system/servers/${serverId}/installation-log`, {
+      params: { lines }
+    })
+  },
+
+  /**
+   * Clear disk usage cache
+   * @returns {Promise} Cache clear result
+   * @throws {Error} If request fails
+   */
+  clearDiskCache() {
+    return apiClient.post('/admin/shared-system/cache/clear')
+  },
+
+  /**
+   * Get list of servers (for installation monitor)
+   * @param {object} params - Query parameters (status_filter, page, per_page)
+   * @returns {Promise<{data: Array}>} Servers matching filter
+   * @throws {Error} If request fails
+   */
+  getServers(params) {
+    return apiClient.get('/admin/servers', { params })
   }
 }

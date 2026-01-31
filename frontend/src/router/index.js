@@ -84,6 +84,21 @@ const router = createRouter({
           path: 'files',
           name: 'server-webpanel-files',
           component: () => import('@/views/server/webpanel/FileEditor.vue')
+        },
+        {
+          path: 'console',
+          name: 'server-webpanel-console',
+          component: () => import('@/views/server/webpanel/Console.vue')
+        },
+        {
+          path: 'players',
+          name: 'server-webpanel-players',
+          component: () => import('@/views/server/webpanel/Players.vue')
+        },
+        {
+          path: 'logs',
+          name: 'server-webpanel-logs',
+          component: () => import('@/views/server/webpanel/Logs.vue')
         }
       ]
     },
@@ -176,6 +191,18 @@ const router = createRouter({
       path: '/admin/settings',
       name: 'admin-settings',
       component: () => import('@/views/admin/AdminSettings.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/shared-system',
+      name: 'admin-shared-system',
+      component: () => import('@/views/admin/SharedSystemDashboard.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/installation-monitor',
+      name: 'admin-installation-monitor',
+      component: () => import('@/views/admin/ServerInstallationMonitor.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
     }
   ],

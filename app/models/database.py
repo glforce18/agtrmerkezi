@@ -317,7 +317,8 @@ def get_database_stats() -> dict:
         for table_name in inspector.get_table_names():
             try:
                 with engine.connect() as conn:
-                    result = conn.execute(text(f"SELECT COUNT(*) FROM `{table_name}`"))
+                    # nosec B608 - table_name is from SQLAlchemy metadata, not user input
+                    result = conn.execute(text(f"SELECT COUNT(*) FROM `{table_name}`"))  # nosec
                     count = result.scalar()
                     stats["tables"][table_name] = count
                     stats["total_rows"] += count
@@ -1159,7 +1160,7 @@ class ServerConsoleHistory(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     server_id = Column(Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     command = Column(String(500), nullable=False)
     response = Column(Text)
     command_type = Column(Enum(CommandType), default=CommandType.RCON)
@@ -2135,6 +2136,36 @@ class UserFavoriteServer(Base):
     )
 
     user = relationship("User", back_populates="favorite_servers")
+
+
+# ==================== USER PLUGINS ====================
+
+
+class UserPlugin(Base):
+    """Kullanıcıların yüklediği pluginler"""
+
+    __tablename__ = "user_plugins"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    server_id = Column(
+        Integer, ForeignKey("game_servers.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    filename = Column(String(255), nullable=False)
+    size = Column(Integer, nullable=False)  # File size in bytes
+    uploaded_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "server_id", "filename", name="uq_user_plugin"),
+        Index("idx_user_plugins_user", "user_id"),
+        Index("idx_user_plugins_server", "server_id"),
+    )
+
+    # Relationships
+    user = relationship("User", backref="uploaded_plugins")
+    server = relationship("GameServer", backref="user_plugins")
 
 
 # ==================== USER PREFERENCES ====================

@@ -251,8 +251,8 @@ class RCONService:
             cmd = ["screen", "-S", screen_name, "-X", "stuff", f"{command}\n"]
             subprocess.run(cmd, timeout=5, check=False)
 
-            # Wait a bit for command to execute
-            await asyncio.sleep(0.5)
+            # Wait for command to execute
+            await asyncio.sleep(1.5)
 
             # Capture output from screen (use temp file securely)
             with tempfile.NamedTemporaryFile(
@@ -272,15 +272,47 @@ class RCONService:
                 try:
                     with open(output_file, "r", errors="ignore") as f:
                         lines = f.readlines()
-                        # Get last 50 lines
-                        response = "".join(lines[-50:])
-                except:
+
+                        # Find the last occurrence of our command
+                        command_line_idx = -1
+                        for i in range(len(lines) - 1, -1, -1):
+                            line_clean = lines[i].strip()
+                            # Look for exact command match
+                            if line_clean == command.strip() or line_clean.endswith(
+                                command.strip()
+                            ):
+                                command_line_idx = i
+                                break
+
+                        if command_line_idx >= 0:
+                            # Get lines after the command
+                            output_lines = lines[command_line_idx + 1 :]
+
+                            # Filter out empty lines at the start
+                            while output_lines and not output_lines[0].strip():
+                                output_lines.pop(0)
+
+                            # Stop at the next command (lines that look like previous commands)
+                            # or when we see the command echoed again
+                            clean_output = []
+                            for line in output_lines:
+                                line_stripped = line.strip()
+                                # Stop if we see the same command again
+                                if line_stripped == command.strip():
+                                    break
+                                clean_output.append(line)
+
+                            response = "".join(clean_output[-40:])  # Last 40 lines max
+                        else:
+                            # Fallback: just get last 30 lines
+                            response = "".join(lines[-30:])
+                except Exception:
                     response = ""
             finally:
                 # Clean up temp file
                 try:
                     os.unlink(output_file)
-                except:
+                except Exception:
                     pass
 
             end_time = datetime.utcnow()
@@ -390,7 +422,10 @@ class RCONService:
         Oyuncu listesini al (Enhanced with frags and loss)
 
         Returns:
-            [{"slot": int, "name": str, "steam_id": str, "frags": int, "time": str, "ping": int, "loss": int, "ip": str}]
+            [{
+                "slot": int, "name": str, "steam_id": str, "frags": int,
+                "time": str, "ping": int, "loss": int, "ip": str
+            }]
         """
         import subprocess
 
@@ -421,13 +456,13 @@ class RCONService:
                 try:
                     with open(output_file, "r", errors="ignore") as f:
                         response = f.read()
-                except:
+                except Exception:
                     return []
             finally:
                 # Clean up temp file
                 try:
                     os.unlink(output_file)
-                except:
+                except Exception:
                     pass
 
             players = []
@@ -438,9 +473,13 @@ class RCONService:
 
             for i, line in enumerate(lines):
                 if line.startswith("# ") and '"' in line:
-                    # Pattern: # slot "name" userid steamid frags time ping loss [ip:port or next line]
-                    # Group 5 = frags, Group 8 = loss (we were ignoring it with \d+)
-                    pattern = r'#\s*(\d+)\s+"([^"]+)"\s+(\d+)\s+(\S+)\s+(-?\d+)\s+(\S+)\s+(\d+)\s+(\d+)(?:\s+([\d\.]+:\d+))?'
+                    # Pattern: # slot "name" userid steamid frags time ping loss
+                    # [ip:port or next line]
+                    # Group 5 = frags, Group 8 = loss (we were ignoring it)
+                    pattern = (
+                        r'#\s*(\d+)\s+"([^"]+)"\s+(\d+)\s+(\S+)\s+'
+                        r"(-?\d+)\s+(\S+)\s+(\d+)\s+(\d+)(?:\s+([\d\.]+:\d+))?"
+                    )
                     match = re.search(pattern, line)
 
                     if match:

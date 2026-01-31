@@ -164,7 +164,8 @@ const fetchPackages = async () => {
   try {
     loading.value = true
     const response = await apiClient.get('/admin/commerce/packages')
-    packages.value = response.data.data?.packages || []
+    // API returns { data: { packages: [...] } }
+    packages.value = response.data?.packages || response.data.data?.packages || []
   } catch (error) {
     console.error('Failed to fetch packages:', error)
     packages.value = []

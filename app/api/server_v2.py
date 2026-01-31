@@ -32,6 +32,7 @@ from app.services import (
 from app.services.auto_update_service import auto_update_service
 from app.services.ddos_protection_service import ddos_protection_service
 from app.services.port_pool_manager import PortPoolManager
+from app.services.shared_installation_service import SharedInstallationService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v2/servers", tags=["Server Management v2"])
@@ -243,11 +244,6 @@ async def create_server(
     if request_data.mod_type not in valid_mods:
         raise HTTPException(400, f"Gecersiz mod tipi. Gecerli: {valid_mods}")
 
-    installation_service = ServerInstallationService(db)
-
-    # Unique code olustur
-    unique_code = installation_service.generate_unique_code()
-
     # Musait IP:PORT slot bul (load balancing ile)
     pool_manager = PortPoolManager(db)
     slot = pool_manager.acquire_slot()
@@ -260,22 +256,28 @@ async def create_server(
     allocated_ip, allocated_port = slot
 
     # GameServer olustur
+    import secrets
+
     from app.core.security import generate_rcon_password
+
+    # Unique code
+    unique_code = f"AGTR-{datetime.utcnow().year}-{secrets.randbelow(99999):05d}"
 
     server = GameServer(
         owner_id=current_user.id,
-        owner_steam_id=current_user.steam_id,  # Steam ID for quick lookup
+        owner_steam_id=current_user.steam_id,
         name=request_data.name,
         game_type=(
             "HLDM"
             if request_data.mod_type in ["hldm", "valve_new"]
             else ("AG" if "ag" in request_data.mod_type else "CS16")
         ),
-        ip_address=allocated_ip,  # PortPoolManager'dan alindi
-        port=allocated_port,  # PortPoolManager'dan alindi
+        ip_address=allocated_ip,
+        port=allocated_port,
         slots=request_data.maxplayers,
         rcon_password=request_data.rcon_password or generate_rcon_password(),
         sv_password=request_data.sv_password,
+        panel_password=request_data.panel_password,  # Panel access
         unique_code=unique_code,
         mod_type=request_data.mod_type,
         status=ServerStatus.CREATING,
@@ -286,43 +288,45 @@ async def create_server(
     db.commit()
     db.refresh(server)
 
-    # Kurulum kaydi olustur
-    installation = await installation_service.create_installation(
-        server_id=server.id,
-        user_id=current_user.id,
-        mod_type=request_data.mod_type,
-        config={
-            "hostname": request_data.name,
-            "ip": allocated_ip,
-            "port": allocated_port,
-            "maxplayers": request_data.maxplayers,
-            "rcon_password": server.rcon_password,
-            "sv_password": request_data.sv_password,
-            "admins": request_data.admins or [],
-        },
-    )
+    logger.info(f"Server {server.id} created, starting SHARED installation...")
 
-    # Arka planda kurulumu baslat
-    async def run_installation():
-        config = {
-            "hostname": request_data.name,
-            "ip": allocated_ip,
-            "port": allocated_port,
-            "maxplayers": request_data.maxplayers,
-            "rcon_password": server.rcon_password,
-            "sv_password": request_data.sv_password,
-            "admins": request_data.admins or [],
-        }
-        await installation_service.run_installation(installation.id, config)
+    # SHARED INSTALLATION - Arka planda kurulum
+    async def run_shared_installation():
+        try:
+            shared_service = SharedInstallationService(db)
 
-    background_tasks.add_task(run_installation)
+            logger.info(f"Creating server {server.id} with shared installation (disk optimized)")
+
+            success, message = await shared_service.create_server_with_symlinks(
+                server_id=server.id,
+                mod_type=request_data.mod_type,
+                hostname=request_data.name,
+                rcon_password=server.rcon_password,
+                port=allocated_port,
+                maxplayers=request_data.maxplayers,
+            )
+
+            if success:
+                server.status = ServerStatus.STOPPED  # Ready to start
+                logger.info(f"Server {server.id} installation completed: {message}")
+            else:
+                server.status = ServerStatus.SUSPENDED
+                logger.error(f"Server {server.id} installation failed: {message}")
+
+            db.commit()
+
+        except Exception as e:
+            logger.error(f"Server {server.id} installation error: {e}", exc_info=True)
+            server.status = ServerStatus.SUSPENDED
+            db.commit()
+
+    background_tasks.add_task(run_shared_installation)
 
     return {
         "success": True,
         "server_id": server.id,
         "unique_code": unique_code,
-        "installation_id": installation.id,
-        "message": "Sunucu olusturuldu, kurulum baslatildi",
+        "message": "Sunucu olusturuldu, SHARED installation baslatildi (disk optimized - 58MB)",
     }
 
 
@@ -809,7 +813,7 @@ async def get_bans(
 
     query = db.query(ServerBan).filter(ServerBan.server_id == server_id)
     if active_only:
-        query = query.filter(ServerBan.is_active == True)
+        query = query.filter(ServerBan.is_active.is_(True))
 
     bans = query.order_by(ServerBan.created_at.desc()).all()
 
@@ -1379,7 +1383,10 @@ async def get_quick_commands(
 
     commands = (
         db.query(ServerQuickCommand)
-        .filter(ServerQuickCommand.server_id == server_id, ServerQuickCommand.is_active == True)
+        .filter(
+            ServerQuickCommand.server_id == server_id,
+            ServerQuickCommand.is_active.is_(True),
+        )
         .order_by(ServerQuickCommand.display_order)
         .all()
     )
@@ -1689,5 +1696,3 @@ async def get_attack_history(
     history = await ddos_protection_service.get_attack_history(db, server_id, limit)
 
     return {"attacks": history, "count": len(history)}
-
-    return {"success": True, "message": message}

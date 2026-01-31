@@ -59,7 +59,10 @@ async def panel_authenticate(data: PanelLoginRequest, db: Session = Depends(get_
         if not server.panel_password:
             raise HTTPException(
                 status_code=403,
-                detail="Bu sunucu için panel erişimi aktif değil. Sunucu sahibi ile iletişime geçin.",
+                detail=(
+                    "Bu sunucu için panel erişimi aktif değil. "
+                    "Sunucu sahibi ile iletişime geçin."
+                ),
             )
 
         if server.panel_password != data.panel_password:
@@ -73,7 +76,7 @@ async def panel_authenticate(data: PanelLoginRequest, db: Session = Depends(get_
             "type": "panel",  # Mark as panel token
         }
 
-        access_token = create_access_token(data=token_data, expires_delta=timedelta(hours=24))
+        access_token = create_access_token(data=token_data, expires_delta=timedelta(hours=12))
 
         logger.info(f"Panel login successful for server {server.id} ({server.name})")
 

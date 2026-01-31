@@ -3,7 +3,9 @@ AGTR Merkezi - Unified Server Management API
 Combines legacy servers.py and server_v2.py into clean, maintainable API
 """
 
+import hashlib
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -29,6 +31,7 @@ from app.core.security import (
 )
 from app.models.connection import get_db
 from app.models.database import (
+    CommandType,
     GameServer,
     Payment,
     PaymentStatus,
@@ -369,38 +372,351 @@ async def restart_server(
 async def execute_rcon_command(
     server_id: int,
     request: RCONRequest,
-    current_user: User = Depends(get_current_user_required),
+    auth: tuple = Depends(get_current_user_or_panel),
     db: Session = Depends(get_db),
 ):
     """Execute RCON command"""
     try:
-        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        current_user, panel_server_id = auth
 
-        if not server:
-            raise NotFoundError("Server not found")
+        # Panel authentication
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
 
-        validate_server_ownership(server, current_user)
+        # Steam authentication
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
 
         if server.status != ServerStatus.RUNNING:
             raise BadRequestError("Server is not running")
 
         # Use RCONService
-        rcon_service = RCONService()
-        result = await rcon_service.execute_command(
-            server.ip, server.port, server.rcon_password, request.command
+        rcon_service = RCONService(db)
+        # For panel auth, user_id is None (panel users are not in users table)
+        user_id = current_user.id if current_user else None
+
+        result = await rcon_service.execute(
+            server=server,
+            command=request.command,
+            user_id=user_id,
+            command_type=CommandType.RCON,
+            ip_address=None,
         )
 
-        return RCONResponse(success=True, output=result)
+        if result["success"]:
+            return RCONResponse(success=True, output=result["response"])
+        else:
+            return RCONResponse(success=False, error=result["error"])
 
     except APIError:
         raise
     except Exception as e:
-        log_api_error("execute_rcon_command", e, current_user.id)
+        user_id = current_user.id if current_user else panel_server_id
+        log_api_error("execute_rcon_command", e, user_id)
         return RCONResponse(success=False, error=str(e))
 
 
-@router.get("/{server_id}/players", response_model=List[PlayerInfo])
+@router.get("/{server_id}/live-chat")
+async def get_live_chat(
+    server_id: int,
+    since_line: int = 0,
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get live chat messages from monster log files"""
+    try:
+        import os
+        import re
+        from glob import glob
+
+        current_user, panel_server_id = auth
+
+        # Authenticate
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
+
+        if not server:
+            raise NotFoundError("Server not found")
+
+        # Find monster log files in AMX Mod X logs directory
+        server_dir = f"/home/gameservers/servers/server_{server_id}/valve/addons/amxmodx/logs"
+        if not os.path.exists(server_dir):
+            return {"messages": [], "last_line": 0}
+
+        # Get all monster*.log files, sorted by modification time (newest first)
+        monster_logs = glob(f"{server_dir}/monster*.log")
+        if not monster_logs:
+            return {"messages": [], "last_line": 0}
+
+        # Get the most recent monster log
+        latest_log = max(monster_logs, key=os.path.getmtime)
+
+        # Read chat messages from the log
+        messages = []
+        try:
+            with open(latest_log, "r", errors="ignore") as f:
+                lines = f.readlines()
+
+                # Start from since_line
+                new_lines = lines[since_line:]
+                current_line = since_line
+
+                for line in new_lines:
+                    current_line += 1
+
+                    # Parse monster log format from AMX Mod X
+                    # Example format:
+                    # L 01/14/2026 - 00:44:58: [00:44:58] <Player><ID>: message
+                    match = re.match(
+                        r"L\s+(\d{2}/\d{2}/\d{4}\s+-\s+\d{2}:\d{2}:\d{2}):"
+                        r"\s+\[(\d{2}:\d{2}:\d{2})\]\s+<(.+?)><.+?>:\s+(.+)",
+                        line,
+                    )
+                    if match:
+                        full_timestamp, time_only, player, message = match.groups()
+
+                        # Strip color codes from player name (^0-^9)
+                        player_clean = re.sub(r"\^\d", "", player)
+
+                        # Generate color based on player name (consistent color per player)
+                        player_hash = int(
+                            hashlib.md5(player_clean.encode(), usedforsecurity=False).hexdigest()[
+                                :6
+                            ],
+                            16,
+                        )
+                        colors = [
+                            "#58a6ff",
+                            "#3fb950",
+                            "#d29922",
+                            "#f85149",
+                            "#a371f7",
+                            "#bc8cff",
+                            "#f78166",
+                        ]
+                        color = colors[player_hash % len(colors)]
+
+                        messages.append(
+                            {
+                                "time": time_only,
+                                "player": player_clean,
+                                "message": message.strip(),
+                                "color": color,
+                            }
+                        )
+
+                return {"messages": messages, "last_line": current_line}
+
+        except Exception as e:
+            logger.error(f"Error reading monster log: {e}")
+            return {"messages": [], "last_line": since_line}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Live chat error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch live chat")
+
+
+@router.get("/{server_id}/players")
 async def get_server_players(
+    server_id: int,
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get online players list by parsing RCON status command"""
+    try:
+        current_user, panel_server_id = auth
+
+        # Authenticate
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
+
+        if not server:
+            raise NotFoundError("Server not found")
+
+        if server.status != ServerStatus.RUNNING:
+            return {"success": True, "players": []}
+
+        # Execute status command via RCON
+        rcon_service = RCONService(db)
+        user_id = current_user.id if current_user else None
+
+        result = await rcon_service.execute(
+            server=server,
+            command="status",
+            user_id=user_id,
+            command_type=CommandType.RCON,
+            ip_address=None,
+        )
+
+        if not result["success"]:
+            return {"success": False, "players": [], "error": result["error"]}
+
+        # Parse status output to extract player info
+        players = []
+        output = result["response"]
+
+        # Status format (multi-line):
+        # # 1 "Player Name" 6 STEAM_0:1:12345   0 00:38   33    0
+        # 212.252.141.208:8140
+
+        import re
+
+        lines = output.split("\n")
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            # Match player line: # ID "Name" userid STEAMID frag time ping loss
+            match = re.match(
+                r'#\s+(\d+)\s+"(.+?)"\s+(\d+)\s+(STEAM_\d+:\d+:\d+)\s+'
+                r"(-?\d+)\s+([\d:]+)\s+(\d+)\s+\d+",
+                line,
+            )
+            if match:
+                player_id, name, userid, uniqueid, frag, time, ping = match.groups()
+
+                # Get IP from next line
+                addr = ""
+                if i + 1 < len(lines):
+                    addr = lines[i + 1].strip()
+
+                # Strip color codes from name (^0-^9)
+                name_clean = re.sub(r"\^\d", "", name)
+
+                players.append(
+                    {
+                        "id": int(player_id),
+                        "name": name_clean,
+                        "userid": int(userid),
+                        "uniqueid": uniqueid,
+                        "frag": int(frag),
+                        "time": time,
+                        "ping": int(ping),
+                        "address": addr,
+                    }
+                )
+                i += 2  # Skip the address line
+            else:
+                i += 1
+
+        return {"success": True, "players": players}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get players error: {e}")
+        return {"success": False, "players": [], "error": str(e)}
+
+
+@router.get("/{server_id}/logs")
+async def get_server_logs(
+    server_id: int,
+    type: str = "plugin",  # plugin, error, chat
+    lines: int = 200,
+    auth: tuple = Depends(get_current_user_or_panel),
+    db: Session = Depends(get_db),
+):
+    """Get server log files"""
+    try:
+        current_user, panel_server_id = auth
+
+        # Authenticate
+        if panel_server_id:
+            if server_id != panel_server_id:
+                raise HTTPException(status_code=403, detail="Panel token is for a different server")
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        elif current_user:
+            server = db.query(GameServer).filter(GameServer.id == server_id).first()
+            if not server:
+                raise NotFoundError("Server not found")
+            validate_server_ownership(server, current_user)
+        else:
+            raise HTTPException(status_code=401, detail="Authentication required")
+
+        if not server:
+            raise NotFoundError("Server not found")
+
+        # Determine log directory and pattern based on type
+        if type == "plugin":
+            log_dir = f"/home/gameservers/servers/server_{server_id}/valve/logs"
+            pattern = "L*.log"
+        elif type == "error":
+            log_dir = f"/home/gameservers/servers/server_{server_id}/valve/addons/amxmodx/logs"
+            pattern = "error*.log"
+        elif type == "chat":
+            log_dir = f"/home/gameservers/servers/server_{server_id}/valve/addons/amxmodx/logs"
+            pattern = "monster*.log"
+        else:
+            raise HTTPException(status_code=400, detail="Invalid log type")
+
+        if not os.path.exists(log_dir):
+            return {"success": True, "lines": []}
+
+        # Get log files matching pattern
+        from glob import glob as glob_files
+
+        log_files = glob_files(f"{log_dir}/{pattern}")
+
+        if not log_files:
+            return {"success": True, "lines": []}
+
+        # Get the most recent log file
+        latest_log = max(log_files, key=os.path.getmtime)
+
+        # Read last N lines
+        log_lines = []
+        try:
+            with open(latest_log, "r", errors="ignore") as f:
+                all_lines = f.readlines()
+                # Get last N lines
+                log_lines = [line.rstrip("\n") for line in all_lines[-lines:]]
+        except Exception as e:
+            logger.error(f"Error reading log file {latest_log}: {e}")
+
+        return {
+            "success": True,
+            "lines": log_lines,
+            "file": os.path.basename(latest_log),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get logs error: {e}")
+        return {"success": False, "lines": [], "error": str(e)}
+
+
+@router.get("/{server_id}/players_old", response_model=List[PlayerInfo])
+async def get_server_players_old(
     server_id: int,
     current_user: User = Depends(get_current_user_required),
     db: Session = Depends(get_db),
@@ -516,6 +832,7 @@ async def order_server(
             owner_steam_id=current_user.steam_id if hasattr(current_user, "steam_id") else None,
             name=data.server_name,
             game_type=package.game_type,
+            mod_type=package.game_type,
             ip_address=ip,
             port=port,
             slots=package.slots,
@@ -585,33 +902,38 @@ async def order_server(
 
             # Trigger server installation (background task)
             async def trigger_installation():
-                """Background task to install server"""
+                """Background task to install server - SHARED INSTALLATION"""
                 from app.models.connection import SessionLocal
                 from app.models.database import Notification
-                from app.services.server_installation import ServerInstallationService
+                from app.services.shared_installation_service import (
+                    SharedInstallationService,
+                )
 
                 task_db = SessionLocal()
                 try:
-                    install_service = ServerInstallationService(task_db)
+                    shared_service = SharedInstallationService(task_db)
 
-                    # Create installation record
-                    installation = await install_service.create_installation(
-                        server_id=server.id,
-                        user_id=current_user.id,
-                        mod_type=server.game_type.value,
-                        config={},
+                    # Map game_type to mod_type
+                    mod_type_map = {
+                        "ag": "ag",
+                        "hldm": "hldm",
+                        "cs16": "cs16",
+                    }
+                    mod_type = mod_type_map.get(server.game_type.value, "hldm")
+
+                    logger.info(
+                        f"Creating server {server.id} with SHARED installation (disk optimized)"
                     )
 
-                    # Run installation
-                    config = {
-                        "hostname": server.name,
-                        "rcon_password": server.rcon_password,
-                        "port": server.port,
-                        "maxplayers": server.slots,
-                        "admins": [],
-                    }
-
-                    success, msg = await install_service.run_installation(installation.id, config)
+                    # Run shared installation
+                    success, msg = await shared_service.create_server_with_symlinks(
+                        server_id=server.id,
+                        mod_type=mod_type,
+                        hostname=server.name,
+                        rcon_password=server.rcon_password,
+                        port=server.port,
+                        maxplayers=server.slots,
+                    )
 
                     # Update server status
                     if success:
@@ -627,13 +949,16 @@ async def order_server(
                                 user_id=current_user.id,
                                 type="server",
                                 title="Sunucu Hazır!",
-                                message=f"{server.name} sunucunuz kuruldu ve başlatılmaya hazır.",
+                                message=(
+                                    f"{server.name} sunucunuz kuruldu ve başlatılmaya hazır "
+                                    "(58 MB disk optimized)."
+                                ),
                                 link=f"/servers/{server.id}",
                             )
                             task_db.add(notification)
                             task_db.commit()
 
-                            logger.info(f"Server installation completed: {server.id}")
+                            logger.info(f"Server {server.id} SHARED installation completed: {msg}")
                     else:
                         logger.error(f"Server installation failed: {server.id} - {msg}")
                         server_obj = (
@@ -669,6 +994,7 @@ async def order_server(
     except APIError:
         raise
     except Exception as e:
+        db.rollback()
         log_api_error("order_server", e, current_user.id)
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -741,6 +1067,7 @@ async def order_server_with_wallet(
             owner_steam_id=current_user.steam_id if hasattr(current_user, "steam_id") else None,
             name=data.server_name,
             game_type=package.game_type,
+            mod_type=package.game_type,
             ip_address=ip,
             port=port,
             slots=package.slots,
@@ -816,35 +1143,40 @@ async def order_server_with_wallet(
             f"payment_id={payment.id}, user_id={current_user.id}, wallet={wallet_type.value}"
         )
 
-        # Trigger server installation (background task)
+        # Trigger server installation (background task) - SHARED INSTALLATION
         async def trigger_installation():
-            """Background task to install server"""
+            """Background task to install server - SHARED INSTALLATION"""
             from app.models.connection import SessionLocal
             from app.models.database import Notification
-            from app.services.server_installation import ServerInstallationService
+            from app.services.shared_installation_service import (
+                SharedInstallationService,
+            )
 
             task_db = SessionLocal()
             try:
-                install_service = ServerInstallationService(task_db)
+                shared_service = SharedInstallationService(task_db)
 
-                # Create installation record
-                installation = await install_service.create_installation(
-                    server_id=server.id,
-                    user_id=current_user.id,
-                    mod_type=server.game_type.value,
-                    config={},
+                # Map game_type to mod_type
+                mod_type_map = {
+                    "ag": "ag",
+                    "hldm": "hldm",
+                    "cs16": "cs16",
+                }
+                mod_type = mod_type_map.get(server.game_type.value, "hldm")
+
+                logger.info(
+                    f"Creating server {server.id} with SHARED installation (disk optimized)"
                 )
 
-                # Run installation
-                config = {
-                    "hostname": server.name,
-                    "rcon_password": server.rcon_password,
-                    "port": server.port,
-                    "maxplayers": server.slots,
-                    "admins": [],
-                }
-
-                success, msg = await install_service.run_installation(installation.id, config)
+                # Run shared installation
+                success, msg = await shared_service.create_server_with_symlinks(
+                    server_id=server.id,
+                    mod_type=mod_type,
+                    hostname=server.name,
+                    rcon_password=server.rcon_password,
+                    port=server.port,
+                    maxplayers=server.slots,
+                )
 
                 # Update server status
                 if success:
@@ -860,13 +1192,16 @@ async def order_server_with_wallet(
                             user_id=current_user.id,
                             type="server",
                             title="Sunucu Hazır!",
-                            message=f"{server.name} sunucunuz kuruldu ve başlatılmaya hazır.",
+                            message=(
+                                f"{server.name} sunucunuz kuruldu ve başlatılmaya hazır "
+                                "(58 MB disk optimized)."
+                            ),
                             link=f"/servers/{server.id}",
                         )
                         task_db.add(notification)
                         task_db.commit()
 
-                        logger.info(f"Server installation completed: {server.id}")
+                        logger.info(f"Server {server.id} SHARED installation completed: {msg}")
                 else:
                     logger.error(f"Server installation failed: {server.id} - {msg}")
                     server_obj = (
@@ -1007,7 +1342,7 @@ async def get_server_webpanel_status(
         players_str = status.get("players", "0 active")
         try:
             current_players = int(players_str.split()[0])
-        except:
+        except Exception:
             current_players = server.current_players or 0
 
         return {
@@ -1115,8 +1450,11 @@ async def update_server_webpanel_settings(
         - max_players: Slot count (requires restart)
     """
     try:
-        # Verify ownership
-        server = validate_server_ownership(db, server_id, current_user.id)
+        # Get server and verify ownership
+        server = db.query(GameServer).filter(GameServer.id == server_id).first()
+        if not server:
+            raise NotFoundError("Sunucu bulunamadı")
+        validate_server_ownership(server, current_user)
 
         # Check if server is running
         control_service = ServerControlService(db)

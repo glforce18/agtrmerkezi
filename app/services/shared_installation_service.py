@@ -60,8 +60,8 @@ class SharedInstallationService:
 
     # Individual klasörler (her sunucu için ayrı)
     INDIVIDUAL_FOLDERS = [
-        "maps",  # Custom maps
-        "addons",  # AMXModX plugins
+        # NOTE: maps is copied fully in step 7.6 (all maps, not empty)
+        # NOTE: addons is copied fully in step 7.5 (not empty)
         "logs",  # Server logs
         "demos",  # Demo recordings
     ]
@@ -73,16 +73,37 @@ class SharedInstallationService:
         "motd.txt",
         "banned.cfg",
         "listip.cfg",
-        "users.ini",
-        "amxx.cfg",
-        "plugins.ini",
+        "liblist.gam",  # Metamod için gerekli
+        "valve.rc",  # Server startup config
     ]
 
-    # Base oyun dosyaları (her sunucu için symlink)
-    SHARED_BINARIES = [
+    # Base HLDS dosyaları (her sunucu için symlink)
+    SHARED_HLDS_FILES = [
+        # Executables
         "hlds_linux",
         "hlds_run",
-        "libsteam.so",
+        "hltv",
+        # Libraries
+        "*.so",
+        # Other base files
+        "steam_appid.txt",
+        "steamapps",
+        "linux64",
+        "valve_addon",
+    ]
+
+    # Mod seviyesinde shared dosyalar (symlink)
+    SHARED_MOD_FILES = [
+        # WAD files
+        "*.wad",
+        # Config templates
+        "*.lst",
+        "*_textscheme.txt",
+        "default.cfg",
+        "config.cfg",
+        "autoexec.cfg",
+        "dproto.cfg",
+        "credits.txt",
     ]
 
     def __init__(self, db: Session):
@@ -95,13 +116,22 @@ class SharedInstallationService:
             "ag_openag": "ag_base",
             "cs16": "cstrike_base",
             "hldm": "valve_base",
-            "valve_new": "valve_base",
         }
         return Path(self.SHARED_BASE) / mod_map.get(mod_type, "hlds_base")
 
     def get_server_path(self, server_id: int) -> Path:
         """Sunucu dizin yolunu al"""
         return Path(self.SERVERS_BASE) / f"server_{server_id}"
+
+    def get_mod_folder(self, mod_type: str) -> str:
+        """Mod klasör adını döndür"""
+        # Map mod type to folder name
+        mod_folders = {
+            "ag": "ag",  # Adrenaline Gamer
+            "hldm": "valve",  # Half-Life Deathmatch
+            "cs16": "cstrike",  # Counter-Strike 1.6
+        }
+        return mod_folders.get(mod_type, "valve")
 
     async def initialize_shared_base(self, mod_type: str) -> Tuple[bool, str]:
         """
@@ -124,7 +154,6 @@ class SharedInstallationService:
             "ag_openag": "ag_openag",
             "cs16": "cstrike",
             "hldm": "valve",
-            "valve_new": "valvenewvalve",
         }
         template_name = template_map.get(mod_type)
         if not template_name:
@@ -184,6 +213,18 @@ class SharedInstallationService:
         4. Individual dosyaları kopyala
         5. Config dosyalarını düzenle
         """
+        # Get server IP from database
+        from app.models.database import GameServer
+
+        server = self.db.query(GameServer).filter(GameServer.id == server_id).first()
+        server_ip = server.ip_address if server else None
+
+        # Validate server_ip
+        if not server:
+            return False, f"Server {server_id} not found in database"
+        if not server_ip:
+            return False, f"Server {server_id} has no IP address assigned"
+
         server_path = self.get_server_path(server_id)
         shared_base = self.get_shared_base_path(mod_type)
 
@@ -193,7 +234,6 @@ class SharedInstallationService:
             "ag_openag": "ag",
             "cs16": "cstrike",
             "hldm": "valve",
-            "valve_new": "valve",
         }
         mod_folder = mod_folder_map.get(mod_type, "valve")
 
@@ -221,44 +261,134 @@ class SharedInstallationService:
             shared_base / mod_folder if (shared_base / mod_folder).exists() else shared_base
         )
 
-        # 3. Shared binaries için symlink (hlds_linux, etc.)
-        for binary in self.SHARED_BINARIES:
-            source = (
-                shared_hlds / binary
-                if (shared_hlds / binary).exists()
-                else shared_mod.parent / binary
-            )
-            target = server_path / binary
+        # 3. HLDS seviyesinde dosyaları KOPYALA (Steam uyumluluk için symlink değil)
+        import shutil
 
-            if source.exists():
+        # .so dosyaları ve diğer HLDS dosyaları - KOPYAL A (symlink DEĞİL)
+        hlds_file_count = 0
+        for pattern in ["*.so", "hlds_linux", "hlds_run", "hltv", "ld-linux*.so.*"]:
+            for source_file in shared_hlds.glob(pattern):
+                target = server_path / source_file.name
+                if not target.exists():
+                    try:
+                        shutil.copy2(source_file, target)
+                        target.chmod(0o755)
+                        hlds_file_count += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to copy {source_file.name}: {e}")
+        logger.info(f"Copied {hlds_file_count} HLDS binary files")
+
+        # Klasörler (linux64, steamapps, valve_addon) - KOPYALA (400 MB limit)
+        steam_folders = ["linux64", "steamapps", "valve_addon"]
+        for folder_name in steam_folders:
+            source = shared_hlds / folder_name
+            target = server_path / folder_name
+            if source.exists() and not target.exists():
                 try:
-                    target.symlink_to(source)
-                    logger.info(f"Symlink created: {binary}")
-                except FileExistsError:
-                    pass
+                    shutil.copytree(source, target)
+                    folder_size = sum(f.stat().st_size for f in target.rglob("*") if f.is_file())
+                    logger.info(f"Copied {folder_name}: {folder_size / 1024 / 1024:.1f} MB")
+                except Exception as e:
+                    logger.warning(f"Failed to copy {folder_name}: {e}")
 
-        # 4. Mod klasörü için symlink'ler oluştur
+        # steam_appid.txt - KOPYALA
+        if (shared_hlds / "steam_appid.txt").exists():
+            try:
+                shutil.copy2(shared_hlds / "steam_appid.txt", server_path / "steam_appid.txt")
+            except Exception as e:
+                logger.warning(f"Failed to copy steam_appid.txt: {e}")
+
+        # 4. Mod klasörü için shared folder symlink'leri
         for folder in self.SHARED_FOLDERS:
             source = shared_mod / folder
             target = mod_path / folder
 
-            if source.exists() and source.is_dir():
+            if source.exists() and source.is_dir() and not target.exists():
                 try:
                     target.symlink_to(source)
-                    logger.info(f"Symlink created: {mod_folder}/{folder} -> shared")
-                except FileExistsError:
-                    pass
+                    logger.info(f"Symlink: {mod_folder}/{folder} -> shared")
+                except Exception as e:
+                    logger.warning(f"Failed to symlink {folder}: {e}")
 
-        # 5. Individual klasörleri oluştur
+        # 5. Mod seviyesinde shared dosyalar (.wad, .lst, etc.)
+        for pattern in ["*.wad", "*.lst", "*_textscheme.txt"]:
+            for source_file in shared_mod.glob(pattern):
+                target = mod_path / source_file.name
+                if not target.exists():
+                    try:
+                        target.symlink_to(source_file)
+                        logger.debug(f"Symlink: {source_file.name}")
+                    except Exception as e:
+                        logger.warning(f"Failed to symlink {source_file.name}: {e}")
+
+        # 6. Template config dosyalarını kopyala (symlink değil, kopyala - düzenlenebilir olmalı)
+        template_configs = [
+            "default.cfg",
+            "config.cfg",
+            "autoexec.cfg",
+            "dproto.cfg",
+            "credits.txt",
+        ]
+        for filename in template_configs:
+            source = shared_mod / filename
+            target = mod_path / filename
+            if source.exists() and not target.exists():
+                try:
+                    import shutil
+
+                    shutil.copy2(source, target)
+                    logger.debug(f"Copied: {filename}")
+                except Exception as e:
+                    logger.warning(f"Failed to copy {filename}: {e}")
+
+        # 7. Individual klasörleri oluştur
         for folder in self.INDIVIDUAL_FOLDERS:
-            (mod_path / folder).mkdir(exist_ok=True)
+            (mod_path / folder).mkdir(exist_ok=True, parents=True)
 
-        # 6. Individual config dosyalarını kopyala
+        # 7.5. addons klasörünü kopyala (metamod/amxmodx) - HER SERVER FARKLI CONFIG
+        addons_source = shared_mod / "addons"
+        addons_target = mod_path / "addons"
+        if addons_source.exists() and not addons_target.exists():
+            try:
+                import shutil
+
+                shutil.copytree(addons_source, addons_target)
+                logger.info("Copied addons/ (metamod/amxmodx) - individual per server")
+
+                # logs klasörünü boşalt (her server kendi logunu tutsun)
+                logs_dir = addons_target / "amxmodx" / "logs"
+                if logs_dir.exists():
+                    for log_file in logs_dir.glob("*"):
+                        log_file.unlink()
+                    logger.debug("Cleared amxmodx logs")
+            except Exception as e:
+                logger.warning(f"Failed to copy addons: {e}")
+
+        # 7.6. TÜM map'leri kopyala (tasarruf etme - tam kopya)
+        maps_source = shared_mod / "maps"
+        maps_target = mod_path / "maps"
+        if maps_source.exists():
+            try:
+                import shutil
+
+                # TÜM maps klasörünü kopyala (tüm .bsp dosyaları)
+                if maps_target.exists():
+                    shutil.rmtree(maps_target)
+                shutil.copytree(maps_source, maps_target)
+
+                # Kopyalanan map sayısını say
+                map_count = len(list(maps_target.glob("*.bsp")))
+                maps_size_mb = sum(f.stat().st_size for f in maps_target.glob("*")) / 1024 / 1024
+                logger.info(f"Copied ALL maps: {map_count} maps ({maps_size_mb:.1f} MB)")
+            except Exception as e:
+                logger.warning(f"Failed to copy maps: {e}")
+
+        # 8. Individual config dosyalarını kopyala
         for filename in self.INDIVIDUAL_FILES:
             source = shared_mod / filename
             target = mod_path / filename
 
-            if source.exists() and source.is_file():
+            if source.exists() and source.is_file() and not target.exists():
                 try:
                     import shutil
 
@@ -267,13 +397,76 @@ class SharedInstallationService:
                 except Exception as e:
                     logger.warning(f"Failed to copy {filename}: {e}")
 
-        # 7. server.cfg'yi düzenle
+        # 9. server.cfg'yi düzenle
         server_cfg = mod_path / "server.cfg"
         if server_cfg.exists():
             self._configure_server_cfg(server_cfg, hostname, rcon_password, port, maxplayers)
 
+        # 10. start.sh ve stop.sh oluştur
+        self._create_startup_scripts(server_id, mod_folder, server_ip, port, maxplayers)
+
         logger.info(f"Server created with symlinks: {server_path} (using shared base)")
         return True, "Server created successfully with shared files"
+
+    def _create_startup_scripts(
+        self, server_id: int, mod_folder: str, server_ip: str, port: int, maxplayers: int
+    ):
+        """start.sh ve stop.sh scriptleri oluştur"""
+        server_path = self.get_server_path(server_id)
+        screen_name = f"server_{server_id}"  # Control service expects this format
+
+        # start.sh
+        start_script = server_path / "start.sh"
+        start_content = f"""#!/bin/bash
+SERVER_DIR="{server_path}"
+SCREEN_NAME="{screen_name}"
+MOD="{mod_folder}"
+IP="{server_ip}"
+PORT={port}
+MAXPLAYERS={maxplayers}
+
+cd "$SERVER_DIR"
+
+# Stop existing session
+screen -S $SCREEN_NAME -X quit 2>/dev/null
+
+# Start server in screen
+screen -dmS $SCREEN_NAME ./hlds_run -game $MOD +ip $IP +port $PORT \\
+    +map crossfire +maxplayers $MAXPLAYERS -pingboost 3 +sys_ticrate 500
+
+echo "Server started in screen session: $SCREEN_NAME"
+"""
+        try:
+            with open(start_script, "w") as f:
+                f.write(start_content)
+            start_script.chmod(0o755)
+            logger.info(f"Created start.sh for server {server_id}")
+        except Exception as e:
+            logger.error(f"Failed to create start.sh: {e}")
+
+        # stop.sh
+        stop_script = server_path / "stop.sh"
+        stop_content = f"""#!/bin/bash
+SCREEN_NAME="{screen_name}"
+
+# Send quit command
+screen -S $SCREEN_NAME -X stuff 'quit\\n'
+
+# Wait 10 seconds
+sleep 10
+
+# Force kill if still running
+screen -S $SCREEN_NAME -X quit 2>/dev/null
+
+echo "Server stopped: $SCREEN_NAME"
+"""
+        try:
+            with open(stop_script, "w") as f:
+                f.write(stop_content)
+            stop_script.chmod(0o755)
+            logger.info(f"Created stop.sh for server {server_id}")
+        except Exception as e:
+            logger.error(f"Failed to create stop.sh: {e}")
 
     def _configure_server_cfg(
         self, config_path: Path, hostname: str, rcon_password: str, port: int, maxplayers: int
@@ -292,6 +485,7 @@ class SharedInstallationService:
 
             # Network
             content = self._update_cvar(content, "port", str(port))
+            content = self._update_cvar(content, "hostport", str(port))  # Also set hostport
             content = self._update_cvar(content, "maxplayers", str(maxplayers))
             content = self._update_cvar(content, "sv_maxrate", "100000")
             content = self._update_cvar(content, "sv_minrate", "10000")
@@ -412,7 +606,7 @@ async def migrate_existing_server_to_shared(server_id: int, db: Session) -> Tupl
         return False, "Server not found"
 
     old_path = service.get_server_path(server_id)
-    backup_path = Path(f"/tmp/server_{server_id}_backup")
+    backup_path = Path(f"/tmp/server_{server_id}_backup")  # nosec B108 - temporary backup
 
     try:
         # 1. Custom dosyaları yedekle

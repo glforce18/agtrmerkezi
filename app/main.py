@@ -47,6 +47,7 @@ from app.api import (  # noqa: E402
     payment_gateway,
     payments,
     player_management,
+    plugin_manager,
     plugin_market,
     plugins,
     plugins_enhanced,
@@ -74,6 +75,7 @@ from app.api.admin import forum_categories as admin_forum_categories  # noqa: E4
 from app.api.admin import forum_topics as admin_forum_topics  # noqa: E402
 from app.api.admin import pages as admin_pages  # noqa: E402
 from app.api.admin import server_approval  # noqa: E402
+from app.api.admin import shared_system  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.models.connection import get_db, init_db  # noqa: E402
 from app.models.database import (  # noqa: E402
@@ -573,6 +575,9 @@ app.include_router(forum.router, tags=["Forum v3 - Modular"])
 # Unified Server API - Merges servers.py + server_v2.py
 app.include_router(servers_unified.router, tags=["Servers v3 - Unified"])
 
+# Plugin Manager API - Restricted plugin management for users
+app.include_router(plugin_manager.router, tags=["Plugin Manager v2 - Restricted"])
+
 # ==================== LEGACY APIs (Deprecated) ====================
 # TODO: Remove after frontend migration complete
 # NOTE: servers.router removed - replaced by servers_unified.router (see line 571)
@@ -592,6 +597,9 @@ app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
 
 # Admin APIs
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(
+    shared_system.router, prefix="/api/admin/shared-system", tags=["Admin - Shared System"]
+)
 app.include_router(admin_forum_categories.router, prefix="/api", tags=["Admin Forum"])
 app.include_router(admin_forum_topics.router, prefix="/api", tags=["Admin Forum"])
 app.include_router(admin_pages.router, tags=["Admin Pages"])

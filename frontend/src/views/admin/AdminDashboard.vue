@@ -200,6 +200,16 @@
               <span class="text-base">⚙️</span>
               <span class="truncate">Sistem Ayarları</span>
             </router-link>
+
+            <router-link to="/admin/shared-system" class="btn btn-secondary w-full text-sm flex items-center gap-2 justify-start">
+              <span class="text-base">💾</span>
+              <span class="truncate">Shared Installation System</span>
+            </router-link>
+
+            <router-link to="/admin/installation-monitor" class="btn btn-secondary w-full text-sm flex items-center gap-2 justify-start">
+              <span class="text-base">📊</span>
+              <span class="truncate">Installation Monitor</span>
+            </router-link>
           </div>
         </div>
       </div>

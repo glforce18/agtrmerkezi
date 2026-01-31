@@ -392,7 +392,10 @@ async def get_current_user_with_steam(user: User = Depends(get_current_user_requ
     if not user.steam_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bu ozellik icin Steam hesabi baglantisi gerekli. Profil ayarlarindan Steam hesabinizi baglayabilirsiniz.",
+            detail=(
+                "Bu ozellik icin Steam hesabi baglantisi gerekli. "
+                "Profil ayarlarindan Steam hesabinizi baglayabilirsiniz."
+            ),
         )
     return user
 
@@ -482,18 +485,30 @@ async def get_panel_server_id(
     # Get token from header
     if credentials:
         token = credentials.credentials
+        logger.info(f"[PANEL_AUTH] Token from header: {token[:20]}...")
 
     # Get token from cookie
     if not token:
         token = request.cookies.get("access_token")
+        if token:
+            logger.info(f"[PANEL_AUTH] Token from cookie: {token[:20]}...")
 
     if not token:
+        logger.warning("[PANEL_AUTH] No token found in request")
         return None
 
     # Decode token
     payload = decode_token(token)
     if not payload:
+        logger.warning("[PANEL_AUTH] Token decode failed")
         return None
+
+    logger.info(
+        "[PANEL_AUTH] Token payload: type=%s, sub=%s, server_id=%s",
+        payload.get("type"),
+        payload.get("sub"),
+        payload.get("server_id"),
+    )
 
     # Check if this is a panel token
     token_type = payload.get("type")
@@ -503,8 +518,13 @@ async def get_panel_server_id(
         # Extract server_id from panel token
         server_id = payload.get("server_id")
         if server_id:
-            logger.info(f"Panel token validated for server {server_id}")
+            logger.info(f"[PANEL_AUTH] Panel token validated for server {server_id}")
             return int(server_id)
+        else:
+            logger.warning("[PANEL_AUTH] Panel token missing server_id")
+
+    else:
+        logger.info("[PANEL_AUTH] Not a panel token")
 
     return None
 
